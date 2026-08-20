@@ -98,13 +98,6 @@ brokers:
       website: https://www.publicrecordsnow.com
       region: us
       category: people-search
-    - id: familytreenow
-      name: FamilyTreeNow
-      email: privacy@familytreenow.com
-      website: https://www.familytreenow.com
-      opt_out_url: https://www.familytreenow.com/optout
-      region: us
-      category: people-search
     - id: addresses
       name: Addresses.com
       email: privacy@addresses.com
@@ -157,7 +150,7 @@ brokers:
       category: marketing
     - id: equifax-marketing
       name: Equifax Marketing Services
-      email: privacy@equifax.com
+      email: UKDPO@equifax.com
       website: https://www.equifax.com
       opt_out_url: https://www.equifax.com/personal/education/identity/opt-out-prescreen/
       region: global
@@ -1659,9 +1652,10 @@ brokers:
       name: ECONOMIC MODELING LLC
       email: legal@lightcast.io
       website: https://www.lightcast.io/
-      opt_out_url: https://optout.networkadvertising.org/
+      opt_out_url: https://lightcast.io/privacy-request
       region: us
       category: marketing
+      notes: 'Rebranded as Lightcast; use the privacy request form at opt_out_url instead of email - form is the required removal path per user.'
     - id: edvisors-network
       name: Edvisors Network, Inc.
       email: ""
@@ -1834,13 +1828,6 @@ brokers:
       name: Fair Screen, Inc.
       email: compliance@fairscreen.com
       website: https://www.fairscreen.com/
-      region: us
-      category: marketing
-    - id: family-tree-now
-      name: FAMILY TREE NOW LLC
-      email: privacy@familytreenow.zendesk.com
-      website: https://www.usphonebook.com/
-      opt_out_url: https://www.zendesk.com/company/agreements-and-terms/privacy-notice/
       region: us
       category: marketing
     - id: famous-birthdays
@@ -2027,13 +2014,6 @@ brokers:
       name: Fushia Media, LLC.
       email: support@fushiamedia.com
       website: https://www.fushiamedia.com/
-      region: us
-      category: marketing
-    - id: fyllo
-      name: Fyllo
-      email: legal@hellofyllo.com
-      website: https://www.hellofyllo.com/
-      opt_out_url: https://www.semasio.com/legal/privacy-choices
       region: us
       category: marketing
     - id: g2-bankruptcy-risk-solutions

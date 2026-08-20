@@ -6,19 +6,36 @@
             <h1 class="font-display text-3xl font-bold text-primary">Data Brokers</h1>
             <p class="text-secondary mt-1">{{.Total}} brokers in database</p>
         </div>
-        <button
-            id="send-all-btn"
-            class="btn btn-primary"
-            onclick="startSendAll()"
-        >
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-            </svg>
-            <span id="send-all-text">Send to All</span>
-            <span id="send-all-spinner" class="hidden">
-                <span class="spinner"></span>
-            </span>
-        </button>
+        <div class="flex flex-wrap gap-2">
+            <button
+                id="retry-failed-btn"
+                class="btn text-white"
+                style="background: var(--error, #dc2626);"
+                onclick="startSendAll('failed')"
+                title="Re-send to brokers whose last attempt failed"
+            >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span id="retry-failed-text">Retry Failed</span>
+                <span id="retry-failed-spinner" class="hidden">
+                    <span class="spinner"></span>
+                </span>
+            </button>
+            <button
+                id="send-all-btn"
+                class="btn btn-primary"
+                onclick="startSendAll()"
+            >
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                <span id="send-all-text">Send to All</span>
+                <span id="send-all-spinner" class="hidden">
+                    <span class="spinner"></span>
+                </span>
+            </button>
+        </div>
     </div>
 
     <!-- Daily limit info banner -->
@@ -60,19 +77,19 @@
                     hx-get="/api/brokers"
                     hx-trigger="keyup changed delay:300ms"
                     hx-target="#broker-list"
-                    hx-include="[name='status'],[name='category'],[name='region']"
+                    hx-include="[name='status'],[name='category'],[name='region'],[name='missing_email']"
                 >
             </div>
 
             <!-- Filters -->
-            <div class="flex flex-wrap gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <select
                     name="status"
                     class="input w-auto min-w-[120px]"
                     hx-get="/api/brokers"
                     hx-trigger="change"
                     hx-target="#broker-list"
-                    hx-include="#broker-search,[name='category'],[name='region']"
+                    hx-include="#broker-search,[name='category'],[name='region'],[name='missing_email']"
                 >
                     <option value="">All Statuses</option>
                     <option value="pending" {{if eq $.Status "pending"}}selected{{end}}>Pending</option>
@@ -85,7 +102,7 @@
                     hx-get="/api/brokers"
                     hx-trigger="change"
                     hx-target="#broker-list"
-                    hx-include="#broker-search,[name='status'],[name='region']"
+                    hx-include="#broker-search,[name='status'],[name='region'],[name='missing_email']"
                 >
                     <option value="">All Categories</option>
                     {{range .Categories}}
@@ -98,13 +115,26 @@
                     hx-get="/api/brokers"
                     hx-trigger="change"
                     hx-target="#broker-list"
-                    hx-include="#broker-search,[name='status'],[name='category']"
+                    hx-include="#broker-search,[name='status'],[name='category'],[name='missing_email']"
                 >
                     <option value="">All Regions</option>
                     {{range .Regions}}
                     <option value="{{.}}" {{if eq . $.Region}}selected{{end}}>{{.}}</option>
                     {{end}}
                 </select>
+                <label class="flex items-center gap-2 text-sm text-secondary select-none cursor-pointer whitespace-nowrap">
+                    <input
+                        type="checkbox"
+                        name="missing_email"
+                        value="true"
+                        {{if .MissingEmail}}checked{{end}}
+                        hx-get="/api/brokers"
+                        hx-trigger="change"
+                        hx-target="#broker-list"
+                        hx-include="#broker-search,[name='status'],[name='category'],[name='region']"
+                    >
+                    Missing email only
+                </label>
             </div>
         </div>
     </div>
@@ -134,7 +164,11 @@
                         <td>
                             <div class="flex flex-col">
                                 <span class="font-medium text-primary">{{.Name}}</span>
+                                {{if .Email}}
                                 <span class="text-sm text-muted">{{.Email}}</span>
+                                {{else}}
+                                <span class="text-sm text-amber-600" title="Needs manual follow-up - no email on file">No email on file</span>
+                                {{end}}
                             </div>
                         </td>
                         <td>
@@ -171,6 +205,7 @@
                         </td>
                         <td class="text-right">
                             <div class="flex items-center justify-end gap-2">
+                                {{if .Email}}
                                 <button
                                     class="btn btn-ghost text-sm py-1 px-3"
                                     hx-post="/api/send/{{.ID}}"
@@ -183,6 +218,11 @@
                                         <span class="spinner"></span>
                                     </span>
                                 </button>
+                                {{else}}
+                                <button class="btn btn-ghost text-sm py-1 px-3" disabled title="No email on file">
+                                    Send
+                                </button>
+                                {{end}}
                                 {{if .OptOutURL}}
                                 <a href="{{.OptOutURL}}" target="_blank" class="btn btn-ghost text-sm py-1 px-3">
                                     Opt-out
@@ -218,7 +258,11 @@
                 <div class="flex items-start justify-between mb-3">
                     <div>
                         <h3 class="font-medium text-primary">{{.Name}}</h3>
+                        {{if .Email}}
                         <p class="text-sm text-muted">{{.Email}}</p>
+                        {{else}}
+                        <p class="text-sm text-amber-600">No email on file</p>
+                        {{end}}
                     </div>
                     <div id="status-mobile-{{.ID}}">
                         {{if eq .Status "sent"}}
@@ -239,6 +283,7 @@
                     {{end}}
                 </div>
                 <div class="flex gap-2">
+                    {{if .Email}}
                     <button
                         class="btn btn-primary flex-1 py-2"
                         hx-post="/api/send/{{.ID}}"
@@ -247,6 +292,11 @@
                     >
                         Send Request
                     </button>
+                    {{else}}
+                    <button class="btn btn-primary flex-1 py-2" disabled title="No email on file">
+                        No Email on File
+                    </button>
+                    {{end}}
                     {{if .OptOutURL}}
                     <a href="{{.OptOutURL}}" target="_blank" class="btn btn-secondary py-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -298,13 +348,17 @@ async function checkForActiveJob() {
     }
 }
 
-async function startSendAll() {
-    const btn = document.getElementById('send-all-btn');
-    const btnText = document.getElementById('send-all-text');
-    const spinner = document.getElementById('send-all-spinner');
+// statusFilter is optional: pass 'failed' from the Retry Failed button to
+// target only brokers whose last send attempt failed. Left empty, the
+// backend defaults to 'pending' (never-sent brokers) - same as before.
+async function startSendAll(statusFilter) {
+    const isRetry = statusFilter === 'failed';
+    const btn = document.getElementById(isRetry ? 'retry-failed-btn' : 'send-all-btn');
+    const btnText = document.getElementById(isRetry ? 'retry-failed-text' : 'send-all-text');
+    const spinner = document.getElementById(isRetry ? 'retry-failed-spinner' : 'send-all-spinner');
 
-    // Disable button and show spinner
-    btn.disabled = true;
+    // Disable both buttons so a job can't be started twice from either one
+    setButtonsDisabled(true);
     btnText.textContent = 'Starting...';
     spinner.classList.remove('hidden');
 
@@ -316,6 +370,11 @@ async function startSendAll() {
     // Get CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+    const params = { search, category, region };
+    if (statusFilter) {
+        params.status = statusFilter;
+    }
+
     try {
         const resp = await fetch('/api/send-all', {
             method: 'POST',
@@ -323,14 +382,14 @@ async function startSendAll() {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRF-Token': csrfToken
             },
-            body: new URLSearchParams({ search, category, region })
+            body: new URLSearchParams(params)
         });
 
         const data = await resp.json();
 
         if (!resp.ok) {
             showError(data.error || 'Failed to start sending');
-            resetButton();
+            resetButtons();
             return;
         }
 
@@ -340,7 +399,7 @@ async function startSendAll() {
 
     } catch (err) {
         showError('Network error: ' + err.message);
-        resetButton();
+        resetButtons();
     }
 }
 
@@ -399,7 +458,7 @@ async function pollJobStatus() {
         if (job.status === 'completed' || job.status === 'cancelled') {
             stopPolling();
             showCompletionMessage(job);
-            resetButton();
+            resetButtons();
             // Refresh broker list to show updated statuses
             htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
         }
@@ -435,7 +494,7 @@ function showCompletionMessage(job) {
                                 <li>Check your email account for security alerts</li>
                                 <li>If using Gmail, <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-blue-600 underline">generate a new app password</a></li>
                                 <li>Wait 24 hours before trying again (rate limits reset daily)</li>
-                                <li>Consider using <a href="/settings" class="text-blue-600 underline">Resend</a> for bulk sending</li>
+                                <li>Check your <a href="/settings" class="text-blue-600 underline">SMTP settings</a> - some providers cap how many emails an app password can send per day</li>
                             </ol>
                         </div>
                         <p class="text-sm text-gray-600 mt-3">
@@ -506,14 +565,26 @@ function showError(message) {
     `;
 }
 
-function resetButton() {
-    const btn = document.getElementById('send-all-btn');
-    const btnText = document.getElementById('send-all-text');
-    const spinner = document.getElementById('send-all-spinner');
+function setButtonsDisabled(disabled) {
+    const sendBtn = document.getElementById('send-all-btn');
+    const retryBtn = document.getElementById('retry-failed-btn');
+    if (sendBtn) sendBtn.disabled = disabled;
+    if (retryBtn) retryBtn.disabled = disabled;
+}
 
-    btn.disabled = false;
-    btnText.textContent = 'Send to All';
-    spinner.classList.add('hidden');
+function resetButtons() {
+    const sendBtn = document.getElementById('send-all-btn');
+    const sendText = document.getElementById('send-all-text');
+    const sendSpinner = document.getElementById('send-all-spinner');
+    const retryBtn = document.getElementById('retry-failed-btn');
+    const retryText = document.getElementById('retry-failed-text');
+    const retrySpinner = document.getElementById('retry-failed-spinner');
+
+    setButtonsDisabled(false);
+    if (sendText) sendText.textContent = 'Send to All';
+    if (sendSpinner) sendSpinner.classList.add('hidden');
+    if (retryText) retryText.textContent = 'Retry Failed';
+    if (retrySpinner) retrySpinner.classList.add('hidden');
     currentJobId = null;
 }
 </script>

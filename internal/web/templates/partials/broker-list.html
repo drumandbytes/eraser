@@ -21,7 +21,11 @@
                 <td>
                     <div class="flex flex-col">
                         <span class="font-medium text-primary">{{.Name}}</span>
+                        {{if .Email}}
                         <span class="text-sm text-muted">{{.Email}}</span>
+                        {{else}}
+                        <span class="text-sm text-amber-600" title="Needs manual follow-up - no email on file">No email on file</span>
+                        {{end}}
                     </div>
                 </td>
                 <td>
@@ -58,6 +62,7 @@
                 </td>
                 <td class="text-right">
                     <div class="flex items-center justify-end gap-2">
+                        {{if .Email}}
                         <button
                             class="btn btn-ghost text-sm py-1 px-3"
                             hx-post="/api/send/{{.ID}}"
@@ -70,6 +75,11 @@
                                 <span class="spinner"></span>
                             </span>
                         </button>
+                        {{else}}
+                        <button class="btn btn-ghost text-sm py-1 px-3" disabled title="No email on file">
+                            Send
+                        </button>
+                        {{end}}
                         {{if .OptOutURL}}
                         <a href="{{.OptOutURL}}" target="_blank" class="btn btn-ghost text-sm py-1 px-3">
                             Opt-out
@@ -105,7 +115,11 @@
         <div class="flex items-start justify-between mb-3">
             <div>
                 <h3 class="font-medium text-primary">{{.Name}}</h3>
+                {{if .Email}}
                 <p class="text-sm text-muted">{{.Email}}</p>
+                {{else}}
+                <p class="text-sm text-amber-600">No email on file</p>
+                {{end}}
             </div>
             <div id="status-mobile-{{.ID}}">
                 {{if eq .Status "sent"}}
@@ -126,6 +140,7 @@
             {{end}}
         </div>
         <div class="flex gap-2">
+            {{if .Email}}
             <button
                 class="btn btn-primary flex-1 py-2"
                 hx-post="/api/send/{{.ID}}"
@@ -134,6 +149,11 @@
             >
                 Send Request
             </button>
+            {{else}}
+            <button class="btn btn-primary flex-1 py-2" disabled title="No email on file">
+                No Email on File
+            </button>
+            {{end}}
             {{if .OptOutURL}}
             <a href="{{.OptOutURL}}" target="_blank" class="btn btn-secondary py-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

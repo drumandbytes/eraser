@@ -423,18 +423,15 @@ func (s *Server) setupRouter() *chi.Mux {
 
 	// API routes (for HTMX)
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/stats", s.handleAPIStats)
 		r.Get("/brokers", s.handleAPIBrokers)
-		r.Get("/history", s.handleAPIHistory)
 		r.Delete("/history/failed", s.handleAPIDeleteFailed)
+		r.Delete("/history", s.handleAPIDeleteAllHistory)
 		r.Post("/send/{brokerID}", s.handleAPISendOne)
 		r.Post("/send-all", s.handleAPISendAll)
 		r.Get("/job/active", s.handleAPIJobActive)
 		r.Get("/job/{jobID}/status", s.handleAPIJobStatus)
 		r.Post("/job/{jobID}/cancel", s.handleAPIJobCancel)
-		r.Get("/pipeline/stats", s.handleAPIPipelineStats)
 		r.Get("/pipeline/responses", s.handleAPIResponses)
-		r.Get("/pipeline/tasks", s.handleAPITasks)
 		r.Post("/inbox/scan", s.handleAPIInboxScan)
 		r.Post("/inbox/rescan", s.handleAPIInboxRescan)
 		r.Post("/inbox/reclassify", s.handleAPIReclassify)
@@ -536,20 +533,22 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 	region := r.URL.Query().Get("region")
 	status := r.URL.Query().Get("status")
+	missingEmail := r.URL.Query().Get("missing_email") == "true"
 
-	brokers := s.getBrokersWithStatus(search, category, region, status)
+	brokers := s.getBrokersWithStatus(search, category, region, status, missingEmail)
 
 	data := map[string]interface{}{
-		"Title":      "Data Brokers",
-		"Brokers":    brokers,
-		"Categories": s.getUniqueCategories(),
-		"Regions":    s.getUniqueRegions(),
-		"Search":     search,
-		"Category":   category,
-		"Region":     region,
-		"Status":     status,
-		"Total":      len(s.brokerDB.Brokers),
-		"Filtered":   len(brokers),
+		"Title":        "Data Brokers",
+		"Brokers":      brokers,
+		"Categories":   s.getUniqueCategories(),
+		"Regions":      s.getUniqueRegions(),
+		"Search":       search,
+		"Category":     category,
+		"Region":       region,
+		"Status":       status,
+		"MissingEmail": missingEmail,
+		"Total":        len(s.brokerDB.Brokers),
+		"Filtered":     len(brokers),
 	}
 	s.renderWithCSRF(w, r, "brokers.html", data)
 }
@@ -634,32 +633,20 @@ func (s *Server) renderSettingsWithMessage(w http.ResponseWriter, r *http.Reques
 
 // API handlers
 
-func (s *Server) handleAPIStats(w http.ResponseWriter, r *http.Request) {
-	stats := s.getStats()
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{"total_brokers":%d,"sent":%d,"failed":%d}`, stats.TotalBrokers, stats.Sent, stats.Failed)
-}
-
 func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 	search := r.URL.Query().Get("search")
 	category := r.URL.Query().Get("category")
 	region := r.URL.Query().Get("region")
 	status := r.URL.Query().Get("status")
+	missingEmail := r.URL.Query().Get("missing_email") == "true"
 
-	brokers := s.getBrokersWithStatus(search, category, region, status)
+	brokers := s.getBrokersWithStatus(search, category, region, status, missingEmail)
 
 	// Returns broker list as HTML fragment for HTMX
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{
 		"Brokers":  brokers,
 		"Filtered": len(brokers),
 		"Total":    len(s.brokerDB.Brokers),
-	})
-}
-
-func (s *Server) handleAPIHistory(w http.ResponseWriter, r *http.Request) {
-	// Returns history as HTML fragment for HTMX
-	s.renderPartial(w, "partials/history-list.html", map[string]interface{}{
-		"History": s.getRecentHistory(50),
 	})
 }
 
@@ -682,6 +669,31 @@ func (s *Server) handleAPIDeleteFailed(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"deleted": deleted,
 		"message": fmt.Sprintf("Deleted %d failed records", deleted),
+	})
+}
+
+// handleAPIDeleteAllHistory backs Settings > Danger Zone > "Clear All
+// History". It only clears send history (removal_requests) - broker
+// database, config, and inbox-classified responses are untouched.
+func (s *Server) handleAPIDeleteAllHistory(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if s.historyStore == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Database not available"})
+		return
+	}
+
+	deleted, err := s.historyStore.DeleteAllHistory()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"deleted": deleted,
+		"message": fmt.Sprintf("Deleted %d history record(s)", deleted),
 	})
 }
 
@@ -708,6 +720,12 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if br.Email == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`<span class="text-amber-600">No email on file - needs manual follow-up (check for an opt-out form/portal)</span>`))
+		return
+	}
+
 	// Create email sender
 	sender, err := email.NewSender(s.config.Email)
 	if err != nil {
@@ -715,8 +733,13 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate email content using template engine
-	rendered, err := s.tmplEngine.Render("generic", s.config.Profile, *br)
+	// Generate email content using template engine. Use the user's
+	// configured template (gdpr/ccpa/generic) - this used to be hardcoded
+	// to "generic", which meant every web-UI send cited generic privacy law
+	// language instead of GDPR Article 17 regardless of what init/settings
+	// configured. config.Load guarantees Options.Template is never empty.
+	tmplName := s.config.Options.Template
+	rendered, err := s.tmplEngine.Render(tmplName, s.config.Profile, *br)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf(`<span class="text-red-600">Template error: %s</span>`, template.HTMLEscapeString(err.Error()))))
 		return
@@ -739,7 +762,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		BrokerID:   br.ID,
 		BrokerName: br.Name,
 		Email:      br.Email,
-		Template:   "generic",
+		Template:   tmplName,
 		SentAt:     time.Now(),
 	}
 
@@ -805,11 +828,18 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		status = "pending"
 	}
 
-	toSend := s.getBrokersWithStatus(search, category, region, status)
+	// Bulk send never targets missing-email brokers - there's nowhere to send.
+	toSend := s.getBrokersWithStatus(search, category, region, status, false)
 
 	if len(toSend) == 0 {
+		noneMsg := "No pending brokers to send to."
+		if status == "failed" {
+			noneMsg = "No failed brokers to retry."
+		} else if status != "" && status != "pending" {
+			noneMsg = fmt.Sprintf("No brokers matching status %q to send to.", status)
+		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "No pending brokers to send to."})
+		json.NewEncoder(w).Encode(map[string]string{"error": noneMsg})
 		return
 	}
 
@@ -902,8 +932,9 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 		// Update current broker
 		job.Update(sent, failed, b.Name)
 
-		// Generate email
-		rendered, err := s.tmplEngine.Render("generic", s.config.Profile, b.Broker)
+		// Generate email using the user's configured template (see the
+		// same fix/comment in handleAPISendOne above)
+		rendered, err := s.tmplEngine.Render(s.config.Options.Template, s.config.Profile, b.Broker)
 		if err != nil {
 			failed++
 			job.Update(sent, failed, b.Name)
@@ -930,7 +961,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 			BrokerID:   b.ID,
 			BrokerName: b.Name,
 			Email:      b.Email,
-			Template:   "generic",
+			Template:   s.config.Options.Template,
 			SentAt:     time.Now(),
 		}
 
@@ -1022,7 +1053,7 @@ type BrokerWithStatus struct {
 }
 
 // getBrokersWithStatus returns brokers with their history status
-func (s *Server) getBrokersWithStatus(search, category, region, statusFilter string) []BrokerWithStatus {
+func (s *Server) getBrokersWithStatus(search, category, region, statusFilter string, missingEmail bool) []BrokerWithStatus {
 	// Get all broker statuses from history
 	var brokerStatuses map[string]history.BrokerStatus
 	if s.historyStore != nil {
@@ -1055,6 +1086,12 @@ func (s *Server) getBrokersWithStatus(search, category, region, statusFilter str
 
 		// Region filter
 		if region != "" && strings.ToLower(b.Region) != region {
+			continue
+		}
+
+		// Missing-email filter - brokers with no contact address on file,
+		// mirrors the CLI's `list-brokers --missing-email`
+		if missingEmail && b.Email != "" {
 			continue
 		}
 
@@ -1426,7 +1463,10 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		Profile: session.Profile,
 		Email:   session.Email,
 		Options: config.Options{
-			Template:    "generic",
+			// This fork is customized for GDPR Article 17 use (see
+			// EU-NOTES.md) - default fresh setups to gdpr, not upstream's
+			// US/CCPA-oriented "generic". Matches the CLI's `init` default.
+			Template:    "gdpr",
 			RateLimitMs: 2000,
 		},
 	}
@@ -1873,29 +1913,6 @@ func (s *Server) handleTaskHelper(w http.ResponseWriter, r *http.Request) {
 	s.renderWithCSRF(w, r, "task-helper.html", data)
 }
 
-func (s *Server) handleAPIPipelineStats(w http.ResponseWriter, r *http.Request) {
-	stats := s.getPipelineStats()
-
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{
-		"email_sent": %d,
-		"awaiting_response": %d,
-		"form_required": %d,
-		"form_filled": %d,
-		"awaiting_captcha": %d,
-		"captcha_solved": %d,
-		"awaiting_confirmation": %d,
-		"confirmed": %d,
-		"rejected": %d,
-		"failed": %d,
-		"pending_tasks": %d,
-		"needs_review": %d
-	}`,
-		stats.EmailSent, stats.AwaitingResponse, stats.FormRequired, stats.FormFilled,
-		stats.AwaitingCaptcha, stats.CaptchaSolved, stats.AwaitingConfirmation,
-		stats.Confirmed, stats.Rejected, stats.Failed, stats.PendingTasks, stats.NeedsReview)
-}
-
 func (s *Server) handleAPIResponses(w http.ResponseWriter, r *http.Request) {
 	responseType := r.URL.Query().Get("type")
 	needsReview := r.URL.Query().Get("needs_review") == "true"
@@ -1907,25 +1924,6 @@ func (s *Server) handleAPIResponses(w http.ResponseWriter, r *http.Request) {
 
 	s.renderPartial(w, "partials/response-list.html", map[string]interface{}{
 		"Responses": responses,
-	})
-}
-
-func (s *Server) handleAPITasks(w http.ResponseWriter, r *http.Request) {
-	taskType := r.URL.Query().Get("type")
-	status := r.URL.Query().Get("status")
-	if status == "" {
-		status = "pending"
-	}
-
-	var tasks []history.PendingTask
-	if s.historyStore != nil {
-		tasks, _ = s.historyStore.GetPendingTasks(history.TaskType(taskType), status)
-	}
-
-	s.renderPartial(w, "partials/task-list.html", map[string]interface{}{
-		"Tasks":    tasks,
-		"TaskType": taskType,
-		"Status":   status,
 	})
 }
 

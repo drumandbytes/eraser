@@ -275,23 +275,65 @@
                 </div>
             </div>
 
+            <div id="danger-zone-result" class="mb-3"></div>
+
             <div class="space-y-3">
-                <button class="btn btn-danger w-full justify-start">
+                <button id="clear-history-btn" onclick="clearAllHistory()" class="btn btn-danger w-full justify-start">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
                     Clear All History
                 </button>
-                <button class="btn btn-danger w-full justify-start">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    Reset Configuration
-                </button>
+                <!-- "Reset Configuration" was removed here - it rendered as a live danger-zone
+                     button with no handler wired up (clicking it did nothing). Resetting
+                     config.yaml safely needs its own design (does it re-run setup? back up
+                     the old file? what happens to an in-progress send job?) rather than a
+                     silent no-op button, so it's left for a follow-up decision. -->
             </div>
         </div>
     </div>
 </div>
+
+<script>
+async function clearAllHistory() {
+    if (!confirm('Delete ALL send history (sent + failed + pending records)? This cannot be undone. Your broker database and settings are not affected.')) return;
+
+    const btn = document.getElementById('clear-history-btn');
+    const resultArea = document.getElementById('danger-zone-result');
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-spin">⏳</span> Clearing...';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    try {
+        const resp = await fetch('/api/history', {
+            method: 'DELETE',
+            headers: { 'X-CSRF-Token': csrfToken }
+        });
+        const data = await resp.json();
+
+        if (resp.ok) {
+            resultArea.innerHTML = `
+                <div class="bg-green-100 text-green-800 px-4 py-3 rounded">
+                    ${data.message}.
+                </div>
+            `;
+        } else {
+            throw new Error(data.error || 'Failed to clear history');
+        }
+    } catch (err) {
+        resultArea.innerHTML = `
+            <div class="bg-red-100 text-red-800 px-4 py-3 rounded">
+                Error: ${err.message}
+            </div>
+        `;
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+}
+</script>
 {{end}}
 
 {{template "layout" .}}

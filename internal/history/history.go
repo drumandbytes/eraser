@@ -475,6 +475,19 @@ func (s *Store) DeleteByStatus(status Status) (int64, error) {
 	return result.RowsAffected()
 }
 
+// DeleteAllHistory removes every send-history record regardless of status.
+// Used by the web UI's Settings > Danger Zone > "Clear All History" action.
+// This only touches removal_requests (what brokers you've emailed and when)
+// - broker_responses (inbox-classified replies) is a separate table and is
+// untouched; see ClearBrokerResponses for that.
+func (s *Store) DeleteAllHistory() (int64, error) {
+	result, err := s.db.Exec(`DELETE FROM removal_requests`)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete history: %w", err)
+	}
+	return result.RowsAffected()
+}
+
 func DefaultDBPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {

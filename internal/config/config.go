@@ -160,7 +160,10 @@ func Load(path string) (*Config, error) {
 	}
 
 	if cfg.Options.Template == "" {
-		cfg.Options.Template = "generic"
+		// Fork default is gdpr, not upstream's generic - see EU-NOTES.md.
+		// Only fills in a genuinely missing field; an explicit template in
+		// config.yaml (which every real user of this fork will have) wins.
+		cfg.Options.Template = "gdpr"
 	}
 	if cfg.Options.RateLimitMs == 0 {
 		cfg.Options.RateLimitMs = defaultRateLimitMs

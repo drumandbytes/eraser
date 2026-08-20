@@ -123,6 +123,9 @@ go run golang.org/x/vuln/cmd/govulncheck@latest ./...    # known CVEs in reachab
 - `internal/web/server.go`'s `processSendJob` (the web UI's background sender) and `cmd/eraser/main.go`'s `send` command both need to respect `config.Options.DailySendLimit` - they used to disagree (the web UI had its own hardcoded, provider-based limit left over from the SendGrid/Resend era). Fixed, but if you add a third send path, wire it the same way.
 - The web server binds to `127.0.0.1` only (`internal/web/server.go`, `NewServer`/`Start`) - keep it that way. `gorilla/csrf` has an unpatched CSRF-bypass CVE (GO-2025-3884, no fix available upstream as of this writing); loopback-only binding is the mitigation, not the CSRF middleware itself.
 - `internal/web/job.go`'s `JobManager` runs its own `Cleanup` on an hourly ticker (started in `NewJobManager`) to evict completed jobs after `jobRetention` (7 days) - if you see completed-job data missing after a week, that's why, not a bug.
+- Fork default for `Options.Template` is `gdpr`, not upstream's `generic` (see `config.Load`, the CLI `init` prompt, and the web setup wizard's `handleSetupComplete`) - this fork exists for GDPR Article 17 use. An explicit `template:` in `config.yaml` always wins; this only fills a genuinely missing field.
+- CSRF forms must use `{{.CSRFField}}` (emits `name="gorilla.csrf.Token"`, matching `gorilla/csrf`'s default field name - no `csrf.FieldName(...)` override is set). `task-helper.html` used to hand-write `<input name="csrf_token" value="{{.CSRFToken}}">`, which silently 403'd every "Mark Complete"/"Skip" click on the CAPTCHA-task helper page. Fixed - don't hand-roll the hidden input again.
+- `internal/web/templates/partials/*.html` are **not** invokable as named sub-templates from page templates (they lack `{{define "name"}}` wrappers, and the loader in `parseTemplates` parses them via `pageTmpl.Parse(partial)` with no name, so `{{template "partials/x.html" .}}` never resolves). They're only usable as fully standalone templates via `renderPartial` (for HTMX fragment responses). This means e.g. `brokers.html`'s inline `#broker-list` table and `partials/broker-list.html` are hand-duplicated markup, not one shared definition - edit both when touching that table. Proper fix (not yet done): change the loader to `pageTmpl.New(name).Parse(partial)` so partials become real invokable sub-templates.
 
 ## Dead Code / Removed
 
@@ -137,6 +140,8 @@ Removed in the most recent audit (all confirmed zero-caller via `deadcode` + man
 - `inbox.ExtractConfirmationToken`
 - `template.Engine.AvailableTemplates`
 - `web.SessionStore.Count` (no metrics/debug endpoint ever called it)
+- `internal/web/templates/setup.html` (top-level) and `forms.html` - both unreferenced by any handler, superseded by `setup/welcome.html` and `tasks.html` respectively
+- `internal/web/templates/partials/{history-list,task-list}.html` and their handlers `handleAPIHistory` (`GET /api/history`), `handleAPITasks` (`GET /api/pipeline/tasks`), `handleAPIStats` (`GET /api/stats`), `handleAPIPipelineStats` (`GET /api/pipeline/stats`) - none were ever called from any template; dashboard/pipeline stats are rendered server-side directly instead
 
 Also removed: the `github.com/sendgrid/sendgrid-go` and `github.com/resend/resend-go/v2` dependencies (dead - `email.NewSender` has only ever supported `smtp`, and the setup wizard never offered those providers as options) and the `stretchr/testify` indirect dependency (was only pulled in transitively by the packages above). `go.mod`/`go.sum` cleaned via `go mod tidy`.
 

@@ -31,6 +31,7 @@ type EmailData struct {
 	ZipCode        string
 	Country        string
 	Phone          string
+	OtherPhones    string // comma-separated additional phone numbers, empty if none
 	DateOfBirth    string
 
 	// Broker info
@@ -103,6 +104,7 @@ func (e *Engine) Render(templateName string, profile config.Profile, b broker.Br
 		ZipCode:        profile.ZipCode,
 		Country:        profile.Country,
 		Phone:          profile.Phone,
+		OtherPhones:    strings.Join(profile.AdditionalPhones, ", "),
 		DateOfBirth:    profile.DateOfBirth,
 		BrokerName:     b.Name,
 		BrokerEmail:    b.Email,

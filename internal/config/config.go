@@ -83,7 +83,11 @@ type Profile struct {
 	ZipCode           string   `yaml:"zip_code,omitempty"`
 	Country           string   `yaml:"country,omitempty"`
 	Phone             string   `yaml:"phone,omitempty"`
-	DateOfBirth       string   `yaml:"date_of_birth,omitempty"`
+	// AdditionalPhones covers other numbers you've used to sign up for
+	// things (an old number, a work line) that a broker might have on file
+	// instead of your current one.
+	AdditionalPhones []string `yaml:"additional_phones,omitempty"`
+	DateOfBirth      string   `yaml:"date_of_birth,omitempty"`
 }
 
 func (p Profile) FullName() string { return p.FirstName + " " + p.LastName }

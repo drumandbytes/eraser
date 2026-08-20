@@ -430,6 +430,9 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 		select {
 		case <-ctx.Done():
 			close(stop)
+			<-idleDone // wait for the Idle() goroutine to actually exit before
+			// this function returns, so the caller doesn't touch m.client
+			// concurrently with the IMAP connection still being in use
 			return ctx.Err()
 		case update := <-updates:
 			switch u := update.(type) {

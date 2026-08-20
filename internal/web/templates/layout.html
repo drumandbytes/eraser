@@ -12,7 +12,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Self-hosted: this is the Tailwind CDN's runtime JIT compiler (a JS
+         file, despite the historical "tailwind.min.css" name it had before
+         this fork self-hosted it) - not a precompiled stylesheet. It still
+         needs 'unsafe-eval' in the CSP below. Swapping to a real Tailwind
+         CLI build (removing the runtime compiler and unsafe-eval entirely)
+         is a further followup, not done here. -->
+    <script src="/static/js/tailwind-jit.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -24,7 +30,7 @@
             }
         }
     </script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="/static/js/htmx.min.js"></script>
 
     <style>
         /* ============================================

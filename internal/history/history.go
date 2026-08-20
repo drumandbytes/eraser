@@ -126,6 +126,14 @@ func NewStore(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// sql.Open creates the file (if new) using the process umask, which can
+	// be more permissive than the 0700 directory suggests (e.g. 0644 under a
+	// default 022 umask). It holds personal data, so restrict it explicitly.
+	if err := os.Chmod(dbPath, 0600); err != nil && !os.IsNotExist(err) {
+		db.Close()
+		return nil, fmt.Errorf("failed to restrict history database permissions: %w", err)
+	}
+
 	store := &Store{db: db}
 	if err := store.migrate(); err != nil {
 		db.Close()
@@ -139,6 +147,13 @@ func (s *Store) migrate() error {
 	// These must run before the index creation below
 	s.db.Exec(`ALTER TABLE removal_requests ADD COLUMN pipeline_status TEXT DEFAULT 'email_sent'`)
 	s.db.Exec(`ALTER TABLE pending_tasks ADD COLUMN opened_at DATETIME`)
+	// broker_responses.email_body: matches digisamroc/eraser#3 - the column
+	// was referenced by INSERT/SELECT/UPDATE statements below but never
+	// actually in the CREATE TABLE, so `eraser monitor` broke on every
+	// classified reply with "table broker_responses has no column named
+	// email_body" on any database created before this fix. Also added to
+	// the CREATE TABLE itself so a fresh install gets it from the start.
+	s.db.Exec(`ALTER TABLE broker_responses ADD COLUMN email_body TEXT`)
 
 	query := `
 	CREATE TABLE IF NOT EXISTS removal_requests (
@@ -173,6 +188,7 @@ func (s *Store) migrate() error {
 		response_type TEXT NOT NULL,
 		email_from TEXT,
 		email_subject TEXT,
+		email_body TEXT,
 		form_url TEXT,
 		confirm_url TEXT,
 		confidence REAL,

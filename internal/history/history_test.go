@@ -143,3 +143,41 @@ func TestMarkFailedOnlyTouchesMostRecentSentRecord(t *testing.T) {
 		t.Errorf("expected exactly one older 'sent' record to survive and one 'failed', got sent=%d failed=%d", sentCount, failedCount)
 	}
 }
+
+// Regression coverage for digisamroc/eraser#3: broker_responses.email_body
+// was referenced by AddBrokerResponse's INSERT (and UpdateBrokerResponseBody,
+// GetAllBrokerResponses, GetBrokerResponses) but missing from the CREATE
+// TABLE, so `eraser monitor` failed on every classified reply with "table
+// broker_responses has no column named email_body" on any database created
+// before the migrate() fix. This exercises the exact path that broke.
+func TestAddBrokerResponse_EmailBodyColumn(t *testing.T) {
+	s := newTestStore(t)
+
+	resp := &BrokerResponse{
+		BrokerID:     "broker-a",
+		BrokerName:   "Broker A",
+		ResponseType: "pending",
+		EmailFrom:    "privacy@broker-a.example.com",
+		EmailSubject: "Re: Personal Data Removal Request",
+		EmailBody:    "We have received your request and will respond within 30 days.",
+		Confidence:   0.9,
+	}
+	if err := s.AddBrokerResponse(resp); err != nil {
+		t.Fatalf("AddBrokerResponse: %v", err)
+	}
+	if resp.ID == 0 {
+		t.Fatal("AddBrokerResponse did not set an ID")
+	}
+
+	all, err := s.GetAllBrokerResponses()
+	if err != nil {
+		t.Fatalf("GetAllBrokerResponses: %v", err)
+	}
+	if len(all) != 1 || all[0].EmailBody != resp.EmailBody {
+		t.Fatalf("expected the stored email_body to round-trip, got %+v", all)
+	}
+
+	if err := s.UpdateBrokerResponseBody(resp.ID, "updated body"); err != nil {
+		t.Fatalf("UpdateBrokerResponseBody: %v", err)
+	}
+}

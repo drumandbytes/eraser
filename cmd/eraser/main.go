@@ -1042,7 +1042,9 @@ func runMonitor(days int, once bool, watch bool) error {
 				NeedsReview:  classified.NeedsReview,
 				ReceivedAt:   email.ReceivedAt,
 			}
-			store.AddBrokerResponse(brokerResp)
+			if err := store.AddBrokerResponse(brokerResp); err != nil {
+				fmt.Printf("⚠️  Failed to store response: %v\n", err)
+			}
 		})
 
 		if err != nil && err != context.Canceled {

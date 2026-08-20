@@ -80,6 +80,19 @@ func (j *Job) StopWithError(errorType, errorMsg string) {
 	j.CurrentBroker = ""
 }
 
+// Pause marks the job paused (daily send limit reached) with the given
+// day-sent count and message, all under one lock - processSendJob used to
+// set these three fields directly, racing with any concurrent read (e.g.
+// ToJSON on a status-polling request).
+func (j *Job) Pause(daySent int, errorMsg string) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	j.DaySent = daySent
+	j.Status = JobStatusPaused
+	j.Error = errorMsg
+}
+
 // RecordAuthFailure records an auth failure and returns true if job should stop
 func (j *Job) RecordAuthFailure() bool {
 	j.mu.Lock()
@@ -114,6 +127,24 @@ func (j *Job) IsCancelled() bool {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	return j.Status == JobStatusCancelled
+}
+
+// GetStatus returns the job's current status. Status is mutated under j.mu
+// by Update/Complete/Cancel/StopWithError, so reading the field directly
+// (as GetActive and Cleanup used to) is a data race - go through this.
+func (j *Job) GetStatus() JobStatus {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.Status
+}
+
+// finishedBefore reports whether the job is no longer running and finished
+// before the given cutoff - the exact check JobManager.Cleanup needs,
+// taken under j.mu so it can't race with a concurrent Update/Complete.
+func (j *Job) finishedBefore(cutoff time.Time) bool {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.Status != JobStatusRunning && j.CompletedAt.Before(cutoff)
 }
 
 // Context returns the job's context
@@ -213,7 +244,7 @@ func (jm *JobManager) GetActive() *Job {
 	defer jm.mu.RUnlock()
 
 	for _, job := range jm.jobs {
-		if job.Status == JobStatusRunning {
+		if job.GetStatus() == JobStatusRunning {
 			return job
 		}
 	}
@@ -227,7 +258,7 @@ func (jm *JobManager) Cleanup(maxAge time.Duration) {
 
 	cutoff := time.Now().Add(-maxAge)
 	for id, job := range jm.jobs {
-		if job.Status != JobStatusRunning && job.CompletedAt.Before(cutoff) {
+		if job.finishedBefore(cutoff) {
 			delete(jm.jobs, id)
 		}
 	}

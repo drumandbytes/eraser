@@ -457,13 +457,17 @@ func securityHeaders(next http.Handler) http.Handler {
 
 		// Content Security Policy - restrict resource loading
 		// 'unsafe-inline' needed for Tailwind CSS and inline scripts (HTMX attributes)
-		// CDN domains allowed for Tailwind, HTMX, and Google Fonts
+		// 'unsafe-eval' is needed because /static/js/tailwind-jit.js is still the
+		// Tailwind CDN's runtime JIT compiler (self-hosted, but still eval-based) -
+		// see the comment in layout.html. Google Fonts is the one remaining
+		// external origin; Tailwind and HTMX are self-hosted under /static/.
 		csp := "default-src 'self'; " +
-			"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com; " +
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
 			"img-src 'self' data:; " +
 			"font-src 'self' https://fonts.gstatic.com; " +
 			"connect-src 'self'; " +
+			"object-src 'none'; " +
 			"frame-ancestors 'none'; " +
 			"form-action 'self'; " +
 			"base-uri 'self'"
@@ -829,7 +833,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	// Save initial job state
 	jobState := &PersistentJobState{
 		ID:               job.ID,
-		Status:           job.Status,
+		Status:           job.GetStatus(),
 		Sent:             0,
 		Failed:           0,
 		Total:            len(toSend),
@@ -889,9 +893,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 
 		// Check daily limit
 		if sent >= dailyLimit {
-			job.DaySent = sent
-			job.Status = JobStatusPaused
-			job.Error = fmt.Sprintf("Daily limit of %d emails reached. Remaining %d brokers will be sent when you restart tomorrow.", dailyLimit, len(remaining))
+			job.Pause(sent, fmt.Sprintf("Daily limit of %d emails reached. Remaining %d brokers will be sent when you restart tomorrow.", dailyLimit, len(remaining)))
 			s.saveJobProgress(job, sent, failed, remaining)
 			log.Printf("Job paused: daily limit of %d reached, %d remaining", dailyLimit, len(remaining))
 			return
@@ -990,7 +992,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 func (s *Server) saveJobProgress(job *Job, sent, failed int, remaining []string) {
 	state := &PersistentJobState{
 		ID:               job.ID,
-		Status:           job.Status,
+		Status:           job.GetStatus(),
 		Sent:             sent,
 		Failed:           failed,
 		Total:            job.Total,
@@ -2016,7 +2018,13 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if s.historyStore != nil {
-			s.historyStore.AddBrokerResponse(brokerResp)
+			if err := s.historyStore.AddBrokerResponse(brokerResp); err != nil {
+				// Don't let a DB write failure silently vanish while the
+				// in-memory counters below still report success - this is
+				// exactly what caused digisamroc/eraser#17 (Pipeline page
+				// empty despite "Scan Complete!" reporting matches).
+				log.Printf("Warning: failed to store broker response for %s: %v", brokerResp.BrokerID, err)
+			}
 		}
 
 		// Count by type
@@ -2165,10 +2173,14 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 				)
 				if err == nil {
 					updated++
+				} else {
+					log.Printf("Warning: failed to update broker response classification for %s: %v", email.BrokerID, err)
 				}
 				// Also update the body if it was empty
 				if existing.EmailBody == "" && bodyContent != "" {
-					s.historyStore.UpdateBrokerResponseBody(existing.ID, bodyContent)
+					if err := s.historyStore.UpdateBrokerResponseBody(existing.ID, bodyContent); err != nil {
+						log.Printf("Warning: failed to update broker response body for %s: %v", email.BrokerID, err)
+					}
 				}
 			} else {
 				// Insert new response
@@ -2187,6 +2199,8 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 				}
 				if err := s.historyStore.AddBrokerResponse(brokerResp); err == nil {
 					inserted++
+				} else {
+					log.Printf("Warning: failed to store broker response for %s: %v", email.BrokerID, err)
 				}
 			}
 		}

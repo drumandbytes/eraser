@@ -405,7 +405,7 @@ brokers:
       category: marketing
     - id: adadapted
       name: Adadapted Inc.
-      email: billing@adadapted.com
+      email: ""
       website: https://www.adadapted.com/
       opt_out_url: https://www.adadapted.com/legal/do-not-sell
       region: us
@@ -684,7 +684,7 @@ brokers:
       category: marketing
     - id: atlantic-fox-technologies
       name: Atlantic Fox Technologies, Inc.
-      email: privacy@atlanticfox.com
+      email: ""
       website: https://www.atlanticfox.com/
       region: us
       category: marketing
@@ -5125,7 +5125,7 @@ brokers:
       category: marketing
     - id: xactus
       name: Xactus, LLC
-      email: carolyn.casey@xactus.com
+      email: doria.sutton@xactus.com
       website: https://www.xactus.com/
       region: us
       category: marketing

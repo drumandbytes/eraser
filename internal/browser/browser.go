@@ -301,15 +301,17 @@ func (b *Browser) takeScreenshot(ctx context.Context, brokerID, suffix string) (
 		return "", err
 	}
 
-	// Create screenshot directory if needed
-	if err := os.MkdirAll(b.config.ScreenshotDir, 0755); err != nil {
+	// Create screenshot directory if needed. 0700/0600, not 0755/0644 -
+	// screenshots can capture personal data mid-form-fill, so restrict them
+	// to the owner like the history DB and config file already are.
+	if err := os.MkdirAll(b.config.ScreenshotDir, 0700); err != nil {
 		return "", err
 	}
 
 	filename := fmt.Sprintf("%s_%s_%d.png", brokerID, suffix, time.Now().Unix())
 	filepath := filepath.Join(b.config.ScreenshotDir, filename)
 
-	if err := os.WriteFile(filepath, buf, 0644); err != nil {
+	if err := os.WriteFile(filepath, buf, 0600); err != nil {
 		return "", err
 	}
 

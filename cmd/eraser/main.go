@@ -12,7 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/browser"
 	"github.com/eraser-privacy/eraser/internal/config"
@@ -21,6 +20,7 @@ import (
 	"github.com/eraser-privacy/eraser/internal/inbox"
 	"github.com/eraser-privacy/eraser/internal/template"
 	"github.com/eraser-privacy/eraser/internal/web"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -186,7 +186,11 @@ func runInit() error {
 
 	cfg.Profile.FirstName = prompt(reader, "First name: ")
 	cfg.Profile.LastName = prompt(reader, "Last name: ")
+	nameVariants := prompt(reader, "Other spellings of your name brokers might have, e.g. without diacritics - comma separated (optional): ")
+	cfg.Profile.NameVariants = splitAndTrim(nameVariants)
 	cfg.Profile.Email = prompt(reader, "Email address: ")
+	otherEmails := prompt(reader, "Other email addresses you've used over the years - comma separated (optional): ")
+	cfg.Profile.AdditionalEmails = splitAndTrim(otherEmails)
 	cfg.Profile.Address = prompt(reader, "Street address (optional): ")
 	cfg.Profile.City = prompt(reader, "City (optional): ")
 	cfg.Profile.State = prompt(reader, "State/Province (optional): ")
@@ -565,6 +569,26 @@ func prompt(reader *bufio.Reader, message string) string {
 		return ""
 	}
 	return strings.TrimSpace(input)
+}
+
+// splitAndTrim splits a comma-separated string into a trimmed, non-empty slice.
+// Returns nil for blank input.
+func splitAndTrim(s string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			result = append(result, p)
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 func monitorCmd() *cobra.Command {

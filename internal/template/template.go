@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"strings"
 	"text/template"
 	"time"
 
@@ -21,6 +22,8 @@ type EmailData struct {
 	LastName    string
 	FullName    string
 	Email       string
+	OtherEmails string // comma-separated additional emails, empty if none
+	OtherNames  string // comma-separated name variants, empty if none
 	Address     string
 	City        string
 	State       string
@@ -90,6 +93,8 @@ func (e *Engine) Render(templateName string, profile config.Profile, b broker.Br
 		LastName:      profile.LastName,
 		FullName:      profile.FullName(),
 		Email:         profile.Email,
+		OtherEmails:   strings.Join(profile.AdditionalEmails, ", "),
+		OtherNames:    strings.Join(profile.NameVariants, ", "),
 		Address:       profile.Address,
 		City:          profile.City,
 		State:         profile.State,

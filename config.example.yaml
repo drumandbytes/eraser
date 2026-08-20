@@ -7,6 +7,16 @@ profile:
   last_name: Doe
   email: john.doe@example.com
 
+  # Optional: other spellings brokers may have indexed you under -
+  # e.g. a diacritic-free version of your name, a maiden name, a nickname
+  # name_variants:
+  #   - John Doe
+
+  # Optional: other email addresses you've used over the years - brokers
+  # often indexed your record under an old one
+  # additional_emails:
+  #   - old.address@example.com
+
   # Optional: Additional info helps brokers locate your records
   address: "123 Main Street"
   city: "San Francisco"
@@ -35,7 +45,8 @@ email:
 
 options:
   # Template to use: "gdpr", "ccpa", or "generic"
-  template: generic
+  # Set to gdpr by default here since this copy is configured for an EU resident.
+  template: gdpr
 
   # Delay between emails in milliseconds (avoid spam filters)
   rate_limit_ms: 2000

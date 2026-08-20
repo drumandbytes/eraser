@@ -4,7 +4,13 @@ I am a California resident writing to exercise my rights under the California Co
 
 PERSONAL IDENTIFICATION:
 - Full Name: {{.FullName}}
+{{- if .OtherNames}}
+- Also Known As: {{.OtherNames}}
+{{- end}}
 - Email Address: {{.Email}}
+{{- if .OtherEmails}}
+- Other Email Addresses Used: {{.OtherEmails}}
+{{- end}}
 {{- if .Address}}
 - Address: {{.Address}}
 {{- end}}

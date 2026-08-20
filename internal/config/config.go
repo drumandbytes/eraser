@@ -55,16 +55,25 @@ type Pipeline struct {
 }
 
 type Profile struct {
-	FirstName   string `yaml:"first_name"`
-	LastName    string `yaml:"last_name"`
-	Email       string `yaml:"email"`
-	Address     string `yaml:"address,omitempty"`
-	City        string `yaml:"city,omitempty"`
-	State       string `yaml:"state,omitempty"`
-	ZipCode     string `yaml:"zip_code,omitempty"`
-	Country     string `yaml:"country,omitempty"`
-	Phone       string `yaml:"phone,omitempty"`
-	DateOfBirth string `yaml:"date_of_birth,omitempty"`
+	FirstName string `yaml:"first_name"`
+	LastName  string `yaml:"last_name"`
+	Email     string `yaml:"email"`
+	// AdditionalEmails are other addresses you've used over the years (old
+	// personal accounts, work emails, etc). Brokers often indexed your record
+	// under one of these rather than your current address, so listing them
+	// all in the removal request helps them actually locate and delete it.
+	AdditionalEmails []string `yaml:"additional_emails,omitempty"`
+	// NameVariants covers other spellings brokers may have indexed you under -
+	// e.g. a diacritic-free version of your name ("Maris" for "Māris"), a
+	// maiden name, or a nickname you've used to sign up for things.
+	NameVariants []string `yaml:"name_variants,omitempty"`
+	Address      string   `yaml:"address,omitempty"`
+	City         string   `yaml:"city,omitempty"`
+	State        string   `yaml:"state,omitempty"`
+	ZipCode      string   `yaml:"zip_code,omitempty"`
+	Country      string   `yaml:"country,omitempty"`
+	Phone        string   `yaml:"phone,omitempty"`
+	DateOfBirth  string   `yaml:"date_of_birth,omitempty"`
 }
 
 func (p Profile) FullName() string { return p.FirstName + " " + p.LastName }

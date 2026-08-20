@@ -5119,3 +5119,51 @@ brokers:
       opt_out_url: https://www.zs.com/data-request
       region: us
       category: marketing
+    - id: 192-com
+      name: 192.com
+      email: feedback@192.com
+      website: https://www.192.com
+      opt_out_url: https://www.192.com/misc/privacy-policy/
+      region: eu
+      category: financial-b2b
+      notes: "UK people/company data. GDPR erasure request."
+    - id: creditreform-de
+      name: Creditreform
+      email: Datenschutz@verband.creditreform.de
+      website: https://www.creditreform.de
+      opt_out_url: https://www.creditreform.de/datenschutz
+      region: eu
+      category: financial-b2b
+      notes: "German credit reporting agency. GDPR erasure request."
+    - id: regis24
+      name: Regis24
+      email: datenschutz@regis24.de
+      website: https://www.regis24.de
+      opt_out_url: https://www.regis24.de/datenschutz
+      region: eu
+      category: financial-b2b
+      notes: "German credit reporting agency. GDPR erasure request."
+    - id: seawave-media
+      name: Seawave Media
+      email: privacy@seawavemedia.com
+      website: ""
+      opt_out_url: ""
+      region: eu
+      category: financial-b2b
+      notes: "UK B2B data provider. GDPR erasure request."
+    - id: datajoy-eu
+      name: Datajoy
+      email: privacy@datajoy.eu
+      website: ""
+      opt_out_url: ""
+      region: eu
+      category: financial-b2b
+      notes: "Belgium B2B data provider. GDPR erasure request."
+    - id: athumi
+      name: Athumi
+      email: privacy@athumi.eu
+      website: https://athumi.eu/en
+      opt_out_url: https://athumi.eu/en
+      region: eu
+      category: data-intermediary
+      notes: "Belgian data intermediary (Data Governance Act registered). GDPR erasure request."

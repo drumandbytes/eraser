@@ -53,10 +53,25 @@ type InboxConfig struct {
 
 // Pipeline holds settings for the automation pipeline
 type Pipeline struct {
-	AutoConfirm       bool `yaml:"auto_confirm"`        // Auto-click confirmation links
-	AutoFillForms     bool `yaml:"auto_fill_forms"`     // Enable browser automation for forms
-	BrowserHeadless   bool `yaml:"browser_headless"`    // Run browser in headless mode
-	BrowserTimeoutSec int  `yaml:"browser_timeout_sec"` // Browser operation timeout
+	AutoConfirm   bool `yaml:"auto_confirm"`    // Auto-click confirmation links
+	AutoFillForms bool `yaml:"auto_fill_forms"` // Enable browser automation for forms
+	// BrowserHeadless defaults to true (headless) when unset. A plain bool
+	// can't tell "explicitly set to false" apart from "never set" - both
+	// unmarshal as the zero value - so this used to get silently forced
+	// back to true on every load, discarding a `browser_headless: false`
+	// someone set to watch the browser solve a CAPTCHA. A pointer fixes
+	// that; use Headless() to read it with the default applied.
+	BrowserHeadless   *bool `yaml:"browser_headless,omitempty"`
+	BrowserTimeoutSec int   `yaml:"browser_timeout_sec"` // Browser operation timeout
+}
+
+// Headless returns the effective headless setting, defaulting to true when
+// BrowserHeadless was never set in the config.
+func (p Pipeline) Headless() bool {
+	if p.BrowserHeadless == nil {
+		return true
+	}
+	return *p.BrowserHeadless
 }
 
 type Profile struct {
@@ -174,7 +189,9 @@ func Load(path string) (*Config, error) {
 	if cfg.Pipeline.BrowserTimeoutSec == 0 {
 		cfg.Pipeline.BrowserTimeoutSec = 30
 	}
-	cfg.Pipeline.BrowserHeadless = true // Default to headless
+	// BrowserHeadless is intentionally left as-is here (nil if unset) -
+	// see Pipeline.Headless(), which applies the true default without
+	// clobbering an explicit false.
 
 	return &cfg, nil
 }

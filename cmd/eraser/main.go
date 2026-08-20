@@ -1133,13 +1133,14 @@ Examples:
   # Fill form and wait for you to solve CAPTCHA, then auto-submit
   eraser fill --url "https://example.com/optout" --headless=false --wait --submit`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runFill(brokerID, formURL, headless, autoSubmit, screenshotDir, pending, waitForCaptcha)
+			headlessFlagSet := cmd.Flags().Changed("headless")
+			return runFill(brokerID, formURL, headless, headlessFlagSet, autoSubmit, screenshotDir, pending, waitForCaptcha)
 		},
 	}
 
 	cmd.Flags().StringVar(&brokerID, "broker", "", "Broker ID to fill form for (uses URL from pipeline)")
 	cmd.Flags().StringVar(&formURL, "url", "", "Direct URL to the opt-out form")
-	cmd.Flags().BoolVar(&headless, "headless", true, "Run browser in headless mode")
+	cmd.Flags().BoolVar(&headless, "headless", true, "Run browser in headless mode (default: your config's pipeline.browser_headless, or true if unset)")
 	cmd.Flags().BoolVar(&autoSubmit, "submit", false, "Automatically submit the form after filling")
 	cmd.Flags().StringVar(&screenshotDir, "screenshots", "", "Directory to save screenshots (default: ~/.eraser/screenshots)")
 	cmd.Flags().BoolVar(&pending, "pending", false, "Fill all pending forms from the pipeline")
@@ -1148,11 +1149,17 @@ Examples:
 	return cmd
 }
 
-func runFill(brokerID, formURL string, headless, autoSubmit bool, screenshotDir string, pending bool, waitForCaptcha bool) error {
+func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit bool, screenshotDir string, pending bool, waitForCaptcha bool) error {
 	// Load config for profile data
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	// --headless wins if you passed it explicitly; otherwise fall back to
+	// the config's pipeline.browser_headless (true if that's unset too).
+	if !headlessFlagSet {
+		headless = cfg.Pipeline.Headless()
 	}
 
 	// Set default screenshot directory

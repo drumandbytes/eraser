@@ -11,6 +11,11 @@ import (
 
 const defaultRateLimitMs = 2000
 
+// defaultDailySendLimit stays safely under Gmail's ~500/day cap for a
+// regular (non-Workspace) account, leaving headroom for other mail you send
+// that same day.
+const defaultDailySendLimit = 450
+
 func checkFilePermissions(path string) error {
 	if runtime.GOOS == "windows" {
 		return nil
@@ -95,9 +100,14 @@ type SMTPConfig struct {
 }
 
 type Options struct {
-	Template        string   `yaml:"template"`
-	DryRun          bool     `yaml:"dry_run"`
-	RateLimitMs     int      `yaml:"rate_limit_ms"`
+	Template    string `yaml:"template"`
+	DryRun      bool   `yaml:"dry_run"`
+	RateLimitMs int    `yaml:"rate_limit_ms"`
+	// DailySendLimit caps how many emails `send` will dispatch per rolling
+	// 24h window, so a large broker list can't blow past your provider's
+	// daily sending cap (Gmail's is ~500/day) or read as bulk-spam behavior.
+	// 0 uses the default (450). Overridden per-run with --ignore-daily-limit.
+	DailySendLimit  int      `yaml:"daily_send_limit,omitempty"`
 	Regions         []string `yaml:"regions"`
 	ExcludedBrokers []string `yaml:"excluded_brokers,omitempty"`
 }
@@ -130,6 +140,9 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Options.RateLimitMs == 0 {
 		cfg.Options.RateLimitMs = defaultRateLimitMs
+	}
+	if cfg.Options.DailySendLimit == 0 {
+		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
 	// Set inbox defaults

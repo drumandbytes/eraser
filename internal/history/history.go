@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -303,6 +304,82 @@ func (s *Store) GetMonthlyStats() (sent, failed int, err error) {
 }
 
 func (s *Store) Close() error { return s.db.Close() }
+
+// CountSentSince returns how many successful sends have happened since the
+// given time - used to enforce a rolling daily send cap (e.g. staying under
+// a provider's per-day sending limit).
+func (s *Store) CountSentSince(since time.Time) (int, error) {
+	var count int
+	err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM removal_requests WHERE status = ? AND sent_at >= ?`,
+		string(StatusSent), since,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count recent sends: %w", err)
+	}
+	return count, nil
+}
+
+// parseSQLiteTime parses a DATETIME value read back from this driver via an
+// aggregate function (e.g. MAX()), which loses its native time.Time scan
+// type and comes back as text. The modernc.org/sqlite driver serializes
+// time.Time using Go's default String() format, which can include a
+// monotonic-clock reading suffix (" m=...") that time.Parse rejects, so
+// that suffix is stripped first. Falls back to a couple of other formats
+// this codebase has stored timestamps in, for resilience across versions.
+func parseSQLiteTime(s string) (time.Time, error) {
+	if i := strings.Index(s, " m="); i != -1 {
+		s = s[:i]
+	}
+	formats := []string{
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05.999999999-07:00",
+		"2006-01-02 15:04:05",
+	}
+	var lastErr error
+	for _, layout := range formats {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, nil
+		} else {
+			lastErr = err
+		}
+	}
+	return time.Time{}, lastErr
+}
+
+// LastSuccessfulSendTimes returns, for every broker with at least one
+// successful send, the timestamp of its most recent one - in a single
+// query, so callers filtering a large broker list against a resend
+// cooldown don't need one query per broker.
+func (s *Store) LastSuccessfulSendTimes() (map[string]time.Time, error) {
+	rows, err := s.db.Query(
+		`SELECT broker_id, MAX(sent_at) FROM removal_requests WHERE status = ? GROUP BY broker_id`,
+		string(StatusSent),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query last send times: %w", err)
+	}
+	defer rows.Close()
+
+	times := make(map[string]time.Time)
+	for rows.Next() {
+		var id string
+		var sentAtStr sql.NullString
+		if err := rows.Scan(&id, &sentAtStr); err != nil {
+			return nil, fmt.Errorf("failed to scan last send time: %w", err)
+		}
+		if !sentAtStr.Valid {
+			continue
+		}
+		t, err := parseSQLiteTime(sentAtStr.String)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse last send time %q for broker %q: %w", sentAtStr.String, id, err)
+		}
+		times[id] = t
+	}
+	return times, rows.Err()
+}
 
 type BrokerStatus struct {
 	BrokerID  string

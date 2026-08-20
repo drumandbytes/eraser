@@ -51,6 +51,14 @@ options:
   # Delay between emails in milliseconds (avoid spam filters)
   rate_limit_ms: 2000
 
+  # Max emails `send` will dispatch per rolling 24h window, to stay under
+  # your provider's daily sending cap. Gmail's is ~500/day for a regular
+  # account - default here (450) leaves headroom. Brokers already emailed
+  # in the last 25 days are skipped automatically, so re-running `send` on
+  # a large broker list resumes where it left off without double-emailing.
+  # Override per-run with --ignore-daily-limit or --resend.
+  daily_send_limit: 450
+
   # Only send to brokers in these regions (optional)
   # regions:
   #   - us

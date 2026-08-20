@@ -24,10 +24,19 @@ import (
 )
 
 var (
-	cfgFile    string
-	brokerFile string
-	dryRun     bool
+	cfgFile          string
+	brokerFile       string
+	dryRun           bool
+	ignoreDailyLimit bool
+	resend           bool
 )
+
+// resendCooldown is how long after a successful send a broker is skipped by
+// default on subsequent `send` runs - long enough that resuming an
+// in-progress backlog (spread across the daily cap) doesn't re-email
+// brokers from yesterday, short enough that the monthly re-run still hits
+// everyone again once brokers have had time to re-list you.
+const resendCooldown = 25 * 24 * time.Hour
 
 func resolveBrokerPath() string {
 	if brokerFile != "" {
@@ -96,13 +105,22 @@ func sendCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send",
 		Short: "Send removal requests to data brokers",
-		Long:  "Send data removal requests to all configured data brokers.",
+		Long: `Send data removal requests to all configured data brokers.
+
+To avoid tripping your email provider's daily sending limit (or looking like
+bulk spam to it), each run only sends up to options.daily_send_limit emails
+(default 450) and skips brokers it already emailed successfully in the last
+25 days. Run it again - the same day or tomorrow - to keep working through
+a large broker list; already-sent brokers are automatically skipped, so it's
+safe to just re-run 'eraser send' until it reports nothing left to do.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend()
 		},
 	}
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
+	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
+	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
 
 	return cmd
 }
@@ -270,6 +288,65 @@ func runSend() error {
 		return nil
 	}
 
+	// Initialize history store early - needed for both the resend-cooldown
+	// skip and the daily send cap below.
+	store, err := history.NewStore(history.DefaultDBPath())
+	if err != nil {
+		return fmt.Errorf("failed to initialize history: %w", err)
+	}
+	defer store.Close()
+
+	// Skip brokers already successfully emailed within the cooldown window,
+	// unless --resend was passed. This is what makes it safe to just re-run
+	// `eraser send` to resume a large backlog without double-emailing
+	// brokers from an earlier run this same campaign.
+	if !resend && !cfg.Options.DryRun {
+		lastSent, err := store.LastSuccessfulSendTimes()
+		if err != nil {
+			return fmt.Errorf("failed to check send history: %w", err)
+		}
+
+		filtered := brokers[:0:0]
+		skipped := 0
+		for _, b := range brokers {
+			if sentAt, ok := lastSent[b.ID]; ok && time.Since(sentAt) < resendCooldown {
+				skipped++
+				continue
+			}
+			filtered = append(filtered, b)
+		}
+		if skipped > 0 {
+			fmt.Printf("⏭️  Skipping %d broker(s) already emailed in the last %d days (use --resend to override)\n", skipped, int(resendCooldown.Hours()/24))
+		}
+		brokers = filtered
+	}
+
+	if len(brokers) == 0 {
+		fmt.Println("Nothing to send - every broker has been emailed recently. Run with --resend to force, or check back after the cooldown window.")
+		return nil
+	}
+
+	// Enforce the rolling daily send cap so a large broker list can't blow
+	// past the provider's per-day sending limit or read as bulk-spam
+	// behavior. Skipped entirely for --dry-run and --ignore-daily-limit.
+	if !cfg.Options.DryRun && !ignoreDailyLimit {
+		sentLast24h, err := store.CountSentSince(time.Now().Add(-24 * time.Hour))
+		if err != nil {
+			return fmt.Errorf("failed to check daily send count: %w", err)
+		}
+		budget := cfg.Options.DailySendLimit - sentLast24h
+		if budget <= 0 {
+			fmt.Printf("📅 Daily send limit reached (%d/%d sent in the last 24h). Run again later, or use --ignore-daily-limit to override.\n",
+				sentLast24h, cfg.Options.DailySendLimit)
+			return nil
+		}
+		if budget < len(brokers) {
+			fmt.Printf("📅 Daily send limit: sending %d of %d remaining brokers (%d already sent in the last 24h, cap is %d). Re-run later or tomorrow for the rest.\n",
+				budget, len(brokers), sentLast24h, cfg.Options.DailySendLimit)
+			brokers = brokers[:budget]
+		}
+	}
+
 	// Initialize template engine
 	tmplEngine, err := template.NewEngine()
 	if err != nil {
@@ -284,13 +361,6 @@ func runSend() error {
 			return fmt.Errorf("failed to initialize email sender: %w", err)
 		}
 	}
-
-	// Initialize history store
-	store, err := history.NewStore(history.DefaultDBPath())
-	if err != nil {
-		return fmt.Errorf("failed to initialize history: %w", err)
-	}
-	defer store.Close()
 
 	// Process brokers
 	if cfg.Options.DryRun {

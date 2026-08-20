@@ -121,10 +121,11 @@ brokers:
       category: background-check
     - id: publicrecords360
       name: PublicRecords360
-      email: privacy@publicrecords360.com
+      email: custserv@publicrecords360.com
       website: https://www.publicrecords360.com
       region: us
       category: people-search
+      notes: privacy@publicrecords360.com's auto-reply redirected requests to custserv@publicrecords360.com; phone (877) 327-2488 also given as an alternative (reply received 2026-08-20).
     - id: searchpeoplefree
       name: SearchPeopleFree
       email: privacy@searchpeoplefree.com
@@ -181,11 +182,12 @@ brokers:
       category: marketing
     - id: nielsen
       name: Nielsen
-      email: privacy.department@nielsen.com
+      email: ""
       website: https://www.nielsen.com
-      opt_out_url: https://www.nielsen.com/us/en/legal/privacy-statement/
+      opt_out_url: https://privacyportal-de.onetrust.com/webform/70b0083d-d519-4ad2-84ca-96b7c5f8e1a9/9810a8bc-e54d-4d70-bac0-5e4d781ef5b9
       region: global
       category: marketing
+      notes: privacy.department@nielsen.com's auto-reply pointed GDPR/CCPA rights requests to this OneTrust webform, among several other product-specific opt-out links (reply received 2026-08-20).
     - id: liveramp
       name: LiveRamp
       email: privacy@liveramp.com
@@ -202,11 +204,12 @@ brokers:
       category: marketing
     - id: lotame
       name: Lotame
-      email: privacy@lotame.com
+      email: ""
       website: https://www.lotame.com
-      opt_out_url: https://www.lotame.com/about-lotame/privacy/opt-out/
+      opt_out_url: https://legal.epsilon.com/dsr
       region: global
       category: marketing
+      notes: Lotame Solutions was merged into Epsilon Data Management as of 2025-10-01 and no longer exists separately - all requests now go through Epsilon's portal above, or +1-866-267-3861 (reply received 2026-08-20).
     - id: checkr
       name: Checkr
       email: hello@checkr.com
@@ -447,11 +450,12 @@ brokers:
       category: marketing
     - id: advisortarget
       name: Advisortarget, LLC
-      email: privacy@broadridge.com
+      email: ""
       website: https://www.finsum.com/
-      opt_out_url: https://www.finsum.com/index.php/what-we-do/your-privacy-choices
+      opt_out_url: https://app.smartsheet.com/b/form/48a44f05a4644a1f824601e77ad1719d
       region: us
       category: marketing
+      notes: Privacy@broadridge.com replied that Broadridge mostly processes data on behalf of clients (contact your bank/broker for those records) but AdvisorTarget - the subsidiary this entry is about - has its own opt-out via the form above (reply received 2026-08-20).
     - id: affinity-answers
       name: AFFINITY ANSWERS CORPORATION
       email: dataprivacy@affinityanswers.com
@@ -461,11 +465,12 @@ brokers:
       category: marketing
     - id: affinity-solutions
       name: Affinity Solutions Inc.
-      email: privacy@affinitysolutions.com
+      email: ""
       website: https://www.affinity.solutions/
       opt_out_url: https://affinitysolutions-privacy.my.onetrust.com/webform/a564cfa1-53bf-4c10-bf95-cd907432d7e8/7e4e6bf3-6562-454e-8c73-6a7bd1f4b336
       region: us
       category: marketing
+      notes: privacy@affinitysolutions.com replied that privacy requests are not accepted via email for security reasons - web form only (reply received 2026-08-20).
     - id: agr-marketing-solutions
       name: AGR Marketing Solutions LLC
       email: services@agrmarketingsolutions.com
@@ -490,16 +495,18 @@ brokers:
       name: ALC LLC
       email: privacy.officer@belardiwong.com
       website: https://www.belardiwong.com/
-      opt_out_url: https://privacyportal.onetrust.com/webform/3d2d5e0c-bd98-46b8-906c-ede68a6f6a80/400f54ed-fcbb-4749-ab5b-32f491c72390
+      opt_out_url: https://privacyportal.onetrust.com/webform/3d2d5e0c-bd98-46b8-906c-ede68a6f6a80/dd119353-8970-4dbf-ac1d-b6406173c7bb
       region: us
       category: marketing
+      notes: Privacy.Officer@belardiwong.com auto-replied that the inbox isn't monitored regularly and gave three OneTrust webforms (opt-out / deletion / info request) - opt_out_url above is the deletion-specific one (reply received 2026-08-20); email left in place in case it's eventually read.
     - id: alikeaudience
       name: Alikeaudience, Inc.
-      email: legal@alikeaudience.com
+      email: privacy@alikeaudience.com
       website: https://www.alikeaudience.com/
       opt_out_url: https://privacy-optout.alikeaudience.com/
       region: us
       category: marketing
+      notes: legal@alikeaudience.com replied that address is no longer in use and gave privacy@alikeaudience.com as the current one (reply received 2026-08-20).
     - id: all-global-resources
       name: All Global Resources, LLC
       email: privacy@agrgroupinc.com
@@ -530,11 +537,12 @@ brokers:
       category: marketing
     - id: altair-data-resources
       name: Altair Data Resources, Inc.
-      email: privacy@altairci.com
+      email: privacy@altairdata.com
       website: https://www.altairdata.com/
       opt_out_url: https://www.altairdata.com/altair-consumer-info/
       region: us
       category: marketing
+      notes: The email on file (privacy@altairci.com) is the wrong domain - altairdata.com is Altair's actual domain (matches their website) and privacy@altairdata.com is where their real auto-reply came from. They also mentioned updating their opt-out automation; a manual-request portal is available at https://datacloudhome.atlassian.net/servicedesk/customer/portal/12 if this address doesn't get a response (reply received 2026-08-20).
     - id: altisource-holdings
       name: Altisource Holdings, LLC
       email: privacy@altisource.com
@@ -565,11 +573,12 @@ brokers:
       notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: andrews-wharton
       name: Andrews Wharton, Inc.
-      email: privacy@andrewswharton.com
+      email: ""
       website: https://www.andrewswharton.com/
-      opt_out_url: https://www.andrewswharton.com/your-privacy-choices
+      opt_out_url: https://www.stirista.com/opt-out-preferences/
       region: us
       category: marketing
+      notes: Andrews Wharton is now a Stirista company - privacy@andrewswharton.com replied that DSARs are now handled through Stirista's opt-out page above (reply received 2026-08-20).
     - id: anexinet
       name: Anexinet Corp.
       email: dpo@verinext.com
@@ -594,18 +603,20 @@ brokers:
       category: marketing
     - id: apihub
       name: Apihub, Inc.
-      email: privacy@clearbit.com
+      email: ""
       website: https://www.clearbit.com/
-      opt_out_url: https://www.clearbit.com/ccpa-opt-out
+      opt_out_url: https://preferences.hubspot.com/
       region: us
       category: marketing
+      notes: Clearbit (Apihub) is now part of HubSpot - privacy@clearbit.com redirected DSRs to HubSpot's preference center above (marketing opt-outs at hubspot.com/hubspot-privacy-preferences) (reply received 2026-08-20).
     - id: apollo-interactive
       name: APOLLO INTERACTIVE LLC
-      email: requests@apollointeractive.com
+      email: ""
       website: https://www.apollointeractive.com/
       opt_out_url: https://www.apollointeractive.com/data-rights.php
       region: us
       category: marketing
+      notes: Auto-reply requires their Data Request Form; legal@apollointeractive.com if the form can't be used (reply received 2026-08-20).
     - id: appscience
       name: Appscience
       email: privacy@appsci.io
@@ -913,10 +924,12 @@ brokers:
       category: marketing
     - id: buildertrend-solutions
       name: Buildertrend Solutions, Inc.
-      email: privacy@buildertrend.com
+      email: ""
       website: https://www.buildertrend.com/
       region: us
       category: marketing
+      opt_out_url: https://buildertrend.com/privacy-notice/
+      notes: privacy@buildertrend.com replied that our request wasn't submitted through their designated method - see Section X of this privacy notice for the actual form (reply received 2026-08-20).
     - id: businesscom
       name: Business.Com
       email: customercare@business.com
@@ -954,17 +967,19 @@ brokers:
       category: marketing
     - id: captify-technologies
       name: Captify Technologies
-      email: lorraine.pinter@captify.co.uk
+      email: ""
       website: https://www.captifytechnologies.com/
-      opt_out_url: https://www.captifytechnologies.com/data-subject-rights-request/
+      opt_out_url: https://verve.com/data-subject-request-form/
       region: us
       category: marketing
+      notes: lorraine.pinter@captify.co.uk (DPO) replied that she's left Captify - Captify was acquired by Verve Group, whose DSR form is above (reply received 2026-08-20).
     - id: carco-group
       name: CARCO Group, Inc.
-      email: compliance@cisive.com
+      email: Mkendrick@cisive.com
       website: https://www.cisive.com/
       region: us
       category: marketing
+      notes: The original mailbox at cisive.com auto-replied that its employee left the company and pointed to Mkendrick@cisive.com (Corporate Compliance) as the current contact - Tjderrington@cisive.com (VP & General Counsel) is the legal-matters alternative if this one doesn't work (reply received 2026-08-20).
     - id: cardlytics
       name: CARDLYTICS Inc
       email: legalnotices@cardlytics.com
@@ -988,11 +1003,12 @@ brokers:
       category: marketing
     - id: carry-technologies
       name: Carry Technologies, Inc
-      email: legal@hightouch.com
+      email: ""
       website: https://www.hightouch.com/
-      opt_out_url: https://www.hightouch.com/privacy-choices
+      opt_out_url: https://preferences.hightouch.com
       region: us
       category: marketing
+      notes: legal@hightouch.com's auto-reply requires identity verification through this portal (reply received 2026-08-20).
     - id: catalina-marketing
       name: Catalina Marketing Corporation
       email: privacyteam@catalina.com
@@ -1064,11 +1080,12 @@ brokers:
       category: marketing
     - id: civis-analytics
       name: Civis Analytics, Inc
-      email: dataprotection@civisanalytics.com
+      email: ""
       website: https://www.civisanalytics.com/
-      opt_out_url: https://www.civisanalytics.com/privacy-policy/#ccpa
+      opt_out_url: https://www.civisanalytics.com/privacy-policy/supplemental-privacy-notice/
       region: us
       category: marketing
+      notes: dataprotection@civisanalytics.com replied that they cannot process requests until this form is completed (reply received 2026-08-20).
     - id: civitech
       name: Civitech
       email: jake.london@civitech.io
@@ -1140,11 +1157,12 @@ brokers:
       category: marketing
     - id: commercial-real-estate-exchange
       name: COMMERCIAL REAL ESTATE EXCHANGE Inc
-      email: privacy@crexi.com
+      email: ""
       website: https://www.crexi.com/
       opt_out_url: https://crexi.bigidprivacy.cloud/consumer/#/o2TCsG9LJ7
       region: us
       category: marketing
+      notes: privacy@crexi.com auto-replied that this inbox isn't monitored and DSARs require the portal (opt_out_url already on file matches) (reply received 2026-08-20).
     - id: complementics
       name: Complementics
       email: hello@complementics.com
@@ -1247,10 +1265,12 @@ brokers:
       category: marketing
     - id: costar-group
       name: Costar Group
-      email: globalprivacyinbox@costar.com
+      email: ""
       website: https://www.costar.com/
       region: us
       category: marketing
+      opt_out_url: https://privacy.costar.com/DSAR-submission
+      notes: globalprivacyinbox@costar.com auto-replied that the mailbox is not monitored for privacy requests - online form only (reply received 2026-08-20).
     - id: crawlbee
       name: Crawlbee Corp
       email: ""
@@ -1274,11 +1294,12 @@ brokers:
       category: marketing
     - id: cross-pixel-media
       name: Cross Pixel Media, Inc.
-      email: apearlstein@crosspixel.net
+      email: stephanie.mccabe@knowertech.ca
       website: https://www.crosspixel.net/
       opt_out_url: https://privacy.crsspxl.com/optout
       region: us
       category: marketing
+      notes: apearlstein@crosspixel.net replied that Alan has left Cross Pixel Media; forwarded us to Stephanie McCabe, President of Knower Tech (successor company) (reply received 2026-08-20).
     - id: crosswalk-technologies
       name: Crosswalk Technologies Inc
       email: privacy@crosswalknyc.com
@@ -1412,11 +1433,12 @@ brokers:
       category: marketing
     - id: datonics
       name: Datonics, LLC
-      email: privacy@datonics.com
+      email: ""
       website: https://www.datonics.com/
-      opt_out_url: https://www.datonics.com/do-not-sell-my-info#page
+      opt_out_url: https://www.datonics.com/privacy/privacy-choices
       region: us
       category: marketing
+      notes: privacy@datonics.com's auto-reply requires deletion/opt-out requests to go through this Privacy Choices page specifically, not the do-not-sell page already on file (reply received 2026-08-20).
     - id: david-rickenbacher
       name: David Rickenbacher
       email: sales@datamasters.org
@@ -1453,11 +1475,12 @@ brokers:
       category: marketing
     - id: deep-root-analytics
       name: Deep Root Analytics, LLC
-      email: info@deeprootanalytics.com
+      email: ""
       website: https://www.deeprootanalytics.com/
       opt_out_url: https://privacy.deeprootanalytics.com/
       region: us
       category: marketing
+      notes: info@deeprootanalytics.com pointed privacy requests to their Privacy Center, or phone 1-866-498-2784 (reply received 2026-08-20).
     - id: deeptrace
       name: Deeptrace Inc.
       email: privacy@coresignal.com
@@ -1909,10 +1932,11 @@ brokers:
       category: marketing
     - id: foragerai
       name: Forager.Ai, LLC
-      email: legal@forager.ai
+      email: privacy@forager.ai
       website: https://www.forager.ai/
       region: us
       category: marketing
+      notes: legal@forager.ai auto-replied that the mailbox is unmonitored and pointed to privacy@forager.ai (reply received 2026-08-20).
     - id: forewarn
       name: FOREWARN LLC
       email: legal.compliance@forewarn.com
@@ -1956,11 +1980,12 @@ brokers:
       category: marketing
     - id: freemium-data-services
       name: Freemium Data Services, LLC
-      email: compliance@reachdata.com
+      email: ""
       website: https://www.reachdata.com/
-      opt_out_url: https://www.reachdata.com/privacy
+      opt_out_url: ""
       region: us
       category: marketing
+      notes: support@reachdata.zendesk.com auto-replied that ReachData.com has ceased operations and is no longer active (reply received 2026-08-20).
     - id: freepeoplesearchcom
       name: Freepeoplesearch.Com, LLC
       email: operations@freepeoplesearch.com
@@ -2100,18 +2125,20 @@ brokers:
       category: marketing
     - id: grin-technologies
       name: Grin Technologies Inc.
-      email: legal@grin.co
+      email: ""
       website: https://www.grin.co/
-      opt_out_url: https://www.grin.co/data-privacy-form/
+      opt_out_url: https://grin.co/data-privacy-form/
       region: us
       category: marketing
+      notes: legal@grin.co replied that requests must go through their verification platform; privacy.support@grin.co if the link fails (reply received 2026-08-20).
     - id: growbots
       name: Growbots Inc
-      email: privacy@growbots.com
+      email: ""
       website: https://www.growbots.com/
-      opt_out_url: https://www.growbots.com/do-not-sell-my-info/
+      opt_out_url: https://forms.gle/S7vW6zXPwgtnZ9ZF9
       region: us
       category: marketing
+      notes: privacy@growbots.com replied that removal requests only go through this Google Form (reply received 2026-08-20).
     - id: guidestar-direct
       name: GUIDESTAR DIRECT CORP
       email: info@carneydirect.com
@@ -2412,11 +2439,12 @@ brokers:
       category: marketing
     - id: infutor-data-solutions
       name: Infutor Data Solutions LLC
-      email: security@infutor.com
+      email: ""
       website: https://www.ruf.com/
-      opt_out_url: https://privacy.infutor.com/s/
+      opt_out_url: https://infutor.com/privacy-center/
       region: us
       category: marketing
+      notes: security@infutor.com replied that this mailbox can't process DSRs at all; use the form or call 1-866-207-1399 (reply received 2026-08-20).
     - id: inmarket-media
       name: Inmarket Media LLC
       email: privacy@inmarket.com
@@ -2609,11 +2637,12 @@ brokers:
       category: marketing
     - id: jmr-media-consulting
       name: JMR Media Consulting, Inc.
-      email: privacy@jmr-media.com
+      email: ""
       website: https://www.jmr-media.com/
-      opt_out_url: https://www.jmr-media.com/do-not-sell-my-personal
+      opt_out_url: https://jmr-media.com/do-not-sell
       region: us
       category: marketing
+      notes: Privacy@jmr-media.com replied that email submissions aren't accepted - form only (reply received 2026-08-20).
     - id: jun-group-productions
       name: Jun Group Productions, LLC
       email: ccpa@jungroup.com
@@ -2631,11 +2660,12 @@ brokers:
       notes: 'Domain jverify.com is parked/for sale on GoDaddy (checked 2026-08-20) - company defunct.'
     - id: kargo-global
       name: Kargo Global LLC
-      email: privacyinfo@kargo.com
+      email: ""
       website: https://www.kargo.com/
-      opt_out_url: https://www.kargo.com/privacy#opt-out
+      opt_out_url: https://www.kargo.com/privacy-portal
       region: us
       category: marketing
+      notes: privacyinfo@kargo.com replied that rights requests must go through their Privacy Rights Portal (reply received 2026-08-20).
     - id: kbm-group
       name: KBM GROUP LLC
       email: DoNotMail@wundermanthompson.com
@@ -2697,11 +2727,12 @@ brokers:
       category: marketing
     - id: koddi
       name: Koddi Inc.
-      email: dataprivacy@koddi.com
+      email: ""
       website: https://www.koddi.com/
-      opt_out_url: https://koddi.com/do-not-sell-my-personal-information/
+      opt_out_url: https://koddi.com/dsr-form
       region: us
       category: marketing
+      notes: dataprivacy@koddi.com replied that they do not accept privacy requests via email at all - web form only (reply received 2026-08-20).
     - id: kols-key-opinion-leaders
       name: Kols (Key Opinion Leaders)
       email: kol-privacy@keyopinionleaders.com
@@ -2773,17 +2804,20 @@ brokers:
       category: marketing
     - id: lead-me-media
       name: LEAD ME MEDIA LLC
-      email: texasregistry@leadmemedia.com
+      email: ""
       website: https://www.leadmemedia.com/
       opt_out_url: https://policy.leadmemedia.com/California/californiaform.html
       region: us
       category: marketing
+      notes: 'postmaster@leadmemedia.com bounced: "couldn''t be forwarded from texasregistry@leadmemedia.com to another email address" - forwarding is broken; opt_out_url already on file as fallback (reply received 2026-08-20).'
     - id: leadpost
       name: Leadpost, LLC
-      email: delete_mydata@leadpost.com
+      email: ""
       website: https://www.leadpost.com/
       region: us
       category: marketing
+      opt_out_url: https://leadpost.com/PrivacyRequest
+      notes: delete_mydata@leadpost.com replied with this form as the only submission method (reply received 2026-08-20).
     - id: leadsmarketcom
       name: Leadsmarket.Com LLC
       email: legal@leadsmarket.com
@@ -2866,6 +2900,7 @@ brokers:
       opt_out_url: https://listservicedirect.com/opt-out/
       region: us
       category: marketing
+      notes: dataremoval@listservicedirect.com bounced with "mailbox full" (reply received 2026-08-20) - likely transient, safe to retry; opt_out_url is also on file as a fallback.
     - id: listsonline
       name: Listsonline
       email: privacyofficer@listsonline.com
@@ -2935,11 +2970,12 @@ brokers:
       category: marketing
     - id: lotadata
       name: Lotadata, Inc.
-      email: apu@lotadata.com
+      email: ""
       website: https://www.lotadata.com/
       opt_out_url: https://lotadata.com/personal_information
       region: us
       category: marketing
+      notes: 'apu@lotadata.com replied directly: "This company is no longer operational." (reply received 2026-08-20)'
     - id: ls-mobile-apps-holdings
       name: L.S Mobile Apps Holdings Ltd
       email: privacy@lsmapps.com

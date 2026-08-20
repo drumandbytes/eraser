@@ -465,7 +465,7 @@ func runSend() error {
 				Body:    emailMsg.Body,
 			}
 
-			ctx := context.WithValue(context.Background(), "sequence", i)
+			ctx := context.WithValue(context.Background(), email.SequenceKey, i)
 			result := sender.Send(ctx, msg)
 
 			// Record in history

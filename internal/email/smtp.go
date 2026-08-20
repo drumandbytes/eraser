@@ -58,7 +58,7 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 
 	return Result{
 		Success:   true,
-		MessageID: fmt.Sprintf("smtp-%s-%d", msg.To, ctx.Value("sequence")),
+		MessageID: fmt.Sprintf("smtp-%s-%d", msg.To, ctx.Value(SequenceKey)),
 	}
 }
 

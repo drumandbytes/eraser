@@ -334,10 +334,11 @@ func ExtractBouncedRecipient(email *Email) string {
 	return ""
 }
 
-// stripHTMLSimple removes HTML tags (simple version for bounce parsing)
+// stripHTMLSimple removes HTML tags (simple version for bounce parsing).
+// Reuses htmlAnyTagRe (compiled once, in classifier.go) instead of
+// recompiling the same pattern on every call - this runs per bounce email.
 func stripHTMLSimple(html string) string {
-	re := regexp.MustCompile(`<[^>]+>`)
-	return re.ReplaceAllString(html, " ")
+	return htmlAnyTagRe.ReplaceAllString(html, " ")
 }
 
 // ExtractConfirmationToken tries to extract a token from a confirmation URL

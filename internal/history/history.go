@@ -159,6 +159,11 @@ func (s *Store) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_sent_at ON removal_requests(sent_at);
 	CREATE INDEX IF NOT EXISTS idx_status ON removal_requests(status);
 	CREATE INDEX IF NOT EXISTS idx_pipeline_status ON removal_requests(pipeline_status);
+	-- Covers every "most recent record for this broker" lookup (MarkFailed,
+	-- GetLastRequestForBroker, UpdatePipelineStatus, GetAllBrokerStatuses,
+	-- LastSuccessfulSendTimes' GROUP BY) with an index-only scan instead of a
+	-- full table scan + sort per broker.
+	CREATE INDEX IF NOT EXISTS idx_broker_sent_at ON removal_requests(broker_id, sent_at DESC);
 
 	-- Broker responses table (stores classified email responses)
 	CREATE TABLE IF NOT EXISTS broker_responses (
@@ -346,6 +351,22 @@ func parseSQLiteTime(s string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, lastErr
+}
+
+// parseFlexibleTimeString parses a nullable TEXT timestamp column as read
+// back by database/sql for this driver, which can come back in either
+// time.RFC3339 or the plain "2006-01-02 15:04:05" form depending on how it
+// was written. Returns the zero Time (with no error) for a NULL column,
+// matching how sql.NullTime callers already treat an unset timestamp.
+func parseFlexibleTimeString(s sql.NullString) time.Time {
+	if !s.Valid {
+		return time.Time{}
+	}
+	if t, err := time.Parse(time.RFC3339, s.String); err == nil {
+		return t
+	}
+	t, _ := time.Parse("2006-01-02 15:04:05", s.String)
+	return t
 }
 
 // LastSuccessfulSendTimes returns, for every broker with at least one
@@ -583,25 +604,9 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 		r.ConfirmURL = confirmURL.String
 		r.NeedsReview = needsReviewInt == 1
 
-		// Parse time strings
-		if receivedAtStr.Valid {
-			r.ReceivedAt, _ = time.Parse(time.RFC3339, receivedAtStr.String)
-			if r.ReceivedAt.IsZero() {
-				r.ReceivedAt, _ = time.Parse("2006-01-02 15:04:05", receivedAtStr.String)
-			}
-		}
-		if processedAtStr.Valid {
-			r.ProcessedAt, _ = time.Parse(time.RFC3339, processedAtStr.String)
-			if r.ProcessedAt.IsZero() {
-				r.ProcessedAt, _ = time.Parse("2006-01-02 15:04:05", processedAtStr.String)
-			}
-		}
-		if createdAtStr.Valid {
-			r.CreatedAt, _ = time.Parse(time.RFC3339, createdAtStr.String)
-			if r.CreatedAt.IsZero() {
-				r.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr.String)
-			}
-		}
+		r.ReceivedAt = parseFlexibleTimeString(receivedAtStr)
+		r.ProcessedAt = parseFlexibleTimeString(processedAtStr)
+		r.CreatedAt = parseFlexibleTimeString(createdAtStr)
 
 		responses = append(responses, r)
 	}
@@ -659,25 +664,9 @@ func (s *Store) GetBrokerResponses(responseType string, needsReview bool, limit 
 		r.ConfirmURL = confirmURL.String
 		r.NeedsReview = needsReviewInt == 1
 
-		// Parse time strings (SQLite stores as TEXT)
-		if receivedAtStr.Valid {
-			r.ReceivedAt, _ = time.Parse(time.RFC3339, receivedAtStr.String)
-			if r.ReceivedAt.IsZero() {
-				r.ReceivedAt, _ = time.Parse("2006-01-02 15:04:05", receivedAtStr.String)
-			}
-		}
-		if processedAtStr.Valid {
-			r.ProcessedAt, _ = time.Parse(time.RFC3339, processedAtStr.String)
-			if r.ProcessedAt.IsZero() {
-				r.ProcessedAt, _ = time.Parse("2006-01-02 15:04:05", processedAtStr.String)
-			}
-		}
-		if createdAtStr.Valid {
-			r.CreatedAt, _ = time.Parse(time.RFC3339, createdAtStr.String)
-			if r.CreatedAt.IsZero() {
-				r.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAtStr.String)
-			}
-		}
+		r.ReceivedAt = parseFlexibleTimeString(receivedAtStr)
+		r.ProcessedAt = parseFlexibleTimeString(processedAtStr)
+		r.CreatedAt = parseFlexibleTimeString(createdAtStr)
 
 		responses = append(responses, r)
 	}

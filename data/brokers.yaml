@@ -128,11 +128,12 @@ brokers:
       notes: privacy@publicrecords360.com's auto-reply redirected requests to custserv@publicrecords360.com; phone (877) 327-2488 also given as an alternative (reply received 2026-08-20).
     - id: searchpeoplefree
       name: SearchPeopleFree
-      email: privacy@searchpeoplefree.com
+      email: ""
       website: https://www.searchpeoplefree.com
-      opt_out_url: https://www.searchpeoplefree.com/optout
+      opt_out_url: https://www.searchpeoplefree.com/opt-out
       region: us
       category: people-search
+      notes: 'privacy@searchpeoplefree.com replied 2026-08-20 pointing to their self-service opt-out page instead of processing the request directly; email cleared, use opt_out_url.'
     - id: acxiom
       name: Acxiom
       email: consumeradvo@acxiom.com
@@ -418,10 +419,11 @@ brokers:
       category: marketing
     - id: adept-id
       name: Adept Id, Inc.
-      email: privacy@adept-id.com
+      email: ""
       website: https://www.adept-id.com/
       opt_out_url: https://www.adept-id.com/opt-out-preferences/
       region: us
+      notes: 'Reply 2026-08-20 said email requests require a data rights form via their Osano-hosted portal (per-request prefill link, not reusable). Use the opt_out_url instead; email skipped.'
       category: marketing
     - id: adrea-rubin-marketing
       name: Adrea Rubin Marketing, Inc.
@@ -967,12 +969,12 @@ brokers:
       category: marketing
     - id: captify-technologies
       name: Captify Technologies
-      email: ""
+      email: privacy@captify.co.uk
       website: https://www.captifytechnologies.com/
       opt_out_url: https://verve.com/data-subject-request-form/
       region: us
       category: marketing
-      notes: lorraine.pinter@captify.co.uk (DPO) replied that she's left Captify - Captify was acquired by Verve Group, whose DSR form is above (reply received 2026-08-20).
+      notes: 'lorraine.pinter@captify.co.uk (DPO) originally replied that she''s left Captify and pointed to Verve Group''s DSR form above. Found privacy@captify.co.uk as a team inbox (not tied to her personally) 2026-08-20 - worth retrying by email now that a live address exists; keep the Verve form as fallback.'
     - id: carco-group
       name: CARCO Group, Inc.
       email: Mkendrick@cisive.com
@@ -1725,11 +1727,12 @@ brokers:
       category: marketing
     - id: emergescom-incorporated
       name: EMERGES.COM INCORPORATED
-      email: shawn@emerges.com
+      email: ""
       website: https://www.emerges.com/
-      opt_out_url: https://www.emerges.com/Government-Record-Opt-Out_ep_51-1.html
+      opt_out_url: ""
       region: us
       category: marketing
+      notes: 'Reply 2026-08-20: eMerges ceased operating as a list broker as of 2025-07-01 - no longer acquires, publishes, processes, or sells any lists, and their opt-out resource has been disabled. Email and opt_out_url cleared; nothing to send here. Flagged upstream for removal from the broker source list.'
     - id: endgame-labs
       name: Endgame Labs, Inc
       email: privacy@endgame.io
@@ -1842,11 +1845,12 @@ brokers:
       category: marketing
     - id: famous-birthdays
       name: Famous Birthdays, LLC
-      email: info@famousbirthdays.com
+      email: ""
       website: https://www.famousbirthdays.com/
-      opt_out_url: http://optout.networkadvertising.org/?c=1#!/
+      opt_out_url: https://www.famousbirthdays.com/contact
       region: us
       category: marketing
+      notes: "info@famousbirthdays.com replied that they can no longer evaluate requests sent to this address - use their contact form instead (reply received 2026-08-20)."
     - id: fanspoko
       name: Fanspoko, LLC
       email: info@fanspoko.com
@@ -2240,10 +2244,11 @@ brokers:
       category: marketing
     - id: general-information-solutions
       name: General Information Solutions LLC
-      email: cklafehn@backgroundchecks.com
+      email: support@backgroundchecks.com
       website: https://www.backgroundchecks.com/
       region: us
       category: marketing
+      notes: 'cklafehn@backgroundchecks.com bounced (address rejected) 2026-08-20; corrected to support@backgroundchecks.com per their privacy policy.'
     - id: hireteammate
       name: HIRETEAMMATE Inc
       email: privacy@hireez.com
@@ -2665,7 +2670,7 @@ brokers:
       opt_out_url: https://www.kargo.com/privacy-portal
       region: us
       category: marketing
-      notes: privacyinfo@kargo.com replied that rights requests must go through their Privacy Rights Portal (reply received 2026-08-20).
+      notes: 'Kargo splits privacy rights into two flows (checked their portal 2026-08-20): (1) Opt-out of sale/share/targeted-ads - check the box at opt_out_url, or just send a GPC signal from your browser; no identifiers needed. (2) Access/deletion - they track by cookie/device ID, not name, so they can''t look you up from a standard request; email privacyinfo@kargo.com with your Digital Identifiers instead (the ktcid/krg_uid/krg_crb cookies set on kargo.com, or your phone''s IDFA/Android Ad ID) plus what you''re requesting. Email left blank since eraser''s standard template has no way to include those identifiers.'
     - id: kbm-group
       name: KBM GROUP LLC
       email: DoNotMail@wundermanthompson.com
@@ -5240,3 +5245,45 @@ brokers:
       region: eu
       category: data-intermediary
       notes: "Belgian data intermediary (Data Governance Act registered). GDPR erasure request."
+    - id: adikteev
+      name: Adikteev
+      email: dpo@adikteev.com
+      website: https://www.adikteev.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy Right to Delete clause (6.2.2). Not previously in the campaign.'
+    - id: scope3
+      name: Scope3
+      email: privacy@scope3.com
+      website: https://scope3.com/
+      region: us
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy contact section. Postal alternative: 228 Park Ave S, PMB 24984, New York, NY 10003. Not previously in the campaign.'
+    - id: smartclip
+      name: Smartclip
+      email: privacy@smartclip.tv
+      website: https://www.smartclip.tv/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy - DPO listed as Thomas Servatius, Ringstr. 16-20, 33378 Rheda-Wiedenbrueck, Germany. Not previously in the campaign.'
+    - id: genius-sports
+      name: Genius Sports Group
+      email: privacy@geniussports.com
+      website: https://geniussports.com/
+      region: global
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy contact section. Not previously in the campaign.'
+    - id: etarget-sk
+      name: eTarget s.r.o.
+      email: gdpr@etarget.sk
+      website: https://www.etarget.sk/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy contact section. Not previously in the campaign.'
+    - id: dentsu-inc
+      name: Dentsu Inc.
+      email: DPO@dentsu.com
+      website: https://www.dentsu.com/
+      region: global
+      category: marketing
+      notes: 'Added 2026-08-20 - group-level DPO contact found separately from the existing merkle-inc entry (a dentsu subsidiary already in this file). Flag if this should instead be merged into that entry.'

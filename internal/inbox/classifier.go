@@ -34,188 +34,188 @@ type ClassifiedResponse struct {
 // Keyword patterns for classification
 var (
 	// Success indicators
-	successPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(completed|processed|fulfilled)`),
-		*regexp.MustCompile(`(?i)successfully\s+(removed|deleted|opted\s*out)`),
-		*regexp.MustCompile(`(?i)your\s+(data|information)\s+(has\s+been\s+)?(removed|deleted)`),
-		*regexp.MustCompile(`(?i)opt[\s-]?out\s+(request\s+)?(is\s+)?(complete|confirmed)`),
-		*regexp.MustCompile(`(?i)we\s+have\s+(removed|deleted)`),
-		*regexp.MustCompile(`(?i)no\s+longer\s+(have|hold|store)\s+your\s+(data|information)`),
+	successPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(completed|processed|fulfilled)`),
+		regexp.MustCompile(`(?i)successfully\s+(removed|deleted|opted\s*out)`),
+		regexp.MustCompile(`(?i)your\s+(data|information)\s+(has\s+been\s+)?(removed|deleted)`),
+		regexp.MustCompile(`(?i)opt[\s-]?out\s+(request\s+)?(is\s+)?(complete|confirmed)`),
+		regexp.MustCompile(`(?i)we\s+have\s+(removed|deleted)`),
+		regexp.MustCompile(`(?i)no\s+longer\s+(have|hold|store)\s+your\s+(data|information)`),
 	}
 
 	// Form required indicators
-	formRequiredPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)please\s+(complete|fill\s*(out|in)?|submit)\s+(the|our|this)?\s*(form|request)`),
-		*regexp.MustCompile(`(?i)visit\s+(the\s+)?(following\s+)?(link|url|page)\s+to\s+(complete|submit|verify)`),
-		*regexp.MustCompile(`(?i)click\s+(here|below|the\s+link)\s+to\s+(begin|start|submit|complete)`),
-		*regexp.MustCompile(`(?i)(must|need\s+to)\s+(verify|confirm)\s+your\s+(identity|request)`),
-		*regexp.MustCompile(`(?i)submit\s+a\s+(formal\s+)?request\s+(through|via|at)`),
-		*regexp.MustCompile(`(?i)use\s+(our|the)\s+(online|web)\s*(form|portal|tool)`),
+	formRequiredPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)please\s+(complete|fill\s*(out|in)?|submit)\s+(the|our|this)?\s*(form|request)`),
+		regexp.MustCompile(`(?i)visit\s+(the\s+)?(following\s+)?(link|url|page)\s+to\s+(complete|submit|verify)`),
+		regexp.MustCompile(`(?i)click\s+(here|below|the\s+link)\s+to\s+(begin|start|submit|complete)`),
+		regexp.MustCompile(`(?i)(must|need\s+to)\s+(verify|confirm)\s+your\s+(identity|request)`),
+		regexp.MustCompile(`(?i)submit\s+a\s+(formal\s+)?request\s+(through|via|at)`),
+		regexp.MustCompile(`(?i)use\s+(our|the)\s+(online|web)\s*(form|portal|tool)`),
 		// Redirect to form patterns (from real broker emails)
-		*regexp.MustCompile(`(?i)please\s+submit\s+(your\s+)?request\s+(at|via|through)\s+`),
-		*regexp.MustCompile(`(?i)please\s+use\s+(our|the)\s+(opt[\s-]?out|removal|privacy)\s*(form|page|link)`),
-		*regexp.MustCompile(`(?i)complete\s+(the|our|a)\s+(data\s+subject|privacy|opt[\s-]?out)\s*(access\s+)?(request\s+)?form`),
-		*regexp.MustCompile(`(?i)submit\s+(a\s+|your\s+)?(request|form)\s+(via|through|at|using)\s+(our\s+)?(online|web|interactive)`),
-		*regexp.MustCompile(`(?i)(does\s+not|do\s+not|cannot)\s+accept\s+privacy\s+requests?\s+(via|by|through)\s+email`),
-		*regexp.MustCompile(`(?i)this\s+email\s+(address\s+)?is\s+not\s+intended\s+for\s+privacy`),
-		*regexp.MustCompile(`(?i)visit\s+(our|the)\s+(opt[\s-]?out|removal|privacy)\s*(page|form|portal)`),
-		*regexp.MustCompile(`(?i)(data\s+subject|privacy)\s+requests?\s+(can|should|must)\s+be\s+(filed|submitted)\s+(at|via)`),
-		*regexp.MustCompile(`(?i)go\s+to\s+(the\s+)?(link|url|page)\s+(below|above)`),
-		*regexp.MustCompile(`(?i)please\s+click\s+(on\s+)?(the\s+)?following\s+link`),
-		*regexp.MustCompile(`(?i)you\s+(can|may)\s+submit\s+.{0,30}(privacy|opt[\s-]?out)`),
-		*regexp.MustCompile(`(?i)right\s+to\s+(opt[\s-]?out|delete|know)[:\s]`),
+		regexp.MustCompile(`(?i)please\s+submit\s+(your\s+)?request\s+(at|via|through)\s+`),
+		regexp.MustCompile(`(?i)please\s+use\s+(our|the)\s+(opt[\s-]?out|removal|privacy)\s*(form|page|link)`),
+		regexp.MustCompile(`(?i)complete\s+(the|our|a)\s+(data\s+subject|privacy|opt[\s-]?out)\s*(access\s+)?(request\s+)?form`),
+		regexp.MustCompile(`(?i)submit\s+(a\s+|your\s+)?(request|form)\s+(via|through|at|using)\s+(our\s+)?(online|web|interactive)`),
+		regexp.MustCompile(`(?i)(does\s+not|do\s+not|cannot)\s+accept\s+privacy\s+requests?\s+(via|by|through)\s+email`),
+		regexp.MustCompile(`(?i)this\s+email\s+(address\s+)?is\s+not\s+intended\s+for\s+privacy`),
+		regexp.MustCompile(`(?i)visit\s+(our|the)\s+(opt[\s-]?out|removal|privacy)\s*(page|form|portal)`),
+		regexp.MustCompile(`(?i)(data\s+subject|privacy)\s+requests?\s+(can|should|must)\s+be\s+(filed|submitted)\s+(at|via)`),
+		regexp.MustCompile(`(?i)go\s+to\s+(the\s+)?(link|url|page)\s+(below|above)`),
+		regexp.MustCompile(`(?i)please\s+click\s+(on\s+)?(the\s+)?following\s+link`),
+		regexp.MustCompile(`(?i)you\s+(can|may)\s+submit\s+.{0,30}(privacy|opt[\s-]?out)`),
+		regexp.MustCompile(`(?i)right\s+to\s+(opt[\s-]?out|delete|know)[:\s]`),
 		// Additional form patterns from real emails
-		*regexp.MustCompile(`(?i)we\s+(have\s+)?established\s+a\s+dedicated\s+(online\s+)?form`),
-		*regexp.MustCompile(`(?i)we\s+do\s+not\s+process\s+requests?\s+via\s+email`),
-		*regexp.MustCompile(`(?i)please\s+send\s+(your?\s+)?request\s+to\s+customer\s+service`),
-		*regexp.MustCompile(`(?i)is\s+not\s+(a\s+)?mechanism\s+for.{0,30}(privacy|request)`),
-		*regexp.MustCompile(`(?i)please\s+complete\s+your\s+(request|form)`),
+		regexp.MustCompile(`(?i)we\s+(have\s+)?established\s+a\s+dedicated\s+(online\s+)?form`),
+		regexp.MustCompile(`(?i)we\s+do\s+not\s+process\s+requests?\s+via\s+email`),
+		regexp.MustCompile(`(?i)please\s+send\s+(your?\s+)?request\s+to\s+customer\s+service`),
+		regexp.MustCompile(`(?i)is\s+not\s+(a\s+)?mechanism\s+for.{0,30}(privacy|request)`),
+		regexp.MustCompile(`(?i)please\s+complete\s+your\s+(request|form)`),
 	}
 
 	// Confirmation required indicators (need to click a link to verify identity/email)
-	confirmationPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)click\s+(here|below|the\s+link)\s+to\s+(confirm|verify|validate)`),
-		*regexp.MustCompile(`(?i)please\s+(confirm|verify)\s+(your\s+)?(email|request|identity)`),
-		*regexp.MustCompile(`(?i)verification\s+(link|email|code)`),
-		*regexp.MustCompile(`(?i)confirm\s+your\s+(email\s+)?(address)?`),
-		*regexp.MustCompile(`(?i)click\s+(to\s+)?confirm`),
+	confirmationPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)click\s+(here|below|the\s+link)\s+to\s+(confirm|verify|validate)`),
+		regexp.MustCompile(`(?i)please\s+(confirm|verify)\s+(your\s+)?(email|request|identity)`),
+		regexp.MustCompile(`(?i)verification\s+(link|email|code)`),
+		regexp.MustCompile(`(?i)confirm\s+your\s+(email\s+)?(address)?`),
+		regexp.MustCompile(`(?i)click\s+(to\s+)?confirm`),
 		// Verification of identity patterns
-		*regexp.MustCompile(`(?i)(can|could)\s+you\s+(please\s+)?verify`),
-		*regexp.MustCompile(`(?i)verify\s+(your\s+)?(last\s+4|ssn|social)`),
+		regexp.MustCompile(`(?i)(can|could)\s+you\s+(please\s+)?verify`),
+		regexp.MustCompile(`(?i)verify\s+(your\s+)?(last\s+4|ssn|social)`),
 	}
 
 	// Rejection indicators
-	rejectionPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)(cannot|can't|unable\s+to)\s+(process|complete|fulfill)\s+(your\s+)?request`),
-		*regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(denied|rejected|declined)`),
-		*regexp.MustCompile(`(?i)do\s+not\s+have\s+(any\s+)?(data|information|records)\s+(about|for|on)\s+you`),
-		*regexp.MustCompile(`(?i)not\s+found\s+in\s+our\s+(system|database|records)`),
-		*regexp.MustCompile(`(?i)no\s+(matching\s+)?(records?|data|information)\s+found`),
-		*regexp.MustCompile(`(?i)exempt\s+from\s+(CCPA|GDPR|this\s+request)`),
+	rejectionPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(cannot|can't|unable\s+to)\s+(process|complete|fulfill)\s+(your\s+)?request`),
+		regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(denied|rejected|declined)`),
+		regexp.MustCompile(`(?i)do\s+not\s+have\s+(any\s+)?(data|information|records)\s+(about|for|on)\s+you`),
+		regexp.MustCompile(`(?i)not\s+found\s+in\s+our\s+(system|database|records)`),
+		regexp.MustCompile(`(?i)no\s+(matching\s+)?(records?|data|information)\s+found`),
+		regexp.MustCompile(`(?i)exempt\s+from\s+(CCPA|GDPR|this\s+request)`),
 		// No data found patterns (from real broker emails)
-		*regexp.MustCompile(`(?i)(do\s+not|don't)\s+have\s+(any\s+)?record`),
-		*regexp.MustCompile(`(?i)no\s+(matching\s+)?record\s+(of\s+)?(a\s+)?report`),
-		*regexp.MustCompile(`(?i)maintains?\s+no\s+(files?|records?|data)`),
+		regexp.MustCompile(`(?i)(do\s+not|don't)\s+have\s+(any\s+)?record`),
+		regexp.MustCompile(`(?i)no\s+(matching\s+)?record\s+(of\s+)?(a\s+)?report`),
+		regexp.MustCompile(`(?i)maintains?\s+no\s+(files?|records?|data)`),
 		// Service discontinued patterns
-		*regexp.MustCompile(`(?i)no\s+longer\s+(registered|operating)\s+(as\s+)?(an?\s+)?(active\s+)?data\s+broker`),
-		*regexp.MustCompile(`(?i)(this\s+)?(email|inbox)(\s+\w+)?\s+(is\s+)?(no\s+longer|being\s+retired)`),
-		*regexp.MustCompile(`(?i)service\s+offerings?\s+no\s+longer\s+include`),
+		regexp.MustCompile(`(?i)no\s+longer\s+(registered|operating)\s+(as\s+)?(an?\s+)?(active\s+)?data\s+broker`),
+		regexp.MustCompile(`(?i)(this\s+)?(email|inbox)(\s+\w+)?\s+(is\s+)?(no\s+longer|being\s+retired)`),
+		regexp.MustCompile(`(?i)service\s+offerings?\s+no\s+longer\s+include`),
 		// Additional rejection patterns from real emails
-		*regexp.MustCompile(`(?i)(we\s+)?(have\s+)?no\s+data\s+(linked|associated|related)\s+to\s+(your|this)`),
-		*regexp.MustCompile(`(?i)not\s+identified\s+in\s+our\s+database`),
-		*regexp.MustCompile(`(?i)(we\s+are|we're)\s+a\s+b2b\s+(platform|company|business)`),
-		*regexp.MustCompile(`(?i)has\s+never\s+existed\s+in\s+our\s+database`),
-		*regexp.MustCompile(`(?i)consumer\s+reporting\s+agenc(y|ies)\s+(is|are)\s+exempt`),
-		*regexp.MustCompile(`(?i)fair\s+credit\s+reporting\s+act.{0,30}exempt`),
-		*regexp.MustCompile(`(?i)we\s+do\s+not\s+(remove|delete)\s+data\s+by\s+request`),
-		*regexp.MustCompile(`(?i)(your\s+)?(email|name|address|information)\s+was\s+not\s+identified`),
+		regexp.MustCompile(`(?i)(we\s+)?(have\s+)?no\s+data\s+(linked|associated|related)\s+to\s+(your|this)`),
+		regexp.MustCompile(`(?i)not\s+identified\s+in\s+our\s+database`),
+		regexp.MustCompile(`(?i)(we\s+are|we're)\s+a\s+b2b\s+(platform|company|business)`),
+		regexp.MustCompile(`(?i)has\s+never\s+existed\s+in\s+our\s+database`),
+		regexp.MustCompile(`(?i)consumer\s+reporting\s+agenc(y|ies)\s+(is|are)\s+exempt`),
+		regexp.MustCompile(`(?i)fair\s+credit\s+reporting\s+act.{0,30}exempt`),
+		regexp.MustCompile(`(?i)we\s+do\s+not\s+(remove|delete)\s+data\s+by\s+request`),
+		regexp.MustCompile(`(?i)(your\s+)?(email|name|address|information)\s+was\s+not\s+identified`),
 		// Wrong email address patterns
-		*regexp.MustCompile(`(?i)(this\s+)?(email|inbox)\s+(address\s+)?(is\s+)?not\s+(a\s+)?(mechanism|intended)\s+(for|to)`),
-		*regexp.MustCompile(`(?i)not\s+intended\s+for\s+(the\s+)?(submission|handling)\s+of\s+privacy`),
-		*regexp.MustCompile(`(?i)will\s+not\s+be\s+considered\s+a\s+valid\s+submission`),
+		regexp.MustCompile(`(?i)(this\s+)?(email|inbox)\s+(address\s+)?(is\s+)?not\s+(a\s+)?(mechanism|intended)\s+(for|to)`),
+		regexp.MustCompile(`(?i)not\s+intended\s+for\s+(the\s+)?(submission|handling)\s+of\s+privacy`),
+		regexp.MustCompile(`(?i)will\s+not\s+be\s+considered\s+a\s+valid\s+submission`),
 	}
 
 	// Pending indicators
-	pendingPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)(is\s+being|currently\s+being)\s+(processed|reviewed|handled)`),
-		*regexp.MustCompile(`(?i)will\s+(process|complete|handle)\s+(your\s+)?request\s+within`),
-		*regexp.MustCompile(`(?i)please\s+allow\s+(\d+)\s+(days|business\s+days|weeks)`),
-		*regexp.MustCompile(`(?i)we('ll|\s+will)\s+(get\s+back|respond|follow\s+up)`),
-		*regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(received|acknowledged)`),
+	pendingPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(is\s+being|currently\s+being)\s+(processed|reviewed|handled)`),
+		regexp.MustCompile(`(?i)will\s+(process|complete|handle)\s+(your\s+)?request\s+within`),
+		regexp.MustCompile(`(?i)please\s+allow\s+(\d+)\s+(days|business\s+days|weeks)`),
+		regexp.MustCompile(`(?i)we('ll|\s+will)\s+(get\s+back|respond|follow\s+up)`),
+		regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(received|acknowledged)`),
 		// Request acknowledgment patterns (from real broker emails)
-		*regexp.MustCompile(`(?i)thank\s+you\s+for\s+(your\s+)?(inquiry|email|contacting|reaching|privacy)`),
-		*regexp.MustCompile(`(?i)we\s+(have\s+)?received\s+your\s+(request|email|inquiry)`),
-		*regexp.MustCompile(`(?i)(has\s+been\s+)?assigned\s+(a\s+)?(ticket|case|reference)\s*(number|#|id)?`),
-		*regexp.MustCompile(`(?i)one\s+of\s+our\s+.{0,30}(will\s+)?(reach\s+out|respond|contact)`),
-		*regexp.MustCompile(`(?i)ticket\s+(has\s+been\s+)?(created|opened|received)`),
+		regexp.MustCompile(`(?i)thank\s+you\s+for\s+(your\s+)?(inquiry|email|contacting|reaching|privacy)`),
+		regexp.MustCompile(`(?i)we\s+(have\s+)?received\s+your\s+(request|email|inquiry)`),
+		regexp.MustCompile(`(?i)(has\s+been\s+)?assigned\s+(a\s+)?(ticket|case|reference)\s*(number|#|id)?`),
+		regexp.MustCompile(`(?i)one\s+of\s+our\s+.{0,30}(will\s+)?(reach\s+out|respond|contact)`),
+		regexp.MustCompile(`(?i)ticket\s+(has\s+been\s+)?(created|opened|received)`),
 		// Additional patterns for better subject line matching
-		*regexp.MustCompile(`(?i)your\s+request\s+has\s+been\s+received`),
-		*regexp.MustCompile(`(?i)support\s+request\s*#?\d+`),
-		*regexp.MustCompile(`(?i)legal\s+request\s+received`),
-		*regexp.MustCompile(`(?i)i\s+(have\s+)?(now\s+)?left\s+`), // Person left the company
-		*regexp.MustCompile(`(?i)no\s+longer\s+with\s+(the\s+)?(company|organization)`),
+		regexp.MustCompile(`(?i)your\s+request\s+has\s+been\s+received`),
+		regexp.MustCompile(`(?i)support\s+request\s*#?\d+`),
+		regexp.MustCompile(`(?i)legal\s+request\s+received`),
+		regexp.MustCompile(`(?i)i\s+(have\s+)?(now\s+)?left\s+`), // Person left the company
+		regexp.MustCompile(`(?i)no\s+longer\s+with\s+(the\s+)?(company|organization)`),
 		// Additional pending patterns from real emails
-		*regexp.MustCompile(`(?i)(will\s+be\s+)?(removed|deleted)\s+from\s+our\s+database.{0,20}\d+\s+days`),
-		*regexp.MustCompile(`(?i)once\s+verified.{0,30}(will\s+be\s+)?(processed|complete)`),
-		*regexp.MustCompile(`(?i)this\s+(message\s+)?confirms\s+(our\s+)?receipt`),
-		*regexp.MustCompile(`(?i)we\s+appreciate\s+your\s+interest\s+in\s+exercising`),
-		*regexp.MustCompile(`(?i)request\s+(will\s+be\s+)?(processed|fulfilled)`),
-		*regexp.MustCompile(`(?i)automatic\s+reply`),
-		*regexp.MustCompile(`(?i)auto[\s-]?response`),
+		regexp.MustCompile(`(?i)(will\s+be\s+)?(removed|deleted)\s+from\s+our\s+database.{0,20}\d+\s+days`),
+		regexp.MustCompile(`(?i)once\s+verified.{0,30}(will\s+be\s+)?(processed|complete)`),
+		regexp.MustCompile(`(?i)this\s+(message\s+)?confirms\s+(our\s+)?receipt`),
+		regexp.MustCompile(`(?i)we\s+appreciate\s+your\s+interest\s+in\s+exercising`),
+		regexp.MustCompile(`(?i)request\s+(will\s+be\s+)?(processed|fulfilled)`),
+		regexp.MustCompile(`(?i)automatic\s+reply`),
+		regexp.MustCompile(`(?i)auto[\s-]?response`),
 	}
 
 	// Subject-specific pending patterns (stronger signal when in subject)
-	subjectPendingPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)^automatic\s+reply`),
-		*regexp.MustCompile(`(?i)^auto[\s-]?reply`),
-		*regexp.MustCompile(`(?i)^auto[\s-]?response`),
-		*regexp.MustCompile(`(?i)^out\s+of\s+office`),
-		*regexp.MustCompile(`(?i)request\s+received`),
-		*regexp.MustCompile(`(?i)has\s+been\s+received`),
-		*regexp.MustCompile(`(?i)thank\s+you\s+for\s+your\s+(privacy|data|removal|email)`),
-		*regexp.MustCompile(`(?i)thank\s+you\s+for\s+(your\s+)?email\s+to`), // "Thank you for your email to Nielsen's Privacy Team"
-		*regexp.MustCompile(`(?i)thanks\s+for\s+(reaching|contacting)`),
-		*regexp.MustCompile(`(?i)#[A-Z]{0,3}[-]?\d{5,}`), // Ticket numbers like #REQ-195698, #LD00019726
-		*regexp.MustCompile(`(?i)request\s*#\s*\d+`),
-		*regexp.MustCompile(`(?i)support\s+request`),
-		*regexp.MustCompile(`(?i)ticket\s*[\(#]\s*:?\s*\d+`), // Ticket (259135) or Ticket #259135 or Ticket #: 259135
-		*regexp.MustCompile(`(?i)we\s+have\s+received\s+your\s+ticket`),
-		*regexp.MustCompile(`(?i)i\s+(have\s+)?(now\s+)?left\s+`), // Person left the company
-		*regexp.MustCompile(`(?i)no\s+longer\s+with\s+(the\s+)?(company|organization)`),
-		*regexp.MustCompile(`(?i)office\s+closed`),
-		*regexp.MustCompile(`(?i)response\s+to\s+your\s+email`),
+	subjectPendingPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)^automatic\s+reply`),
+		regexp.MustCompile(`(?i)^auto[\s-]?reply`),
+		regexp.MustCompile(`(?i)^auto[\s-]?response`),
+		regexp.MustCompile(`(?i)^out\s+of\s+office`),
+		regexp.MustCompile(`(?i)request\s+received`),
+		regexp.MustCompile(`(?i)has\s+been\s+received`),
+		regexp.MustCompile(`(?i)thank\s+you\s+for\s+your\s+(privacy|data|removal|email)`),
+		regexp.MustCompile(`(?i)thank\s+you\s+for\s+(your\s+)?email\s+to`), // "Thank you for your email to Nielsen's Privacy Team"
+		regexp.MustCompile(`(?i)thanks\s+for\s+(reaching|contacting)`),
+		regexp.MustCompile(`(?i)#[A-Z]{0,3}[-]?\d{5,}`), // Ticket numbers like #REQ-195698, #LD00019726
+		regexp.MustCompile(`(?i)request\s*#\s*\d+`),
+		regexp.MustCompile(`(?i)support\s+request`),
+		regexp.MustCompile(`(?i)ticket\s*[\(#]\s*:?\s*\d+`), // Ticket (259135) or Ticket #259135 or Ticket #: 259135
+		regexp.MustCompile(`(?i)we\s+have\s+received\s+your\s+ticket`),
+		regexp.MustCompile(`(?i)i\s+(have\s+)?(now\s+)?left\s+`), // Person left the company
+		regexp.MustCompile(`(?i)no\s+longer\s+with\s+(the\s+)?(company|organization)`),
+		regexp.MustCompile(`(?i)office\s+closed`),
+		regexp.MustCompile(`(?i)response\s+to\s+your\s+email`),
 	}
 
 	// Test email patterns (should be skipped from review)
-	testEmailPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)eraser\s+test\s+email`),
-		*regexp.MustCompile(`(?i)test\s+email\s+from\s+eraser`),
-		*regexp.MustCompile(`(?i)this\s+is\s+a\s+test\s+email`),
+	testEmailPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)eraser\s+test\s+email`),
+		regexp.MustCompile(`(?i)test\s+email\s+from\s+eraser`),
+		regexp.MustCompile(`(?i)this\s+is\s+a\s+test\s+email`),
 	}
 
 	// Subject-specific rejection patterns
-	subjectRejectionPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)not\s+found`),
-		*regexp.MustCompile(`(?i)no\s+record`),
-		*regexp.MustCompile(`(?i)unable\s+to\s+(locate|find|process)`),
-		*regexp.MustCompile(`(?i)request\s+(denied|rejected)`),
+	subjectRejectionPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)not\s+found`),
+		regexp.MustCompile(`(?i)no\s+record`),
+		regexp.MustCompile(`(?i)unable\s+to\s+(locate|find|process)`),
+		regexp.MustCompile(`(?i)request\s+(denied|rejected)`),
 	}
 
 	// Subject-specific success patterns
-	subjectSuccessPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)opt[\s-]?out\s+(has\s+been\s+)?completed`),
-		*regexp.MustCompile(`(?i)(has\s+been\s+|successfully\s+)?(removed|deleted)`),
-		*regexp.MustCompile(`(?i)ticket.+solved`),
-		*regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(completed|processed|fulfilled)`),
+	subjectSuccessPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)opt[\s-]?out\s+(has\s+been\s+)?completed`),
+		regexp.MustCompile(`(?i)(has\s+been\s+|successfully\s+)?(removed|deleted)`),
+		regexp.MustCompile(`(?i)ticket.+solved`),
+		regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(completed|processed|fulfilled)`),
 	}
 
 	// Subject-specific form required patterns
-	subjectFormPatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)opt[\s-]?out\s+instructions`),
-		*regexp.MustCompile(`(?i)removal\s+instructions`),
-		*regexp.MustCompile(`(?i)how\s+to\s+(opt[\s-]?out|remove)`),
+	subjectFormPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)opt[\s-]?out\s+instructions`),
+		regexp.MustCompile(`(?i)removal\s+instructions`),
+		regexp.MustCompile(`(?i)how\s+to\s+(opt[\s-]?out|remove)`),
 	}
 
 	// Bounce/undeliverable indicators
-	bouncePatterns = []regexp.Regexp{
-		*regexp.MustCompile(`(?i)delivery\s+(to\s+.+\s+)?(has\s+)?failed`),
-		*regexp.MustCompile(`(?i)undeliverable`),
-		*regexp.MustCompile(`(?i)delivery\s+status\s+notification`),
-		*regexp.MustCompile(`(?i)returned\s+mail`),
-		*regexp.MustCompile(`(?i)mail\s+delivery\s+failed`),
-		*regexp.MustCompile(`(?i)message\s+(could\s+)?not\s+(be\s+)?delivered`),
-		*regexp.MustCompile(`(?i)could\s+not\s+be\s+delivered`),
-		*regexp.MustCompile(`(?i)delivery\s+failure`),
-		*regexp.MustCompile(`(?i)permanent\s+(failure|error)`),
-		*regexp.MustCompile(`(?i)address\s+rejected`),
-		*regexp.MustCompile(`(?i)user\s+unknown`),
-		*regexp.MustCompile(`(?i)mailbox\s+not\s+found`),
-		*regexp.MustCompile(`(?i)no\s+such\s+user`),
-		*regexp.MustCompile(`(?i)(mailbox|recipient|address)\s+(does\s+not|doesn't)\s+exist`),
-		*regexp.MustCompile(`(?i)invalid\s+(recipient|address|mailbox)`),
-		*regexp.MustCompile(`(?i)unknown\s+(recipient|user|address)`),
-		*regexp.MustCompile(`(?i)550\s+.*\s+(rejected|unknown|not\s+found)`),
-		*regexp.MustCompile(`(?i)554\s+.*\s+(rejected|failed)`),
+	bouncePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)delivery\s+(to\s+.+\s+)?(has\s+)?failed`),
+		regexp.MustCompile(`(?i)undeliverable`),
+		regexp.MustCompile(`(?i)delivery\s+status\s+notification`),
+		regexp.MustCompile(`(?i)returned\s+mail`),
+		regexp.MustCompile(`(?i)mail\s+delivery\s+failed`),
+		regexp.MustCompile(`(?i)message\s+(could\s+)?not\s+(be\s+)?delivered`),
+		regexp.MustCompile(`(?i)could\s+not\s+be\s+delivered`),
+		regexp.MustCompile(`(?i)delivery\s+failure`),
+		regexp.MustCompile(`(?i)permanent\s+(failure|error)`),
+		regexp.MustCompile(`(?i)address\s+rejected`),
+		regexp.MustCompile(`(?i)user\s+unknown`),
+		regexp.MustCompile(`(?i)mailbox\s+not\s+found`),
+		regexp.MustCompile(`(?i)no\s+such\s+user`),
+		regexp.MustCompile(`(?i)(mailbox|recipient|address)\s+(does\s+not|doesn't)\s+exist`),
+		regexp.MustCompile(`(?i)invalid\s+(recipient|address|mailbox)`),
+		regexp.MustCompile(`(?i)unknown\s+(recipient|user|address)`),
+		regexp.MustCompile(`(?i)550\s+.*\s+(rejected|unknown|not\s+found)`),
+		regexp.MustCompile(`(?i)554\s+.*\s+(rejected|failed)`),
 	}
 
 	// Senders that indicate a bounce email
@@ -428,17 +428,25 @@ func getClassificationReason(responseType ResponseType, score int) string {
 	}
 }
 
+// Compiled once at package init rather than on every stripHTML() call - this
+// runs on every classified email, so recompiling these on each call was
+// wasted regex-compilation work per email for no benefit (none of them
+// depend on the input).
+var (
+	htmlScriptTagRe     = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
+	htmlStyleTagRe      = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
+	htmlAnyTagRe        = regexp.MustCompile(`<[^>]+>`)
+	htmlWhitespaceRunRe = regexp.MustCompile(`\s+`)
+)
+
 // stripHTML removes HTML tags from content (simple version)
 func stripHTML(html string) string {
 	// Remove script and style elements (Go regex doesn't support backreferences)
-	reScript := regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
-	html = reScript.ReplaceAllString(html, "")
-	reStyle := regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
-	html = reStyle.ReplaceAllString(html, "")
+	html = htmlScriptTagRe.ReplaceAllString(html, "")
+	html = htmlStyleTagRe.ReplaceAllString(html, "")
 
 	// Remove HTML tags
-	reTags := regexp.MustCompile(`<[^>]+>`)
-	html = reTags.ReplaceAllString(html, " ")
+	html = htmlAnyTagRe.ReplaceAllString(html, " ")
 
 	// Decode common HTML entities
 	html = strings.ReplaceAll(html, "&nbsp;", " ")
@@ -448,8 +456,7 @@ func stripHTML(html string) string {
 	html = strings.ReplaceAll(html, "&quot;", "\"")
 
 	// Collapse whitespace
-	reWhitespace := regexp.MustCompile(`\s+`)
-	html = reWhitespace.ReplaceAllString(html, " ")
+	html = htmlWhitespaceRunRe.ReplaceAllString(html, " ")
 
 	return strings.TrimSpace(html)
 }

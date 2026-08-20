@@ -9,6 +9,16 @@ import (
 	"github.com/eraser-privacy/eraser/internal/config"
 )
 
+// ctxKey is an unexported type for context values defined by this package,
+// so its keys can never collide with keys from another package using the
+// same underlying string (see https://pkg.go.dev/context#WithValue).
+type ctxKey string
+
+// SequenceKey is the context key runSend() uses to pass each broker's
+// position in the current batch through to a Sender, so implementations
+// (e.g. the SMTP sender) can fold it into a generated message ID.
+const SequenceKey ctxKey = "sequence"
+
 type Message struct {
 	To      string
 	From    string

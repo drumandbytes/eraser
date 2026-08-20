@@ -1139,18 +1139,6 @@ func (s *Server) getRecentHistory(limit int) []history.Record {
 	return records
 }
 
-func (s *Server) render(w http.ResponseWriter, name string, data interface{}) {
-	tmpl, ok := s.templates[name]
-	if !ok {
-		http.Error(w, "Template not found: "+name, http.StatusInternalServerError)
-		return
-	}
-	err := tmpl.ExecuteTemplate(w, "layout", data)
-	if err != nil {
-		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func (s *Server) renderPartial(w http.ResponseWriter, name string, data interface{}) {
 	tmpl, ok := s.templates[name]
 	if !ok {

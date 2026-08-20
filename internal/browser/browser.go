@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
 
 	"github.com/eraser-privacy/eraser/internal/config"
@@ -315,28 +314,4 @@ func (b *Browser) takeScreenshot(ctx context.Context, brokerID, suffix string) (
 	}
 
 	return filename, nil
-}
-
-// GetPageHTML returns the current page HTML
-func (b *Browser) GetPageHTML(ctx context.Context) (string, error) {
-	var html string
-	err := chromedp.Run(ctx, chromedp.OuterHTML("html", &html))
-	return html, err
-}
-
-// GetPageTitle returns the current page title
-func (b *Browser) GetPageTitle(ctx context.Context) (string, error) {
-	var title string
-	err := chromedp.Run(ctx, chromedp.Title(&title))
-	return title, err
-}
-
-// WaitForNavigation waits for page navigation to complete
-func (b *Browser) WaitForNavigation(ctx context.Context) error {
-	return chromedp.Run(ctx, chromedp.WaitReady("body"))
-}
-
-// EnablePageEvents enables page lifecycle event monitoring
-func (b *Browser) EnablePageEvents(ctx context.Context) error {
-	return chromedp.Run(ctx, page.Enable())
 }

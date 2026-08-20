@@ -503,38 +503,6 @@ func (m *Monitor) EnsureFolderExists(name string) error {
 	return nil
 }
 
-// MoveToFolder moves a single email to the specified folder by UID
-func (m *Monitor) MoveToFolder(uid uint32, folder string) error {
-	if m.client == nil {
-		return fmt.Errorf("not connected to IMAP server")
-	}
-
-	seqSet := new(imap.SeqSet)
-	seqSet.AddNum(uid)
-
-	// Try MOVE first (RFC 6851) - this is most efficient
-	if err := m.client.UidMove(seqSet, folder); err != nil {
-		// Fallback to COPY + DELETE if MOVE not supported
-		if err := m.client.UidCopy(seqSet, folder); err != nil {
-			return fmt.Errorf("failed to copy email to '%s': %w", folder, err)
-		}
-
-		// Mark as deleted
-		item := imap.FormatFlagsOp(imap.AddFlags, true)
-		flags := []interface{}{imap.DeletedFlag}
-		if err := m.client.UidStore(seqSet, item, flags, nil); err != nil {
-			return fmt.Errorf("failed to mark email as deleted: %w", err)
-		}
-
-		// Expunge to remove the deleted message
-		if err := m.client.Expunge(nil); err != nil {
-			return fmt.Errorf("failed to expunge deleted email: %w", err)
-		}
-	}
-
-	return nil
-}
-
 // ArchiveEmails moves multiple emails to the archive folder
 func (m *Monitor) ArchiveEmails(uids []uint32, folder string) error {
 	if m.client == nil {

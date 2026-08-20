@@ -105,7 +105,7 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 		}
 		if !valid {
 			result.ErrorMessage = fmt.Sprintf("domain %s is not a known broker domain", domain)
-			return result, fmt.Errorf(result.ErrorMessage)
+			return result, fmt.Errorf("domain %s is not a known broker domain", domain)
 		}
 	}
 

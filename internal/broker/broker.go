@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -63,34 +62,6 @@ func LoadFromFile(path string) (*BrokerDatabase, error) {
 		sanitizeBroker(&db.Brokers[i])
 	}
 	return &db, nil
-}
-
-func LoadFromDir(dir string) (*BrokerDatabase, error) {
-	db := &BrokerDatabase{}
-
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read broker directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if !strings.HasSuffix(entry.Name(), ".yaml") && !strings.HasSuffix(entry.Name(), ".yml") {
-			continue
-		}
-
-		path := filepath.Join(dir, entry.Name())
-		partialDB, err := LoadFromFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load %s: %w", entry.Name(), err)
-		}
-
-		db.Brokers = append(db.Brokers, partialDB.Brokers...)
-	}
-
-	return db, nil
 }
 
 func toSet(items []string) map[string]bool {

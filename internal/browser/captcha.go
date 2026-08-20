@@ -2,7 +2,6 @@ package browser
 
 import (
 	"context"
-	"strings"
 
 	"github.com/chromedp/chromedp"
 )
@@ -428,54 +427,4 @@ func (c CaptchaInfo) GetCaptchaDescription() string {
 	}
 
 	return c.Description
-}
-
-// DetectCaptchaFromHTML checks HTML content for CAPTCHA indicators
-func DetectCaptchaFromHTML(html string) CaptchaInfo {
-	html = strings.ToLower(html)
-
-	// Check for reCAPTCHA
-	if strings.Contains(html, "recaptcha") || strings.Contains(html, "g-recaptcha") {
-		return CaptchaInfo{
-			Found:       true,
-			Type:        CaptchaTypeRecaptchaV2,
-			Confidence:  0.85,
-			Description: "reCAPTCHA detected in HTML",
-		}
-	}
-
-	// Check for hCaptcha
-	if strings.Contains(html, "hcaptcha") || strings.Contains(html, "h-captcha") {
-		return CaptchaInfo{
-			Found:       true,
-			Type:        CaptchaTypeHCaptcha,
-			Confidence:  0.85,
-			Description: "hCaptcha detected in HTML",
-		}
-	}
-
-	// Check for Turnstile
-	if strings.Contains(html, "cf-turnstile") || strings.Contains(html, "challenges.cloudflare.com") {
-		return CaptchaInfo{
-			Found:       true,
-			Type:        CaptchaTypeTurnstile,
-			Confidence:  0.85,
-			Description: "Cloudflare Turnstile detected in HTML",
-		}
-	}
-
-	// Check for generic CAPTCHA keywords
-	captchaKeywords := []string{"captcha", "verification code", "security code", "prove you are human"}
-	for _, keyword := range captchaKeywords {
-		if strings.Contains(html, keyword) {
-			return CaptchaInfo{
-				Found:       true,
-				Type:        CaptchaTypeUnknown,
-				Confidence:  0.60,
-				Description: "Possible CAPTCHA detected: " + keyword,
-			}
-		}
-	}
-
-	return CaptchaInfo{Found: false}
 }

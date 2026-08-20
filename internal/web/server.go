@@ -854,12 +854,9 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Daily send limits by provider to avoid rate limiting
-const (
-	DailyLimitSMTP     = 250 // Gmail/SMTP: stay well under 500/day
-	DailyLimitSendGrid = 500 // SendGrid free tier
-	DailyLimitResend   = 500 // Resend reasonable daily batch
-)
+// defaultDailyLimit is used only if the config's daily_send_limit is unset -
+// config.Load already fills this in normally, so this is just a safety net.
+const defaultDailyLimit = 250 // Gmail/SMTP: stay well under 500/day
 
 // processSendJob runs in a background goroutine to send emails
 func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender email.Sender) {
@@ -870,12 +867,11 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 		rateLimitMs = 2000 // Default 2 second delay
 	}
 
-	// Set daily limit based on provider
-	dailyLimit := DailyLimitSMTP // Default for SMTP
-	if s.config.Email.Provider == "sendgrid" {
-		dailyLimit = DailyLimitSendGrid
-	} else if s.config.Email.Provider == "resend" {
-		dailyLimit = DailyLimitResend
+	// Respect the same daily_send_limit the CLI `send` command uses, so the
+	// web UI and CLI don't disagree about how many emails/day is safe.
+	dailyLimit := s.config.Options.DailySendLimit
+	if dailyLimit == 0 {
+		dailyLimit = defaultDailyLimit
 	}
 	job.DailyLimit = dailyLimit
 

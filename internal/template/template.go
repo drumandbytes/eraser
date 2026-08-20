@@ -139,12 +139,3 @@ func (e *Engine) getSubject(templateName, brokerName string) string {
 		return "Personal Data Removal Request"
 	}
 }
-
-// AvailableTemplates returns the list of available template names
-func (e *Engine) AvailableTemplates() []string {
-	templates := make([]string, 0, len(e.templates))
-	for name := range e.templates {
-		templates = append(templates, name)
-	}
-	return templates
-}

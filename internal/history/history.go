@@ -245,21 +245,6 @@ func (s *Store) Add(record *Record) error {
 	return nil
 }
 
-func (s *Store) GetLastRequestForBroker(brokerID string) (*Record, error) {
-	query := `
-	SELECT id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at
-	FROM removal_requests WHERE broker_id = ? ORDER BY sent_at DESC LIMIT 1`
-
-	record, err := scanRecord(s.db.QueryRow(query, brokerID))
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to query record: %w", err)
-	}
-	return record, nil
-}
-
 func (s *Store) GetRecentRequests(limit int) ([]Record, error) {
 	query := `
 	SELECT id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at

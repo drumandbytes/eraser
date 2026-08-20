@@ -149,10 +149,30 @@ type JobManager struct {
 	mu   sync.RWMutex
 }
 
-// NewJobManager creates a new job manager
+// jobRetention controls how long a completed job stays in memory before
+// Cleanup evicts it. Jobs aren't persisted anywhere else, so this is purely
+// about not letting `jm.jobs` grow unbounded across a long-running `serve`
+// process - a week is plenty of time to check a completed send's results.
+const jobRetention = 7 * 24 * time.Hour
+
+// NewJobManager creates a new job manager and starts its background
+// cleanup loop, which evicts completed jobs older than jobRetention.
 func NewJobManager() *JobManager {
-	return &JobManager{
+	jm := &JobManager{
 		jobs: make(map[string]*Job),
+	}
+	go jm.cleanupLoop()
+	return jm
+}
+
+// cleanupLoop periodically evicts old completed jobs so long-running
+// `serve` processes don't accumulate job state forever.
+func (jm *JobManager) cleanupLoop() {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		jm.Cleanup(jobRetention)
 	}
 }
 

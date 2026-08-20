@@ -148,10 +148,3 @@ func (s *SessionStore) cleanup() {
 		}
 	}
 }
-
-// Count returns the number of active sessions (for monitoring)
-func (s *SessionStore) Count() int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return len(s.sessions)
-}

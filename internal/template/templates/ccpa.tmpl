@@ -23,6 +23,9 @@ PERSONAL IDENTIFICATION:
 {{- if .ZipCode}}
 - ZIP Code: {{.ZipCode}}
 {{- end}}
+{{- if .OtherAddresses}}
+- Previously Lived At: {{.OtherAddresses}}
+{{- end}}
 {{- if .Phone}}
 - Phone: {{.Phone}}
 {{- end}}

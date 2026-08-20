@@ -72,13 +72,18 @@ type Profile struct {
 	// e.g. a diacritic-free version of your name ("Maris" for "Māris"), a
 	// maiden name, or a nickname you've used to sign up for things.
 	NameVariants []string `yaml:"name_variants,omitempty"`
-	Address      string   `yaml:"address,omitempty"`
-	City         string   `yaml:"city,omitempty"`
-	State        string   `yaml:"state,omitempty"`
-	ZipCode      string   `yaml:"zip_code,omitempty"`
-	Country      string   `yaml:"country,omitempty"`
-	Phone        string   `yaml:"phone,omitempty"`
-	DateOfBirth  string   `yaml:"date_of_birth,omitempty"`
+	// PreviousAddresses are other places you've lived recently enough that a
+	// broker might still have the record - a partial address (missing an
+	// apartment number, say) is still worth including, since most broker
+	// matching keys off street/city/postal code rather than the exact unit.
+	PreviousAddresses []string `yaml:"previous_addresses,omitempty"`
+	Address           string   `yaml:"address,omitempty"`
+	City              string   `yaml:"city,omitempty"`
+	State             string   `yaml:"state,omitempty"`
+	ZipCode           string   `yaml:"zip_code,omitempty"`
+	Country           string   `yaml:"country,omitempty"`
+	Phone             string   `yaml:"phone,omitempty"`
+	DateOfBirth       string   `yaml:"date_of_birth,omitempty"`
 }
 
 func (p Profile) FullName() string { return p.FirstName + " " + p.LastName }

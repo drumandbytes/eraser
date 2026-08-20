@@ -214,6 +214,8 @@ func runInit() error {
 	cfg.Profile.State = prompt(reader, "State/Province (optional): ")
 	cfg.Profile.ZipCode = prompt(reader, "ZIP/Postal code (optional): ")
 	cfg.Profile.Country = prompt(reader, "Country (optional): ")
+	prevAddresses := prompt(reader, "Previous address(es) from the last 5-7 years, if different - semicolon separated (optional): ")
+	cfg.Profile.PreviousAddresses = splitAndTrimBy(prevAddresses, ";")
 	cfg.Profile.Phone = prompt(reader, "Phone number (optional): ")
 
 	fmt.Println()
@@ -644,10 +646,17 @@ func prompt(reader *bufio.Reader, message string) string {
 // splitAndTrim splits a comma-separated string into a trimmed, non-empty slice.
 // Returns nil for blank input.
 func splitAndTrim(s string) []string {
+	return splitAndTrimBy(s, ",")
+}
+
+// splitAndTrimBy splits s on sep into a trimmed, non-empty slice. Returns nil
+// for blank input. Use a non-comma separator (e.g. ";") for values - like
+// addresses - that may themselves contain commas.
+func splitAndTrimBy(s, sep string) []string {
 	if strings.TrimSpace(s) == "" {
 		return nil
 	}
-	parts := strings.Split(s, ",")
+	parts := strings.Split(s, sep)
 	result := make([]string, 0, len(parts))
 	for _, p := range parts {
 		p = strings.TrimSpace(p)

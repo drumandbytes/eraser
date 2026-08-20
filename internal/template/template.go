@@ -18,19 +18,20 @@ var embeddedTemplates embed.FS
 // EmailData contains all data available to email templates
 type EmailData struct {
 	// User profile
-	FirstName   string
-	LastName    string
-	FullName    string
-	Email       string
-	OtherEmails string // comma-separated additional emails, empty if none
-	OtherNames  string // comma-separated name variants, empty if none
-	Address     string
-	City        string
-	State       string
-	ZipCode     string
-	Country     string
-	Phone       string
-	DateOfBirth string
+	FirstName      string
+	LastName       string
+	FullName       string
+	Email          string
+	OtherEmails    string // comma-separated additional emails, empty if none
+	OtherNames     string // comma-separated name variants, empty if none
+	OtherAddresses string // semicolon-separated previous addresses, empty if none
+	Address        string
+	City           string
+	State          string
+	ZipCode        string
+	Country        string
+	Phone          string
+	DateOfBirth    string
 
 	// Broker info
 	BrokerName    string
@@ -89,27 +90,28 @@ func (e *Engine) Render(templateName string, profile config.Profile, b broker.Br
 
 	now := time.Now()
 	data := EmailData{
-		FirstName:     profile.FirstName,
-		LastName:      profile.LastName,
-		FullName:      profile.FullName(),
-		Email:         profile.Email,
-		OtherEmails:   strings.Join(profile.AdditionalEmails, ", "),
-		OtherNames:    strings.Join(profile.NameVariants, ", "),
-		Address:       profile.Address,
-		City:          profile.City,
-		State:         profile.State,
-		ZipCode:       profile.ZipCode,
-		Country:       profile.Country,
-		Phone:         profile.Phone,
-		DateOfBirth:   profile.DateOfBirth,
-		BrokerName:    b.Name,
-		BrokerEmail:   b.Email,
-		BrokerWebsite: b.Website,
-		BrokerOptOut:  b.OptOutURL,
-		Date:          now.Format("January 2, 2006"),
-		Year:          now.Year(),
-		Month:         now.Format("January"),
-		Template:      templateName,
+		FirstName:      profile.FirstName,
+		LastName:       profile.LastName,
+		FullName:       profile.FullName(),
+		Email:          profile.Email,
+		OtherEmails:    strings.Join(profile.AdditionalEmails, ", "),
+		OtherNames:     strings.Join(profile.NameVariants, ", "),
+		OtherAddresses: strings.Join(profile.PreviousAddresses, "; "),
+		Address:        profile.Address,
+		City:           profile.City,
+		State:          profile.State,
+		ZipCode:        profile.ZipCode,
+		Country:        profile.Country,
+		Phone:          profile.Phone,
+		DateOfBirth:    profile.DateOfBirth,
+		BrokerName:     b.Name,
+		BrokerEmail:    b.Email,
+		BrokerWebsite:  b.Website,
+		BrokerOptOut:   b.OptOutURL,
+		Date:           now.Format("January 2, 2006"),
+		Year:           now.Year(),
+		Month:          now.Format("January"),
+		Template:       templateName,
 	}
 
 	var buf bytes.Buffer

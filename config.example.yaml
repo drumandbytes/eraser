@@ -23,6 +23,13 @@ profile:
   state: "CA"
   zip_code: "94102"
   country: "USA"
+
+  # Optional: places you've lived recently enough (last 5-7 years, say) that
+  # a broker might still have the record. A partial address (no apartment
+  # number) is still worth including - most broker matching keys off
+  # street/city/postal code, not the exact unit.
+  # previous_addresses:
+  #   - Old Street 1, Old City, OC-12345
   phone: "+1-555-123-4567"
   date_of_birth: "1990-01-15"  # Format: YYYY-MM-DD
 

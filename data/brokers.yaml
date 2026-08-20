@@ -718,7 +718,7 @@ brokers:
       category: marketing
     - id: automotive-mastermind
       name: Automotive Mastermind
-      email: info@automotivemastermind.com
+      email: ""
       website: https://www.automotivemastermind.com/
       opt_out_url: https://www.automotivemastermind.com/do-not-sell-or-share-my-personal-information-request/
       region: us
@@ -1762,7 +1762,7 @@ brokers:
       category: marketing
     - id: epsilon-data-management
       name: EPSILON DATA MANAGEMENT LLC
-      email: ruby.ashkanani@publicisresources.com
+      email: ""
       website: https://www.epsilon.com/
       opt_out_url: https://legal.epsilon.com/dsr/
       region: us
@@ -1866,7 +1866,7 @@ brokers:
       category: marketing
     - id: fideo-intelligence
       name: Fideo Intelligence, Inc.
-      email: legal@fideo.ai
+      email: ""
       website: https://www.fideo.ai/
       opt_out_url: https://app.fideo.ai/your-privacy-choices/
       region: us
@@ -2108,7 +2108,7 @@ brokers:
       category: marketing
     - id: grayhair-software
       name: Grayhair Software LLC
-      email: ddecencio@grayhairsoftware.com
+      email: privacy@grayhairsoftware.com
       website: https://www.grayhairsoftware.com/
       opt_out_url: https://www.grayhairsoftware.com/privacy-policy/#Do-Not-Sell-My-Personal-Information
       region: us

@@ -9,8 +9,7 @@
         <div class="flex flex-wrap gap-2">
             <button
                 id="retry-failed-btn"
-                class="btn text-white"
-                style="background: var(--error, #dc2626);"
+                class="btn btn-danger"
                 onclick="startSendAll('failed')"
                 title="Re-send to brokers whose last attempt failed"
             >
@@ -40,13 +39,13 @@
 
     <!-- Daily limit info banner -->
     {{if gt .Filtered 250}}
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div class="alert alert-info mb-6">
         <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <div>
-                <p class="text-blue-800 text-sm">
+                <p class="text-sm">
                     <strong>Sending {{.Filtered}} emails will take multiple days.</strong>
                     To avoid email provider rate limits, Eraser sends up to 250 emails per day.
                     Remaining emails will automatically continue when you restart the app the next day.
@@ -167,7 +166,7 @@
                                 {{if .Email}}
                                 <span class="text-sm text-muted">{{.Email}}</span>
                                 {{else}}
-                                <span class="text-sm text-amber-600" title="Needs manual follow-up - no email on file">No email on file</span>
+                                <span class="text-sm text-warning" title="Needs manual follow-up - no email on file">No email on file</span>
                                 {{end}}
                             </div>
                         </td>
@@ -261,7 +260,7 @@
                         {{if .Email}}
                         <p class="text-sm text-muted">{{.Email}}</p>
                         {{else}}
-                        <p class="text-sm text-amber-600">No email on file</p>
+                        <p class="text-sm text-warning">No email on file</p>
                         {{end}}
                     </div>
                     <div id="status-mobile-{{.ID}}">
@@ -409,13 +408,13 @@ function showProgressUI() {
         <div class="card p-4">
             <div class="flex items-center justify-between mb-2">
                 <span class="font-medium text-primary">Sending emails...</span>
-                <button onclick="cancelJob()" class="btn btn-ghost text-sm py-1 px-3 text-red-600 hover:bg-red-50">
+                <button onclick="cancelJob()" class="btn btn-ghost text-sm py-1 px-3 text-error">
                     Cancel
                 </button>
             </div>
             <div id="current-broker" class="text-sm text-secondary mb-2"></div>
-            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
-                <div id="progress-bar" class="bg-indigo-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+            <div class="w-full rounded-full h-2 mb-2" style="background: var(--bg-elevated);">
+                <div id="progress-bar" class="h-2 rounded-full transition-all" style="width: 0%; background: var(--accent);"></div>
             </div>
             <div id="progress-text" class="text-xs text-muted">0 of 0 complete (0 sent, 0 failed)</div>
         </div>
@@ -480,24 +479,24 @@ function showCompletionMessage(job) {
     // Handle auth errors with specific guidance
     if (job.error_type === 'auth') {
         progressArea.innerHTML = `
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="alert alert-error">
                 <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                     <div>
-                        <h3 class="font-semibold text-red-800">Email Authentication Failed</h3>
-                        <p class="text-red-700 text-sm mt-1">Sent ${job.sent} emails before stopping. Your email provider blocked further sends.</p>
-                        <div class="mt-3 p-3 bg-white rounded border border-red-100">
-                            <p class="font-medium text-gray-800 mb-2">What to do:</p>
-                            <ol class="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                        <h3 class="font-semibold" style="color: var(--text-primary);">Email Authentication Failed</h3>
+                        <p class="text-sm mt-1">Sent ${job.sent} emails before stopping. Your email provider blocked further sends.</p>
+                        <div class="mt-3 p-3 rounded" style="background: var(--bg-surface); border: 1px solid var(--border);">
+                            <p class="font-medium mb-2" style="color: var(--text-primary);">What to do:</p>
+                            <ol class="text-sm space-y-1 list-decimal list-inside" style="color: var(--text-secondary);">
                                 <li>Check your email account for security alerts</li>
-                                <li>If using Gmail, <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-blue-600 underline">generate a new app password</a></li>
+                                <li>If using Gmail, <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-accent hover:underline">generate a new app password</a></li>
                                 <li>Wait 24 hours before trying again (rate limits reset daily)</li>
-                                <li>Check your <a href="/settings" class="text-blue-600 underline">SMTP settings</a> - some providers cap how many emails an app password can send per day</li>
+                                <li>Check your <a href="/settings" class="text-accent hover:underline">SMTP settings</a> - some providers cap how many emails an app password can send per day</li>
                             </ol>
                         </div>
-                        <p class="text-sm text-gray-600 mt-3">
+                        <p class="text-sm mt-3" style="color: var(--text-secondary);">
                             <strong>${job.total - job.sent - job.failed} brokers remaining.</strong>
                             Filter by "Pending" status to send to them later.
                         </p>
@@ -511,15 +510,15 @@ function showCompletionMessage(job) {
     // Handle daily limit pause
     if (job.status === 'paused') {
         progressArea.innerHTML = `
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="alert alert-info">
                 <div class="flex items-start gap-3">
-                    <svg class="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg class="w-6 h-6 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <div>
-                        <h3 class="font-semibold text-blue-800">Daily Limit Reached</h3>
-                        <p class="text-blue-700 text-sm mt-1">Sent ${job.sent} emails today. Remaining emails will continue tomorrow.</p>
-                        <p class="text-sm text-gray-600 mt-2">${job.total - job.sent - job.failed} brokers will be sent automatically when you restart the app tomorrow.</p>
+                        <h3 class="font-semibold" style="color: var(--text-primary);">Daily Limit Reached</h3>
+                        <p class="text-sm mt-1">Sent ${job.sent} emails today. Remaining emails will continue tomorrow.</p>
+                        <p class="text-sm mt-2" style="color: var(--text-secondary);">${job.total - job.sent - job.failed} brokers will be sent automatically when you restart the app tomorrow.</p>
                     </div>
                 </div>
             </div>
@@ -528,7 +527,7 @@ function showCompletionMessage(job) {
     }
 
     // Normal completion
-    const statusClass = job.status === 'cancelled' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
+    const statusClass = job.status === 'cancelled' ? 'alert alert-warning' : 'alert alert-success';
     const statusText = job.status === 'cancelled' ? 'Cancelled' : 'Complete';
 
     progressArea.innerHTML = `
@@ -559,7 +558,7 @@ async function cancelJob() {
 function showError(message) {
     const progressArea = document.getElementById('send-all-progress');
     progressArea.innerHTML = `
-        <div class="bg-red-100 text-red-800 px-4 py-3 rounded">
+        <div class="alert alert-error">
             <strong>Error:</strong> ${message}
         </div>
     `;

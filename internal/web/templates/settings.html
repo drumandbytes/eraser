@@ -169,7 +169,7 @@
             <form id="inbox-form" method="POST" action="/settings/inbox" class="{{if and .Config .Config.Inbox .Config.Inbox.Enabled}}hidden {{end}}space-y-4 mt-4">
                 {{.CSRFField}}
 
-                <div class="p-4 rounded-xl" style="background: rgba(245, 158, 11, 0.1);">
+                <div class="p-4 rounded-xl" style="background: rgba(234, 179, 8, 0.1);">
                     <h3 class="font-medium text-warning mb-2">Gmail Setup Instructions</h3>
                     <ol class="text-sm text-secondary space-y-1 list-decimal list-inside">
                         <li>Enable 2-Step Verification in your Google Account</li>
@@ -212,7 +212,7 @@
             </form>
 
             {{if .InboxMessage}}
-            <div class="mt-4 p-3 rounded-lg {{if .InboxSuccess}}bg-green-500/10 text-green-400{{else}}bg-red-500/10 text-red-400{{end}}">
+            <div class="mt-4 alert {{if .InboxSuccess}}alert-success{{else}}alert-error{{end}}">
                 {{.InboxMessage}}
             </div>
             {{end}}
@@ -262,9 +262,9 @@
         </div>
 
         <!-- Danger Zone -->
-        <div class="card p-6" style="border-color: rgba(244, 63, 94, 0.3);">
+        <div class="card p-6" style="border-color: rgba(239, 68, 68, 0.3);">
             <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(244, 63, 94, 0.15);">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(239, 68, 68, 0.15);">
                     <svg class="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
@@ -315,7 +315,7 @@ async function clearAllHistory() {
 
         if (resp.ok) {
             resultArea.innerHTML = `
-                <div class="bg-green-100 text-green-800 px-4 py-3 rounded">
+                <div class="alert alert-success">
                     ${data.message}.
                 </div>
             `;
@@ -324,7 +324,7 @@ async function clearAllHistory() {
         }
     } catch (err) {
         resultArea.innerHTML = `
-            <div class="bg-red-100 text-red-800 px-4 py-3 rounded">
+            <div class="alert alert-error">
                 Error: ${err.message}
             </div>
         `;

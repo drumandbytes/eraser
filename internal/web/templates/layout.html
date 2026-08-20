@@ -7,11 +7,6 @@
     <title>{{.Title}} - Eraser</title>
     {{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-
     <!-- Self-hosted: this is the Tailwind CDN's runtime JIT compiler (a JS
          file, despite the historical "tailwind.min.css" name it had before
          this fork self-hosted it) - not a precompiled stylesheet. It still
@@ -24,7 +19,7 @@
             theme: {
                 extend: {
                     colors: {
-                        accent: '#10b981',
+                        accent: '#6366f1',
                     }
                 }
             }
@@ -34,57 +29,64 @@
 
     <style>
         /* ============================================
-           ERASER DESIGN SYSTEM - "Digital Sanctuary"
+           ERASER DESIGN SYSTEM - "Ops Console"
+           Dense, dark-first, monospace accents for data.
            ============================================ */
 
         /* CSS Custom Properties - Dark Theme (Default) */
         :root {
-            --bg-base: #020617;
-            --bg-surface: #0f172a;
-            --bg-elevated: #1e293b;
-            --bg-glass: rgba(15, 23, 42, 0.8);
+            --bg-base: #0a0a0b;
+            --bg-surface: #131315;
+            --bg-elevated: #1a1a1d;
+            --bg-glass: rgba(19, 19, 21, 0.9);
 
-            --accent: #10b981;
-            --accent-hover: #34d399;
-            --accent-muted: rgba(16, 185, 129, 0.15);
-            --accent-glow: rgba(16, 185, 129, 0.4);
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --accent-muted: rgba(99, 102, 241, 0.12);
+            --accent-glow: rgba(99, 102, 241, 0.3);
 
-            --success: #10b981;
-            --warning: #f59e0b;
-            --error: #f43f5e;
+            --success: #22c55e;
+            --warning: #eab308;
+            --error: #ef4444;
 
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #6b6b71;
 
-            --border: #334155;
-            --border-subtle: #1e293b;
+            --border: #232326;
+            --border-subtle: #1a1a1d;
 
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 4px 10px -2px rgba(0, 0, 0, 0.5);
+
+            --font-mono: "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
         }
 
         /* Light Theme */
         .light {
-            --bg-base: #f8fafc;
+            --bg-base: #fafafa;
             --bg-surface: #ffffff;
-            --bg-elevated: #f1f5f9;
-            --bg-glass: rgba(255, 255, 255, 0.8);
+            --bg-elevated: #f4f4f5;
+            --bg-glass: rgba(255, 255, 255, 0.9);
 
-            --accent: #059669;
-            --accent-hover: #10b981;
-            --accent-muted: rgba(5, 150, 105, 0.1);
-            --accent-glow: rgba(5, 150, 105, 0.3);
+            --accent: #4f46e5;
+            --accent-hover: #6366f1;
+            --accent-muted: rgba(79, 70, 229, 0.08);
+            --accent-glow: rgba(79, 70, 229, 0.25);
 
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --text-muted: #94a3b8;
+            --success: #16a34a;
+            --warning: #b45309;
+            --error: #dc2626;
 
-            --border: #e2e8f0;
-            --border-subtle: #f1f5f9;
+            --text-primary: #18181b;
+            --text-secondary: #52525b;
+            --text-muted: #a1a1aa;
 
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --border: #e4e4e7;
+            --border-subtle: #f4f4f5;
+
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 4px 10px -2px rgba(0, 0, 0, 0.08);
         }
 
         /* ============================================
@@ -92,11 +94,16 @@
            ============================================ */
 
         * {
-            font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
         }
 
         h1, h2, h3, h4, h5, h6, .font-display {
-            font-family: 'Outfit', system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+            letter-spacing: -0.01em;
+        }
+
+        .font-mono {
+            font-family: var(--font-mono);
         }
 
         body {
@@ -104,36 +111,7 @@
             color: var(--text-secondary);
             min-height: 100vh;
             position: relative;
-        }
-
-        /* Subtle gradient background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(ellipse at 50% 0%, var(--bg-surface) 0%, var(--bg-base) 70%);
-            z-index: -2;
-        }
-
-        /* Noise texture overlay */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-            opacity: 0.03;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .light body::after {
-            opacity: 0.02;
+            font-size: 14px;
         }
 
         /* ============================================
@@ -213,21 +191,21 @@
         .card {
             background: var(--bg-surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 8px;
             box-shadow: var(--shadow);
-            transition: all 0.2s ease;
+            transition: border-color 0.15s ease;
         }
 
         .card:hover {
-            box-shadow: var(--shadow-lg);
+            border-color: var(--text-muted);
         }
 
         .card-glass {
             background: var(--bg-glass);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 8px;
         }
 
         /* Buttons */
@@ -236,11 +214,11 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 10px 20px;
-            font-weight: 500;
-            font-size: 14px;
-            border-radius: 10px;
-            transition: all 0.2s ease;
+            padding: 8px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
             cursor: pointer;
             border: none;
             text-decoration: none;
@@ -249,13 +227,10 @@
         .btn-primary {
             background: var(--accent);
             color: white;
-            box-shadow: 0 0 20px var(--accent-glow);
         }
 
         .btn-primary:hover {
             background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 0 30px var(--accent-glow);
         }
 
         .btn-secondary {
@@ -280,25 +255,25 @@
         }
 
         .btn-danger {
-            background: rgba(244, 63, 94, 0.1);
+            background: rgba(239, 68, 68, 0.12);
             color: var(--error);
-            border: 1px solid rgba(244, 63, 94, 0.3);
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
         .btn-danger:hover {
-            background: rgba(244, 63, 94, 0.2);
+            background: rgba(239, 68, 68, 0.2);
         }
 
         /* Form inputs */
         .input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 8px 12px;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 6px;
             color: var(--text-primary);
-            font-size: 14px;
-            transition: all 0.2s ease;
+            font-size: 13px;
+            transition: all 0.15s ease;
         }
 
         .input:focus {
@@ -314,7 +289,7 @@
         /* Labels */
         .label {
             display: block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text-primary);
             margin-bottom: 6px;
@@ -325,24 +300,25 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-weight: 500;
-            border-radius: 20px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            font-family: var(--font-mono);
         }
 
         .badge-success {
-            background: rgba(16, 185, 129, 0.15);
+            background: rgba(34, 197, 94, 0.14);
             color: var(--success);
         }
 
         .badge-warning {
-            background: rgba(245, 158, 11, 0.15);
+            background: rgba(234, 179, 8, 0.14);
             color: var(--warning);
         }
 
         .badge-error {
-            background: rgba(244, 63, 94, 0.15);
+            background: rgba(239, 68, 68, 0.14);
             color: var(--error);
         }
 
@@ -350,6 +326,66 @@
             background: var(--bg-elevated);
             color: var(--text-secondary);
         }
+
+        .badge-info {
+            background: var(--accent-muted);
+            color: var(--accent);
+        }
+
+        /* Icon containers (empty states, list-row leading icons) - a
+           colored square behind an svg icon. Replaces hardcoded
+           bg-blue-100/bg-green-100/etc pastels that don't adapt to dark
+           mode. */
+        .icon-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .icon-box-success { background: rgba(34, 197, 94, 0.14); color: var(--success); }
+        .icon-box-warning { background: rgba(234, 179, 8, 0.14); color: var(--warning); }
+        .icon-box-error { background: rgba(239, 68, 68, 0.14); color: var(--error); }
+        .icon-box-info { background: var(--accent-muted); color: var(--accent); }
+        .icon-box-neutral { background: var(--bg-elevated); color: var(--text-secondary); }
+
+        /* Small clickable/status pills (e.g. "3 forms", "View" links) -
+           like .badge but with hover state, for interactive use */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 9px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: background 0.15s ease;
+        }
+
+        .chip-success { background: rgba(34, 197, 94, 0.14); color: var(--success); }
+        .chip-success:hover { background: rgba(34, 197, 94, 0.22); }
+        .chip-warning { background: rgba(234, 179, 8, 0.14); color: var(--warning); }
+        .chip-warning:hover { background: rgba(234, 179, 8, 0.22); }
+        .chip-error { background: rgba(239, 68, 68, 0.14); color: var(--error); }
+        .chip-error:hover { background: rgba(239, 68, 68, 0.22); }
+        .chip-info { background: var(--accent-muted); color: var(--accent); }
+        .chip-info:hover { background: rgba(99, 102, 241, 0.22); }
+        .chip-neutral { background: var(--bg-elevated); color: var(--text-secondary); }
+        .chip-neutral:hover { background: var(--border); }
+
+        /* Full-width inline banners (success/error/warning messages after
+           an action) - replaces hardcoded bg-green-100/bg-red-100 divs */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .alert-success { background: rgba(34, 197, 94, 0.12); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.25); }
+        .alert-error { background: rgba(239, 68, 68, 0.12); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.25); }
+        .alert-warning { background: rgba(234, 179, 8, 0.12); color: var(--warning); border: 1px solid rgba(234, 179, 8, 0.25); }
+        .alert-info { background: var(--accent-muted); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.25); }
 
         /* Status dot */
         .status-dot {
@@ -370,8 +406,8 @@
 
         .table th {
             text-align: left;
-            padding: 12px 16px;
-            font-size: 12px;
+            padding: 9px 14px;
+            font-size: 10.5px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -381,9 +417,10 @@
         }
 
         .table td {
-            padding: 16px;
+            padding: 10px 14px;
             border-bottom: 1px solid var(--border-subtle);
             color: var(--text-secondary);
+            font-size: 13px;
         }
 
         .table tr:hover td {
@@ -394,15 +431,47 @@
             border-bottom: none;
         }
 
-        /* Navigation link */
+        /* Top nav bar - sticky, flush border-bottom, fixed height so the
+           tab-strip nav-links below can use height:100% */
+        .site-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--bg-glass);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .site-nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 52px;
+        }
+
+        .brand-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 2px;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* Navigation link - flush against the bottom of the top bar, like a
+           tab strip, rather than a floating pill link */
         .nav-link {
             position: relative;
-            padding: 8px 16px;
-            font-size: 14px;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 14px;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text-secondary);
             text-decoration: none;
-            transition: color 0.2s ease;
+            border-bottom: 2px solid transparent;
+            transition: color 0.15s ease;
         }
 
         .nav-link:hover {
@@ -410,38 +479,44 @@
         }
 
         .nav-link.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent);
+        }
+
+        /* Mobile nav uses plain stacked rows instead of the tab-strip look */
+        .nav-link-mobile {
+            display: block;
+            padding: 9px 12px;
+            border-radius: 6px;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        .nav-link-mobile:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .nav-link-mobile.active {
+            background: var(--accent-muted);
             color: var(--accent);
-        }
-
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 2px;
-            background: var(--accent);
-            transition: all 0.2s ease;
-            transform: translateX(-50%);
-        }
-
-        .nav-link:hover::after,
-        .nav-link.active::after {
-            width: 100%;
+            font-weight: 600;
         }
 
         /* Theme toggle */
         .theme-toggle {
-            width: 40px;
-            height: 40px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
+            border-radius: 6px;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             color: var(--text-secondary);
         }
 
@@ -451,8 +526,8 @@
         }
 
         .theme-toggle svg {
-            width: 20px;
-            height: 20px;
+            width: 17px;
+            height: 17px;
         }
 
         /* Spinner */
@@ -555,61 +630,57 @@
     </script>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-3">
-            <div class="card-glass px-4 py-3">
-                <div class="flex items-center justify-between">
-                    <!-- Logo -->
-                    <a href="/" class="flex items-center gap-3 text-decoration-none">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg" style="box-shadow: 0 0 20px var(--accent-glow);">
-                            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                        </div>
-                        <span class="font-display text-xl font-bold text-primary">Eraser</span>
-                    </a>
+    <!-- Navigation: a flush top bar (not a floating pill) so pages get the
+         full viewport width - matters most on data-dense pages like the
+         777-broker list. -->
+    <nav class="site-nav">
+        <div class="max-w-6xl mx-auto px-4 site-nav-inner">
+            <!-- Logo -->
+            <a href="/" class="flex items-center gap-2 text-decoration-none">
+                <span class="brand-dot"></span>
+                <span class="font-display text-[15px] font-bold text-primary">eraser</span>
+            </a>
 
-                    <!-- Desktop Navigation -->
-                    <div class="hidden sm:flex items-center gap-1 desktop-nav">
-                        <a href="/" class="nav-link {{if eq .Title "Dashboard"}}active{{end}}">Dashboard</a>
-                        <a href="/brokers" class="nav-link {{if eq .Title "Data Brokers"}}active{{end}}">Brokers</a>
-                        <a href="/pipeline" class="nav-link {{if eq .Title "Pipeline"}}active{{end}}">Pipeline</a>
-                        <a href="/history" class="nav-link {{if eq .Title "History"}}active{{end}}">History</a>
-                        <a href="/settings" class="nav-link {{if eq .Title "Settings"}}active{{end}}">Settings</a>
-                    </div>
+            <!-- Desktop Navigation -->
+            <div class="hidden sm:flex items-stretch gap-1 desktop-nav h-full">
+                <a href="/" class="nav-link {{if eq .Title "Dashboard"}}active{{end}}">Dashboard</a>
+                <a href="/brokers" class="nav-link {{if eq .Title "Data Brokers"}}active{{end}}">Brokers</a>
+                <a href="/pipeline" class="nav-link {{if eq .Title "Pipeline"}}active{{end}}">Pipeline</a>
+                <a href="/history" class="nav-link {{if eq .Title "History"}}active{{end}}">History</a>
+                <a href="/settings" class="nav-link {{if eq .Title "Settings"}}active{{end}}">Settings</a>
+            </div>
 
-                    <!-- Theme Toggle -->
-                    <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
-                    </button>
+            <div class="flex items-center gap-2">
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </button>
 
-                    <!-- Mobile Menu Button -->
-                    <button class="mobile-menu sm:hidden theme-toggle" onclick="document.getElementById('mobile-nav').classList.toggle('hidden')">
-                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
-                </div>
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu sm:hidden theme-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="var m=document.getElementById('mobile-nav'); var open=!m.classList.contains('hidden'); m.classList.toggle('hidden'); this.setAttribute('aria-expanded', String(!open));">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
-                <!-- Mobile Navigation -->
-                <div id="mobile-nav" class="hidden sm:hidden mt-4 pt-4 border-t border-[var(--border)]">
-                    <div class="flex flex-col gap-2">
-                        <a href="/" class="nav-link {{if eq .Title "Dashboard"}}active{{end}}">Dashboard</a>
-                        <a href="/brokers" class="nav-link {{if eq .Title "Data Brokers"}}active{{end}}">Brokers</a>
-                        <a href="/pipeline" class="nav-link {{if eq .Title "Pipeline"}}active{{end}}">Pipeline</a>
-                        <a href="/history" class="nav-link {{if eq .Title "History"}}active{{end}}">History</a>
-                        <a href="/settings" class="nav-link {{if eq .Title "Settings"}}active{{end}}">Settings</a>
-                    </div>
-                </div>
+        <!-- Mobile Navigation -->
+        <div id="mobile-nav" class="hidden sm:hidden border-t border-[var(--border)] bg-[var(--bg-surface)]">
+            <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
+                <a href="/" class="nav-link-mobile {{if eq .Title "Dashboard"}}active{{end}}">Dashboard</a>
+                <a href="/brokers" class="nav-link-mobile {{if eq .Title "Data Brokers"}}active{{end}}">Brokers</a>
+                <a href="/pipeline" class="nav-link-mobile {{if eq .Title "Pipeline"}}active{{end}}">Pipeline</a>
+                <a href="/history" class="nav-link-mobile {{if eq .Title "History"}}active{{end}}">History</a>
+                <a href="/settings" class="nav-link-mobile {{if eq .Title "Settings"}}active{{end}}">Settings</a>
             </div>
         </div>
     </nav>
 
     <!-- Main content -->
-    <main class="max-w-6xl mx-auto pt-24 pb-12 px-4">
+    <main class="max-w-6xl mx-auto pt-8 pb-12 px-4">
         {{template "content" .}}
     </main>
 

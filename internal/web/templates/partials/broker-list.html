@@ -24,7 +24,7 @@
                         {{if .Email}}
                         <span class="text-sm text-muted">{{.Email}}</span>
                         {{else}}
-                        <span class="text-sm text-amber-600" title="Needs manual follow-up - no email on file">No email on file</span>
+                        <span class="text-sm text-warning" title="Needs manual follow-up - no email on file">No email on file</span>
                         {{end}}
                     </div>
                 </td>
@@ -118,7 +118,7 @@
                 {{if .Email}}
                 <p class="text-sm text-muted">{{.Email}}</p>
                 {{else}}
-                <p class="text-sm text-amber-600">No email on file</p>
+                <p class="text-sm text-warning">No email on file</p>
                 {{end}}
             </div>
             <div id="status-mobile-{{.ID}}">

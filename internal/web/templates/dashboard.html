@@ -2,13 +2,11 @@
 <div class="fade-in-up">
     <!-- Hero Section -->
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
-        <div class="flex items-center gap-5">
-            <div class="float">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center" style="box-shadow: 0 0 30px var(--accent-glow);">
-                    <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                </div>
+        <div class="flex items-center gap-4">
+            <div class="w-11 h-11 rounded-lg flex items-center justify-center" style="background: var(--accent);">
+                <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
             </div>
             <div>
                 <h1 class="font-display text-3xl font-bold text-primary">Welcome back, {{.Profile.FirstName}}</h1>
@@ -48,7 +46,7 @@
                     <p class="text-sm text-muted mb-1">Requests Sent</p>
                     <p class="font-display text-3xl font-bold text-success">{{.Stats.Sent}}</p>
                 </div>
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style="background: rgba(16, 185, 129, 0.15);">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style="background: rgba(34, 197, 94, 0.15);">
                     <svg class="w-5 h-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -64,7 +62,7 @@
                     <p class="text-sm text-muted mb-1">Failed</p>
                     <p class="font-display text-3xl font-bold text-error">{{.Stats.Failed}}</p>
                 </div>
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style="background: rgba(244, 63, 94, 0.15);">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style="background: rgba(239, 68, 68, 0.15);">
                     <svg class="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -80,7 +78,7 @@
                     <p class="text-sm text-muted mb-1">Pending</p>
                     <p class="font-display text-3xl font-bold text-warning">{{.Stats.Pending}}</p>
                 </div>
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style="background: rgba(245, 158, 11, 0.15);">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform" style="background: rgba(234, 179, 8, 0.15);">
                     <svg class="w-5 h-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -95,8 +93,8 @@
     <div class="card p-6 mb-8">
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(99, 102, 241, 0.15);">
-                    <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
+                    <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
                     </svg>
                 </div>
@@ -120,29 +118,29 @@
                 <p class="text-xs text-muted mt-1">Waiting for Reply</p>
             </a>
             <!-- Confirmed -->
-            <a href="/pipeline?status=confirmed" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-green-500/50 transition-all cursor-pointer" style="background: rgba(16, 185, 129, 0.1);">
-                <p class="text-2xl font-bold text-green-500">{{.PipelineStats.Confirmed}}</p>
+            <a href="/pipeline?status=confirmed" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-[var(--success)] transition-all cursor-pointer" style="background: rgba(34, 197, 94, 0.1);">
+                <p class="text-2xl font-bold text-success">{{.PipelineStats.Confirmed}}</p>
                 <p class="text-xs text-muted mt-1">Removal Confirmed</p>
             </a>
             <!-- Rejected -->
-            <a href="/pipeline?status=rejected" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-red-500/50 transition-all cursor-pointer" style="background: rgba(244, 63, 94, 0.1);">
-                <p class="text-2xl font-bold text-red-500">{{.PipelineStats.Rejected}}</p>
+            <a href="/pipeline?status=rejected" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-[var(--error)] transition-all cursor-pointer" style="background: rgba(239, 68, 68, 0.1);">
+                <p class="text-2xl font-bold text-error">{{.PipelineStats.Rejected}}</p>
                 <p class="text-xs text-muted mt-1">Request Rejected</p>
             </a>
             <!-- Action Needed (unified: forms, confirmations, captchas, reviews) -->
-            <a href="/tasks" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-orange-500/50 transition-all cursor-pointer" style="background: rgba(249, 115, 22, 0.1);">
-                <p class="text-2xl font-bold text-orange-500">{{.PipelineStats.PendingTasks}}</p>
+            <a href="/tasks" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-[var(--warning)] transition-all cursor-pointer" style="background: rgba(234, 179, 8, 0.1);">
+                <p class="text-2xl font-bold text-warning">{{.PipelineStats.PendingTasks}}</p>
                 <p class="text-xs text-muted mt-1">Action Needed</p>
             </a>
         </div>
 
         {{if gt .PipelineStats.PendingTasks 0}}
-        <a href="/tasks" class="mt-4 p-3 rounded-lg flex items-center justify-between hover:ring-2 hover:ring-orange-500/50 transition-all" style="background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.3);">
+        <a href="/tasks" class="mt-4 p-3 rounded-lg flex items-center justify-between hover:ring-2 hover:ring-[var(--warning)] transition-all" style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3);">
             <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-5 h-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
-                <span class="text-sm font-medium text-orange-600">{{.PipelineStats.PendingTasks}} item{{if gt .PipelineStats.PendingTasks 1}}s{{end}} need{{if eq .PipelineStats.PendingTasks 1}}s{{end}} your attention</span>
+                <span class="text-sm font-medium text-warning">{{.PipelineStats.PendingTasks}} item{{if gt .PipelineStats.PendingTasks 1}}s{{end}} need{{if eq .PipelineStats.PendingTasks 1}}s{{end}} your attention</span>
             </div>
             <span class="btn btn-primary text-xs px-3 py-1.5">
                 View Tasks
@@ -227,13 +225,13 @@
                 {{range .RecentHistory}}
                 <div class="flex items-center gap-4">
                     {{if eq .Status "sent"}}
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(16, 185, 129, 0.15);">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(34, 197, 94, 0.15);">
                         <svg class="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
                     {{else}}
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(244, 63, 94, 0.15);">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(239, 68, 68, 0.15);">
                         <svg class="w-4 h-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>

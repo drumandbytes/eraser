@@ -32,45 +32,45 @@
             </div>
         </div>
 
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-blue-400" onclick="filterItems('form')">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--accent)]" onclick="filterItems('form')">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="w-10 h-10 icon-box icon-box-info">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                 </div>
                 <div>
                     <p class="text-xs text-muted">Forms to Fill</p>
-                    <p class="font-display text-2xl font-bold text-blue-600">{{.FormsNeedingAction}}</p>
+                    <p class="font-display text-2xl font-bold text-accent">{{.FormsNeedingAction}}</p>
                 </div>
             </div>
         </div>
 
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-orange-400" onclick="filterItems('review')">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--warning)]" onclick="filterItems('review')">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-100">
-                    <svg class="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="w-10 h-10 icon-box icon-box-warning">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                     </svg>
                 </div>
                 <div>
                     <p class="text-xs text-muted">Needs Review</p>
-                    <p class="font-display text-2xl font-bold text-orange-600">{{.NeedsReview}}</p>
+                    <p class="font-display text-2xl font-bold text-warning">{{.NeedsReview}}</p>
                 </div>
             </div>
         </div>
 
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-green-400" onclick="filterItems('completed')">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--success)]" onclick="filterItems('completed')">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-green-100">
-                    <svg class="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="w-10 h-10 icon-box icon-box-success">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
                 <div>
                     <p class="text-xs text-muted">Completed</p>
-                    <p class="font-display text-2xl font-bold text-green-600">{{add .CompletedTasks .FilledForms}}</p>
+                    <p class="font-display text-2xl font-bold text-success">{{add .CompletedTasks .FilledForms}}</p>
                 </div>
             </div>
         </div>
@@ -89,14 +89,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 Forms
-                <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-800">{{.PendingForms}}</span>
+                <span class="ml-1 rounded-full chip chip-info">{{.PendingForms}}</span>
             </button>
             <button class="filter-btn" data-filter="captcha" onclick="filterItems('captcha')">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                 </svg>
                 CAPTCHA
-                <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">{{.CaptchaForms}}</span>
+                <span class="ml-1 rounded-full chip chip-warning">{{.CaptchaForms}}</span>
             </button>
             <button class="filter-btn" data-filter="confirmation" onclick="filterItems('confirmation')">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,14 +110,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
                 Needs Review
-                <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-800">{{.NeedsReview}}</span>
+                <span class="ml-1 rounded-full chip chip-warning">{{.NeedsReview}}</span>
             </button>
             <button class="filter-btn" data-filter="completed" onclick="filterItems('completed')">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Completed
-                <span class="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-800">{{add .CompletedTasks .FilledForms}}</span>
+                <span class="ml-1 rounded-full chip chip-success">{{add .CompletedTasks .FilledForms}}</span>
             </button>
         </div>
     </div>
@@ -137,7 +137,7 @@
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">
                     <!-- Status Icon -->
-                    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600">
+                    <div class="flex-shrink-0 w-10 h-10 icon-box icon-box-info">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
@@ -147,12 +147,12 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
-                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Form</span>
+                            <span class="rounded-full chip chip-info">Form</span>
                         </div>
                         {{if .EmailSubject}}
                         <p class="text-xs text-muted mt-1 truncate">{{.EmailSubject}}</p>
                         {{end}}
-                        <p class="text-xs text-blue-600 mt-1 truncate">
+                        <p class="text-xs text-accent mt-1 truncate">
                             <a href="{{.FormURL}}" target="_blank" class="hover:underline">{{.FormURL}}</a>
                         </p>
                         <p class="text-xs text-muted mt-1">Detected {{.DetectedAt.Format "Jan 2, 2006 3:04 PM"}}</p>
@@ -176,7 +176,7 @@
                             </svg>
                             Done
                         </button>
-                        <button class="btn btn-ghost text-xs px-2 py-1.5 text-gray-500 hover:text-gray-700"
+                        <button class="btn btn-ghost text-xs px-2 py-1.5"
                             hx-post="/forms/{{.BrokerID}}/skip"
                             hx-target="closest .action-item"
                             hx-swap="outerHTML"
@@ -201,11 +201,11 @@
                 <div class="flex items-start gap-4">
                     <!-- Task Type Icon -->
                     <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
-                        {{if eq .TaskType "captcha"}}bg-yellow-100 text-yellow-600
-                        {{else if eq .TaskType "manual_form"}}bg-blue-100 text-blue-600
-                        {{else if eq .TaskType "review"}}bg-orange-100 text-orange-600
-                        {{else if eq .TaskType "confirmation"}}bg-indigo-100 text-indigo-600
-                        {{else}}bg-gray-100 text-gray-600{{end}}">
+                        {{if eq .TaskType "captcha"}}icon-box-warning
+                        {{else if eq .TaskType "manual_form"}}icon-box-info
+                        {{else if eq .TaskType "review"}}icon-box-warning
+                        {{else if eq .TaskType "confirmation"}}icon-box-info
+                        {{else}}icon-box-neutral{{end}}">
                         {{if eq .TaskType "captcha"}}
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
@@ -234,17 +234,17 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
-                            <span class="text-xs px-2 py-0.5 rounded-full
-                                {{if eq .TaskType "captcha"}}bg-yellow-100 text-yellow-800
-                                {{else if eq .TaskType "manual_form"}}bg-blue-100 text-blue-800
-                                {{else if eq .TaskType "review"}}bg-orange-100 text-orange-800
-                                {{else if eq .TaskType "confirmation"}}bg-indigo-100 text-indigo-800
-                                {{else}}bg-gray-100 text-gray-800{{end}}">
+                            <span class="rounded-full
+                                {{if eq .TaskType "captcha"}}chip chip-warning
+                                {{else if eq .TaskType "manual_form"}}chip chip-info
+                                {{else if eq .TaskType "review"}}chip chip-warning
+                                {{else if eq .TaskType "confirmation"}}chip chip-info
+                                {{else}}chip chip-neutral{{end}}">
                                 {{if eq .TaskType "confirmation"}}Confirmation{{else if eq .TaskType "manual_form"}}Manual Form{{else if eq .TaskType "review"}}Review{{else}}{{.TaskType}}{{end}}
                             </span>
                         </div>
                         {{if .FormURL}}
-                        <p class="text-xs text-blue-600 mt-1 truncate">
+                        <p class="text-xs text-accent mt-1 truncate">
                             <a href="{{.FormURL}}" target="_blank" class="hover:underline">{{.FormURL}}</a>
                         </p>
                         {{end}}
@@ -296,7 +296,7 @@
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">
                     <!-- Review Icon -->
-                    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-orange-100 text-orange-600">
+                    <div class="flex-shrink-0 w-10 h-10 icon-box icon-box-warning">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -307,7 +307,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
-                            <span class="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800">Needs Review</span>
+                            <span class="rounded-full chip chip-warning">Needs Review</span>
                         </div>
                         <p class="text-xs text-muted mt-1 truncate">{{.EmailSubject}}</p>
                         <p class="text-xs text-secondary mt-1">Response type: {{.ResponseType}}</p>
@@ -346,7 +346,7 @@
                  data-status="completed"
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">
-                    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-green-100 text-green-600">
+                    <div class="flex-shrink-0 w-10 h-10 icon-box icon-box-success">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -354,11 +354,11 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
-                            <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">Completed</span>
+                            <span class="rounded-full chip chip-success">Completed</span>
                         </div>
                         <p class="text-xs text-muted mt-1">Task completed</p>
                     </div>
-                    <span class="text-green-600 text-sm font-medium flex items-center gap-1">
+                    <span class="text-success text-sm font-medium flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -376,7 +376,7 @@
                  data-status="completed"
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">
-                    <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-green-100 text-green-600">
+                    <div class="flex-shrink-0 w-10 h-10 icon-box icon-box-success">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -384,11 +384,11 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
                             <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
-                            <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-800">Completed</span>
+                            <span class="rounded-full chip chip-success">Completed</span>
                         </div>
                         <p class="text-xs text-muted mt-1">Form submitted successfully</p>
                     </div>
-                    <span class="text-green-600 text-sm font-medium flex items-center gap-1">
+                    <span class="text-success text-sm font-medium flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -402,8 +402,8 @@
             <!-- Empty State -->
             {{if not $hasItems}}
             <div class="p-12 text-center" id="empty-state">
-                <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-4">
-                    <svg class="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style="background: rgba(34, 197, 94, 0.14);">
+                    <svg class="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
@@ -420,7 +420,7 @@
         <h3 class="font-display text-lg font-semibold text-primary mb-4">How to Complete Tasks</h3>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="p-4 rounded-lg" style="background: var(--bg-elevated);">
-                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+                <div class="w-8 h-8 icon-box icon-box-info mb-3">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
@@ -429,7 +429,7 @@
                 <p class="text-xs text-secondary">Some brokers require filling out an online form. Click "Open Form", enter your details, and submit.</p>
             </div>
             <div class="p-4 rounded-lg" style="background: var(--bg-elevated);">
-                <div class="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center mb-3">
+                <div class="w-8 h-8 icon-box icon-box-warning mb-3">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
@@ -438,7 +438,7 @@
                 <p class="text-xs text-secondary">Click "Solve CAPTCHA" for a helper page with copy buttons for your info. Complete the CAPTCHA, then paste your details.</p>
             </div>
             <div class="p-4 rounded-lg" style="background: var(--bg-elevated);">
-                <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center mb-3">
+                <div class="w-8 h-8 icon-box icon-box-info mb-3">
                     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>

@@ -1,16 +1,24 @@
 # Eraser
 
-Take back your privacy. Eraser sends data removal requests to 750+ data brokers on your behalf—for free.
+Take back your privacy. Eraser sends data removal requests to 777+ data brokers on your behalf—for free.
 
 You know those sites like Spokeo, BeenVerified, and Whitepages that have your home address, phone number, and family members' names? They're called data brokers, and there are hundreds of them. Services like Incogni and DeleteMe charge $100+/year to send opt-out requests to these companies. Eraser does the same thing, but it's open source and completely free.
 
 ### What to Expect
 
-**The good:** Eraser automatically sends removal request emails to 750+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
+**The good:** Eraser automatically sends removal request emails to 777+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
 
 **The reality:** Some brokers require additional steps. They might send you a confirmation link to click, ask you to fill out a form on their website, or request identity verification. Eraser tracks these responses and shows you exactly what needs manual attention.
 
 **The bottom line:** You're not paying $100+/year, and you're taking real action to protect your privacy. Even with some manual steps, Eraser handles the heavy lifting and gives you a fighting chance against the data broker industry.
+
+---
+
+## About This Fork
+
+This is a maintained fork of [digisamroc/eraser](https://github.com/digisamroc/eraser), which has been inactive since early 2026. It includes bug fixes, performance cleanups, and GDPR/EU-specific customizations on top of the original CCPA-focused tool.
+
+If you're an EU resident exercising GDPR rights rather than a US CCPA use case, read [EU-NOTES.md](EU-NOTES.md) first — it covers which template to pick, safe send-volume behavior, and what to do if a broker ignores your request.
 
 ---
 
@@ -30,7 +38,7 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 Open your terminal (on Mac, search for "Terminal"; on Windows, use PowerShell) and run:
 
 ```bash
-git clone https://github.com/eraser-privacy/eraser.git
+git clone https://github.com/drumandbytes/eraser.git
 cd eraser
 go build -o eraser ./cmd/eraser
 ```
@@ -50,7 +58,7 @@ The wizard walks you through entering your personal information (the data broker
 **Step 4: Send Removal Requests**
 
 From the dashboard, you can:
-- Browse the list of 750+ data brokers
+- Browse the list of 777+ data brokers
 - Send requests one at a time or in bulk
 - Track which requests have been sent and their status
 
@@ -70,7 +78,7 @@ Eraser uses your Gmail account to send removal requests. You'll need to create a
 
 That's the password you'll use in Eraser's setup wizard. Your regular Gmail password won't work.
 
-**Daily sending limits:** Gmail allows ~500 emails per day. Eraser automatically chunks large sends across multiple days (250/day to stay safe) so you don't hit rate limits.
+**Daily sending limits:** Gmail allows ~500 emails per day. Eraser caps itself at 450/day by default (`options.daily_send_limit`) and automatically resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
 
 ---
 
@@ -81,7 +89,7 @@ If you prefer the command line, Eraser has a full CLI.
 ### Installation
 
 ```bash
-git clone https://github.com/eraser-privacy/eraser.git
+git clone https://github.com/drumandbytes/eraser.git
 cd eraser
 go build -o eraser ./cmd/eraser
 ```
@@ -107,12 +115,20 @@ go build -o eraser ./cmd/eraser
 | Command | What it does |
 |---------|--------------|
 | `eraser init` | Interactive config setup |
-| `eraser send` | Send removal requests |
+| `eraser send` | Send removal requests (auto-capped at `daily_send_limit`/day, resumable) |
 | `eraser send --dry-run` | Preview without sending |
-| `eraser list-brokers` | Show all 750+ brokers |
+| `eraser send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
+| `eraser send --resend` | Force re-send even to brokers within the cooldown window |
+| `eraser list-brokers` | Show all 777+ brokers |
 | `eraser status` | View history and stats |
 | `eraser status --limit 50` | Show more history |
-| `eraser add-broker` | Add a custom broker |
+| `eraser add-broker` | Add a custom broker interactively |
+| `eraser mark-bounced <broker-id>...` | Correct the record for brokers whose email actually bounced |
+| `eraser cleanup-bounces` | Find and remove bounced broker email addresses |
+| `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
+| `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
+| `eraser confirm` | Click confirmation links found in broker emails |
+| `eraser fill` | Fill opt-out forms via browser automation |
 | `eraser serve` | Start web interface |
 | `eraser serve -p 3000` | Web interface on custom port |
 
@@ -133,6 +149,11 @@ profile:
   country: "USA"
   phone: "+1-555-123-4567"
   date_of_birth: "1990-01-15"
+  # Optional: other identities/addresses brokers may have indexed you under
+  # additional_emails: [old-address@example.com]
+  # name_variants: [Jane D.]
+  # previous_addresses: ["456 Old Street, San Francisco, CA"]
+  # additional_phones: ["+1-555-987-6543"]
 
 email:
   provider: smtp
@@ -148,6 +169,7 @@ email:
 options:
   template: generic  # or "gdpr" or "ccpa"
   rate_limit_ms: 2000  # delay between emails
+  daily_send_limit: 450  # cap per rolling 24h window (Gmail's limit is ~500/day)
 
   # Optional: only target specific regions
   # regions:
@@ -158,6 +180,13 @@ options:
   # excluded_brokers:
   #   - spokeo
   #   - whitepages
+
+# Optional: monitor your inbox for broker replies (used by `eraser monitor`)
+# inbox:
+#   enabled: true
+#   provider: gmail
+#   email: jane@gmail.com
+#   password: your-16-char-app-password
 ```
 
 ### Email Templates
@@ -168,7 +197,7 @@ Eraser includes three templates:
 - **CCPA** — Invokes California Consumer Privacy Act rights
 - **Generic** — References multiple privacy laws, works anywhere
 
-The generic template is a good default if you're not sure.
+The generic template is a good default if you're not sure. EU residents should pick `gdpr` explicitly — see [EU-NOTES.md](EU-NOTES.md).
 
 ### Adding Brokers
 
@@ -181,7 +210,7 @@ The broker database is at `data/brokers.yaml`. To add one:
   website: https://example.com
   opt_out_url: https://example.com/optout
   region: us  # us, eu, or global
-  category: people-search  # people-search, marketing, or background-check
+  category: people-search  # people-search, marketing, background-check, financial-b2b, or data-intermediary
 ```
 
 Or use the interactive command:
@@ -189,43 +218,6 @@ Or use the interactive command:
 ```bash
 ./eraser add-broker
 ```
-
----
-
-## Automate It with GitHub Actions
-
-Want Eraser to run automatically every month? Fork the repo and set up GitHub Actions.
-
-### Setup
-
-1. Fork this repository
-2. Go to Settings → Secrets and Variables → Actions
-3. Add these secrets:
-
-**Required:**
-| Secret | Value |
-|--------|-------|
-| `ERASER_FIRST_NAME` | Your first name |
-| `ERASER_LAST_NAME` | Your last name |
-| `ERASER_EMAIL` | Your Gmail address |
-| `ERASER_EMAIL_PROVIDER` | `smtp` |
-| `ERASER_TEMPLATE` | `gdpr`, `ccpa`, or `generic` |
-| `ERASER_SMTP_HOST` | `smtp.gmail.com` |
-| `ERASER_SMTP_PORT` | `465` |
-| `ERASER_SMTP_USERNAME` | Your Gmail address |
-| `ERASER_SMTP_PASSWORD` | Your Gmail App Password |
-
-**Optional (but recommended):**
-| Secret | Value |
-|--------|-------|
-| `ERASER_ADDRESS` | Street address |
-| `ERASER_CITY` | City |
-| `ERASER_STATE` | State |
-| `ERASER_ZIP_CODE` | ZIP code |
-| `ERASER_COUNTRY` | Country |
-| `ERASER_PHONE` | Phone number |
-
-The workflow runs on the 1st of every month. You can also trigger it manually from the Actions tab.
 
 ---
 
@@ -242,22 +234,22 @@ The workflow runs on the 1st of every month. You can also trigger it manually fr
 Yes, with caveats:
 
 - **Most brokers comply.** They're legally required to under GDPR (EU) and CCPA (California). Even brokers not covered by these laws often honor requests to avoid liability.
-- **Some require manual steps.** About 20-30% of brokers will respond asking you to:
+- **Some require manual steps.** A meaningful share of brokers will respond asking you to:
   - Click a confirmation link (Eraser detects these and shows them to you)
   - Fill out an opt-out form on their website (Eraser tracks these as "pending tasks")
   - Verify your identity via email reply
 - **It's not instant.** Brokers have up to 30-45 days to process requests (varies by law). Some are faster.
-- **You'll need to repeat this.** Data brokers buy and sell data continuously. Running Eraser monthly keeps you off their lists.
+- **You'll need to repeat this.** Data brokers buy and sell data continuously. Running Eraser every 60-90 days keeps you off their lists.
 
-**The Pipeline view** in Eraser's web UI shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 750+ emails and tracking responses for you.
+**The Pipeline view** (`eraser pipeline` or the web UI) shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 777+ emails and tracking responses for you.
 
 ---
 
 ## How It Compares
 
 | Service | Price | Brokers | Open Source |
-|---------|-------|---------|-------------|
-| **Eraser** | Free | 750+ | Yes |
+|---------|-------|---------|--------------|
+| **Eraser** | Free | 777+ | Yes |
 | Incogni | $77/year | 180+ | No |
 | DeleteMe | $129/year | 750+ | No |
 | Privacy Duck | $500+/year | 500+ | No |
@@ -279,16 +271,20 @@ Contributions are welcome. The most helpful things:
 
 ```
 eraser/
-├── cmd/eraser/main.go       # CLI entry point
+├── cmd/eraser/main.go        # CLI entry point, all commands
 ├── internal/
-│   ├── broker/              # Broker loading and filtering
-│   ├── config/              # Configuration handling
-│   ├── email/               # SMTP, SendGrid, Resend senders
-│   ├── history/             # SQLite request tracking
-│   ├── template/            # Email template rendering
-│   └── web/                 # Web UI server and handlers
-├── data/brokers.yaml        # 750+ broker database
-└── config.example.yaml      # Example configuration
+│   ├── broker/                # Broker loading and filtering
+│   ├── browser/                # Browser automation (form fill, confirm links, CAPTCHA handling)
+│   ├── config/                 # Configuration handling
+│   ├── email/                  # SMTP sending
+│   ├── history/                # SQLite request tracking
+│   ├── inbox/                   # IMAP monitoring and reply classification
+│   ├── template/                # Email template rendering
+│   │   └── templates/            # gdpr.tmpl, ccpa.tmpl, generic.tmpl
+│   └── web/                     # Web UI server, templates, and static assets
+├── data/brokers.yaml           # 777+ broker database
+├── config.example.yaml         # Example configuration
+└── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```
 
 ---

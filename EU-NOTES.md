@@ -4,7 +4,7 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 
 ## What changed
 
-`data/brokers.yaml` originally shipped 764 brokers, 751 of them US-region. That's kept as-is (US-owned platforms, ad-tech, and breach-sourced people-search sites do end up holding EU residents' data too), plus **6 new EU/UK entries** with direct opt-out emails were added at the bottom of the file:
+`data/brokers.yaml` originally shipped 764 brokers, 751 of them US-region. That's kept as-is (US-owned platforms, ad-tech, and breach-sourced people-search sites do end up holding EU residents' data too), plus EU/UK entries with direct opt-out emails have been added as they were found, bringing the total to 777:
 
 - `192-com` (192.com, UK)
 - `creditreform-de` (Creditreform, Germany)
@@ -12,10 +12,19 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 - `seawave-media` (Seawave Media, UK)
 - `datajoy-eu` (Datajoy, Belgium)
 - `athumi` (Athumi, Belgium — Data Governance Act registered intermediary)
+- `adikteev` (Adikteev, ad-tech)
+- `scope3` (Scope3, ad-tech)
+- `smartclip` (Smartclip, ad-tech)
+- `genius-sports` (Genius Sports Group)
+- `etarget-sk` (eTarget s.r.o., Slovakia)
+- `dentsu-inc` (Dentsu Inc. — possible overlap with the existing `merkle-inc` entry, not yet merged/verified)
+- `creditsafe` (Creditsafe, financial/B2B credit reporting)
 
 ## What's NOT in brokers.yaml
 
-80 more EU/UK adtech, credit-reporting, B2B-intelligence, and Data Governance Act brokers exist that do **not** take a plain removal email — they require submitting a GDPR Article 15/17 request through their own web form or DSR portal (often a Termly/OneTrust/saymine.io-hosted page). Bulk-emailing those wouldn't do anything, and auto-filling arbitrary DSR portals reliably isn't safe to automate. Those live in a separate tracker: `EU_DSR_Portal_Tracker.xlsx`, delivered alongside this repo. Work through a handful at a time and log status there.
+Other EU/UK adtech, credit-reporting, B2B-intelligence, and Data Governance Act brokers exist that do **not** take a plain removal email — they require submitting a GDPR Article 15/17 request through their own web form or DSR portal (often a Termly/OneTrust/saymine.io-hosted page), or are cookie-identifier-based deletions that don't apply if you're not carrying their tracking cookies (e.g. browsing with Brave's strict cookie blocking). Bulk-emailing those wouldn't do anything, and auto-filling arbitrary DSR portals reliably isn't safe to automate. Track those manually outside this repo — a spreadsheet works fine — rather than committing a personal review-status file here.
+
+Separately, a category of EU Data Governance Act-registered "data intermediation services" (e.g. personal data spaces, data wallets, data-sharing infrastructure providers) surfaced during manual review. These are generally **not applicable**: they're B2B/consumer data-sharing infrastructure, not data brokers that hold your profile by default. A GDPR request only makes sense there if you've actually signed up for one of those services yourself.
 
 ## Setup
 
@@ -39,4 +48,4 @@ The README originally claimed eraser auto-chunks large sends across multiple day
 
 ## Recurring maintenance
 
-Data brokers re-scrape and re-list you continuously. Re-run `./eraser send` and revisit unresolved rows in the tracker every 60-90 days.
+Data brokers re-scrape and re-list you continuously. Re-run `./eraser send` and revisit unresolved manual items (portal/DSR-based brokers, form-required cases) every 60-90 days.

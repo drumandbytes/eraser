@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -31,11 +32,80 @@ func checkFilePermissions(path string) error {
 }
 
 type Config struct {
-	Profile  Profile     `yaml:"profile"`
-	Email    EmailConfig `yaml:"email"`
-	Options  Options     `yaml:"options"`
-	Inbox    InboxConfig `yaml:"inbox,omitempty"`
-	Pipeline Pipeline    `yaml:"pipeline,omitempty"`
+	// Profile is the legacy single-profile block. Still fully supported -
+	// GetProfiles() wraps it as a single "default" profile whenever Profiles
+	// is empty, so an existing single-person config.yaml keeps working
+	// unchanged. Ignored once Profiles is non-empty (see GetProfiles).
+	Profile Profile `yaml:"profile"`
+	// Profiles lets one eraser install send and track removal requests for
+	// more than one person (e.g. yourself and a family member) against the
+	// same broker database, email account, and options - each profile's
+	// send history, pipeline state, and pending tasks are tracked
+	// separately (see history.Store's profile_id column). Takes precedence
+	// over Profile when non-empty; Profile is otherwise ignored.
+	Profiles []NamedProfile `yaml:"profiles,omitempty"`
+	Email    EmailConfig    `yaml:"email"`
+	Options  Options        `yaml:"options"`
+	Inbox    InboxConfig    `yaml:"inbox,omitempty"`
+	Pipeline Pipeline       `yaml:"pipeline,omitempty"`
+}
+
+// NamedProfile is one entry in a multi-profile config: a person identity
+// (name, address, contact info - everything Profile already carries) plus a
+// stable ID used to select it via --profile on the CLI, to scope history
+// records to it, and to switch between profiles in the web UI.
+type NamedProfile struct {
+	// ID should be short, lowercase, and hyphenated (like a broker ID) -
+	// e.g. "maris" or "spouse". Stored verbatim in history.db so changing it
+	// later orphans that profile's existing history from the CLI/web UI
+	// (the rows are still in the database, just no longer reachable by the
+	// new ID).
+	ID      string `yaml:"id"`
+	Profile `yaml:",inline"`
+}
+
+// DefaultProfileID is the synthetic ID used for the legacy single Profile
+// block when no profiles: list is configured, and is what pre-multi-profile
+// history rows are attributed to after the profile_id migration.
+const DefaultProfileID = "default"
+
+// GetProfiles returns every configured profile. A config with no explicit
+// profiles: list returns a single synthetic profile (ID "default") wrapping
+// the legacy top-level profile: block, so existing single-profile configs
+// keep working unchanged without needing to be rewritten.
+func (c *Config) GetProfiles() []NamedProfile {
+	if len(c.Profiles) > 0 {
+		return c.Profiles
+	}
+	return []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
+}
+
+// GetProfile resolves the active profile by ID. An empty id resolves to the
+// sole configured profile when there's exactly one; with several configured,
+// an empty id is ambiguous and returns an error listing the available IDs
+// (the caller - CLI flag, web session - must disambiguate).
+func (c *Config) GetProfile(id string) (NamedProfile, error) {
+	profiles := c.GetProfiles()
+	if id == "" {
+		if len(profiles) == 1 {
+			return profiles[0], nil
+		}
+		return NamedProfile{}, fmt.Errorf("multiple profiles configured (%s) - specify one with --profile", strings.Join(profileIDs(profiles), ", "))
+	}
+	for _, p := range profiles {
+		if strings.EqualFold(p.ID, id) {
+			return p, nil
+		}
+	}
+	return NamedProfile{}, fmt.Errorf("no profile %q configured (available: %s)", id, strings.Join(profileIDs(profiles), ", "))
+}
+
+func profileIDs(profiles []NamedProfile) []string {
+	ids := make([]string, len(profiles))
+	for i, p := range profiles {
+		ids[i] = p.ID
+	}
+	return ids
 }
 
 // InboxConfig holds IMAP settings for monitoring broker responses
@@ -212,12 +282,25 @@ func Save(path string, cfg *Config) error {
 }
 
 func (c *Config) Validate() error {
-	if c.Profile.FirstName == "" || c.Profile.LastName == "" {
-		return fmt.Errorf("profile: first_name and last_name are required")
+	profiles := c.GetProfiles()
+	seen := make(map[string]bool, len(profiles))
+	for _, np := range profiles {
+		if np.ID == "" {
+			return fmt.Errorf("profiles: every profile needs an id")
+		}
+		key := strings.ToLower(np.ID)
+		if seen[key] {
+			return fmt.Errorf("profiles: duplicate profile id %q", np.ID)
+		}
+		seen[key] = true
+		if np.FirstName == "" || np.LastName == "" {
+			return fmt.Errorf("profile %q: first_name and last_name are required", np.ID)
+		}
+		if np.Email == "" {
+			return fmt.Errorf("profile %q: email is required", np.ID)
+		}
 	}
-	if c.Profile.Email == "" {
-		return fmt.Errorf("profile: email is required")
-	}
+
 	if c.Email.Provider == "" {
 		return fmt.Errorf("email: provider is required")
 	}

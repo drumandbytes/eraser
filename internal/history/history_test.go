@@ -1,9 +1,12 @@
 package history
 
 import (
+	"database/sql"
 	"path/filepath"
 	"testing"
 	"time"
+
+	_ "modernc.org/sqlite"
 )
 
 func newTestStore(t *testing.T) *Store {
@@ -40,7 +43,7 @@ func TestCountSentSince(t *testing.T) {
 	addRecord(t, s, "broker-b", StatusSent, now.Add(-30*time.Hour)) // outside 24h window
 	addRecord(t, s, "broker-c", StatusFailed, now.Add(-1*time.Hour))
 
-	count, err := s.CountSentSince(now.Add(-24 * time.Hour))
+	count, err := s.CountSentSince("", now.Add(-24*time.Hour))
 	if err != nil {
 		t.Fatalf("CountSentSince: %v", err)
 	}
@@ -58,7 +61,7 @@ func TestLastSuccessfulSendTimes(t *testing.T) {
 	addRecord(t, s, "broker-a", StatusSent, now.Add(-2*24*time.Hour))
 	addRecord(t, s, "broker-b", StatusFailed, now.Add(-1*time.Hour))
 
-	times, err := s.LastSuccessfulSendTimes()
+	times, err := s.LastSuccessfulSendTimes("")
 	if err != nil {
 		t.Fatalf("LastSuccessfulSendTimes: %v", err)
 	}
@@ -83,7 +86,7 @@ func TestMarkFailedRemovesFromResendCooldown(t *testing.T) {
 
 	addRecord(t, s, "broker-a", StatusSent, now.Add(-1*time.Hour))
 
-	n, err := s.MarkFailed("broker-a", "bounced - manually confirmed")
+	n, err := s.MarkFailed("", "broker-a", "bounced - manually confirmed")
 	if err != nil {
 		t.Fatalf("MarkFailed: %v", err)
 	}
@@ -91,7 +94,7 @@ func TestMarkFailedRemovesFromResendCooldown(t *testing.T) {
 		t.Fatalf("expected 1 row updated, got %d", n)
 	}
 
-	times, err := s.LastSuccessfulSendTimes()
+	times, err := s.LastSuccessfulSendTimes("")
 	if err != nil {
 		t.Fatalf("LastSuccessfulSendTimes: %v", err)
 	}
@@ -103,7 +106,7 @@ func TestMarkFailedRemovesFromResendCooldown(t *testing.T) {
 func TestMarkFailedNoRecordReturnsZero(t *testing.T) {
 	s := newTestStore(t)
 
-	n, err := s.MarkFailed("never-sent", "bounced")
+	n, err := s.MarkFailed("", "never-sent", "bounced")
 	if err != nil {
 		t.Fatalf("MarkFailed: %v", err)
 	}
@@ -119,11 +122,11 @@ func TestMarkFailedOnlyTouchesMostRecentSentRecord(t *testing.T) {
 	addRecord(t, s, "broker-a", StatusSent, now.Add(-40*24*time.Hour))
 	addRecord(t, s, "broker-a", StatusSent, now.Add(-1*time.Hour))
 
-	if _, err := s.MarkFailed("broker-a", "bounced"); err != nil {
+	if _, err := s.MarkFailed("", "broker-a", "bounced"); err != nil {
 		t.Fatalf("MarkFailed: %v", err)
 	}
 
-	records, err := s.GetRecentRequests(10)
+	records, err := s.GetRecentRequests("", 10)
 	if err != nil {
 		t.Fatalf("GetRecentRequests: %v", err)
 	}
@@ -179,5 +182,177 @@ func TestAddBrokerResponse_EmailBodyColumn(t *testing.T) {
 
 	if err := s.UpdateBrokerResponseBody(resp.ID, "updated body"); err != nil {
 		t.Fatalf("UpdateBrokerResponseBody: %v", err)
+	}
+}
+
+// ==================== Multi-Profile Tests ====================
+
+func addRecordForProfile(t *testing.T, s *Store, profileID, brokerID string, status Status, sentAt time.Time) {
+	t.Helper()
+	rec := &Record{
+		ProfileID:  profileID,
+		BrokerID:   brokerID,
+		BrokerName: brokerID,
+		Email:      brokerID + "@example.com",
+		Template:   "gdpr",
+		Status:     status,
+		SentAt:     sentAt,
+	}
+	if err := s.Add(rec); err != nil {
+		t.Fatalf("Add: %v", err)
+	}
+}
+
+func TestProfileIsolation_RecentRequestsAndStats(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now()
+
+	addRecordForProfile(t, s, "maris", "broker-a", StatusSent, now)
+	addRecordForProfile(t, s, "maris", "broker-b", StatusSent, now)
+	addRecordForProfile(t, s, "spouse", "broker-a", StatusSent, now)
+
+	marisRecords, err := s.GetRecentRequests("maris", 10)
+	if err != nil {
+		t.Fatalf("GetRecentRequests(maris): %v", err)
+	}
+	if len(marisRecords) != 2 {
+		t.Errorf("expected 2 records for maris, got %d", len(marisRecords))
+	}
+
+	spouseRecords, err := s.GetRecentRequests("spouse", 10)
+	if err != nil {
+		t.Fatalf("GetRecentRequests(spouse): %v", err)
+	}
+	if len(spouseRecords) != 1 {
+		t.Errorf("expected 1 record for spouse, got %d", len(spouseRecords))
+	}
+
+	total, sent, _, err := s.GetStats("maris")
+	if err != nil {
+		t.Fatalf("GetStats(maris): %v", err)
+	}
+	if total != 2 || sent != 2 {
+		t.Errorf("expected maris stats total=2 sent=2, got total=%d sent=%d", total, sent)
+	}
+
+	total, _, _, err = s.GetStats("spouse")
+	if err != nil {
+		t.Fatalf("GetStats(spouse): %v", err)
+	}
+	if total != 1 {
+		t.Errorf("expected spouse stats total=1, got total=%d", total)
+	}
+}
+
+func TestProfileIsolation_EmptyProfileIDDefaultsConsistently(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now()
+
+	// A record added with no ProfileID (as every pre-multi-profile caller
+	// does) should be readable back under both "" and DefaultProfileID -
+	// normalizeProfileID has to make those equivalent everywhere.
+	addRecordForProfile(t, s, "", "broker-a", StatusSent, now)
+
+	byEmpty, err := s.GetRecentRequests("", 10)
+	if err != nil {
+		t.Fatalf("GetRecentRequests(\"\"): %v", err)
+	}
+	if len(byEmpty) != 1 {
+		t.Fatalf("expected 1 record via empty profileID, got %d", len(byEmpty))
+	}
+	if byEmpty[0].ProfileID != DefaultProfileID {
+		t.Errorf("expected stored record to be normalized to %q, got %q", DefaultProfileID, byEmpty[0].ProfileID)
+	}
+
+	byDefault, err := s.GetRecentRequests(DefaultProfileID, 10)
+	if err != nil {
+		t.Fatalf("GetRecentRequests(DefaultProfileID): %v", err)
+	}
+	if len(byDefault) != 1 {
+		t.Errorf("expected 1 record via DefaultProfileID, got %d", len(byDefault))
+	}
+}
+
+func TestMigrationBackfillsExistingRowsToDefaultProfile(t *testing.T) {
+	// Simulate a pre-multi-profile database: create the removal_requests
+	// table without a profile_id column (as it existed before this
+	// feature), insert a row the old way, then run migrate() and confirm
+	// the ALTER TABLE ... DEFAULT backfill makes the row show up under
+	// DefaultProfileID rather than vanishing behind the new filter.
+	dbPath := filepath.Join(t.TempDir(), "legacy.db")
+	db, err := sql.Open("sqlite", dbPath)
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	_, err = db.Exec(`
+		CREATE TABLE removal_requests (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			broker_id TEXT NOT NULL,
+			broker_name TEXT NOT NULL,
+			email TEXT NOT NULL,
+			template TEXT NOT NULL,
+			status TEXT NOT NULL,
+			message_id TEXT,
+			error TEXT,
+			sent_at DATETIME,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`)
+	if err != nil {
+		t.Fatalf("create legacy table: %v", err)
+	}
+	_, err = db.Exec(`INSERT INTO removal_requests (broker_id, broker_name, email, template, status, sent_at)
+		VALUES ('legacy-broker', 'Legacy Broker', 'legacy@example.com', 'gdpr', 'sent', ?)`, time.Now())
+	if err != nil {
+		t.Fatalf("insert legacy row: %v", err)
+	}
+	db.Close()
+
+	// NewStore runs migrate() on open, which should ALTER TABLE ADD COLUMN
+	// profile_id with the DefaultProfileID default, backfilling this row.
+	s, err := NewStore(dbPath)
+	if err != nil {
+		t.Fatalf("NewStore on legacy db: %v", err)
+	}
+	defer s.Close()
+
+	records, err := s.GetRecentRequests(DefaultProfileID, 10)
+	if err != nil {
+		t.Fatalf("GetRecentRequests: %v", err)
+	}
+	if len(records) != 1 || records[0].BrokerID != "legacy-broker" {
+		t.Fatalf("expected the pre-existing legacy row to be visible under DefaultProfileID, got %+v", records)
+	}
+}
+
+func TestResolveProfileForBroker(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now()
+
+	addRecordForProfile(t, s, "maris", "broker-a", StatusSent, now.Add(-2*time.Hour))
+	addRecordForProfile(t, s, "spouse", "broker-b", StatusSent, now.Add(-1*time.Hour))
+
+	got, err := s.ResolveProfileForBroker("broker-a")
+	if err != nil {
+		t.Fatalf("ResolveProfileForBroker(broker-a): %v", err)
+	}
+	if got != "maris" {
+		t.Errorf("expected broker-a to resolve to maris, got %q", got)
+	}
+
+	got, err = s.ResolveProfileForBroker("broker-b")
+	if err != nil {
+		t.Fatalf("ResolveProfileForBroker(broker-b): %v", err)
+	}
+	if got != "spouse" {
+		t.Errorf("expected broker-b to resolve to spouse, got %q", got)
+	}
+
+	// Never emailed by anyone - falls back to DefaultProfileID rather than erroring.
+	got, err = s.ResolveProfileForBroker("never-sent")
+	if err != nil {
+		t.Fatalf("ResolveProfileForBroker(never-sent): %v", err)
+	}
+	if got != DefaultProfileID {
+		t.Errorf("expected never-sent broker to fall back to %q, got %q", DefaultProfileID, got)
 	}
 }

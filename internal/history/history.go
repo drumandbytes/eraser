@@ -19,6 +19,13 @@ const (
 	StatusPending Status = "pending"
 )
 
+// DefaultProfileID mirrors config.DefaultProfileID (history can't import
+// config - that would create an import cycle, since config has no
+// dependency on history and should stay that way). Every row written before
+// multi-profile support existed is attributed to this ID by the migration
+// below, and it's what a single-profile config's requests are stamped with.
+const DefaultProfileID = "default"
+
 // PipelineStatus represents the current stage in the removal pipeline
 type PipelineStatus string
 
@@ -46,22 +53,24 @@ const (
 )
 
 type Record struct {
-	ID             int64
-	BrokerID       string
-	BrokerName     string
-	Email          string
-	Template       string
-	Status         Status
-	MessageID      string
-	Error          string
-	SentAt         time.Time
-	CreatedAt      time.Time
+	ID         int64
+	ProfileID  string
+	BrokerID   string
+	BrokerName string
+	Email      string
+	Template   string
+	Status     Status
+	MessageID  string
+	Error      string
+	SentAt     time.Time
+	CreatedAt  time.Time
 	PipelineStatus PipelineStatus // Current stage in pipeline
 }
 
 // BrokerResponse stores a classified response from a broker
 type BrokerResponse struct {
 	ID           int64
+	ProfileID    string
 	BrokerID     string
 	BrokerName   string
 	ResponseType string // form_required, confirmation_required, success, rejected, pending, unknown
@@ -80,6 +89,7 @@ type BrokerResponse struct {
 // PendingTask represents a task that needs human intervention
 type PendingTask struct {
 	ID             int64
+	ProfileID      string
 	BrokerID       string
 	BrokerName     string
 	TaskType       TaskType
@@ -103,7 +113,7 @@ func scanRecord(scanner interface{ Scan(...any) error }) (*Record, error) {
 	var sentAt, createdAt sql.NullTime
 	var messageID, errStr sql.NullString
 
-	err := scanner.Scan(&r.ID, &r.BrokerID, &r.BrokerName, &r.Email, &r.Template,
+	err := scanner.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.Email, &r.Template,
 		&r.Status, &messageID, &errStr, &sentAt, &createdAt)
 	if err != nil {
 		return nil, err
@@ -154,10 +164,19 @@ func (s *Store) migrate() error {
 	// email_body" on any database created before this fix. Also added to
 	// the CREATE TABLE itself so a fresh install gets it from the start.
 	s.db.Exec(`ALTER TABLE broker_responses ADD COLUMN email_body TEXT`)
+	// profile_id: added for multi-profile support. Every row written before
+	// this existed - across all three tables - gets attributed to
+	// DefaultProfileID here, matching what a single-profile config's
+	// GetProfiles() synthesizes, so existing history stays fully visible
+	// after upgrading rather than silently vanishing behind a profile filter.
+	s.db.Exec(`ALTER TABLE removal_requests ADD COLUMN profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `'`)
+	s.db.Exec(`ALTER TABLE broker_responses ADD COLUMN profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `'`)
+	s.db.Exec(`ALTER TABLE pending_tasks ADD COLUMN profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `'`)
 
 	query := `
 	CREATE TABLE IF NOT EXISTS removal_requests (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `',
 		broker_id TEXT NOT NULL,
 		broker_name TEXT NOT NULL,
 		email TEXT NOT NULL,
@@ -174,15 +193,17 @@ func (s *Store) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_sent_at ON removal_requests(sent_at);
 	CREATE INDEX IF NOT EXISTS idx_status ON removal_requests(status);
 	CREATE INDEX IF NOT EXISTS idx_pipeline_status ON removal_requests(pipeline_status);
-	-- Covers every "most recent record for this broker" lookup (MarkFailed,
-	-- GetLastRequestForBroker, UpdatePipelineStatus, GetAllBrokerStatuses,
+	CREATE INDEX IF NOT EXISTS idx_profile_id ON removal_requests(profile_id);
+	-- Covers every "most recent record for this broker (within a profile)"
+	-- lookup (MarkFailed, UpdatePipelineStatus, GetAllBrokerStatuses,
 	-- LastSuccessfulSendTimes' GROUP BY) with an index-only scan instead of a
 	-- full table scan + sort per broker.
-	CREATE INDEX IF NOT EXISTS idx_broker_sent_at ON removal_requests(broker_id, sent_at DESC);
+	CREATE INDEX IF NOT EXISTS idx_broker_sent_at ON removal_requests(profile_id, broker_id, sent_at DESC);
 
 	-- Broker responses table (stores classified email responses)
 	CREATE TABLE IF NOT EXISTS broker_responses (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `',
 		broker_id TEXT NOT NULL,
 		broker_name TEXT NOT NULL,
 		response_type TEXT NOT NULL,
@@ -201,10 +222,12 @@ func (s *Store) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_br_broker_id ON broker_responses(broker_id);
 	CREATE INDEX IF NOT EXISTS idx_br_response_type ON broker_responses(response_type);
 	CREATE INDEX IF NOT EXISTS idx_br_needs_review ON broker_responses(needs_review);
+	CREATE INDEX IF NOT EXISTS idx_br_profile_id ON broker_responses(profile_id);
 
 	-- Pending tasks table (for CAPTCHAs, manual forms, etc.)
 	CREATE TABLE IF NOT EXISTS pending_tasks (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `',
 		broker_id TEXT NOT NULL,
 		broker_name TEXT NOT NULL,
 		task_type TEXT NOT NULL,
@@ -221,6 +244,7 @@ func (s *Store) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_pt_broker_id ON pending_tasks(broker_id);
 	CREATE INDEX IF NOT EXISTS idx_pt_task_type ON pending_tasks(task_type);
 	CREATE INDEX IF NOT EXISTS idx_pt_status ON pending_tasks(status);
+	CREATE INDEX IF NOT EXISTS idx_pt_profile_id ON pending_tasks(profile_id);
 	`
 
 	_, err := s.db.Exec(query)
@@ -231,13 +255,28 @@ func (s *Store) migrate() error {
 	return nil
 }
 
+// normalizeProfileID defaults an empty profile ID to DefaultProfileID, so
+// callers that haven't been updated to pass one yet (or legitimately have
+// none - a single-profile setup) still get consistent, queryable rows
+// instead of an empty-string profile_id that GetProfiles()'s "default"
+// wrapper wouldn't match.
+func normalizeProfileID(id string) string {
+	if id == "" {
+		return DefaultProfileID
+	}
+	return id
+}
+
 func (s *Store) Add(record *Record) error {
+	record.ProfileID = normalizeProfileID(record.ProfileID)
+
 	query := `
-	INSERT INTO removal_requests (broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO removal_requests (profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := s.db.Exec(query,
+		record.ProfileID,
 		record.BrokerID,
 		record.BrokerName,
 		record.Email,
@@ -261,12 +300,12 @@ func (s *Store) Add(record *Record) error {
 	return nil
 }
 
-func (s *Store) GetRecentRequests(limit int) ([]Record, error) {
+func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error) {
 	query := `
-	SELECT id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at
-	FROM removal_requests ORDER BY sent_at DESC LIMIT ?`
+	SELECT id, profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at
+	FROM removal_requests WHERE profile_id = ? ORDER BY sent_at DESC LIMIT ?`
 
-	rows, err := s.db.Query(query, limit)
+	rows, err := s.db.Query(query, normalizeProfileID(profileID), limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query records: %w", err)
 	}
@@ -283,30 +322,30 @@ func (s *Store) GetRecentRequests(limit int) ([]Record, error) {
 	return records, rows.Err()
 }
 
-func (s *Store) GetStats() (total, sent, failed int, err error) {
+func (s *Store) GetStats(profileID string) (total, sent, failed int, err error) {
 	query := `SELECT COUNT(*), SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END),
-		SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) FROM removal_requests`
+		SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) FROM removal_requests WHERE profile_id = ?`
 
 	// SUM() over zero rows (a brand-new install with no history yet) returns
 	// SQL NULL, not 0 - scan into sql.NullInt64 like GetMonthlyStats and
 	// GetPendingTaskStats already do, or `status` errors out on first run.
 	var sentNull, failedNull sql.NullInt64
-	err = s.db.QueryRow(query).Scan(&total, &sentNull, &failedNull)
+	err = s.db.QueryRow(query, normalizeProfileID(profileID)).Scan(&total, &sentNull, &failedNull)
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("failed to get stats: %w", err)
 	}
 	return total, int(sentNull.Int64), int(failedNull.Int64), nil
 }
 
-func (s *Store) GetMonthlyStats() (sent, failed int, err error) {
+func (s *Store) GetMonthlyStats(profileID string) (sent, failed int, err error) {
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 
 	query := `SELECT SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END),
-		SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) FROM removal_requests WHERE sent_at >= ?`
+		SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) FROM removal_requests WHERE profile_id = ? AND sent_at >= ?`
 
 	var sentNull, failedNull sql.NullInt64
-	err = s.db.QueryRow(query, startOfMonth).Scan(&sentNull, &failedNull)
+	err = s.db.QueryRow(query, normalizeProfileID(profileID), startOfMonth).Scan(&sentNull, &failedNull)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to get monthly stats: %w", err)
 	}
@@ -318,11 +357,11 @@ func (s *Store) Close() error { return s.db.Close() }
 // CountSentSince returns how many successful sends have happened since the
 // given time - used to enforce a rolling daily send cap (e.g. staying under
 // a provider's per-day sending limit).
-func (s *Store) CountSentSince(since time.Time) (int, error) {
+func (s *Store) CountSentSince(profileID string, since time.Time) (int, error) {
 	var count int
 	err := s.db.QueryRow(
-		`SELECT COUNT(*) FROM removal_requests WHERE status = ? AND sent_at >= ?`,
-		string(StatusSent), since,
+		`SELECT COUNT(*) FROM removal_requests WHERE profile_id = ? AND status = ? AND sent_at >= ?`,
+		normalizeProfileID(profileID), string(StatusSent), since,
 	).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count recent sends: %w", err)
@@ -378,10 +417,10 @@ func parseFlexibleTimeString(s sql.NullString) time.Time {
 // successful send, the timestamp of its most recent one - in a single
 // query, so callers filtering a large broker list against a resend
 // cooldown don't need one query per broker.
-func (s *Store) LastSuccessfulSendTimes() (map[string]time.Time, error) {
+func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time, error) {
 	rows, err := s.db.Query(
-		`SELECT broker_id, MAX(sent_at) FROM removal_requests WHERE status = ? GROUP BY broker_id`,
-		string(StatusSent),
+		`SELECT broker_id, MAX(sent_at) FROM removal_requests WHERE profile_id = ? AND status = ? GROUP BY broker_id`,
+		normalizeProfileID(profileID), string(StatusSent),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query last send times: %w", err)
@@ -419,17 +458,42 @@ func (s *Store) LastSuccessfulSendTimes() (map[string]time.Time, error) {
 // stops treating the broker as already contacted. Returns the number of
 // rows updated: 0 means there was no "sent" record for that broker to fix
 // (e.g. it was never sent, or was already marked failed).
-func (s *Store) MarkFailed(brokerID, note string) (int64, error) {
+func (s *Store) MarkFailed(profileID, brokerID, note string) (int64, error) {
 	query := `UPDATE removal_requests SET status = ?, error = ?
 		WHERE id = (
-			SELECT id FROM removal_requests WHERE broker_id = ? AND status = ?
+			SELECT id FROM removal_requests WHERE profile_id = ? AND broker_id = ? AND status = ?
 			ORDER BY sent_at DESC LIMIT 1
 		)`
-	result, err := s.db.Exec(query, string(StatusFailed), note, brokerID, string(StatusSent))
+	result, err := s.db.Exec(query, string(StatusFailed), note, normalizeProfileID(profileID), brokerID, string(StatusSent))
 	if err != nil {
 		return 0, fmt.Errorf("failed to mark broker as failed: %w", err)
 	}
 	return result.RowsAffected()
+}
+
+// ResolveProfileForBroker returns the profile_id of the most recent
+// removal_request sent to brokerID, regardless of which profile sent it.
+// Used when processing inbox replies: the shared IMAP inbox (config.Inbox
+// is one mailbox for the whole install, not per-profile) carries replies
+// for every profile's requests together, so a reply has to be attributed to
+// whichever profile actually emailed that broker rather than to whatever
+// profile happens to be "active" in the CLI/web session doing the
+// monitoring. Falls back to DefaultProfileID if the broker was never
+// emailed by any profile (e.g. a reply arrived before send()'s history
+// write, or the history was cleared).
+func (s *Store) ResolveProfileForBroker(brokerID string) (string, error) {
+	var profileID sql.NullString
+	err := s.db.QueryRow(
+		`SELECT profile_id FROM removal_requests WHERE broker_id = ? ORDER BY sent_at DESC LIMIT 1`,
+		brokerID,
+	).Scan(&profileID)
+	if err == sql.ErrNoRows {
+		return DefaultProfileID, nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve profile for broker %q: %w", brokerID, err)
+	}
+	return normalizeProfileID(profileID.String), nil
 }
 
 type BrokerStatus struct {
@@ -439,12 +503,12 @@ type BrokerStatus struct {
 	TotalSent int
 }
 
-func (s *Store) GetAllBrokerStatuses() (map[string]BrokerStatus, error) {
+func (s *Store) GetAllBrokerStatuses(profileID string) (map[string]BrokerStatus, error) {
 	query := `SELECT broker_id, MAX(sent_at) as last_sent,
-		(SELECT status FROM removal_requests r2 WHERE r2.broker_id = r.broker_id ORDER BY sent_at DESC LIMIT 1),
-		COUNT(*) FROM removal_requests r GROUP BY broker_id`
+		(SELECT status FROM removal_requests r2 WHERE r2.profile_id = r.profile_id AND r2.broker_id = r.broker_id ORDER BY sent_at DESC LIMIT 1),
+		COUNT(*) FROM removal_requests r WHERE profile_id = ? GROUP BY broker_id`
 
-	rows, err := s.db.Query(query)
+	rows, err := s.db.Query(query, normalizeProfileID(profileID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query broker statuses: %w", err)
 	}
@@ -466,22 +530,23 @@ func (s *Store) GetAllBrokerStatuses() (map[string]BrokerStatus, error) {
 	return statuses, rows.Err()
 }
 
-// DeleteByStatus deletes all records with the given status
-func (s *Store) DeleteByStatus(status Status) (int64, error) {
-	result, err := s.db.Exec(`DELETE FROM removal_requests WHERE status = ?`, string(status))
+// DeleteByStatus deletes all records with the given status for one profile
+func (s *Store) DeleteByStatus(profileID string, status Status) (int64, error) {
+	result, err := s.db.Exec(`DELETE FROM removal_requests WHERE profile_id = ? AND status = ?`, normalizeProfileID(profileID), string(status))
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete records: %w", err)
 	}
 	return result.RowsAffected()
 }
 
-// DeleteAllHistory removes every send-history record regardless of status.
-// Used by the web UI's Settings > Danger Zone > "Clear All History" action.
-// This only touches removal_requests (what brokers you've emailed and when)
-// - broker_responses (inbox-classified replies) is a separate table and is
-// untouched; see ClearBrokerResponses for that.
-func (s *Store) DeleteAllHistory() (int64, error) {
-	result, err := s.db.Exec(`DELETE FROM removal_requests`)
+// DeleteAllHistory removes every send-history record for one profile,
+// regardless of status. Used by the web UI's Settings > Danger Zone >
+// "Clear All History" action. This only touches removal_requests (what
+// brokers you've emailed and when) - broker_responses (inbox-classified
+// replies) is a separate table and is untouched; see ClearBrokerResponses
+// for that.
+func (s *Store) DeleteAllHistory(profileID string) (int64, error) {
+	result, err := s.db.Exec(`DELETE FROM removal_requests WHERE profile_id = ?`, normalizeProfileID(profileID))
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete history: %w", err)
 	}
@@ -500,10 +565,12 @@ func DefaultDBPath() string {
 
 // AddBrokerResponse stores a classified response from a broker
 func (s *Store) AddBrokerResponse(resp *BrokerResponse) error {
+	resp.ProfileID = normalizeProfileID(resp.ProfileID)
+
 	query := `
-	INSERT INTO broker_responses (broker_id, broker_name, response_type, email_from, email_subject, email_body,
+	INSERT INTO broker_responses (profile_id, broker_id, broker_name, response_type, email_from, email_subject, email_body,
 		form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	needsReview := 0
@@ -512,7 +579,7 @@ func (s *Store) AddBrokerResponse(resp *BrokerResponse) error {
 	}
 
 	result, err := s.db.Exec(query,
-		resp.BrokerID, resp.BrokerName, resp.ResponseType, resp.EmailFrom, resp.EmailSubject, resp.EmailBody,
+		resp.ProfileID, resp.BrokerID, resp.BrokerName, resp.ResponseType, resp.EmailFrom, resp.EmailSubject, resp.EmailBody,
 		resp.FormURL, resp.ConfirmURL, resp.Confidence, needsReview,
 		resp.ReceivedAt, time.Now(), time.Now(),
 	)
@@ -528,19 +595,19 @@ func (s *Store) AddBrokerResponse(resp *BrokerResponse) error {
 	return nil
 }
 
-// FindBrokerResponseBySubject finds an existing response by broker_id and email_subject
-func (s *Store) FindBrokerResponseBySubject(brokerID, subject string) (*BrokerResponse, error) {
-	query := `SELECT id, broker_id, broker_name, response_type, email_from, email_subject,
+// FindBrokerResponseBySubject finds an existing response by profile, broker_id and email_subject
+func (s *Store) FindBrokerResponseBySubject(profileID, brokerID, subject string) (*BrokerResponse, error) {
+	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject,
 		form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
-		FROM broker_responses WHERE broker_id = ? AND email_subject = ? LIMIT 1`
+		FROM broker_responses WHERE profile_id = ? AND broker_id = ? AND email_subject = ? LIMIT 1`
 
 	var r BrokerResponse
 	var needsReviewInt int
 	var receivedAtStr, processedAtStr, createdAtStr sql.NullString
 	var formURL, confirmURL sql.NullString
 
-	err := s.db.QueryRow(query, brokerID, subject).Scan(
-		&r.ID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject,
+	err := s.db.QueryRow(query, normalizeProfileID(profileID), brokerID, subject).Scan(
+		&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject,
 		&formURL, &confirmURL, &r.Confidence, &needsReviewInt, &receivedAtStr, &processedAtStr, &createdAtStr)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -592,9 +659,11 @@ func (s *Store) ClearBrokerResponses() error {
 	return nil
 }
 
-// GetAllBrokerResponses retrieves all broker responses (for reclassification)
+// GetAllBrokerResponses retrieves all broker responses across every profile
+// (for reclassification - a full re-scan processes the whole shared inbox
+// regardless of which profile is active in the caller's session)
 func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
-	query := `SELECT id, broker_id, broker_name, response_type, email_from, email_subject, email_body,
+	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject, email_body,
 		form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
 		FROM broker_responses ORDER BY created_at DESC`
 
@@ -611,7 +680,7 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 		var receivedAtStr, processedAtStr, createdAtStr sql.NullString
 		var formURL, confirmURL, emailBody sql.NullString
 
-		err := rows.Scan(&r.ID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject, &emailBody,
+		err := rows.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject, &emailBody,
 			&formURL, &confirmURL, &r.Confidence, &needsReviewInt, &receivedAtStr, &processedAtStr, &createdAtStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan broker response: %w", err)
@@ -632,31 +701,32 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 	return responses, rows.Err()
 }
 
-// GetBrokerResponses retrieves broker responses with optional filtering
-func (s *Store) GetBrokerResponses(responseType string, needsReview bool, limit int) ([]BrokerResponse, error) {
+// GetBrokerResponses retrieves broker responses for one profile, with optional filtering
+func (s *Store) GetBrokerResponses(profileID, responseType string, needsReview bool, limit int) ([]BrokerResponse, error) {
 	var query string
 	var args []interface{}
+	profileID = normalizeProfileID(profileID)
 
 	if responseType != "" && needsReview {
-		query = `SELECT id, broker_id, broker_name, response_type, email_from, email_subject,
+		query = `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject,
 			form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
-			FROM broker_responses WHERE response_type = ? AND needs_review = 1 ORDER BY created_at DESC LIMIT ?`
-		args = []interface{}{responseType, limit}
+			FROM broker_responses WHERE profile_id = ? AND response_type = ? AND needs_review = 1 ORDER BY created_at DESC LIMIT ?`
+		args = []interface{}{profileID, responseType, limit}
 	} else if responseType != "" {
-		query = `SELECT id, broker_id, broker_name, response_type, email_from, email_subject,
+		query = `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject,
 			form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
-			FROM broker_responses WHERE response_type = ? ORDER BY created_at DESC LIMIT ?`
-		args = []interface{}{responseType, limit}
+			FROM broker_responses WHERE profile_id = ? AND response_type = ? ORDER BY created_at DESC LIMIT ?`
+		args = []interface{}{profileID, responseType, limit}
 	} else if needsReview {
-		query = `SELECT id, broker_id, broker_name, response_type, email_from, email_subject,
+		query = `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject,
 			form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
-			FROM broker_responses WHERE needs_review = 1 ORDER BY created_at DESC LIMIT ?`
-		args = []interface{}{limit}
+			FROM broker_responses WHERE profile_id = ? AND needs_review = 1 ORDER BY created_at DESC LIMIT ?`
+		args = []interface{}{profileID, limit}
 	} else {
-		query = `SELECT id, broker_id, broker_name, response_type, email_from, email_subject,
+		query = `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject,
 			form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
-			FROM broker_responses ORDER BY created_at DESC LIMIT ?`
-		args = []interface{}{limit}
+			FROM broker_responses WHERE profile_id = ? ORDER BY created_at DESC LIMIT ?`
+		args = []interface{}{profileID, limit}
 	}
 
 	rows, err := s.db.Query(query, args...)
@@ -672,7 +742,7 @@ func (s *Store) GetBrokerResponses(responseType string, needsReview bool, limit 
 		var receivedAtStr, processedAtStr, createdAtStr sql.NullString
 		var formURL, confirmURL sql.NullString
 
-		err := rows.Scan(&r.ID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject,
+		err := rows.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject,
 			&formURL, &confirmURL, &r.Confidence, &needsReviewInt, &receivedAtStr, &processedAtStr, &createdAtStr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan broker response: %w", err)
@@ -692,11 +762,11 @@ func (s *Store) GetBrokerResponses(responseType string, needsReview bool, limit 
 	return responses, rows.Err()
 }
 
-// GetResponseStats returns counts of response types
-func (s *Store) GetResponseStats() (map[string]int, error) {
-	query := `SELECT response_type, COUNT(*) FROM broker_responses GROUP BY response_type`
+// GetResponseStats returns counts of response types for one profile
+func (s *Store) GetResponseStats(profileID string) (map[string]int, error) {
+	query := `SELECT response_type, COUNT(*) FROM broker_responses WHERE profile_id = ? GROUP BY response_type`
 
-	rows, err := s.db.Query(query)
+	rows, err := s.db.Query(query, normalizeProfileID(profileID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to query response stats: %w", err)
 	}
@@ -727,8 +797,13 @@ type FormWithStatus struct {
 }
 
 // GetFormsWithStatus returns all detected forms with their current status
-func (s *Store) GetFormsWithStatus() ([]FormWithStatus, error) {
+// for one profile.
+func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
+	profileID = normalizeProfileID(profileID)
 	// Get all broker_responses with form_url, joined with pending_tasks and removal_requests
+	// - all three joins are pinned to the same profile_id so a form/task/
+	// pipeline-status row from a different profile's identical broker_id
+	// never gets matched in.
 	query := `
 	SELECT
 		br.broker_id,
@@ -740,17 +815,17 @@ func (s *Store) GetFormsWithStatus() ([]FormWithStatus, error) {
 		COALESCE(pt.status, '') as task_status,
 		COALESCE(rr.pipeline_status, '') as pipeline_status
 	FROM broker_responses br
-	LEFT JOIN pending_tasks pt ON br.broker_id = pt.broker_id AND pt.task_type IN ('captcha', 'manual_form')
+	LEFT JOIN pending_tasks pt ON br.broker_id = pt.broker_id AND pt.profile_id = br.profile_id AND pt.task_type IN ('captcha', 'manual_form')
 	LEFT JOIN (
-		SELECT broker_id, pipeline_status
+		SELECT broker_id, profile_id, pipeline_status
 		FROM removal_requests
-		WHERE id IN (SELECT MAX(id) FROM removal_requests GROUP BY broker_id)
-	) rr ON br.broker_id = rr.broker_id
-	WHERE br.form_url IS NOT NULL AND br.form_url != ''
+		WHERE id IN (SELECT MAX(id) FROM removal_requests GROUP BY profile_id, broker_id)
+	) rr ON br.broker_id = rr.broker_id AND rr.profile_id = br.profile_id
+	WHERE br.profile_id = ? AND br.form_url IS NOT NULL AND br.form_url != ''
 	ORDER BY br.created_at DESC
 	`
 
-	rows, err := s.db.Query(query)
+	rows, err := s.db.Query(query, profileID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query forms: %w", err)
 	}
@@ -799,9 +874,9 @@ func (s *Store) GetFormsWithStatus() ([]FormWithStatus, error) {
 	return forms, rows.Err()
 }
 
-// GetFormStats returns counts of forms by status
-func (s *Store) GetFormStats() (pending, filled, captcha, failed, skipped int, err error) {
-	forms, err := s.GetFormsWithStatus()
+// GetFormStats returns counts of forms by status for one profile
+func (s *Store) GetFormStats(profileID string) (pending, filled, captcha, failed, skipped int, err error) {
+	forms, err := s.GetFormsWithStatus(profileID)
 	if err != nil {
 		return 0, 0, 0, 0, 0, err
 	}
@@ -827,14 +902,16 @@ func (s *Store) GetFormStats() (pending, filled, captcha, failed, skipped int, e
 
 // AddPendingTask creates a new pending task for human intervention
 func (s *Store) AddPendingTask(task *PendingTask) error {
+	task.ProfileID = normalizeProfileID(task.ProfileID)
+
 	query := `
-	INSERT INTO pending_tasks (broker_id, broker_name, task_type, form_url, screenshot_path,
+	INSERT INTO pending_tasks (profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 		browser_state, notes, status, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := s.db.Exec(query,
-		task.BrokerID, task.BrokerName, task.TaskType, task.FormURL, task.ScreenshotPath,
+		task.ProfileID, task.BrokerID, task.BrokerName, task.TaskType, task.FormURL, task.ScreenshotPath,
 		task.BrowserState, task.Notes, "pending", time.Now(),
 	)
 	if err != nil {
@@ -849,30 +926,32 @@ func (s *Store) AddPendingTask(task *PendingTask) error {
 	return nil
 }
 
-// GetPendingTasks retrieves pending tasks with optional filtering
-func (s *Store) GetPendingTasks(taskType TaskType, status string) ([]PendingTask, error) {
+// GetPendingTasks retrieves pending tasks for one profile, with optional filtering
+func (s *Store) GetPendingTasks(profileID string, taskType TaskType, status string) ([]PendingTask, error) {
 	var query string
 	var args []interface{}
+	profileID = normalizeProfileID(profileID)
 
 	if taskType != "" && status != "" {
-		query = `SELECT id, broker_id, broker_name, task_type, form_url, screenshot_path,
+		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 			browser_state, notes, status, created_at, opened_at, completed_at
-			FROM pending_tasks WHERE task_type = ? AND status = ? ORDER BY created_at DESC`
-		args = []interface{}{taskType, status}
+			FROM pending_tasks WHERE profile_id = ? AND task_type = ? AND status = ? ORDER BY created_at DESC`
+		args = []interface{}{profileID, taskType, status}
 	} else if taskType != "" {
-		query = `SELECT id, broker_id, broker_name, task_type, form_url, screenshot_path,
+		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 			browser_state, notes, status, created_at, opened_at, completed_at
-			FROM pending_tasks WHERE task_type = ? ORDER BY created_at DESC`
-		args = []interface{}{taskType}
+			FROM pending_tasks WHERE profile_id = ? AND task_type = ? ORDER BY created_at DESC`
+		args = []interface{}{profileID, taskType}
 	} else if status != "" {
-		query = `SELECT id, broker_id, broker_name, task_type, form_url, screenshot_path,
+		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 			browser_state, notes, status, created_at, opened_at, completed_at
-			FROM pending_tasks WHERE status = ? ORDER BY created_at DESC`
-		args = []interface{}{status}
+			FROM pending_tasks WHERE profile_id = ? AND status = ? ORDER BY created_at DESC`
+		args = []interface{}{profileID, status}
 	} else {
-		query = `SELECT id, broker_id, broker_name, task_type, form_url, screenshot_path,
+		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 			browser_state, notes, status, created_at, opened_at, completed_at
-			FROM pending_tasks ORDER BY created_at DESC`
+			FROM pending_tasks WHERE profile_id = ? ORDER BY created_at DESC`
+		args = []interface{}{profileID}
 	}
 
 	rows, err := s.db.Query(query, args...)
@@ -887,7 +966,7 @@ func (s *Store) GetPendingTasks(taskType TaskType, status string) ([]PendingTask
 		var createdAt sql.NullTime
 		var formURL, screenshotPath, browserState, notes sql.NullString
 
-		err := rows.Scan(&t.ID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
+		err := rows.Scan(&t.ID, &t.ProfileID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
 			&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan pending task: %w", err)
@@ -904,9 +983,12 @@ func (s *Store) GetPendingTasks(taskType TaskType, status string) ([]PendingTask
 	return tasks, rows.Err()
 }
 
-// GetPendingTaskByID retrieves a specific pending task
+// GetPendingTaskByID retrieves a specific pending task by its numeric ID,
+// regardless of profile - the returned task's ProfileID field lets callers
+// (e.g. the web UI) verify it belongs to the caller's active profile before
+// showing or acting on it.
 func (s *Store) GetPendingTaskByID(id int64) (*PendingTask, error) {
-	query := `SELECT id, broker_id, broker_name, task_type, form_url, screenshot_path,
+	query := `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 		browser_state, notes, status, created_at, opened_at, completed_at
 		FROM pending_tasks WHERE id = ?`
 
@@ -914,7 +996,7 @@ func (s *Store) GetPendingTaskByID(id int64) (*PendingTask, error) {
 	var createdAt sql.NullTime
 	var formURL, screenshotPath, browserState, notes sql.NullString
 
-	err := s.db.QueryRow(query, id).Scan(&t.ID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
+	err := s.db.QueryRow(query, id).Scan(&t.ID, &t.ProfileID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
 		&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -951,16 +1033,16 @@ func (s *Store) MarkTaskOpened(id int64) error {
 	return nil
 }
 
-// GetPendingTaskStats returns counts of pending tasks by type and status
-func (s *Store) GetPendingTaskStats() (pending, completed, skipped int, err error) {
+// GetPendingTaskStats returns counts of pending tasks by type and status for one profile
+func (s *Store) GetPendingTaskStats(profileID string) (pending, completed, skipped int, err error) {
 	query := `SELECT
 		SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),
 		SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END),
 		SUM(CASE WHEN status='skipped' THEN 1 ELSE 0 END)
-		FROM pending_tasks`
+		FROM pending_tasks WHERE profile_id = ?`
 
 	var pendingNull, completedNull, skippedNull sql.NullInt64
-	err = s.db.QueryRow(query).Scan(&pendingNull, &completedNull, &skippedNull)
+	err = s.db.QueryRow(query, normalizeProfileID(profileID)).Scan(&pendingNull, &completedNull, &skippedNull)
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("failed to get task stats: %w", err)
 	}
@@ -969,25 +1051,30 @@ func (s *Store) GetPendingTaskStats() (pending, completed, skipped int, err erro
 
 // ==================== Pipeline Status Methods ====================
 
-// UpdatePipelineStatus updates the pipeline status for a broker
-func (s *Store) UpdatePipelineStatus(brokerID string, status PipelineStatus) error {
-	query := `UPDATE removal_requests SET pipeline_status = ? WHERE broker_id = ? AND id = (
-		SELECT id FROM removal_requests WHERE broker_id = ? ORDER BY sent_at DESC LIMIT 1
+// UpdatePipelineStatus updates the pipeline status for a broker within one
+// profile. Callers processing inbox replies (which can be for any profile)
+// should resolve profileID via ResolveProfileForBroker first rather than
+// assuming whatever profile happens to be active in their own session.
+func (s *Store) UpdatePipelineStatus(profileID, brokerID string, status PipelineStatus) error {
+	profileID = normalizeProfileID(profileID)
+	query := `UPDATE removal_requests SET pipeline_status = ? WHERE profile_id = ? AND broker_id = ? AND id = (
+		SELECT id FROM removal_requests WHERE profile_id = ? AND broker_id = ? ORDER BY sent_at DESC LIMIT 1
 	)`
-	_, err := s.db.Exec(query, status, brokerID, brokerID)
+	_, err := s.db.Exec(query, status, profileID, brokerID, profileID, brokerID)
 	if err != nil {
 		return fmt.Errorf("failed to update pipeline status: %w", err)
 	}
 	return nil
 }
 
-// GetPipelineStats returns counts by pipeline status
-func (s *Store) GetPipelineStats() (map[PipelineStatus]int, error) {
+// GetPipelineStats returns counts by pipeline status for one profile
+func (s *Store) GetPipelineStats(profileID string) (map[PipelineStatus]int, error) {
+	profileID = normalizeProfileID(profileID)
 	query := `SELECT pipeline_status, COUNT(*) FROM removal_requests
-		WHERE id IN (SELECT MAX(id) FROM removal_requests GROUP BY broker_id)
+		WHERE profile_id = ? AND id IN (SELECT MAX(id) FROM removal_requests WHERE profile_id = ? GROUP BY broker_id)
 		GROUP BY pipeline_status`
 
-	rows, err := s.db.Query(query)
+	rows, err := s.db.Query(query, profileID, profileID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pipeline stats: %w", err)
 	}

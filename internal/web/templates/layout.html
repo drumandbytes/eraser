@@ -530,6 +530,29 @@
             height: 17px;
         }
 
+        /* Profile switcher - only rendered when more than one profile is
+           configured (see the nav markup's length-of-Profiles guard) */
+        .profile-switcher select {
+            height: 34px;
+            padding: 0 28px 0 10px;
+            border-radius: 6px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 16px;
+        }
+
+        .profile-switcher select:hover {
+            background-color: var(--border);
+        }
+
         /* Spinner */
         .spinner {
             width: 16px;
@@ -651,6 +674,19 @@
             </div>
 
             <div class="flex items-center gap-2">
+                <!-- Profile Switcher (hidden entirely for the common single-profile setup) -->
+                {{if gt (len .Profiles) 1}}
+                <form method="POST" action="/api/profile" class="profile-switcher">
+                    {{.CSRFField}}
+                    <input type="hidden" name="redirect" value="{{.CurrentPath}}">
+                    <select name="profile_id" onchange="this.form.submit()" aria-label="Active profile">
+                        {{range .Profiles}}
+                        <option value="{{.ID}}" {{if eq .ID $.ActiveProfile.ID}}selected{{end}}>{{.FirstName}} {{.LastName}} ({{.ID}})</option>
+                        {{end}}
+                    </select>
+                </form>
+                {{end}}
+
                 <!-- Theme Toggle -->
                 <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -670,6 +706,17 @@
         <!-- Mobile Navigation -->
         <div id="mobile-nav" class="hidden sm:hidden border-t border-[var(--border)] bg-[var(--bg-surface)]">
             <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
+                {{if gt (len .Profiles) 1}}
+                <form method="POST" action="/api/profile" class="profile-switcher mb-2">
+                    {{.CSRFField}}
+                    <input type="hidden" name="redirect" value="{{.CurrentPath}}">
+                    <select name="profile_id" onchange="this.form.submit()" aria-label="Active profile" class="w-full">
+                        {{range .Profiles}}
+                        <option value="{{.ID}}" {{if eq .ID $.ActiveProfile.ID}}selected{{end}}>{{.FirstName}} {{.LastName}} ({{.ID}})</option>
+                        {{end}}
+                    </select>
+                </form>
+                {{end}}
                 <a href="/" class="nav-link-mobile {{if eq .Title "Dashboard"}}active{{end}}">Dashboard</a>
                 <a href="/brokers" class="nav-link-mobile {{if eq .Title "Data Brokers"}}active{{end}}">Brokers</a>
                 <a href="/pipeline" class="nav-link-mobile {{if eq .Title "Pipeline"}}active{{end}}">Pipeline</a>

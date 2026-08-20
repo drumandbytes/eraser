@@ -355,8 +355,15 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 		return
 	}
 
-	// Create a new job to continue processing
-	job := s.jobManager.Create(state.Total)
+	// Create a new job to continue processing, preserving the profile the
+	// original job was scoped to. state.ProfileID is empty for a job
+	// persisted before multi-profile support existed - normalizes to the
+	// same "default" every other pre-migration record falls back to.
+	profileID := state.ProfileID
+	if profileID == "" {
+		profileID = config.DefaultProfileID
+	}
+	job := s.jobManager.Create(state.Total, profileID)
 	job.Sent = state.Sent
 	job.Failed = state.Failed
 	job.Progress = ((state.Sent + state.Failed) * 100) / state.Total
@@ -435,6 +442,7 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Post("/inbox/scan", s.handleAPIInboxScan)
 		r.Post("/inbox/rescan", s.handleAPIInboxRescan)
 		r.Post("/inbox/reclassify", s.handleAPIReclassify)
+		r.Post("/profile", s.handleAPISwitchProfile)
 	})
 
 	return r
@@ -507,22 +515,85 @@ func openBrowser(url string) {
 	exec.Command(cmd, args...).Start()
 }
 
+// activeProfileCookie names the cookie that remembers which profile the web
+// UI is currently scoped to. Plain (not HttpOnly/Secure) since it carries no
+// secret - just a UI preference - and the server always validates it against
+// the configured profile list before trusting it, so a tampered value just
+// falls back to the first profile rather than granting anything.
+const activeProfileCookie = "eraser_profile"
+
+// activeProfile resolves which profile the current request should act on.
+// Unlike the CLI's --profile flag (where an ambiguous, unspecified profile
+// is a hard error - see config.GetProfile), the web UI always has a
+// definite answer: the eraser_profile cookie if it still names a configured
+// profile, else the first configured profile. This is what every
+// profile-scoped handler below should call instead of reaching for
+// s.config.Profile directly.
+func (s *Server) activeProfile(r *http.Request) config.NamedProfile {
+	if s.config == nil {
+		return config.NamedProfile{ID: config.DefaultProfileID}
+	}
+	profiles := s.config.GetProfiles()
+	if cookie, err := r.Cookie(activeProfileCookie); err == nil {
+		for _, p := range profiles {
+			if p.ID == cookie.Value {
+				return p
+			}
+		}
+	}
+	return profiles[0]
+}
+
+// handleAPISwitchProfile sets the active-profile cookie (after validating
+// the requested ID is actually configured) and redirects back to the page
+// the switcher was submitted from, so every profile-scoped page picks up
+// the new selection on next render.
+func (s *Server) handleAPISwitchProfile(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+
+	id := r.FormValue("profile_id")
+	if s.config != nil {
+		for _, p := range s.config.GetProfiles() {
+			if p.ID == id {
+				http.SetCookie(w, &http.Cookie{
+					Name:     activeProfileCookie,
+					Value:    id,
+					Path:     "/",
+					SameSite: http.SameSiteLaxMode,
+					MaxAge:   365 * 24 * 60 * 60,
+				})
+				break
+			}
+		}
+	}
+
+	redirect := r.FormValue("redirect")
+	if redirect == "" || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
+		redirect = "/"
+	}
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
+}
+
 // Handler implementations
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	// Check if config exists, redirect to setup if not
-	if s.config == nil || s.config.Profile.FirstName == "" {
+	if s.config == nil || s.config.Profile.FirstName == "" && len(s.config.Profiles) == 0 {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
 
+	active := s.activeProfile(r)
 	data := map[string]interface{}{
 		"Title":         "Dashboard",
-		"Profile":       s.config.Profile,
+		"Profile":       active.Profile,
 		"BrokerCount":   len(s.brokerDB.Brokers),
-		"RecentHistory": s.getRecentHistory(10),
-		"Stats":         s.getStats(),
-		"PipelineStats": s.getPipelineStats(),
+		"RecentHistory": s.getRecentHistory(active.ID, 10),
+		"Stats":         s.getStats(active.ID),
+		"PipelineStats": s.getPipelineStats(active.ID),
 	}
 
 	s.renderWithCSRF(w, r, "dashboard.html", data)
@@ -535,7 +606,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	missingEmail := r.URL.Query().Get("missing_email") == "true"
 
-	brokers := s.getBrokersWithStatus(search, category, region, status, missingEmail)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
 
 	data := map[string]interface{}{
 		"Title":        "Data Brokers",
@@ -555,7 +626,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	statusFilter := r.URL.Query().Get("status")
-	allHistory := s.getRecentHistory(1000)
+	allHistory := s.getRecentHistory(s.activeProfile(r).ID, 1000)
 
 	// Filter by status if specified
 	var filteredHistory []history.Record
@@ -640,7 +711,7 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 	status := r.URL.Query().Get("status")
 	missingEmail := r.URL.Query().Get("missing_email") == "true"
 
-	brokers := s.getBrokersWithStatus(search, category, region, status, missingEmail)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
 
 	// Returns broker list as HTML fragment for HTMX
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{
@@ -659,7 +730,7 @@ func (s *Server) handleAPIDeleteFailed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleted, err := s.historyStore.DeleteByStatus(history.StatusFailed)
+	deleted, err := s.historyStore.DeleteByStatus(s.activeProfile(r).ID, history.StatusFailed)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -684,7 +755,7 @@ func (s *Server) handleAPIDeleteAllHistory(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	deleted, err := s.historyStore.DeleteAllHistory()
+	deleted, err := s.historyStore.DeleteAllHistory(s.activeProfile(r).ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -738,8 +809,9 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	// to "generic", which meant every web-UI send cited generic privacy law
 	// language instead of GDPR Article 17 regardless of what init/settings
 	// configured. config.Load guarantees Options.Template is never empty.
+	activeProfile := s.activeProfile(r)
 	tmplName := s.config.Options.Template
-	rendered, err := s.tmplEngine.Render(tmplName, s.config.Profile, *br)
+	rendered, err := s.tmplEngine.Render(tmplName, activeProfile.Profile, *br)
 	if err != nil {
 		w.Write([]byte(fmt.Sprintf(`<span class="text-red-600">Template error: %s</span>`, template.HTMLEscapeString(err.Error()))))
 		return
@@ -759,6 +831,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 
 	// Record in history
 	record := &history.Record{
+		ProfileID:  activeProfile.ID,
 		BrokerID:   br.ID,
 		BrokerName: br.Name,
 		Email:      br.Email,
@@ -801,8 +874,10 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if a job is already running
-	if activeJob := s.jobManager.GetActive(); activeJob != nil {
+	activeProfile := s.activeProfile(r)
+
+	// Check if a job is already running for this profile
+	if activeJob := s.jobManager.GetActive(activeProfile.ID); activeJob != nil {
 		w.WriteHeader(http.StatusConflict)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":  "A send job is already in progress",
@@ -829,7 +904,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Bulk send never targets missing-email brokers - there's nowhere to send.
-	toSend := s.getBrokersWithStatus(search, category, region, status, false)
+	toSend := s.getBrokersWithStatus(activeProfile.ID, search, category, region, status, false)
 
 	if len(toSend) == 0 {
 		noneMsg := "No pending brokers to send to."
@@ -852,7 +927,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new job
-	job := s.jobManager.Create(len(toSend))
+	job := s.jobManager.Create(len(toSend), activeProfile.ID)
 
 	// Extract broker IDs for persistence
 	brokerIDs := make([]string, len(toSend))
@@ -863,6 +938,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	// Save initial job state
 	jobState := &PersistentJobState{
 		ID:               job.ID,
+		ProfileID:        activeProfile.ID,
 		Status:           job.GetStatus(),
 		Sent:             0,
 		Failed:           0,
@@ -896,6 +972,21 @@ const defaultDailyLimit = 250 // Gmail/SMTP: stay well under 500/day
 func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender email.Sender) {
 	sent := 0
 	failed := 0
+
+	// This runs in a background goroutine with no *http.Request to read the
+	// active-profile cookie from, so the profile is fixed to whatever it
+	// was when the job was created (job.ProfileID) - correct even if the
+	// user switches the web UI's active profile mid-send.
+	activeProfile, err := s.config.GetProfile(job.ProfileID)
+	if err != nil {
+		// job.ProfileID no longer exists in config (e.g. edited out between
+		// job creation and now) - fall back to whatever GetProfile("")
+		// resolves to rather than crash the whole job.
+		if profiles := s.config.GetProfiles(); len(profiles) > 0 {
+			activeProfile = profiles[0]
+		}
+	}
+
 	rateLimitMs := s.config.Options.RateLimitMs
 	if rateLimitMs == 0 {
 		rateLimitMs = 2000 // Default 2 second delay
@@ -934,7 +1025,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 
 		// Generate email using the user's configured template (see the
 		// same fix/comment in handleAPISendOne above)
-		rendered, err := s.tmplEngine.Render(s.config.Options.Template, s.config.Profile, b.Broker)
+		rendered, err := s.tmplEngine.Render(s.config.Options.Template, activeProfile.Profile, b.Broker)
 		if err != nil {
 			failed++
 			job.Update(sent, failed, b.Name)
@@ -958,6 +1049,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 
 		// Record in history
 		record := &history.Record{
+			ProfileID:  activeProfile.ID,
 			BrokerID:   b.ID,
 			BrokerName: b.Name,
 			Email:      b.Email,
@@ -1023,6 +1115,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 func (s *Server) saveJobProgress(job *Job, sent, failed int, remaining []string) {
 	state := &PersistentJobState{
 		ID:               job.ID,
+		ProfileID:        job.ProfileID,
 		Status:           job.GetStatus(),
 		Sent:             sent,
 		Failed:           failed,
@@ -1053,11 +1146,11 @@ type BrokerWithStatus struct {
 }
 
 // getBrokersWithStatus returns brokers with their history status
-func (s *Server) getBrokersWithStatus(search, category, region, statusFilter string, missingEmail bool) []BrokerWithStatus {
-	// Get all broker statuses from history
+func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, missingEmail bool) []BrokerWithStatus {
+	// Get all broker statuses from history, scoped to the active profile
 	var brokerStatuses map[string]history.BrokerStatus
 	if s.historyStore != nil {
-		brokerStatuses, _ = s.historyStore.GetAllBrokerStatuses()
+		brokerStatuses, _ = s.historyStore.GetAllBrokerStatuses(profileID)
 	}
 	if brokerStatuses == nil {
 		brokerStatuses = make(map[string]history.BrokerStatus)
@@ -1145,13 +1238,13 @@ func (s *Server) getUniqueRegions() []string {
 	return s.getUniqueValues(func(b broker.Broker) string { return b.Region })
 }
 
-func (s *Server) getStats() Stats {
+func (s *Server) getStats(profileID string) Stats {
 	stats := Stats{
 		TotalBrokers: len(s.brokerDB.Brokers),
 	}
 
 	if s.historyStore != nil {
-		_, sent, failed, err := s.historyStore.GetStats()
+		_, sent, failed, err := s.historyStore.GetStats(profileID)
 		if err == nil {
 			stats.Sent = sent
 			stats.Failed = failed
@@ -1166,11 +1259,11 @@ func (s *Server) getStats() Stats {
 	return stats
 }
 
-func (s *Server) getRecentHistory(limit int) []history.Record {
+func (s *Server) getRecentHistory(profileID string, limit int) []history.Record {
 	if s.historyStore == nil {
 		return nil
 	}
-	records, _ := s.historyStore.GetRecentRequests(limit)
+	records, _ := s.historyStore.GetRecentRequests(profileID, limit)
 	return records
 }
 
@@ -1191,6 +1284,15 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	// Add CSRF token to data
 	data["CSRFToken"] = csrf.Token(r)
 	data["CSRFField"] = template.HTML(fmt.Sprintf(`<input type="hidden" name="gorilla.csrf.Token" value="%s">`, csrf.Token(r)))
+
+	// Every page gets the profile switcher's data, regardless of whether the
+	// handler itself needed the active profile - Profiles has length 1 for a
+	// single-profile config, in which case layout.html hides the switcher.
+	if s.config != nil {
+		data["Profiles"] = s.config.GetProfiles()
+		data["ActiveProfile"] = s.activeProfile(r)
+		data["CurrentPath"] = r.URL.Path
+	}
 
 	tmpl, ok := s.templates[name]
 	if !ok {
@@ -1577,7 +1679,7 @@ type PipelineStats struct {
 	NeedsReview          int
 }
 
-func (s *Server) getPipelineStats() PipelineStats {
+func (s *Server) getPipelineStats(profileID string) PipelineStats {
 	stats := PipelineStats{}
 
 	if s.historyStore == nil {
@@ -1585,7 +1687,7 @@ func (s *Server) getPipelineStats() PipelineStats {
 	}
 
 	// Get pipeline stage counts
-	pipelineStats, err := s.historyStore.GetPipelineStats()
+	pipelineStats, err := s.historyStore.GetPipelineStats(profileID)
 	if err == nil {
 		stats.EmailSent = pipelineStats[history.PipelineEmailSent]
 		stats.AwaitingResponse = pipelineStats[history.PipelineAwaitingResponse]
@@ -1600,19 +1702,19 @@ func (s *Server) getPipelineStats() PipelineStats {
 	}
 
 	// Get pending tasks count (CAPTCHAs, etc.)
-	pendingTaskCount, _, _, err := s.historyStore.GetPendingTaskStats()
+	pendingTaskCount, _, _, err := s.historyStore.GetPendingTaskStats(profileID)
 	if err == nil {
 		stats.PendingTasks = pendingTaskCount
 	}
 
 	// Get needs review count
-	responses, err := s.historyStore.GetBrokerResponses("", true, 1000)
+	responses, err := s.historyStore.GetBrokerResponses(profileID, "", true, 1000)
 	if err == nil {
 		stats.NeedsReview = len(responses)
 	}
 
 	// Get form stats (what's actually shown on tasks page)
-	pendingForms, _, _, _, _, _ := s.historyStore.GetFormStats()
+	pendingForms, _, _, _, _, _ := s.historyStore.GetFormStats(profileID)
 
 	// Calculate unified "Action Needed" based on what's displayed on /tasks page:
 	// - Pending forms (forms without tasks yet)
@@ -1624,23 +1726,24 @@ func (s *Server) getPipelineStats() PipelineStats {
 }
 
 func (s *Server) handlePipeline(w http.ResponseWriter, r *http.Request) {
-	if s.config == nil || s.config.Profile.FirstName == "" {
+	if s.config == nil || s.config.Profile.FirstName == "" && len(s.config.Profiles) == 0 {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
 
-	pipelineStats := s.getPipelineStats()
+	active := s.activeProfile(r)
+	pipelineStats := s.getPipelineStats(active.ID)
 
 	// Get recent responses
 	var recentResponses []history.BrokerResponse
 	if s.historyStore != nil {
-		recentResponses, _ = s.historyStore.GetBrokerResponses("", false, 20)
+		recentResponses, _ = s.historyStore.GetBrokerResponses(active.ID, "", false, 20)
 	}
 
 	// Get pending tasks
 	var pendingTasks []history.PendingTask
 	if s.historyStore != nil {
-		pendingTasks, _ = s.historyStore.GetPendingTasks("", "pending")
+		pendingTasks, _ = s.historyStore.GetPendingTasks(active.ID, "", "pending")
 	}
 
 	data := map[string]interface{}{
@@ -1668,7 +1771,7 @@ func (s *Server) handleFormComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update pipeline status to confirmed
-	if err := s.historyStore.UpdatePipelineStatus(brokerID, history.PipelineConfirmed); err != nil {
+	if err := s.historyStore.UpdatePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineConfirmed); err != nil {
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
 	}
@@ -1692,7 +1795,7 @@ func (s *Server) handleFormSkip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update pipeline status to rejected (skipped)
-	if err := s.historyStore.UpdatePipelineStatus(brokerID, history.PipelineRejected); err != nil {
+	if err := s.historyStore.UpdatePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineRejected); err != nil {
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
 	}
@@ -1708,11 +1811,12 @@ func (s *Server) handleFormSkip(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
-	if s.config == nil || s.config.Profile.FirstName == "" {
+	if s.config == nil || s.config.Profile.FirstName == "" && len(s.config.Profiles) == 0 {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
 
+	active := s.activeProfile(r)
 	taskType := r.URL.Query().Get("type")
 	status := r.URL.Query().Get("status")
 	if status == "" {
@@ -1724,23 +1828,23 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	var forms []history.FormWithStatus
 	var reviewItems []history.BrokerResponse
 	if s.historyStore != nil {
-		tasks, _ = s.historyStore.GetPendingTasks(history.TaskType(taskType), "pending")
-		completedTasksList, _ = s.historyStore.GetPendingTasks(history.TaskType(taskType), "completed")
-		forms, _ = s.historyStore.GetFormsWithStatus()
+		tasks, _ = s.historyStore.GetPendingTasks(active.ID, history.TaskType(taskType), "pending")
+		completedTasksList, _ = s.historyStore.GetPendingTasks(active.ID, history.TaskType(taskType), "completed")
+		forms, _ = s.historyStore.GetFormsWithStatus(active.ID)
 		// Get items needing review (parser was unsure)
-		reviewItems, _ = s.historyStore.GetBrokerResponses("", true, 1000)
+		reviewItems, _ = s.historyStore.GetBrokerResponses(active.ID, "", true, 1000)
 	}
 
 	// Get task stats
 	pendingTasks, completedTasksCount, skippedTasks := 0, 0, 0
 	if s.historyStore != nil {
-		pendingTasks, completedTasksCount, skippedTasks, _ = s.historyStore.GetPendingTaskStats()
+		pendingTasks, completedTasksCount, skippedTasks, _ = s.historyStore.GetPendingTaskStats(active.ID)
 	}
 
 	// Get form stats
 	pendingForms, filledForms, captchaForms, failedForms, skippedForms := 0, 0, 0, 0, 0
 	if s.historyStore != nil {
-		pendingForms, filledForms, captchaForms, failedForms, skippedForms, _ = s.historyStore.GetFormStats()
+		pendingForms, filledForms, captchaForms, failedForms, skippedForms, _ = s.historyStore.GetFormStats(active.ID)
 	}
 
 	// Count forms needing action (only pending forms, not captcha since those are in pendingTasks)
@@ -1919,7 +2023,7 @@ func (s *Server) handleAPIResponses(w http.ResponseWriter, r *http.Request) {
 
 	var responses []history.BrokerResponse
 	if s.historyStore != nil {
-		responses, _ = s.historyStore.GetBrokerResponses(responseType, needsReview, 50)
+		responses, _ = s.historyStore.GetBrokerResponses(s.activeProfile(r).ID, responseType, needsReview, 50)
 	}
 
 	s.renderPartial(w, "partials/response-list.html", map[string]interface{}{
@@ -2000,8 +2104,20 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 			bodyContent = email.HTMLBody
 		}
 
+		// A shared inbox carries replies for every profile's sent requests
+		// together, so attribute this reply to whichever profile actually
+		// emailed this broker rather than to whatever profile is "active"
+		// in the session running this scan.
+		profileID := history.DefaultProfileID
+		if s.historyStore != nil {
+			if resolved, err := s.historyStore.ResolveProfileForBroker(email.BrokerID); err == nil {
+				profileID = resolved
+			}
+		}
+
 		// Store in database
 		brokerResp := &history.BrokerResponse{
+			ProfileID:    profileID,
 			BrokerID:     email.BrokerID,
 			BrokerName:   email.BrokerName,
 			ResponseType: string(classified.Type),
@@ -2156,9 +2272,20 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 			bodyContent = email.HTMLBody
 		}
 
+		// A shared inbox carries replies for every profile's sent requests
+		// together, so attribute this reply to whichever profile actually
+		// emailed this broker rather than to whatever profile is "active"
+		// in the session running this rescan.
+		profileID := history.DefaultProfileID
+		if s.historyStore != nil {
+			if resolved, err := s.historyStore.ResolveProfileForBroker(email.BrokerID); err == nil {
+				profileID = resolved
+			}
+		}
+
 		// Check if this response already exists
 		if s.historyStore != nil {
-			existing, _ := s.historyStore.FindBrokerResponseBySubject(email.BrokerID, email.Subject)
+			existing, _ := s.historyStore.FindBrokerResponseBySubject(profileID, email.BrokerID, email.Subject)
 			if existing != nil {
 				// Update existing response classification
 				err := s.historyStore.UpdateBrokerResponseClassification(
@@ -2183,6 +2310,7 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 			} else {
 				// Insert new response
 				brokerResp := &history.BrokerResponse{
+					ProfileID:    profileID,
 					BrokerID:     email.BrokerID,
 					BrokerName:   email.BrokerName,
 					ResponseType: string(classified.Type),
@@ -2453,7 +2581,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAPIJobActive(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	job := s.jobManager.GetActive()
+	job := s.jobManager.GetActive(s.activeProfile(r).ID)
 	if job == nil {
 		json.NewEncoder(w).Encode(map[string]interface{}{"job": nil})
 		return

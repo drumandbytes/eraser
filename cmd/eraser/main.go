@@ -29,7 +29,17 @@ var (
 	dryRun           bool
 	ignoreDailyLimit bool
 	resend           bool
+	profileFlag      string
 )
+
+// resolveProfile resolves which configured profile a command should operate
+// as, honoring the global --profile flag. With the common single-profile
+// setup, --profile can be omitted entirely - GetProfile falls back to the
+// sole configured profile. With multiple profiles configured, --profile is
+// required and GetProfile returns an error listing the available IDs.
+func resolveProfile(cfg *config.Config) (config.NamedProfile, error) {
+	return cfg.GetProfile(profileFlag)
+}
 
 // resendCooldown is how long after a successful send a broker is skipped by
 // default on subsequent `send` runs - long enough that resuming an
@@ -70,6 +80,7 @@ send via Gmail SMTP.`,
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eraser/config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&brokerFile, "brokers", "", "broker database file (default is ./data/brokers.yaml)")
+	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "Profile ID to operate as (default: the only configured profile; required if you've configured more than one via 'eraser profile add')")
 
 	// Add commands
 	rootCmd.AddCommand(initCmd())
@@ -84,6 +95,7 @@ send via Gmail SMTP.`,
 	rootCmd.AddCommand(confirmCmd())
 	rootCmd.AddCommand(cleanupBouncesCmd())
 	rootCmd.AddCommand(markBouncedCmd())
+	rootCmd.AddCommand(profileCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -173,6 +185,118 @@ func addBrokerCmd() *cobra.Command {
 			return runAddBroker()
 		},
 	}
+}
+
+func profileCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "profile",
+		Short: "Manage multiple profiles (e.g. separate household members)",
+		Long: `Most installs only ever need one profile - the one set up by 'eraser init'.
+Use these subcommands only if you want to send removal requests for more
+than one identity (e.g. a spouse or family member) from this same install,
+sharing one config file, broker database, and inbox.`,
+	}
+
+	cmd.AddCommand(profileListCmd())
+	cmd.AddCommand(profileAddCmd())
+
+	return cmd
+}
+
+func profileListCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "List configured profiles",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runProfileList()
+		},
+	}
+}
+
+func profileAddCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "add",
+		Short: "Add a new named profile",
+		Long: `Interactively add a new named profile to the config file, so you can send
+removal requests, check status, etc. for a second identity via --profile <id>.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runProfileAdd()
+		},
+	}
+}
+
+func runProfileList() error {
+	cfg, err := config.Load(resolveConfigPath())
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	profiles := cfg.GetProfiles()
+
+	fmt.Println("👤 Configured Profiles")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	for _, p := range profiles {
+		fmt.Printf("\n%s\n", p.ID)
+		fmt.Printf("  %s %s <%s>\n", p.FirstName, p.LastName, p.Email)
+	}
+	fmt.Println()
+
+	if len(profiles) == 1 {
+		fmt.Println("Only one profile configured - --profile can be omitted anywhere.")
+	} else {
+		fmt.Println("Use --profile <id> on send/status/monitor/pipeline/fill/confirm/mark-bounced to select one.")
+	}
+
+	return nil
+}
+
+func runProfileAdd() error {
+	reader := bufio.NewReader(os.Stdin)
+	configPath := resolveConfigPath()
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config (run 'eraser init' first): %w", err)
+	}
+
+	existingProfiles := cfg.GetProfiles()
+
+	fmt.Println("➕ Add Profile")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println()
+
+	id := strings.ToLower(strings.TrimSpace(prompt(reader, "Profile ID (short, unique, e.g. 'spouse', 'kid1'): ")))
+	if id == "" {
+		return fmt.Errorf("profile ID is required")
+	}
+	for _, p := range existingProfiles {
+		if strings.EqualFold(p.ID, id) {
+			return fmt.Errorf("profile %q already exists", id)
+		}
+	}
+
+	np := config.NamedProfile{ID: id}
+	np.FirstName = prompt(reader, "First name: ")
+	np.LastName = prompt(reader, "Last name: ")
+	np.Email = prompt(reader, "Email address: ")
+	np.Address = prompt(reader, "Street address (optional): ")
+	np.City = prompt(reader, "City (optional): ")
+	np.State = prompt(reader, "State/Province (optional): ")
+	np.ZipCode = prompt(reader, "ZIP/Postal code (optional): ")
+	np.Country = prompt(reader, "Country (optional): ")
+	np.Phone = prompt(reader, "Phone number (optional): ")
+
+	cfg.Profiles = append(existingProfiles, np)
+
+	if err := config.Save(configPath, cfg); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	fmt.Println()
+	fmt.Printf("✅ Added profile %q\n", id)
+	fmt.Printf("Use it with: eraser send --profile %s\n", id)
+
+	return nil
 }
 
 func serveCmd() *cobra.Command {
@@ -308,6 +432,19 @@ func runInit() error {
 	cfg.Inbox = existing.Inbox
 	cfg.Pipeline = existing.Pipeline
 
+	// Carry forward any additional named profiles added via 'eraser profile
+	// add' - re-running init only updates the primary/legacy profile, it
+	// must not silently drop the others. If a "default" entry exists among
+	// them, keep it in sync with the primary profile fields just entered
+	// above instead of leaving it stale.
+	cfg.Profiles = make([]config.NamedProfile, len(existing.Profiles))
+	copy(cfg.Profiles, existing.Profiles)
+	for i := range cfg.Profiles {
+		if strings.EqualFold(cfg.Profiles[i].ID, config.DefaultProfileID) {
+			cfg.Profiles[i].Profile = cfg.Profile
+		}
+	}
+
 	if err := config.Save(configPath, cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
@@ -336,6 +473,11 @@ func runSend() error {
 
 	if err := cfg.Validate(); err != nil {
 		return fmt.Errorf("invalid config: %w", err)
+	}
+
+	activeProfile, err := resolveProfile(cfg)
+	if err != nil {
+		return err
 	}
 
 	// Override dry-run from command line
@@ -368,7 +510,7 @@ func runSend() error {
 	// `eraser send` to resume a large backlog without double-emailing
 	// brokers from an earlier run this same campaign.
 	if !resend && !cfg.Options.DryRun {
-		lastSent, err := store.LastSuccessfulSendTimes()
+		lastSent, err := store.LastSuccessfulSendTimes(activeProfile.ID)
 		if err != nil {
 			return fmt.Errorf("failed to check send history: %w", err)
 		}
@@ -397,7 +539,7 @@ func runSend() error {
 	// past the provider's per-day sending limit or read as bulk-spam
 	// behavior. Skipped entirely for --dry-run and --ignore-daily-limit.
 	if !cfg.Options.DryRun && !ignoreDailyLimit {
-		sentLast24h, err := store.CountSentSince(time.Now().Add(-24 * time.Hour))
+		sentLast24h, err := store.CountSentSince(activeProfile.ID, time.Now().Add(-24*time.Hour))
 		if err != nil {
 			return fmt.Errorf("failed to check daily send count: %w", err)
 		}
@@ -435,6 +577,9 @@ func runSend() error {
 		fmt.Println()
 	}
 
+	if len(cfg.GetProfiles()) > 1 {
+		fmt.Printf("👤 Profile: %s (%s %s)\n", activeProfile.ID, activeProfile.FirstName, activeProfile.LastName)
+	}
 	fmt.Printf("📤 Processing %d brokers...\n", len(brokers))
 	fmt.Println()
 
@@ -458,7 +603,7 @@ func runSend() error {
 		}
 
 		// Render email
-		emailMsg, err := tmplEngine.Render(cfg.Options.Template, cfg.Profile, b)
+		emailMsg, err := tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b)
 		if err != nil {
 			fmt.Printf("  ❌ Failed to render template: %v\n", err)
 			failCount++
@@ -483,6 +628,7 @@ func runSend() error {
 
 			// Record in history
 			record := &history.Record{
+				ProfileID:  activeProfile.ID,
 				BrokerID:   b.ID,
 				BrokerName: b.Name,
 				Email:      b.Email,
@@ -581,6 +727,16 @@ func runListBrokers(region, category, search string, missingEmail bool) error {
 }
 
 func runStatus(limit int) error {
+	cfg, err := config.Load(resolveConfigPath())
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	activeProfile, err := resolveProfile(cfg)
+	if err != nil {
+		return err
+	}
+
 	store, err := history.NewStore(history.DefaultDBPath())
 	if err != nil {
 		return fmt.Errorf("failed to open history: %w", err)
@@ -588,19 +744,22 @@ func runStatus(limit int) error {
 	defer store.Close()
 
 	// Get overall stats
-	total, sent, failed, err := store.GetStats()
+	total, sent, failed, err := store.GetStats(activeProfile.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get stats: %w", err)
 	}
 
 	// Get monthly stats
-	monthlySent, monthlyFailed, err := store.GetMonthlyStats()
+	monthlySent, monthlyFailed, err := store.GetMonthlyStats(activeProfile.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get monthly stats: %w", err)
 	}
 
 	fmt.Println("📊 Eraser Statistics")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	if len(cfg.GetProfiles()) > 1 {
+		fmt.Printf("👤 Profile: %s\n", activeProfile.ID)
+	}
 	fmt.Println()
 	fmt.Println("All Time:")
 	fmt.Printf("  Total requests: %d\n", total)
@@ -612,7 +771,7 @@ func runStatus(limit int) error {
 	fmt.Printf("  Failed: %d\n", monthlyFailed)
 
 	// Get recent requests
-	records, err := store.GetRecentRequests(limit)
+	records, err := store.GetRecentRequests(activeProfile.ID, limit)
 	if err != nil {
 		return fmt.Errorf("failed to get recent requests: %w", err)
 	}
@@ -933,8 +1092,18 @@ func runMonitor(days int, once bool, watch bool) error {
 		classified := inbox.ClassifyResponse(&email)
 		responses = append(responses, classified)
 
+		// A shared inbox carries replies for every profile's sent requests
+		// together, so attribute this reply to whichever profile actually
+		// emailed this broker rather than to whatever --profile this scan
+		// happens to be running as.
+		profileID, err := store.ResolveProfileForBroker(email.BrokerID)
+		if err != nil {
+			profileID = history.DefaultProfileID
+		}
+
 		// Store in database
 		brokerResp := &history.BrokerResponse{
+			ProfileID:    profileID,
 			BrokerID:     email.BrokerID,
 			BrokerName:   email.BrokerName,
 			ResponseType: string(classified.Type),
@@ -968,7 +1137,7 @@ func runMonitor(days int, once bool, watch bool) error {
 			pipelineStatus = history.PipelineAwaitingResponse
 		}
 
-		if err := store.UpdatePipelineStatus(email.BrokerID, pipelineStatus); err != nil {
+		if err := store.UpdatePipelineStatus(profileID, email.BrokerID, pipelineStatus); err != nil {
 			// Ignore error if no matching record
 		}
 
@@ -1032,8 +1201,14 @@ func runMonitor(days int, once bool, watch bool) error {
 			classified := inbox.ClassifyResponse(&email)
 			printClassifiedResponse(classified)
 
+			profileID, err := store.ResolveProfileForBroker(email.BrokerID)
+			if err != nil {
+				profileID = history.DefaultProfileID
+			}
+
 			// Store response
 			brokerResp := &history.BrokerResponse{
+				ProfileID:    profileID,
 				BrokerID:     email.BrokerID,
 				BrokerName:   email.BrokerName,
 				ResponseType: string(classified.Type),
@@ -1090,6 +1265,16 @@ func printClassifiedResponse(r inbox.ClassifiedResponse) {
 }
 
 func runPipelineStatus() error {
+	cfg, err := config.Load(resolveConfigPath())
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	activeProfile, err := resolveProfile(cfg)
+	if err != nil {
+		return err
+	}
+
 	store, err := history.NewStore(history.DefaultDBPath())
 	if err != nil {
 		return fmt.Errorf("failed to open history: %w", err)
@@ -1098,10 +1283,13 @@ func runPipelineStatus() error {
 
 	fmt.Println("🔄 Pipeline Status")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	if len(cfg.GetProfiles()) > 1 {
+		fmt.Printf("👤 Profile: %s\n", activeProfile.ID)
+	}
 	fmt.Println()
 
 	// Get pipeline stats
-	pipelineStats, err := store.GetPipelineStats()
+	pipelineStats, err := store.GetPipelineStats(activeProfile.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get pipeline stats: %w", err)
 	}
@@ -1119,7 +1307,7 @@ func runPipelineStatus() error {
 	fmt.Printf("  💥 Failed:                %d\n", pipelineStats[history.PipelineFailed])
 
 	// Get response stats
-	responseStats, err := store.GetResponseStats()
+	responseStats, err := store.GetResponseStats(activeProfile.ID)
 	if err != nil {
 		fmt.Printf("\n⚠️  Could not get response stats: %v\n", err)
 	} else if len(responseStats) > 0 {
@@ -1131,7 +1319,7 @@ func runPipelineStatus() error {
 	}
 
 	// Get pending tasks
-	pending, completed, skipped, err := store.GetPendingTaskStats()
+	pending, completed, skipped, err := store.GetPendingTaskStats(activeProfile.ID)
 	if err != nil {
 		fmt.Printf("\n⚠️  Could not get task stats: %v\n", err)
 	} else if pending+completed+skipped > 0 {
@@ -1143,7 +1331,7 @@ func runPipelineStatus() error {
 	}
 
 	// Show actionable items
-	tasks, err := store.GetPendingTasks("", "pending")
+	tasks, err := store.GetPendingTasks(activeProfile.ID, "", "pending")
 	if err == nil && len(tasks) > 0 {
 		fmt.Println()
 		fmt.Println("🎯 Action Required:")
@@ -1214,6 +1402,11 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
+	activeProfile, err := resolveProfile(cfg)
+	if err != nil {
+		return err
+	}
+
 	// --headless wins if you passed it explicitly; otherwise fall back to
 	// the config's pipeline.browser_headless (true if that's unset too).
 	if !headlessFlagSet {
@@ -1260,7 +1453,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 	}
 
 	// Create browser instance
-	b, err := browser.New(browserCfg, &cfg.Profile)
+	b, err := browser.New(browserCfg, &activeProfile.Profile)
 	if err != nil {
 		return fmt.Errorf("failed to create browser: %w", err)
 	}
@@ -1284,7 +1477,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		}{BrokerID: brokerID, URL: formURL})
 	} else if brokerID != "" {
 		// Get URL for specific broker from pipeline
-		responses, err := store.GetBrokerResponses("form_required", false, 100)
+		responses, err := store.GetBrokerResponses(activeProfile.ID, "form_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
 		}
@@ -1306,7 +1499,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		}
 	} else if pending {
 		// Get all pending forms
-		responses, err := store.GetBrokerResponses("form_required", false, 100)
+		responses, err := store.GetBrokerResponses(activeProfile.ID, "form_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
 		}
@@ -1358,20 +1551,21 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 
 			// Store profile data as JSON for the helper page
 			profileData := map[string]string{
-				"email":     cfg.Profile.Email,
-				"firstName": cfg.Profile.FirstName,
-				"lastName":  cfg.Profile.LastName,
-				"phone":     cfg.Profile.Phone,
-				"address":   cfg.Profile.Address,
-				"city":      cfg.Profile.City,
-				"state":     cfg.Profile.State,
-				"zipCode":   cfg.Profile.ZipCode,
-				"country":   cfg.Profile.Country,
+				"email":     activeProfile.Email,
+				"firstName": activeProfile.FirstName,
+				"lastName":  activeProfile.LastName,
+				"phone":     activeProfile.Phone,
+				"address":   activeProfile.Address,
+				"city":      activeProfile.City,
+				"state":     activeProfile.State,
+				"zipCode":   activeProfile.ZipCode,
+				"country":   activeProfile.Country,
 			}
 			profileJSON, _ := json.Marshal(profileData)
 
 			// Create pending task for CAPTCHA
 			task := &history.PendingTask{
+				ProfileID:    activeProfile.ID,
 				BrokerID:     form.BrokerID,
 				BrokerName:   form.BrokerID, // Will need broker lookup for proper name
 				TaskType:     history.TaskCaptcha,
@@ -1390,13 +1584,13 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 			}
 
 			// Update pipeline status
-			store.UpdatePipelineStatus(form.BrokerID, history.PipelineAwaitingCaptcha)
+			store.UpdatePipelineStatus(activeProfile.ID, form.BrokerID, history.PipelineAwaitingCaptcha)
 		} else if result.SubmitAttempted {
 			fmt.Printf("       📨 Form submitted!\n")
-			store.UpdatePipelineStatus(form.BrokerID, history.PipelineFormFilled)
+			store.UpdatePipelineStatus(activeProfile.ID, form.BrokerID, history.PipelineFormFilled)
 		} else if result.Success {
 			fmt.Printf("       ✅ Form filled (not submitted)\n")
-			store.UpdatePipelineStatus(form.BrokerID, history.PipelineFormFilled)
+			store.UpdatePipelineStatus(activeProfile.ID, form.BrokerID, history.PipelineFormFilled)
 		}
 
 		if result.ScreenshotPath != "" {
@@ -1464,6 +1658,16 @@ Safety features:
 }
 
 func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun bool) error {
+	cfg, err := config.Load(resolveConfigPath())
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	activeProfile, err := resolveProfile(cfg)
+	if err != nil {
+		return err
+	}
+
 	// Load brokers for domain validation
 	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
 	if err != nil {
@@ -1518,7 +1722,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 		}{BrokerID: brokerID, URL: confirmURL})
 	} else if brokerID != "" {
 		// Get URL for specific broker from pipeline
-		responses, err := store.GetBrokerResponses("confirmation_required", false, 100)
+		responses, err := store.GetBrokerResponses(activeProfile.ID, "confirmation_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
 		}
@@ -1540,7 +1744,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 		}
 	} else if pending {
 		// Get all pending confirmation links
-		responses, err := store.GetBrokerResponses("confirmation_required", false, 100)
+		responses, err := store.GetBrokerResponses(activeProfile.ID, "confirmation_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
 		}
@@ -1628,7 +1832,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 
 			// Update pipeline status
 			if link.BrokerID != "" {
-				store.UpdatePipelineStatus(link.BrokerID, history.PipelineConfirmed)
+				store.UpdatePipelineStatus(activeProfile.ID, link.BrokerID, history.PipelineConfirmed)
 			}
 		} else {
 			fmt.Printf("       ⚠️  %s\n", status)
@@ -1636,7 +1840,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 
 			// Still update status to indicate we tried
 			if link.BrokerID != "" {
-				store.UpdatePipelineStatus(link.BrokerID, history.PipelineFailed)
+				store.UpdatePipelineStatus(activeProfile.ID, link.BrokerID, history.PipelineFailed)
 			}
 		}
 
@@ -1856,6 +2060,16 @@ Example:
 }
 
 func runMarkBounced(brokerIDs []string, note string) error {
+	cfg, err := config.Load(resolveConfigPath())
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	activeProfile, err := resolveProfile(cfg)
+	if err != nil {
+		return err
+	}
+
 	store, err := history.NewStore(history.DefaultDBPath())
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
@@ -1869,7 +2083,7 @@ func runMarkBounced(brokerIDs []string, note string) error {
 
 	updated, skipped := 0, 0
 	for _, id := range brokerIDs {
-		n, err := store.MarkFailed(id, errMsg)
+		n, err := store.MarkFailed(activeProfile.ID, id, errMsg)
 		if err != nil {
 			return fmt.Errorf("failed to mark %s: %w", id, err)
 		}

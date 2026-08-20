@@ -25,6 +25,7 @@ const (
 // Job represents a background email sending job
 type Job struct {
 	ID            string    `json:"id"`
+	ProfileID     string    `json:"profile_id"`
 	Status        JobStatus `json:"status"`
 	Progress      int       `json:"progress"`
 	Sent          int       `json:"sent"`
@@ -159,6 +160,7 @@ func (j *Job) ToJSON() map[string]interface{} {
 
 	return map[string]interface{}{
 		"id":             j.ID,
+		"profile_id":     j.ProfileID,
 		"status":         j.Status,
 		"progress":       j.Progress,
 		"sent":           j.Sent,
@@ -207,8 +209,8 @@ func (jm *JobManager) cleanupLoop() {
 	}
 }
 
-// Create creates a new job with the given total count
-func (jm *JobManager) Create(total int) *Job {
+// Create creates a new job with the given total count, scoped to profileID
+func (jm *JobManager) Create(total int, profileID string) *Job {
 	jm.mu.Lock()
 	defer jm.mu.Unlock()
 
@@ -216,6 +218,7 @@ func (jm *JobManager) Create(total int) *Job {
 
 	job := &Job{
 		ID:         uuid.New().String(),
+		ProfileID:  profileID,
 		Status:     JobStatusRunning,
 		Progress:   0,
 		Sent:       0,
@@ -238,13 +241,16 @@ func (jm *JobManager) Get(id string) *Job {
 	return jm.jobs[id]
 }
 
-// GetActive returns the currently running job, or nil if none
-func (jm *JobManager) GetActive() *Job {
+// GetActive returns the currently running job for the given profile, or nil
+// if none. Scoped per-profile so switching profiles in the web UI doesn't
+// report a false "job already running" - two profiles can send
+// concurrently, each against its own daily limit and history.
+func (jm *JobManager) GetActive(profileID string) *Job {
 	jm.mu.RLock()
 	defer jm.mu.RUnlock()
 
 	for _, job := range jm.jobs {
-		if job.GetStatus() == JobStatusRunning {
+		if job.GetStatus() == JobStatusRunning && job.ProfileID == profileID {
 			return job
 		}
 	}
@@ -267,6 +273,7 @@ func (jm *JobManager) Cleanup(maxAge time.Duration) {
 // PersistentJobState represents a job that can be saved/loaded from disk
 type PersistentJobState struct {
 	ID               string    `json:"id"`
+	ProfileID        string    `json:"profile_id"`
 	Status           JobStatus `json:"status"`
 	Sent             int       `json:"sent"`
 	Failed           int       `json:"failed"`

@@ -271,11 +271,15 @@ func (s *Store) GetStats() (total, sent, failed int, err error) {
 	query := `SELECT COUNT(*), SUM(CASE WHEN status='sent' THEN 1 ELSE 0 END),
 		SUM(CASE WHEN status='failed' THEN 1 ELSE 0 END) FROM removal_requests`
 
-	err = s.db.QueryRow(query).Scan(&total, &sent, &failed)
+	// SUM() over zero rows (a brand-new install with no history yet) returns
+	// SQL NULL, not 0 - scan into sql.NullInt64 like GetMonthlyStats and
+	// GetPendingTaskStats already do, or `status` errors out on first run.
+	var sentNull, failedNull sql.NullInt64
+	err = s.db.QueryRow(query).Scan(&total, &sentNull, &failedNull)
 	if err != nil {
 		return 0, 0, 0, fmt.Errorf("failed to get stats: %w", err)
 	}
-	return
+	return total, int(sentNull.Int64), int(failedNull.Int64), nil
 }
 
 func (s *Store) GetMonthlyStats() (sent, failed int, err error) {

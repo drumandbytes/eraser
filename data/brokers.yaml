@@ -5287,3 +5287,10 @@ brokers:
       region: global
       category: marketing
       notes: 'Added 2026-08-20 - group-level DPO contact found separately from the existing merkle-inc entry (a dentsu subsidiary already in this file). Flag if this should instead be merged into that entry.'
+    - id: creditsafe
+      name: Creditsafe
+      email: eudpo@creditsafe.com
+      website: https://www.creditsafe.com/
+      region: eu
+      category: financial-b2b
+      notes: 'Added 2026-08-20 from their EU DPO contact. Not previously in the campaign.'

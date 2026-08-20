@@ -20,6 +20,7 @@ brokers:
       opt_out_url: https://www.whitepages.com/suppression-requests
       region: us
       category: people-search
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: intelius
       name: Intelius
       email: privacy@intelius.com
@@ -34,6 +35,7 @@ brokers:
       opt_out_url: https://www.truepeoplesearch.com/removal
       region: us
       category: people-search
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: fastpeoplesearch
       name: FastPeopleSearch
       email: privacy@fastpeoplesearch.com
@@ -207,10 +209,11 @@ brokers:
       category: marketing
     - id: checkr
       name: Checkr
-      email: privacy@checkr.com
+      email: hello@checkr.com
       website: https://checkr.com
       region: us
       category: background-check
+      notes: "privacy@checkr.com bounced; hello@checkr.com is the address Checkr's own privacy policy recommends. Updated 2026-08-20."
     - id: goodhire
       name: GoodHire
       email: privacy@goodhire.com
@@ -225,10 +228,11 @@ brokers:
       category: background-check
     - id: hireright
       name: HireRight
-      email: privacy@hireright.com
+      email: dpo@hireright.com
       website: https://www.hireright.com
       region: global
       category: background-check
+      notes: 'privacy@hireright.com bounced; dpo@hireright.com is the verified contact per datarequests.org. Updated 2026-08-20.'
     - id: nuwber
       name: Nuwber
       email: support@nuwber.com
@@ -498,10 +502,11 @@ brokers:
       category: marketing
     - id: all-global-resources
       name: All Global Resources, LLC
-      email: drieke@executiveenergy.com
-      website: https://www.executiveenergy.com/
+      email: privacy@agrgroupinc.com
+      website: 'https://www.agrgroupinc.com/'
       region: us
       category: marketing
+      notes: "drieke@executiveenergy.com bounced - Gmail's own delivery failure confirmed the executiveenergy.com domain can't be found (not just a one-off DNS blip). All Global Resources operates as AGR Group under parent Executive Energy Management; agrgroupinc.com is live and privacy@agrgroupinc.com is their officially CA-registered contact per oag.ca.gov. Updated 2026-08-20."
     - id: all-good-media
       name: All Good Media LLC
       email: marwan@attribits.com
@@ -557,6 +562,7 @@ brokers:
       opt_out_url: https://privacyportal.onetrust.com/webform/f6a59500-f900-4652-b030-0cd51afe15a5/87ca07e4-e06c-4ad8-9aa6-ccbbaa8750c1
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: andrews-wharton
       name: Andrews Wharton, Inc.
       email: privacy@andrewswharton.com
@@ -566,10 +572,12 @@ brokers:
       category: marketing
     - id: anexinet
       name: Anexinet Corp.
-      email: privacy@anexinet.com
-      website: https://www.anexinet.com/
+      email: dpo@verinext.com
+      website: 'https://verinext.com/'
       region: us
       category: marketing
+      opt_out_url: 'https://verinext.com/contact/'
+      notes: 'Anexinet merged into Verinext (2022); anexinet.com contact was dead. Updated 2026-08-20.'
     - id: anne-lewis-strategies
       name: Anne Lewis Strategies, LLC
       email: info@missionwired.com
@@ -626,6 +634,7 @@ brokers:
       opt_out_url: https://www.arrakis.ai/optout
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: american-spirit-data-solutions
       name: AMERICAN SPIRIT DATA SOLUTIONS LLC
       email: privacy@aspire-north.com
@@ -965,10 +974,12 @@ brokers:
       category: marketing
     - id: careerbuilder
       name: Careerbuilder, LLC
-      email: privacy@careerbuilder.com
+      email: ""
       website: https://www.careerbuilder.com/
       region: us
       category: marketing
+      opt_out_url: 'https://www.careerbuilder.com/privacy'
+      notes: "privacy@careerbuilder.com bounced; no working email found. CareerBuilder privacy requests now route through Monster's web form. Updated 2026-08-20."
     - id: car-market-solutions
       name: Car Market Solutions LLC
       email: ben@carmarketsolutions.com
@@ -1003,6 +1014,7 @@ brokers:
       opt_out_url: https://www.catalyzeai.com/opt-out
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: cdk-global
       name: CDK Global, LLC
       email: james.kinzer@cdk.com
@@ -1182,6 +1194,7 @@ brokers:
       opt_out_url: https://www.connextdigital.com/opt-out/
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: consider
       name: Consider, Inc.
       email: ralph@consider.com
@@ -1240,10 +1253,12 @@ brokers:
       category: marketing
     - id: crawlbee
       name: Crawlbee Corp
-      email: ryan@crawlbee.io
+      email: ""
       website: https://www.crawlbee.com/
       region: us
       category: marketing
+      opt_out_url: ""
+      notes: 'Neither crawlbee.io (email domain) nor crawlbee.com (listed website) resolves to a live site - both parked/for sale on GoDaddy (checked 2026-08-20). Appears defunct.'
     - id: credit-bureau-of-council-bluffs
       name: Credit Bureau Of Council Bluffs, Inc
       email: heather@creditinfosystems.com
@@ -1629,6 +1644,7 @@ brokers:
       opt_out_url: https://www.edvisors.com/third-party-opt-out/
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: effyis
       name: Effyis, Inc.
       email: info@socialgist.com
@@ -1650,10 +1666,12 @@ brokers:
       category: marketing
     - id: electronic-commerce-a-to-z
       name: Electronic Commerce A To Z
-      email: azuttah@ubiquitysystemsusa.com
+      email: ""
       website: https://www.electroniccommerceatoz.com/
       region: us
       category: marketing
+      opt_out_url: ""
+      notes: "Both electroniccommerceatoz.com and the on-file contact's actual domain ubiquitysystemsusa.com are dead/parked on GoDaddy (checked 2026-08-20) - appears defunct. Contact email was mismatched from this broker's own website to begin with."
     - id: electronic-voice-services
       name: ELECTRONIC VOICE SERVICES Inc
       email: richard@evs7.com
@@ -1674,6 +1692,8 @@ brokers:
       website: https://www.listmatch.com/
       region: us
       category: marketing
+      opt_out_url: 'https://listmatch.com/privacy/'
+      notes: 'dataprivacy@listmatch.com bounced on 2026-08-20 despite being the officially CA-registered contact - may be transient. Added their web form as a fallback; phone opt-out also available: (888) 757-2614.'
     - id: emailmovers
       name: Emailmovers Ltd
       email: compliance@emailmovers.com
@@ -1748,6 +1768,7 @@ brokers:
       opt_out_url: https://www.data-axle.com/do-not-sell-my-data/
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: experian-data
       name: Experian Data Corp
       email: optout@experian.com
@@ -2029,10 +2050,12 @@ brokers:
       category: marketing
     - id: granite-lists
       name: Granite Lists, LLC
-      email: erin@granitelists.com
+      email: ""
       website: https://www.granitelists.com/
       region: us
       category: marketing
+      opt_out_url: ""
+      notes: 'DO NOT CONTACT: granitelists.com has been resold and now hosts unrelated (gambling-adjacent) content, not the original Granite Lists LLC business (checked 2026-08-20). Submitting personal info to this domain now would hand it to whoever owns it today, not the original broker.'
     - id: grassroots-analytics
       name: Grassroots Analytics
       email: operations@grassrootsanalytics.com
@@ -2068,6 +2091,7 @@ brokers:
       opt_out_url: https://www.greatlakeslists.com/opt_out_request.php
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: greenhouse-software
       name: Greenhouse Software, Inc.
       email: privacy@greenhouse.io
@@ -2301,6 +2325,7 @@ brokers:
       opt_out_url: https://imprintanalytics.io/limit-the-use-of-my-sensitive-personal-information/
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: inbound-insight
       name: Inbound Insight, LLC
       email: info@inboundinsight.com
@@ -2421,10 +2446,12 @@ brokers:
       category: marketing
     - id: insideview
       name: InsideView, Inc.
-      email: privacy@insideview.com
+      email: ""
       website: https://www.insideview.com/
       region: us
       category: marketing
+      opt_out_url: 'https://www.zoominfo.com/trust-center/your-privacy'
+      notes: "InsideView was acquired by ZoomInfo; use ZoomInfo's privacy/opt-out process instead. Updated 2026-08-20."
     - id: insightbridge
       name: Insightbridge LLC
       email: membersupport@mylife.com
@@ -2540,10 +2567,12 @@ brokers:
       category: marketing
     - id: ivy-tech-re
       name: Ivy Tech Re, LLC
-      email: kyle@getivydata.com
+      email: ""
       website: https://www.getivydata.com/
       region: us
       category: marketing
+      opt_out_url: ""
+      notes: 'Domain getivydata.com does not resolve (checked 2026-08-20) - appears defunct.'
     - id: iwave-information-systems
       name: Iwave Information Systems
       email: privacy+california@iwave.com
@@ -2594,10 +2623,12 @@ brokers:
       category: marketing
     - id: jverify
       name: Jverify, Inc.
-      email: admin@jverify.com
+      email: ""
       website: https://www.jverify.com/
       region: us
       category: marketing
+      opt_out_url: ""
+      notes: 'Domain jverify.com is parked/for sale on GoDaddy (checked 2026-08-20) - company defunct.'
     - id: kargo-global
       name: Kargo Global LLC
       email: privacyinfo@kargo.com
@@ -2607,10 +2638,12 @@ brokers:
       category: marketing
     - id: kbm-group
       name: KBM GROUP LLC
-      email: john.petrillo@wundermandata.com
+      email: DoNotMail@wundermanthompson.com
       website: https://www.kbmg.com/
       region: us
       category: marketing
+      opt_out_url: 'https://www.kbmg.com/about-us/ccpa-privacy-policy/#optout'
+      notes: "john.petrillo@wundermandata.com bounced - Gmail's own delivery failure confirmed wundermandata.com can't be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20."
     - id: kb-synergy
       name: KB Synergy Inc
       email: info@kbsynergy.com
@@ -2724,6 +2757,7 @@ brokers:
       opt_out_url: https://www.leadershipconnect.io/opt-out
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: leadiq
       name: LEADIQ Inc
       email: accounting@leadiq.com
@@ -2880,10 +2914,12 @@ brokers:
       category: marketing
     - id: logiq
       name: Logiq, Inc
-      email: compliance@logiq.com
+      email: ""
       website: https://www.logiq.com/
       region: us
       category: marketing
+      opt_out_url: ""
+      notes: 'Logiq Inc (LGIQ) stock is delisted; logiq.com shows no functioning site (checked 2026-08-20) - appears defunct.'
     - id: lookify
       name: Lookify
       email: support@lookify.io
@@ -3012,6 +3048,7 @@ brokers:
       opt_out_url: https://www.matchandappend.com/do-not-sell-my-data/
       region: us
       category: marketing
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
     - id: matchbook-data
       name: MATCHBOOK DATA LLC
       email: privacy@matchbookdata.com

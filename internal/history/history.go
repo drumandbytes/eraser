@@ -381,6 +381,31 @@ func (s *Store) LastSuccessfulSendTimes() (map[string]time.Time, error) {
 	return times, rows.Err()
 }
 
+// MarkFailed flips a broker's most recent "sent" record over to "failed",
+// recording the given note in its error field. This exists because a normal
+// SMTP send only tells you the message was handed off, not that it actually
+// arrived - Add() records StatusSent as soon as the provider accepts it, and
+// a bounce shows up later as a separate, asynchronous email. Without inbox
+// monitoring enabled, nothing corrects that record automatically. Once a
+// bounce has been confirmed by hand (or a broker's contact info has been
+// fixed and it should be retried), this is what removes the false "sent" so
+// LastSuccessfulSendTimes() - and therefore the resend cooldown in `send` -
+// stops treating the broker as already contacted. Returns the number of
+// rows updated: 0 means there was no "sent" record for that broker to fix
+// (e.g. it was never sent, or was already marked failed).
+func (s *Store) MarkFailed(brokerID, note string) (int64, error) {
+	query := `UPDATE removal_requests SET status = ?, error = ?
+		WHERE id = (
+			SELECT id FROM removal_requests WHERE broker_id = ? AND status = ?
+			ORDER BY sent_at DESC LIMIT 1
+		)`
+	result, err := s.db.Exec(query, string(StatusFailed), note, brokerID, string(StatusSent))
+	if err != nil {
+		return 0, fmt.Errorf("failed to mark broker as failed: %w", err)
+	}
+	return result.RowsAffected()
+}
+
 type BrokerStatus struct {
 	BrokerID  string
 	LastSent  time.Time

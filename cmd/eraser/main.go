@@ -83,6 +83,7 @@ send via Gmail SMTP.`,
 	rootCmd.AddCommand(fillCmd())
 	rootCmd.AddCommand(confirmCmd())
 	rootCmd.AddCommand(cleanupBouncesCmd())
+	rootCmd.AddCommand(markBouncedCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -429,6 +430,19 @@ func runSend() error {
 
 	for i, b := range brokers {
 		fmt.Printf("[%d/%d] %s (%s)\n", i+1, len(brokers), b.Name, b.Email)
+
+		// Brokers with no email on file (confirmed defunct, or "use the web
+		// form instead" cases documented in their notes) have nothing to
+		// send to - skip rather than let the SMTP layer choke on an empty
+		// recipient and burn a daily-cap slot on a guaranteed failure.
+		if strings.TrimSpace(b.Email) == "" {
+			if b.OptOutURL != "" {
+				fmt.Printf("  ⏭️  No email on file - use the opt-out form instead: %s\n", b.OptOutURL)
+			} else {
+				fmt.Printf("  ⏭️  No email on file - see notes in brokers.yaml\n")
+			}
+			continue
+		}
 
 		// Render email
 		emailMsg, err := tmplEngine.Render(cfg.Options.Template, cfg.Profile, b)
@@ -1756,6 +1770,80 @@ func runCleanupBounces(remove bool, days int) error {
 	fmt.Printf("✓ Removed %d broker(s) with invalid email addresses\n", removed)
 	fmt.Printf("  Backup saved to: %s.bak\n", brokerPath)
 
+	return nil
+}
+
+func markBouncedCmd() *cobra.Command {
+	var note string
+
+	cmd := &cobra.Command{
+		Use:   "mark-bounced <broker-id> [<broker-id>...]",
+		Short: "Correct the record for broker(s) whose email actually bounced",
+		Long: `'send' records a broker as sent the moment your SMTP provider accepts
+the message for delivery - that's the only signal a normal send gets. A
+bounce is a separate email that arrives later (sometimes minutes, sometimes
+longer), and without inbox monitoring configured, nothing links it back to
+that history record automatically.
+
+If you've spotted a bounce yourself - by reading your inbox, or now that a
+Gmail connector lets an assistant read it for you - use this to correct the
+record once you're done acting on it (e.g. after fixing the broker's contact
+info in data/brokers.yaml). It flips that broker's most recent "sent" record
+to "failed", which:
+
+  - removes it from the 25-day resend cooldown, so the next 'eraser send'
+    retries it automatically (no need for --resend)
+  - makes 'eraser status' reflect what actually happened, instead of
+    claiming a delivery that didn't succeed
+
+This only corrects history - it doesn't resend anything by itself.
+
+Example:
+  eraser mark-bounced crawlbee ivy-tech-re jverify --note "contact fixed 2026-08-20"`,
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runMarkBounced(args, note)
+		},
+	}
+
+	cmd.Flags().StringVar(&note, "note", "", "Optional note recorded with the correction (why/when it bounced)")
+
+	return cmd
+}
+
+func runMarkBounced(brokerIDs []string, note string) error {
+	store, err := history.NewStore(history.DefaultDBPath())
+	if err != nil {
+		return fmt.Errorf("failed to initialize history: %w", err)
+	}
+	defer store.Close()
+
+	errMsg := "bounced - manually confirmed"
+	if note != "" {
+		errMsg = errMsg + ": " + note
+	}
+
+	updated, skipped := 0, 0
+	for _, id := range brokerIDs {
+		n, err := store.MarkFailed(id, errMsg)
+		if err != nil {
+			return fmt.Errorf("failed to mark %s: %w", id, err)
+		}
+		if n == 0 {
+			fmt.Printf("⚠️  %s - no \"sent\" record found to correct (never sent, or already marked failed)\n", id)
+			skipped++
+			continue
+		}
+		fmt.Printf("✓ %s - marked failed, will be retried on next 'eraser send'\n", id)
+		updated++
+	}
+
+	fmt.Println()
+	if skipped > 0 {
+		fmt.Printf("Updated %d broker(s), %d skipped.\n", updated, skipped)
+	} else {
+		fmt.Printf("Updated %d broker(s).\n", updated)
+	}
 	return nil
 }
 

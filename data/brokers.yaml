@@ -15,7 +15,7 @@ brokers:
       category: people-search
     - id: whitepages
       name: Whitepages
-      email: privacy@whitepages.com
+      email: ""
       website: https://www.whitepages.com
       opt_out_url: https://www.whitepages.com/suppression-requests
       region: us
@@ -30,7 +30,7 @@ brokers:
       category: people-search
     - id: truepeoplesearch
       name: TruePeopleSearch
-      email: contact@truepeoplesearch.com
+      email: ""
       website: https://www.truepeoplesearch.com
       opt_out_url: https://www.truepeoplesearch.com/removal
       region: us
@@ -557,7 +557,7 @@ brokers:
       category: marketing
     - id: analyticsiq
       name: AnalyticsIQ, Inc.
-      email: gailm@analyticsiq.com
+      email: ""
       website: https://www.analytics-iq.com/
       opt_out_url: https://privacyportal.onetrust.com/webform/f6a59500-f900-4652-b030-0cd51afe15a5/87ca07e4-e06c-4ad8-9aa6-ccbbaa8750c1
       region: us
@@ -629,7 +629,7 @@ brokers:
       category: marketing
     - id: arrakis-technologies
       name: Arrakis Technologies Corp.
-      email: privacy@arrakis.ai
+      email: ""
       website: https://www.arrakis.ai/
       opt_out_url: https://www.arrakis.ai/optout
       region: us
@@ -1009,7 +1009,7 @@ brokers:
       category: marketing
     - id: catalyze-ai
       name: Catalyze Ai, Inc
-      email: privacy@catalyzeai.com
+      email: ""
       website: https://www.catalyzeai.com/
       opt_out_url: https://www.catalyzeai.com/opt-out
       region: us
@@ -1189,7 +1189,7 @@ brokers:
       category: marketing
     - id: connext-digital
       name: Connext Digital, LLC
-      email: rob.fitzgerald@connextdigital.com
+      email: ""
       website: https://www.connextdigital.com/
       opt_out_url: https://www.connextdigital.com/opt-out/
       region: us
@@ -1639,7 +1639,7 @@ brokers:
       category: marketing
     - id: edvisors-network
       name: Edvisors Network, Inc.
-      email: customerservices@edvisors.com
+      email: ""
       website: https://www.edvisors.com/
       opt_out_url: https://www.edvisors.com/third-party-opt-out/
       region: us
@@ -1763,7 +1763,7 @@ brokers:
       category: marketing
     - id: consumerbase
       name: Consumerbase LLC
-      email: lorgan@exactdata.com
+      email: ""
       website: https://www.exactdata.com/
       opt_out_url: https://www.data-axle.com/do-not-sell-my-data/
       region: us
@@ -2086,7 +2086,7 @@ brokers:
       category: marketing
     - id: great-lakes-list
       name: GREAT LAKES LIST Inc
-      email: ccpa@greatlakeslists.com
+      email: ""
       website: https://www.greatlakeslists.com/
       opt_out_url: https://www.greatlakeslists.com/opt_out_request.php
       region: us
@@ -2320,7 +2320,7 @@ brokers:
       category: marketing
     - id: imprint-analytics
       name: Imprint Analytics LLC
-      email: privacy@imprintanalytics.io
+      email: ""
       website: https://www.imprintanalytics.io/
       opt_out_url: https://imprintanalytics.io/limit-the-use-of-my-sensitive-personal-information/
       region: us
@@ -2752,7 +2752,7 @@ brokers:
       category: marketing
     - id: leadership-connect
       name: Leadership Connect
-      email: privacy@leadershipconnect.io
+      email: ""
       website: https://www.leadershipconnect.io/
       opt_out_url: https://www.leadershipconnect.io/opt-out
       region: us
@@ -3043,7 +3043,7 @@ brokers:
       category: marketing
     - id: matchandappendcom
       name: Matchandappend.Com LLC
-      email: info@matchandappend.com
+      email: ""
       website: https://www.matchandappend.com/
       opt_out_url: https://www.matchandappend.com/do-not-sell-my-data/
       region: us

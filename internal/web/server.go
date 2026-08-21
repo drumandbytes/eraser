@@ -349,6 +349,8 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/history", s.handleHistory)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
+	r.Get("/settings/profiles/new", s.handleSettingsProfileNew)
+	r.Post("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Get("/pipeline", s.handlePipeline)
 	r.Get("/tasks", s.handleTasks)
 	r.Get("/tasks/{taskID}", s.handleTaskDetail)

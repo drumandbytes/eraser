@@ -67,6 +67,41 @@
             </div>
         </div>
 
+        <!-- Profiles Section -->
+        <div class="card p-6">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
+                    <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4zm6-2a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+                <h2 class="font-display text-lg font-semibold text-primary">Profiles</h2>
+            </div>
+
+            {{if gt (len .Profiles) 1}}
+            <div class="space-y-3 mb-6">
+                {{range .Profiles}}
+                <div class="flex items-center justify-between py-2 border-b border-[var(--border-subtle)]">
+                    <div>
+                        <p class="text-primary font-medium">{{.FirstName}} {{.LastName}}</p>
+                        <p class="text-sm text-muted">{{.Email}} &middot; <code>{{.ID}}</code></p>
+                    </div>
+                    {{if eq .ID $.ActiveProfile.ID}}<span class="badge badge-success">Active</span>{{end}}
+                </div>
+                {{end}}
+            </div>
+            {{else}}
+            <p class="text-secondary mb-6">Only one profile configured. Add a second one to send removal requests for another identity (e.g. a spouse or family member) - email/inbox settings stay shared between them.</p>
+            {{end}}
+
+            <a href="/settings/profiles/new" class="btn btn-secondary">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Add Profile
+            </a>
+        </div>
+
         <!-- Email Configuration Section -->
         <div class="card p-6">
             <div class="flex items-center gap-3 mb-6">

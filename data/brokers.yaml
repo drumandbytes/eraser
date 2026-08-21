@@ -5088,11 +5088,12 @@ brokers:
       category: marketing
     - id: wiland
       name: Wiland Inc
-      email: privacy@wiland.com
+      email: ""
       website: https://www.wiland.com/
-      opt_out_url: https://www.wiland.com/privacy-choices#how-to-submit-privacy-choices
+      opt_out_url: https://wiland.com/privacy-choices/#how-to-submit-privacy-choices
       region: us
       category: marketing
+      notes: 'Reply says privacy requests must go through their web portal, not email (2026-08-21); also says they don''t process non-U.S. data subjects, so may have no matching info regardless.'
     - id: windfall-data
       name: Windfall Data, Inc.
       email: ""

@@ -768,7 +768,8 @@ brokers:
       category: marketing
     - id: bdo-usa-llp
       name: BDO USA, LLP
-      email: privacy@bdo.com
+      email: Privacy@bdo-gci.com
+      notes: 'privacy@bdo.com is no longer used for this purpose - GCI privacy requests were shared with BDO GCI, LLC, which replied from Privacy@bdo-gci.com and said further communications will come from there (2026-08-21). Unverified.'
       website: https://www.bdo.com/
       opt_out_url: https://www.bdo.com/do-not-sell-my-personal-information
       region: us
@@ -3268,6 +3269,7 @@ brokers:
     - id: multimedia-lists
       name: MULTIMEDIA Lists, Inc.
       email: daniel@multimedialists.com
+      notes: 'Replied (via a compliance vendor, forgetmenaut.com) that no matching data was found; request marked resolved (2026-08-21).'
       website: https://www.multimedialists.com/
       opt_out_url: https://privacyportal.privacypillar.com/dsar/form?orgid=3b24c635-e1a9-4e8c-8e61-9f5fa0024f9c&propid=d3da91fd-2750-4534-9436-f29b3e513fe5&formid=4106bc86-1ddf-461b-b7f6-a5f53b0977b3&status=publish
       region: us
@@ -3535,7 +3537,8 @@ brokers:
       category: marketing
     - id: lender-feed
       name: Lender Feed LLC
-      email: privacy@monitorbase.com
+      email: ""
+      notes: 'Reply (as "MonitorBase") says to use a Data Deletion and Opt-Out Form (URL not captured from the reply) instead of email, or email to arrange a phone call (2026-08-21) - the existing opt_out_url is only their privacy policy page, not confirmed to be the actual form.'
       website: https://www.monitorbase.com/
       opt_out_url: https://my.monitorbase.com/privacypolicy
       region: us
@@ -3636,7 +3639,9 @@ brokers:
       category: marketing
     - id: peoplewhiz
       name: Peoplewhiz
-      email: support@peoplewhiz.com
+      email: ""
+      notes: 'Reply says to submit full name, city/state, and age via this opt-out page instead of email (2026-08-21).'
+      opt_out_url: https://www.peoplewhiz.com/optout
       website: https://www.peoplewhiz.com/
       region: us
       category: marketing
@@ -3759,7 +3764,8 @@ brokers:
       category: marketing
     - id: private-records
       name: PRIVATE RECORDS LLC
-      email: support@privaterecords.net
+      email: ""
+      notes: 'Reply says to self-service search and remove your listing (US residents only) rather than email; requires responding to a confirmation email once found (2026-08-21) - use the existing opt_out_url.'
       website: https://www.privaterecords.net/
       opt_out_url: https://www.privaterecords.net/optOut/name/landing
       region: us
@@ -4262,7 +4268,8 @@ brokers:
       category: marketing
     - id: searchbug
       name: Searchbug
-      email: support@searchbug.zohodesk.com
+      email: ""
+      notes: 'Reply says to submit an opt-out via this form (2026-08-21); may require ID verification.'
       website: https://www.searchbug.com/
       opt_out_url: https://www.searchbug.com/ccpa.aspx#DoNoSell
       region: us
@@ -5045,9 +5052,10 @@ brokers:
       category: marketing
     - id: we-inform
       name: WE INFORM LLC
-      email: support@weinform.org
+      email: ""
+      notes: 'Reply says to self-service search and remove your listing here (US residents only) rather than email; requires responding to a confirmation email once found (2026-08-21).'
       website: https://www.weinform.org/
-      opt_out_url: https://www.weinform.org/optOut/name/landing
+      opt_out_url: https://www.weinform.org/api/helper/optOutLight/search
       region: us
       category: marketing
     - id: west-publishing
@@ -5086,9 +5094,10 @@ brokers:
       category: marketing
     - id: windfall-data
       name: Windfall Data, Inc.
-      email: privacy@windfalldata.com
+      email: ""
+      notes: 'Reply says to submit via this webform or call (800) 946-6710 to verify identity (2026-08-21).'
       website: https://www.windfalldata.com/
-      opt_out_url: https://www.windfall.com/do-not-sell-my-info
+      opt_out_url: https://my.datasubject.com/AkrxLuYOww/60579
       region: us
       category: marketing
     - id: winr-data-bv
@@ -5107,9 +5116,10 @@ brokers:
       category: marketing
     - id: wiza
       name: Wiza, Inc.
-      email: hello@wiza.co
+      email: ""
+      notes: 'Reply says to submit removal via this form instead of email (2026-08-21).'
       website: https://www.wiza.co/
-      opt_out_url: https://www.wiza.co/optout_directory
+      opt_out_url: https://wiza.co/optout-contact-info
       region: us
       category: marketing
     - id: wunderkind
@@ -5161,9 +5171,10 @@ brokers:
       category: marketing
     - id: eab-global
       name: EAB Global, Inc.
-      email: privacy@eab.com
+      email: ""
+      notes: 'Reply says to complete this form to begin verification (2026-08-21).'
       website: https://www.appily.com/
-      opt_out_url: https://cappex.formstack.com/forms/do_not_sell
+      opt_out_url: https://privacyportal.onetrust.com/webform/2d4f8bee-b269-434d-a07f-3b94c6618cb4/cd569dda-42b0-4868-a25d-e0eb517fb8a6
       region: us
       category: marketing
     - id: zenleads

@@ -1068,11 +1068,12 @@ brokers:
       category: marketing
     - id: civil-data-research
       name: Civil Data Research, LLC
-      email: privacyinfo@searchpublicrecords.com
+      email: ""
       website: https://www.searchpublicrecords.com/
       opt_out_url: https://www.searchpublicrecords.com/help-center/privacy-requests
       region: us
       category: marketing
+      notes: Doesn't process removal requests via email - use the privacy request form at the opt_out_url.
     - id: civis-analytics
       name: Civis Analytics, Inc
       email: ""
@@ -2432,11 +2433,12 @@ brokers:
       notes: security@infutor.com replied that this mailbox can't process DSRs at all; use the form or call 1-866-207-1399 (reply received 2026-08-20).
     - id: inmarket-media
       name: Inmarket Media LLC
-      email: privacy@inmarket.com
+      email: ""
       website: https://www.inmarket.com/
       opt_out_url: https://www.inmarket.com/opt-out/
       region: us
       category: marketing
+      notes: Doesn't process removal requests via email - use the opt-out form at the opt_out_url.
     - id: inmobi
       name: Inmobi
       email: privacy@inmobi.com
@@ -2506,11 +2508,12 @@ brokers:
       category: marketing
     - id: intent-iq
       name: Intent IQ LLC
-      email: privacy@intentiq.com
+      email: ""
       website: https://www.intentiq.com/
       opt_out_url: https://www.intentiq.com/opt-out/
       region: us
       category: marketing
+      notes: Doesn't process removal requests via email - use the opt-out form at the opt_out_url.
     - id: intentmacro
       name: Intentmacro Inc.
       email: paul@intentmacro.com
@@ -2942,11 +2945,12 @@ brokers:
       notes: 'Logiq Inc (LGIQ) stock is delisted; logiq.com shows no functioning site (checked 2026-08-20) - appears defunct.'
     - id: lookify
       name: Lookify
-      email: support@lookify.io
+      email: ""
       website: https://www.lookify.io/
       opt_out_url: https://www.lookify.io/opt-out
       region: us
       category: marketing
+      notes: Doesn't process removal requests via email - use the opt-out form at the opt_out_url.
     - id: loopme
       name: LOOPME LTD
       email: legal@loopme.com

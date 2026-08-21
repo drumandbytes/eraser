@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-- **Language**: Go 1.25+ (module declares `go 1.25.0`; the toolchain auto-fetches a matching version on build if the installed `go` is older but supports toolchain switching, i.e. Go 1.21+)
+- **Language**: Go 1.26+ (module declares `go 1.26`; the toolchain auto-fetches a matching version on build if the installed `go` is older but supports toolchain switching, i.e. Go 1.21+)
 - **CLI Framework**: Cobra (`github.com/spf13/cobra`)
 - **Email**: SMTP only (`internal/email/smtp.go`). SendGrid and Resend were removed - see [auditing.md](auditing.md#dead-code--removed).
 - **Database**: SQLite (for history tracking via `modernc.org/sqlite`)
@@ -13,13 +13,19 @@
 
 ```
 eraser/
-├── cmd/eraser/main.go        # CLI entry point, all commands (init/send/list-brokers/status/
-│                              # add-broker/mark-bounced/cleanup-bounces/monitor/pipeline/
-│                              # fill/confirm/serve/profile)
+├── cmd/eraser/
+│   ├── main.go                # Root cobra.Command wiring + shared helpers (config/profile/
+│   │                           # broker path resolution) - each command's own flags and Run
+│   │                           # logic live in their own cmd_*.go file, one per command:
+│   │                           # cmd_init.go, cmd_send.go, cmd_brokers.go (list-brokers/
+│   │                           # add-broker), cmd_status.go, cmd_bounces.go (mark-bounced/
+│   │                           # cleanup-bounces), cmd_monitor.go, cmd_pipeline.go,
+│   │                           # cmd_fill.go, cmd_confirm.go, cmd_serve.go, cmd_profile.go
 ├── internal/
 │   ├── broker/broker.go       # Broker struct, YAML loading, filtering, add/remove
 │   ├── browser/                # chromedp automation: form filling, CAPTCHA detection,
-│   │                            # confirmation-link clicking
+│   │                            # confirmation-link clicking, shared broker-domain allowlist
+│   │                            # validation (domain.go)
 │   ├── config/config.go        # User configuration (profile(s), email, options, inbox, pipeline)
 │   ├── email/
 │   │   ├── sender.go            # Sender interface + NewSender (SMTP only)
@@ -30,13 +36,22 @@ eraser/
 │   ├── template/
 │   │   ├── template.go          # Template rendering engine
 │   │   └── templates/           # Embedded: gdpr.tmpl, ccpa.tmpl, generic.tmpl
-│   └── web/                     # Web UI: chi router, HTMX partials, setup wizard, job manager
+│   └── web/
+│       ├── server.go            # Server struct, NewServer, router setup, core render/helper
+│       │                        # methods - handlers themselves live in handlers_*.go, grouped
+│       │                        # by resource: handlers_pages.go (dashboard/brokers/history/
+│       │                        # pipeline/tasks), handlers_api.go (HTMX JSON/fragment
+│       │                        # endpoints), handlers_jobs.go (send-job API + background
+│       │                        # send processing), handlers_settings.go, handlers_setup.go
+│       │                        # (setup wizard), handlers_profile.go (profile switching)
+│       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
+│       └── session.go           # Setup-wizard session store
 ├── data/brokers.yaml            # 774+ data broker database
 ├── docs/                        # Granular reference docs (this directory)
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
 
-There is no `.github/workflows/` in this fork - the original README's "Automate with GitHub Actions" section described a feature that was never actually present here and has been removed from the docs.
+CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR.
 
 ## Key Concepts
 

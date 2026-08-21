@@ -3,11 +3,26 @@
 This codebase gets periodic dead-code/security sweeps. To repeat one:
 
 ```bash
-go build ./... && go vet ./... && go test ./...
+go build ./... && go vet ./... && go test -race ./...
+go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest run --max-issues-per-linter=0 --max-same-issues=0 ./...
 go run honnef.co/go/tools/cmd/staticcheck@latest ./...
 go run golang.org/x/tools/cmd/deadcode@latest ./...      # unreachable-from-main functions
 go run golang.org/x/vuln/cmd/govulncheck@latest ./...    # known CVEs in reachable code paths
 ```
+
+`golangci-lint` (config: `.golangci.yml` - errcheck, govet, staticcheck, unused) also runs in CI on every push/PR via `.github/workflows/ci.yml`, so a plain `go build`/`go vet`/`go test` pass locally isn't the whole picture - run the lint command above too before assuming a change is clean. The default `max-same-issues`/`max-issues-per-linter` caps hide duplicates past the first few, which reads as "mostly clean" when it isn't - always pass `--max-issues-per-linter=0 --max-same-issues=0` when actually auditing, not just spot-checking.
+
+## Security/Correctness Sweep (2026-08)
+
+A focused review of `internal/browser`, `internal/web`, `internal/history`, and `internal/inbox` (the packages that had zero test coverage and handle either real user PII, untrusted email content, or concurrent web-server state) turned up and fixed 15 findings - see the corresponding commits for detail:
+
+- PII sent to unvalidated domains before autofilling opt-out forms, and confirmation-link redirects not re-validated hop-to-hop (both closed via `internal/browser/domain.go`'s shared allowlist check)
+- a `Server.config` data race in the web UI (fixed via `atomic.Pointer`)
+- cross-profile data access in `internal/history`'s by-ID task/response methods (now enforce `profile_id`)
+- unbounded memory reads on untrusted email/attachment content in `internal/inbox` (now capped)
+- several lower-severity issues: dead form-submit selectors, fill errors silently reported as success, job-state races, IMAP mailbox over-expunge, ignored context cancellation on IMAP calls, unscoped job status/cancel endpoints, `<select>`-field fill bugs, uncapped request bodies, swallowed migration errors, and an SSRF gap on private/localhost URLs
+
+`internal/browser`, `internal/web`, and `internal/inbox` also went from zero tests to targeted coverage of these specific fixes (not full coverage) in the same effort - see each package's `*_test.go` files.
 
 `deadcode` and `staticcheck` report false positives for anything only reachable via Go's `text/template` reflection (a template calling `{{.SomeMethod}}`) - grep the `.html` templates for `{{[^}]*SomeSymbol[^}]*}}` before deleting something it flags, not just a plain substring match (e.g. "Country" contains "Count").
 

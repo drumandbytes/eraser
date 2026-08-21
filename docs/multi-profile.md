@@ -39,7 +39,7 @@ Nearly every `Store` method takes a `profileID string` and filters by it. Two ar
 
 A shared mailbox carries replies for every profile's sent requests together. When processing an inbound reply, attribute it to whichever profile actually emailed that broker - not to whatever profile happens to be "active" in the CLI/web session doing the scan. That's what `Store.ResolveProfileForBroker(brokerID string) (string, error)` is for: it looks up the most recent `removal_requests` row for that broker across *all* profiles and returns its `profile_id` (falling back to `"default"` if the broker was never emailed by anyone). Both `handleAPIInboxScan`/`handleAPIInboxRescan` (web) and `runMonitor` (CLI) call this per email before storing the classified response.
 
-## CLI (`cmd/eraser/main.go`)
+## CLI (`cmd/eraser/`)
 
 - Global persistent `--profile <id>` flag, resolved via `resolveProfile(cfg)` → `cfg.GetProfile(profileFlag)`
 - Threaded through: `send`, `status`, `monitor`, `pipeline`, `fill`, `confirm`, `mark-bounced`
@@ -47,11 +47,11 @@ A shared mailbox carries replies for every profile's sent requests together. Whe
 - `eraser profile add` - interactively appends a new `NamedProfile` to `config.Profiles`
 - `eraser init`, when re-run on an existing config, preserves `existing.Profiles` (previously it silently dropped anything added via `profile add`); if a `"default"` entry exists among them, it's kept in sync with whatever `profile:` fields were just re-entered
 
-## Web UI (`internal/web/server.go`, `templates/layout.html`)
+## Web UI (`internal/web/`, `templates/layout.html`)
 
 - Active profile is tracked via a plain (non-secret) cookie, `eraser_profile` - **not** the `SessionStore` in `internal/web/session.go`, which is purpose-built for the ephemeral setup-wizard flow only
-- `Server.activeProfile(r *http.Request) config.NamedProfile` reads/validates the cookie against `config.GetProfiles()`, falling back to the first configured profile
-- `POST /api/profile` (`handleAPISwitchProfile`) validates `profile_id`, sets the cookie, and redirects to a same-origin `redirect` form value
+- `Server.activeProfile(r *http.Request) config.NamedProfile` (in `server.go`) reads/validates the cookie against `config.GetProfiles()`, falling back to the first configured profile
+- `POST /api/profile` (`handleAPISwitchProfile`, in `handlers_profile.go`) validates `profile_id`, sets the cookie, and redirects to a same-origin `redirect` form value
 - `renderWithCSRF` injects `Profiles`/`ActiveProfile`/`CurrentPath` into every page's template data, so `layout.html`'s nav can render the switcher unconditionally without every handler wiring it manually
 - The switcher itself is a `<select>` inside a small auto-submitting `<form>` (desktop nav + mobile nav), only rendered when `len(.Profiles) > 1`
 - Background send jobs (`internal/web/job.go`) carry `ProfileID`; `JobManager.GetActive(profileID)` and `.Create(total, profileID)` are profile-scoped, so two profiles can have a send running concurrently without colliding on "job already active"

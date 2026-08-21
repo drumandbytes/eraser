@@ -271,7 +271,8 @@ Contributions are welcome. The most helpful things:
 
 ```
 eraser/
-├── cmd/eraser/main.go        # CLI entry point, all commands
+├── cmd/eraser/                # CLI entry point - main.go has root wiring, one cmd_*.go
+│                               # file per command (cmd_send.go, cmd_fill.go, etc.)
 ├── internal/
 │   ├── broker/                # Broker loading and filtering
 │   ├── browser/                # Browser automation (form fill, confirm links, CAPTCHA handling)
@@ -281,11 +282,14 @@ eraser/
 │   ├── inbox/                   # IMAP monitoring and reply classification
 │   ├── template/                # Email template rendering
 │   │   └── templates/            # gdpr.tmpl, ccpa.tmpl, generic.tmpl
-│   └── web/                     # Web UI server, templates, and static assets
+│   └── web/                     # Web UI - server.go has core setup, handlers_*.go files
+│                                 # hold the actual page/API handlers by resource
 ├── data/brokers.yaml           # 777+ broker database
 ├── config.example.yaml         # Example configuration
 └── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```
+
+See [docs/architecture.md](docs/architecture.md) for the full breakdown, including CI/lint setup.
 
 ---
 

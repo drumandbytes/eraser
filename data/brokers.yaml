@@ -3192,11 +3192,12 @@ brokers:
       category: marketing
     - id: minerva-bi
       name: MINERVA BI Inc
-      email: privacy@minervadata.xyz
+      email: ""
       website: https://www.realtors.minervadata.xyz/
-      opt_out_url: https://realtors.minervadata.xyz/opt-out
+      opt_out_url: https://preferences.minerva.io
       region: us
       category: marketing
+      notes: 'Reply says privacy@minervadata.xyz is being deprecated in favor of privacy@minerva.io, but that privacy requests by email "will not be processed" regardless - only the webform or +1 (234) 595-3394 are accepted (2026-08-21).'
     - id: mobile-technology
       name: Mobile Technology Corporation
       email: optout@onspotdata.com

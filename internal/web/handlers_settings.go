@@ -42,8 +42,21 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	newCfg.Inbox = config.InboxConfig{
 		Enabled:  true,
 		Provider: "gmail",
-		Email:    email,
-		Password: password,
+		// This form is Gmail-only (see settings.html) and only collects
+		// email/password - the IMAP server/port must be set explicitly here
+		// rather than left for config.Load's default-filling to apply,
+		// since this struct is also stored directly into the live,
+		// already-loaded s.config via s.config.Store below. Leaving these
+		// zero-valued produced a "dial tcp :0" connect error on the next
+		// inbox scan until the process was restarted (config.Load only
+		// fills Gmail defaults when Server=="" during its own load, which
+		// doesn't run again until the server restarts).
+		Server:        "imap.gmail.com",
+		Port:          993,
+		Email:         email,
+		Password:      password,
+		Folder:        "INBOX",
+		ArchiveFolder: "Eraser",
 	}
 
 	// Save config

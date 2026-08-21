@@ -80,6 +80,53 @@ func TestLastSuccessfulSendTimes(t *testing.T) {
 	}
 }
 
+// TestGetAllBrokerStatusesScansAggregateTime guards against a regression
+// where GetAllBrokerStatuses scanned its MAX(sent_at) column into
+// sql.NullTime directly. Aggregate functions lose the driver's native
+// time.Time conversion (confirmed against modernc.org/sqlite - a raw
+// `sent_at` column scans fine, but `MAX(sent_at)` comes back as a plain
+// string), so that scan errored on every call, and the error was silently
+// discarded by getBrokersWithStatus's `brokerStatuses, _ =
+// s.historyStore.GetAllBrokerStatuses(...)`, making every broker show as
+// "never sent" on the web UI's Brokers page regardless of real history.
+// LastSuccessfulSendTimes already had the right fix (parseSQLiteTime) -
+// this test would have caught that GetAllBrokerStatuses didn't.
+func TestGetAllBrokerStatusesScansAggregateTime(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now()
+
+	addRecord(t, s, "broker-a", StatusSent, now.Add(-1*time.Hour))
+	addRecord(t, s, "broker-b", StatusFailed, now.Add(-2*time.Hour))
+
+	statuses, err := s.GetAllBrokerStatuses("")
+	if err != nil {
+		t.Fatalf("GetAllBrokerStatuses: %v", err)
+	}
+
+	a, ok := statuses["broker-a"]
+	if !ok {
+		t.Fatalf("expected broker-a in results")
+	}
+	if a.Status != StatusSent {
+		t.Errorf("broker-a: expected status %q, got %q", StatusSent, a.Status)
+	}
+	if a.LastSent.IsZero() {
+		t.Errorf("broker-a: expected a non-zero LastSent, got zero value")
+	}
+	wantApprox := now.Add(-1 * time.Hour)
+	if a.LastSent.Before(wantApprox.Add(-time.Minute)) || a.LastSent.After(wantApprox.Add(time.Minute)) {
+		t.Errorf("broker-a: expected LastSent near %v, got %v", wantApprox, a.LastSent)
+	}
+
+	b, ok := statuses["broker-b"]
+	if !ok {
+		t.Fatalf("expected broker-b in results")
+	}
+	if b.Status != StatusFailed {
+		t.Errorf("broker-b: expected status %q, got %q", StatusFailed, b.Status)
+	}
+}
+
 func TestMarkFailedRemovesFromResendCooldown(t *testing.T) {
 	s := newTestStore(t)
 	now := time.Now()

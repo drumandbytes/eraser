@@ -78,6 +78,7 @@ brokers:
       opt_out_url: https://www.mylife.com/ccpa/index.pubview
       region: us
       category: people-search
+      notes: Insightbridge LLC is MyLife.com's registered owner/operator (same entity for privacy-request purposes) - the separate insightbridge entry was merged into this one.
     - id: pipl
       name: Pipl
       email: privacy@pipl.com
@@ -161,6 +162,7 @@ brokers:
       website: https://www.transunion.com
       region: global
       category: marketing
+      notes: TransUnion acquired Neustar in 2021; TransUnion's own privacy notices state a request via one of the related-entity notices (including Marketing Solutions) covers the others, so the separate neustar entry was merged into this one.
     - id: lexisnexis
       name: LexisNexis Risk Solutions
       email: privacy.information.mgr@lexisnexis.com
@@ -387,13 +389,6 @@ brokers:
       name: ACUTRAQ Background Screening, Inc.
       email: admin@acutraq.com
       website: https://www.acutraq.com/
-      region: us
-      category: marketing
-    - id: acxiom-2
-      name: ACXIOM LLC
-      email: jordan.abbott@acxiom.com
-      website: https://www.acxiom.com/
-      opt_out_url: https://www.acxiom.com/what-we-are-thinking/california-consumer-privacy-act/for-consumers/
       region: us
       category: marketing
     - id: adadapted
@@ -776,13 +771,6 @@ brokers:
       email: privacy@bdo.com
       website: https://www.bdo.com/
       opt_out_url: https://www.bdo.com/do-not-sell-my-personal-information
-      region: us
-      category: marketing
-    - id: beenverified-2
-      name: Beenverified, Inc.
-      email: ccpa@beenverified.com
-      website: https://www.beenverified.com/
-      opt_out_url: https://www.beenverified.com/svc/optout/search/optouts
       region: us
       category: marketing
     - id: beeswax
@@ -2467,12 +2455,6 @@ brokers:
       category: marketing
       opt_out_url: 'https://www.zoominfo.com/trust-center/your-privacy'
       notes: "InsideView was acquired by ZoomInfo; use ZoomInfo's privacy/opt-out process instead. Updated 2026-08-20."
-    - id: insightbridge
-      name: Insightbridge LLC
-      email: membersupport@mylife.com
-      website: https://www.mylife.com/
-      region: us
-      category: marketing
     - id: intalytics
       name: Intalytics, Inc.
       email: privacy@kalibrate.com
@@ -2908,13 +2890,6 @@ brokers:
       opt_out_url: https://privacyportal-cdn.onetrust.com/dsarwebform/bc2d3301-11a5-4de5-b15e-ce796187a352/d0720d0f-d427-4a7d-a773-5d6793229f15.html
       region: us
       category: marketing
-    - id: liveramp-2
-      name: Liveramp, Inc.
-      email: info@liveramp.com
-      website: https://www.liveramp.com/
-      opt_out_url: https://www.liveramp.com/opt_out/
-      region: us
-      category: marketing
     - id: lizdev
       name: Lizdev, Inc
       email: privacyanddatacompliancereview@lizdev.com
@@ -3171,11 +3146,12 @@ brokers:
       category: marketing
     - id: merkle
       name: Merkle Inc.
-      email: david.yonchak@dentsu.com
+      email: DPO@dentsu.com
       website: https://www.merkleinc.com/
       opt_out_url: https://merkleinc.com/en/privacy-policy/data-product-privacy-notice/control-your-personal-information.html
       region: us
       category: marketing
+      notes: Merkle is a dentsu brand for privacy-request purposes (confirmed via dentsu's privacy request form, which lists Merkle as a selectable brand) - contact routed to the group DPO rather than an individual employee address. The separate dentsu-inc entry was merged into this one.
     - id: message-digital
       name: MESSAGE DIGITAL LLC
       email: privacy@messagedigital.com
@@ -3656,13 +3632,6 @@ brokers:
       email: privacy@permutive.com
       website: https://www.permutive.com/
       opt_out_url: https://permutive.com/privacy/
-      region: us
-      category: marketing
-    - id: pipl-2
-      name: Pipl, Inc.
-      email: susan.haddad@pipl.com
-      website: https://www.pipl.com/
-      opt_out_url: http://pipl.com/resources/privacy-documents/california-privacy-notice-individuals
       region: us
       category: marketing
     - id: pitchbook-data
@@ -4435,13 +4404,6 @@ brokers:
       opt_out_url: https://www.spglobal.com/en/privacy/california-consumer-privacy-act
       region: us
       category: marketing
-    - id: spokeo-2
-      name: Spokeo, Inc
-      email: legal@spokeo.com
-      website: https://www.spokeo.com/
-      opt_out_url: https://www.spokeo.com/optout
-      region: us
-      category: marketing
     - id: spycloud
       name: Spycloud, Inc.
       email: privacy@spycloud.com
@@ -4728,13 +4690,6 @@ brokers:
       name: Tracers Information Specialists, Inc.
       email: compliance@tracersinfo.com
       website: https://www.tracersinfo.com/
-      region: us
-      category: marketing
-    - id: neustar
-      name: Neustar, Inc.
-      email: usprivacy@transunion.com
-      website: https://www.neustar.com/
-      opt_out_url: https://www.optoutprescreen.com/
       region: us
       category: marketing
     - id: trestle-solutions
@@ -5264,13 +5219,6 @@ brokers:
       region: eu
       category: marketing
       notes: 'Added 2026-08-20 from their privacy policy contact section. Not previously in the campaign.'
-    - id: dentsu-inc
-      name: Dentsu Inc.
-      email: DPO@dentsu.com
-      website: https://www.dentsu.com/
-      region: global
-      category: marketing
-      notes: 'Added 2026-08-20 - group-level DPO contact found separately from the existing merkle-inc entry (a dentsu subsidiary already in this file). Flag if this should instead be merged into that entry.'
     - id: creditsafe
       name: Creditsafe
       email: eudpo@creditsafe.com

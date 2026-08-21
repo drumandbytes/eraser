@@ -17,7 +17,6 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 - `smartclip` (Smartclip, ad-tech)
 - `genius-sports` (Genius Sports Group)
 - `etarget-sk` (eTarget s.r.o., Slovakia)
-- `dentsu-inc` (Dentsu Inc. — possible overlap with the existing `merkle-inc` entry, not yet merged/verified)
 - `creditsafe` (Creditsafe, financial/B2B credit reporting)
 
 ## What's NOT in brokers.yaml

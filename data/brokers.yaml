@@ -4535,6 +4535,7 @@ brokers:
     - id: strategic-data-intelligence
       name: Strategic Data Intelligence
       email: m.brostoff@sdintelligence.com
+      notes: 'Replied "SDI is a data broker and does not compile or store customer information" (2026-08-21) - unclear/contradictory, but implies no record found; no further action taken.'
       website: https://www.strategicdataintelligence.com/
       region: us
       category: marketing
@@ -5199,7 +5200,7 @@ brokers:
       opt_out_url: https://www.192.com/misc/privacy-policy/
       region: eu
       category: financial-b2b
-      notes: 'UK people/company data. GDPR erasure request.'
+      notes: 'Replied that 192.com''s records are UK-only and asked for more context, since the request came from a non-UK address (2026-08-21) - consistent with this being a UK-focused broker (see EU-NOTES.md); no further action taken.'
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de
@@ -5231,7 +5232,7 @@ brokers:
       opt_out_url: ""
       region: eu
       category: financial-b2b
-      notes: 'Belgium B2B data provider. GDPR erasure request.'
+      notes: 'Replied "We don''t have any data on you. We''re not even a data broker" (2026-08-21) - worth revisiting whether this entry belongs in the database at all.'
     - id: athumi
       name: Athumi
       email: privacy@athumi.eu
@@ -5239,14 +5240,14 @@ brokers:
       opt_out_url: https://athumi.eu/en
       region: eu
       category: data-intermediary
-      notes: 'Belgian data intermediary (Data Governance Act registered). GDPR erasure request.'
+      notes: 'Reply came from a Flemish government address (privacy.datanutsbedrijf@vlaanderen.be), not Athumi directly (2026-08-21), saying they don''t generally process non-Belgian residents'' data and asking for context - request may not have been routed correctly; may need to re-send with clarification.'
     - id: adikteev
       name: Adikteev
       email: dpo@adikteev.com
       website: https://www.adikteev.com/
       region: eu
       category: marketing
-      notes: 'Added 2026-08-20 from their privacy policy Right to Delete clause (6.2.2). Not previously in the campaign.'
+      notes: 'Replied that they act as a data processor, not controller, for the ads in question (2026-08-21) - can''t action an erasure request directly; would need to identify which app/publisher served the ad, which this tool doesn''t track.'
     - id: scope3
       name: Scope3
       email: privacy@scope3.com

@@ -5240,7 +5240,7 @@ brokers:
       opt_out_url: https://athumi.eu/en
       region: eu
       category: data-intermediary
-      notes: 'Reply came from a Flemish government address (privacy.datanutsbedrijf@vlaanderen.be), not Athumi directly (2026-08-21), saying they don''t generally process non-Belgian residents'' data and asking for context - request may not have been routed correctly; may need to re-send with clarification.'
+      notes: 'Reply came from privacy.datanutsbedrijf@vlaanderen.be (2026-08-21) - Athumi is the Flemish government-linked data-utility/intermediary, so this is its actual privacy contact, correctly routed. They said they generally don''t process non-Belgian residents'' data and asked what specifically made us think they hold data on this person - as a B2B data-utility platform rather than a consumer data broker, may need a reply clarifying the context, or this entry may not be a good fit for individual GDPR erasure requests at all.'
     - id: adikteev
       name: Adikteev
       email: dpo@adikteev.com

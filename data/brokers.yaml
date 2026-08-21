@@ -3387,7 +3387,7 @@ brokers:
       category: marketing
     - id: nexxa-group
       name: Nexxa Group, Inc.
-      email: consumerchoice@nexxagroup.com
+      email: ""
       notes: 'Auto-reply points to this web form for privacy requests (2026-08-21).'
       website: https://www.nexxagroup.com/
       opt_out_url: https://privacyportal.onetrust.com/webform/c02129bc-bbab-43a6-a0b4-175489cb893e/156ac96a-9d7e-4fe6-bab8-a44df779202b
@@ -3395,7 +3395,7 @@ brokers:
       category: marketing
     - id: nexxen
       name: Nexxen Inc.
-      email: privacyrights@nexxen.com
+      email: ""
       notes: 'Auto-reply points to this data subject rights request page (2026-08-21).'
       website: https://www.nexxen.com/
       opt_out_url: https://nexxen.com/privacy-data-subject-rights-request/
@@ -4061,7 +4061,7 @@ brokers:
       category: marketing
     - id: revenuebase
       name: Revenuebase Inc
-      email: privacy@revenuebase.ai
+      email: ""
       notes: 'Reply points to this Google Form for removal requests (2026-08-21).'
       website: https://www.revenuebase.ai/
       opt_out_url: https://forms.gle/5Cab6bJcRtqVzAJS8
@@ -4109,7 +4109,8 @@ brokers:
       category: marketing
     - id: rooftop-digital
       name: ROOFTOP DIGITAL LLC
-      email: privacyofficer@therooftop.io
+      email: ""
+      notes: 'Reply says they "no longer take requests through this email" and to use the portal or call 866-338-5513 (2026-08-21) - email address added to their suppression list regardless.'
       website: https://www.rooftopdigital.com/
       opt_out_url: https://www.consumerdataprotect.com/?ref=rooftopdigital.com
       region: us
@@ -4247,7 +4248,7 @@ brokers:
       category: marketing
     - id: seamless-contacts
       name: Seamless Contacts, Inc.
-      email: privacy@seamlessleads.com
+      email: ""
       notes: 'Reply says the Privacy Request Center is the designated method and this address "does not respond to initial access, correction, deletion, or opt-out" requests (2026-08-21) - but does accept a follow-up email reply containing Full Name, Country/State, City, Email, and Phone if the portal can''t be used.'
       website: https://www.seamless.ai/
       opt_out_url: http://preferences.seamless.ai
@@ -4268,7 +4269,8 @@ brokers:
       category: marketing
     - id: semasio
       name: Semasio, Inc.
-      email: info@semasio.com
+      email: ""
+      notes: 'Reply says they operate a cookie-based service and don''t store name/address/phone/email, so can''t act on email requests (2026-08-21) - use the existing opt_out_url instead.'
       website: https://www.semasio.com/
       opt_out_url: https://www.semasio.com/legal/privacy-choices
       region: us
@@ -4505,7 +4507,7 @@ brokers:
       category: marketing
     - id: steppingblocks
       name: STEPPINGBLOCKS Inc
-      email: privacy@steppingblocks.com
+      email: ""
       notes: Auto-reply says personal-information requests should go through the opt_out_url form, "the designated channel" (2026-08-21).
       website: https://www.steppingblocks.com/
       opt_out_url: https://www.steppingblocks.com/personal-information-inquiry
@@ -4595,7 +4597,7 @@ brokers:
       category: marketing
     - id: swoopcom
       name: Swoop.Com, Inc.
-      email: privacyrights@swoop.com
+      email: ""
       notes: 'Auto-reply points to their Privacy Choices form (2026-08-21); appeals go to privacyrights@swoop.com.'
       website: https://www.swoop.com/
       opt_out_url: https://swoop.com/your-privacy-choices/
@@ -4734,7 +4736,7 @@ brokers:
       category: marketing
     - id: traackr
       name: Traackr, Inc.
-      email: datarequest@traackr.com
+      email: ""
       notes: Auto-reply asks requester to also fill in the opt_out_url form to complete the request (2026-08-21).
       website: https://www.traackr.com/
       opt_out_url: https://www.traackr.com/data-opt-out
@@ -4942,7 +4944,7 @@ brokers:
       category: marketing
     - id: veraset
       name: Veraset LLC
-      email: privacy@veraset.com
+      email: ""
       notes: Auto-reply asks requester to complete identity verification via a portal linked in their reply before the request is processed (2026-08-21).
       website: https://www.veraset.com/
       opt_out_url: https://www.veraset.com/do-not-sell-my-personal-information
@@ -5180,7 +5182,7 @@ brokers:
       category: marketing
     - id: zipstorm
       name: Zipstorm LLC
-      email: privacy@seekout.com
+      email: ""
       notes: 'Auto-reply says their Privacy Choices Portal is "the most efficient way", and that a request made by email must include the requester''s LinkedIn URL or it "cannot take action" (2026-08-21) - this tool doesn''t collect that field.'
       website: https://www.seekout.com/
       opt_out_url: http://www.seekout.com/privacy/choices
@@ -5208,7 +5210,7 @@ brokers:
       opt_out_url: https://www.creditreform.de/datenschutz
       region: eu
       category: financial-b2b
-      notes: 'German credit reporting agency. GDPR erasure request.'
+      notes: 'Replied "no data stored about you" (2026-08-21) - no further action taken.'
     - id: regis24
       name: Regis24
       email: datenschutz@regis24.de
@@ -5216,7 +5218,7 @@ brokers:
       opt_out_url: https://www.regis24.de/datenschutz
       region: eu
       category: financial-b2b
-      notes: 'German credit reporting agency. GDPR erasure request.'
+      notes: 'Replied they only process data for individuals with a German or Austrian address (2026-08-21) - consistent with this being a DE/AT-focused credit agency; no further action taken.'
     - id: seawave-media
       name: Seawave Media
       email: ""

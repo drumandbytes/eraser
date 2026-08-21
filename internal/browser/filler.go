@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,17 @@ import (
 
 	"github.com/eraser-privacy/eraser/internal/config"
 )
+
+// isContextErr reports whether err is (or wraps) a context cancellation or
+// deadline error, as opposed to chromedp's normal "not found on this page"
+// signal (which shows up as a nil error with a false/empty result, not an
+// error at all -- see fillSelector/fillByPattern/detectXxx). A caller of
+// NavigateAndFill needs to be able to tell "this field/CAPTCHA type just
+// wasn't on the page" (expected, not a bug) apart from "the browser died or
+// timed out mid-fill" (a real failure) -- this is that distinction.
+func isContextErr(err error) bool {
+	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
+}
 
 // FormFiller handles form field detection and auto-filling
 type FormFiller struct {
@@ -48,7 +60,15 @@ func (f *FormFiller) Fill(ctx context.Context) *FillResult {
 			continue
 		}
 
-		filled := f.tryFillField(ctx, mapping)
+		filled, err := f.tryFillField(ctx, mapping)
+		if err != nil {
+			// A real error (e.g. context deadline/cancellation), not just
+			// "this field isn't on the page" -- record it distinctly so
+			// NavigateAndFill doesn't report Success=true purely because
+			// some other field happened to fill before this failure.
+			result.Errors = append(result.Errors, fmt.Sprintf("%s: %v", mapping.FieldType, err))
+			continue
+		}
 		if filled {
 			result.FilledFields = append(result.FilledFields, mapping.FieldType)
 		}
@@ -230,37 +250,62 @@ func (f *FormFiller) getFieldMappings() []FieldMapping {
 	}
 }
 
-// tryFillField attempts to fill a field using multiple strategies
-func (f *FormFiller) tryFillField(ctx context.Context, mapping FieldMapping) bool {
+// tryFillField attempts to fill a field using multiple strategies. The
+// returned error is non-nil only for a real failure (e.g. the browser
+// context died mid-fill) -- a field simply not being present on this
+// broker's page is reported as (false, nil), not an error.
+func (f *FormFiller) tryFillField(ctx context.Context, mapping FieldMapping) (bool, error) {
 	// Strategy 1: Try exact selectors
 	for _, selector := range mapping.Selectors {
-		if f.fillSelector(ctx, selector, mapping.ProfileValue) {
-			return true
+		filled, err := f.fillSelector(ctx, selector, mapping.ProfileValue)
+		if err != nil {
+			return false, err
+		}
+		if filled {
+			return true, nil
 		}
 	}
 
 	// Strategy 2: Try pattern matching on all input fields
-	if f.fillByPattern(ctx, mapping) {
-		return true
-	}
-
-	return false
+	return f.fillByPattern(ctx, mapping)
 }
 
-// fillSelector attempts to fill a specific CSS selector
-func (f *FormFiller) fillSelector(ctx context.Context, selector string, value string) bool {
-	// Check if element exists and is visible
-	var exists bool
+// fillSelector attempts to fill a specific CSS selector. Returns
+// (filled, err) where err is non-nil only for a real failure; a selector
+// that just doesn't exist/isn't visible on this page is (false, nil).
+func (f *FormFiller) fillSelector(ctx context.Context, selector string, value string) (bool, error) {
+	// Check if element exists and is visible, and what tag it is (so we can
+	// tell a <select> apart from a plain text input -- see fillSelectElement).
+	var info struct {
+		Exists bool   `json:"exists"`
+		Tag    string `json:"tag"`
+	}
 	err := chromedp.Run(ctx, chromedp.Evaluate(
 		fmt.Sprintf(`(function() {
 			var el = document.querySelector("%s");
-			return el !== null && el.offsetParent !== null;
+			if (el === null || el.offsetParent === null) {
+				return {exists: false, tag: ""};
+			}
+			return {exists: true, tag: el.tagName.toLowerCase()};
 		})()`, escapeSelector(selector)),
-		&exists,
+		&info,
 	))
 
-	if err != nil || !exists {
-		return false
+	if err != nil {
+		if isContextErr(err) {
+			return false, err
+		}
+		return false, nil
+	}
+	if !info.Exists {
+		return false, nil
+	}
+
+	// <select> elements don't respond reliably to SendKeys -- it can return
+	// a nil error while no option actually gets selected. Use a JS-based
+	// approach that sets .value against a real <option> and fires 'change'.
+	if info.Tag == "select" {
+		return f.fillSelectElement(ctx, selector, value)
 	}
 
 	// Clear existing value and fill
@@ -268,12 +313,51 @@ func (f *FormFiller) fillSelector(ctx context.Context, selector string, value st
 		chromedp.Clear(selector),
 		chromedp.SendKeys(selector, value),
 	)
+	if err != nil {
+		if isContextErr(err) {
+			return false, err
+		}
+		return false, nil
+	}
 
-	return err == nil
+	return true, nil
 }
 
-// fillByPattern searches for fields matching patterns
-func (f *FormFiller) fillByPattern(ctx context.Context, mapping FieldMapping) bool {
+// fillSelectElement sets the value of a <select> element by matching value
+// against an <option>'s value or visible text, setting el.value directly,
+// and dispatching a 'change' event so any listeners on the page notice.
+// Returns (false, nil) -- not an error -- if the select has no matching
+// <option>, since that's a legitimate "couldn't fill this field" outcome
+// rather than a browser/context failure.
+func (f *FormFiller) fillSelectElement(ctx context.Context, selector string, value string) (bool, error) {
+	js := fmt.Sprintf(`(function() {
+		var el = document.querySelector("%s");
+		if (!el) return false;
+		var target = %s;
+		var opt = Array.from(el.options).find(function(o) {
+			return o.value === target || o.textContent.trim() === target;
+		});
+		if (!opt) return false;
+		el.value = opt.value;
+		el.dispatchEvent(new Event('change', {bubbles: true}));
+		return el.value === opt.value;
+	})()`, escapeSelector(selector), jsStringLiteral(value))
+
+	var ok bool
+	err := chromedp.Run(ctx, chromedp.Evaluate(js, &ok))
+	if err != nil {
+		if isContextErr(err) {
+			return false, err
+		}
+		return false, nil
+	}
+
+	return ok, nil
+}
+
+// fillByPattern searches for fields matching patterns. Returns (filled, err)
+// where err is non-nil only for a real failure (see fillSelector).
+func (f *FormFiller) fillByPattern(ctx context.Context, mapping FieldMapping) (bool, error) {
 	// Build JavaScript to find matching fields
 	patternsJS := "["
 	for i, p := range mapping.Patterns {
@@ -316,17 +400,20 @@ func (f *FormFiller) fillByPattern(ctx context.Context, mapping FieldMapping) bo
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return false
+		if isContextErr(err) {
+			return false, err
+		}
+		return false, nil
 	}
 
 	found, ok := result["found"].(bool)
 	if !ok || !found {
-		return false
+		return false, nil
 	}
 
 	selector, ok := result["selector"].(string)
 	if !ok || selector == "" {
-		return false
+		return false, nil
 	}
 
 	return f.fillSelector(ctx, selector, mapping.ProfileValue)
@@ -337,4 +424,10 @@ func escapeSelector(s string) string {
 	s = strings.ReplaceAll(s, `\`, `\\`)
 	s = strings.ReplaceAll(s, `"`, `\"`)
 	return s
+}
+
+// jsStringLiteral returns s safely embedded as a double-quoted JavaScript
+// string literal (e.g. for splicing profile values into an Evaluate snippet).
+func jsStringLiteral(s string) string {
+	return `"` + escapeSelector(s) + `"`
 }

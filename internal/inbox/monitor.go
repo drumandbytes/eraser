@@ -15,6 +15,14 @@ import (
 	"github.com/eraser-privacy/eraser/internal/config"
 )
 
+// maxMIMEPartBytes caps how much of a single MIME part body we read into
+// memory when parsing an incoming email. Broker-reply emails are
+// attacker-influenced (this inbox is monitored by IMAP and anyone can send
+// it mail), so reading a part body without a bound would let a huge
+// attachment or body force unbounded memory growth before we've even
+// checked its content-type.
+const maxMIMEPartBytes = 10 << 20 // 10MB
+
 // Monitor handles IMAP connection and email monitoring
 type Monitor struct {
 	config  config.InboxConfig
@@ -91,7 +99,7 @@ func (m *Monitor) Connect(ctx context.Context) error {
 	log.Printf("Connected, logging in as %s...", m.config.Email)
 
 	if err := c.Login(m.config.Email, m.config.Password); err != nil {
-		c.Logout()
+		_ = c.Logout()
 		return fmt.Errorf("failed to login: %w", err)
 	}
 
@@ -106,6 +114,67 @@ func (m *Monitor) Disconnect() error {
 		return m.client.Logout()
 	}
 	return nil
+}
+
+// uidSearchCtx runs UidSearch in a goroutine and honors ctx cancellation,
+// mirroring the pattern WatchForNewEmails uses for its blocking IDLE call
+// (the go-imap v1.2.1 client has no native context support, so this is the
+// only cancellation mechanism it offers). Note that if ctx is canceled
+// before the IMAP server responds, this returns early but the goroutine
+// keeps running the command against the shared connection until the server
+// replies - same caveat WatchForNewEmails documents for its IDLE loop.
+func (m *Monitor) uidSearchCtx(ctx context.Context, criteria *imap.SearchCriteria) ([]uint32, error) {
+	type result struct {
+		uids []uint32
+		err  error
+	}
+	resultCh := make(chan result, 1)
+	go func() {
+		uids, err := m.client.UidSearch(criteria)
+		resultCh <- result{uids, err}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case r := <-resultCh:
+		return r.uids, r.err
+	}
+}
+
+// fetchMessagesCtx runs UidFetch in a goroutine, parses messages as they
+// stream in, and honors ctx cancellation - same pattern/caveat as
+// uidSearchCtx above. bufSize sizes the messages channel so the UidFetch
+// goroutine never blocks writing to it even if we stop reading early.
+func (m *Monitor) fetchMessagesCtx(ctx context.Context, seqSet *imap.SeqSet, items []imap.FetchItem, section *imap.BodySectionName, bufSize int) ([]Email, error) {
+	messages := make(chan *imap.Message, bufSize)
+	done := make(chan error, 1)
+	go func() {
+		done <- m.client.UidFetch(seqSet, items, messages)
+	}()
+
+	var emails []Email
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case msg, ok := <-messages:
+			if !ok {
+				if err := <-done; err != nil {
+					return nil, fmt.Errorf("failed to fetch messages: %w", err)
+				}
+				return emails, nil
+			}
+			email, err := m.parseMessage(msg, section)
+			if err != nil {
+				log.Printf("Warning: failed to parse message: %v", err)
+				continue
+			}
+			if email != nil {
+				emails = append(emails, *email)
+			}
+		}
+	}
 }
 
 // FetchRecentEmails fetches emails from the last N days
@@ -131,7 +200,7 @@ func (m *Monitor) FetchRecentEmails(ctx context.Context, days int) ([]Email, err
 	criteria := imap.NewSearchCriteria()
 	criteria.Since = since
 
-	uids, err := m.client.UidSearch(criteria)
+	uids, err := m.uidSearchCtx(ctx, criteria)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search emails: %w", err)
 	}
@@ -150,26 +219,9 @@ func (m *Monitor) FetchRecentEmails(ctx context.Context, days int) ([]Email, err
 	section := &imap.BodySectionName{}
 	items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags, imap.FetchUid, section.FetchItem()}
 
-	messages := make(chan *imap.Message, len(uids))
-	done := make(chan error, 1)
-	go func() {
-		done <- m.client.UidFetch(seqSet, items, messages)
-	}()
-
-	var emails []Email
-	for msg := range messages {
-		email, err := m.parseMessage(msg, section)
-		if err != nil {
-			log.Printf("Warning: failed to parse message: %v", err)
-			continue
-		}
-		if email != nil {
-			emails = append(emails, *email)
-		}
-	}
-
-	if err := <-done; err != nil {
-		return nil, fmt.Errorf("failed to fetch messages: %w", err)
+	emails, err := m.fetchMessagesCtx(ctx, seqSet, items, section, len(uids))
+	if err != nil {
+		return nil, err
 	}
 
 	return emails, nil
@@ -234,7 +286,7 @@ func (m *Monitor) parseMessage(msg *imap.Message, section *imap.BodySectionName)
 		switch h := p.Header.(type) {
 		case *mail.InlineHeader:
 			ct, _, _ := h.ContentType()
-			body, _ := io.ReadAll(p.Body)
+			body, _ := io.ReadAll(io.LimitReader(p.Body, maxMIMEPartBytes))
 
 			if strings.HasPrefix(ct, "text/plain") && email.Body == "" {
 				email.Body = string(body)
@@ -283,7 +335,7 @@ func (m *Monitor) FetchBrokerEmailsFromFolder(ctx context.Context, folder string
 	criteria := imap.NewSearchCriteria()
 	criteria.Since = since
 
-	uids, err := m.client.UidSearch(criteria)
+	uids, err := m.uidSearchCtx(ctx, criteria)
 	if err != nil {
 		return nil, fmt.Errorf("failed to search emails in %s: %w", folder, err)
 	}
@@ -309,28 +361,21 @@ func (m *Monitor) FetchBrokerEmailsFromFolder(ctx context.Context, folder string
 		}
 
 		// Fetch message details
-		messages := make(chan *imap.Message, batchSize)
-		done := make(chan error, 1)
 		section := &imap.BodySectionName{Peek: true}
+		items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid, section.FetchItem()}
 
-		go func() {
-			done <- m.client.UidFetch(seqSet, []imap.FetchItem{
-				imap.FetchEnvelope,
-				imap.FetchUid,
-				section.FetchItem(),
-			}, messages)
-		}()
-
-		for msg := range messages {
-			email, err := m.parseMessage(msg, section)
-			if err == nil && email != nil {
-				allEmails = append(allEmails, *email)
+		batchEmails, err := m.fetchMessagesCtx(ctx, seqSet, items, section, batchSize)
+		if err != nil {
+			if ctx.Err() != nil {
+				// ctx was canceled/timed out - abort the whole fetch rather
+				// than continuing to hammer a connection the caller has
+				// given up on.
+				return nil, err
 			}
-		}
-
-		if err := <-done; err != nil {
 			log.Printf("Warning: error fetching batch: %v", err)
+			continue
 		}
+		allEmails = append(allEmails, batchEmails...)
 	}
 
 	// Filter to broker emails only
@@ -506,6 +551,32 @@ func (m *Monitor) EnsureFolderExists(name string) error {
 	return nil
 }
 
+// deletedUIDsBesides returns the UIDs currently flagged \Deleted in the
+// selected mailbox that are NOT in ours - used by ArchiveEmails to detect
+// (not prevent) the Expunge(nil)-removes-everything hazard documented there.
+func (m *Monitor) deletedUIDsBesides(ours []uint32) ([]uint32, error) {
+	criteria := imap.NewSearchCriteria()
+	criteria.WithFlags = []string{imap.DeletedFlag}
+
+	allDeleted, err := m.client.UidSearch(criteria)
+	if err != nil {
+		return nil, err
+	}
+
+	ourUIDs := make(map[uint32]bool, len(ours))
+	for _, uid := range ours {
+		ourUIDs[uid] = true
+	}
+
+	var unexpected []uint32
+	for _, uid := range allDeleted {
+		if !ourUIDs[uid] {
+			unexpected = append(unexpected, uid)
+		}
+	}
+	return unexpected, nil
+}
+
 // ArchiveEmails moves multiple emails to the archive folder
 func (m *Monitor) ArchiveEmails(uids []uint32, folder string) error {
 	if m.client == nil {
@@ -540,9 +611,41 @@ func (m *Monitor) ArchiveEmails(uids []uint32, folder string) error {
 			return fmt.Errorf("failed to mark emails as deleted: %w", err)
 		}
 
-		// Expunge to remove deleted messages
-		if err := m.client.Expunge(nil); err != nil {
+		// go-imap v1.2.1's client does not implement the UIDPLUS extension
+		// (there is no UidExpunge/"UID EXPUNGE" method - Expunge(ch) is the
+		// only option), and plain IMAP EXPUNGE removes EVERY \Deleted-flagged
+		// message in the mailbox, not just the ones we just flagged above. A
+		// concurrent process (or a stale flag left over from an earlier
+		// partial failure) could cause real mail loss here.
+		//
+		// We can't close that race with this library version, but we can
+		// avoid silently hiding it: check right before expunging whether any
+		// UID besides our own is already flagged \Deleted, and log loudly if
+		// so, then afterward verify the number of messages actually expunged
+		// matches what we expected and warn on mismatch.
+		if unexpected, err := m.deletedUIDsBesides(uids); err != nil {
+			log.Printf("Warning: could not verify \\Deleted flag scope before expunge: %v", err)
+		} else if len(unexpected) > 0 {
+			log.Printf("WARNING: %d message(s) besides the %d just archived are already flagged \\Deleted and will ALSO be removed by this expunge (UIDs: %v) - go-imap v1.2.1 has no UID EXPUNGE to scope this call", len(unexpected), len(uids), unexpected)
+		}
+
+		expunged := make(chan uint32, len(uids)+8)
+		expungeDone := make(chan error, 1)
+		go func() {
+			expungeDone <- m.client.Expunge(expunged)
+		}()
+
+		var expungedCount int
+		for range expunged {
+			expungedCount++
+		}
+
+		if err := <-expungeDone; err != nil {
 			return fmt.Errorf("failed to expunge deleted emails: %w", err)
+		}
+
+		if expungedCount != len(uids) {
+			log.Printf("WARNING: expunge removed %d message(s) but this operation only intended to remove %d - other \\Deleted-flagged mail may have been removed too", expungedCount, len(uids))
 		}
 	}
 

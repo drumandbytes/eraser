@@ -140,38 +140,72 @@ func NewStore(dbPath string) (*Store, error) {
 	// be more permissive than the 0700 directory suggests (e.g. 0644 under a
 	// default 022 umask). It holds personal data, so restrict it explicitly.
 	if err := os.Chmod(dbPath, 0600); err != nil && !os.IsNotExist(err) {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to restrict history database permissions: %w", err)
 	}
 
 	store := &Store{db: db}
 	if err := store.migrate(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, err
 	}
 	return store, nil
 }
 
+// addColumnIfMissing runs an `ALTER TABLE ... ADD COLUMN ...` migration
+// statement and swallows only the specific, expected failure modes:
+//   - the column already existing because this migration already ran on
+//     this database (SQLite reports that as a "duplicate column name" error).
+//   - the table not existing yet, on a brand-new database - these ALTER
+//     TABLE calls intentionally run before the CREATE TABLE IF NOT EXISTS
+//     below, so on a fresh install every one of them hits a table that
+//     doesn't exist yet (SQLite reports that as "no such table").
+//
+// Any other failure (disk full, permissions, corrupted db, ...) is a
+// genuine problem and is returned wrapped instead of being silently ignored.
+func addColumnIfMissing(db *sql.DB, alterSQL string) error {
+	if _, err := db.Exec(alterSQL); err != nil {
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "duplicate column") || strings.Contains(msg, "no such table") {
+			return nil
+		}
+		return fmt.Errorf("migration failed: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) migrate() error {
 	// First, try to add new columns to existing databases
 	// These must run before the index creation below
-	s.db.Exec(`ALTER TABLE removal_requests ADD COLUMN pipeline_status TEXT DEFAULT 'email_sent'`)
-	s.db.Exec(`ALTER TABLE pending_tasks ADD COLUMN opened_at DATETIME`)
+	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN pipeline_status TEXT DEFAULT 'email_sent'`); err != nil {
+		return err
+	}
+	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN opened_at DATETIME`); err != nil {
+		return err
+	}
 	// broker_responses.email_body: matches digisamroc/eraser#3 - the column
 	// was referenced by INSERT/SELECT/UPDATE statements below but never
 	// actually in the CREATE TABLE, so `eraser monitor` broke on every
 	// classified reply with "table broker_responses has no column named
 	// email_body" on any database created before this fix. Also added to
 	// the CREATE TABLE itself so a fresh install gets it from the start.
-	s.db.Exec(`ALTER TABLE broker_responses ADD COLUMN email_body TEXT`)
+	if err := addColumnIfMissing(s.db, `ALTER TABLE broker_responses ADD COLUMN email_body TEXT`); err != nil {
+		return err
+	}
 	// profile_id: added for multi-profile support. Every row written before
 	// this existed - across all three tables - gets attributed to
 	// DefaultProfileID here, matching what a single-profile config's
 	// GetProfiles() synthesizes, so existing history stays fully visible
 	// after upgrading rather than silently vanishing behind a profile filter.
-	s.db.Exec(`ALTER TABLE removal_requests ADD COLUMN profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `'`)
-	s.db.Exec(`ALTER TABLE broker_responses ADD COLUMN profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `'`)
-	s.db.Exec(`ALTER TABLE pending_tasks ADD COLUMN profile_id TEXT NOT NULL DEFAULT '` + DefaultProfileID + `'`)
+	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN profile_id TEXT NOT NULL DEFAULT '`+DefaultProfileID+`'`); err != nil {
+		return err
+	}
+	if err := addColumnIfMissing(s.db, `ALTER TABLE broker_responses ADD COLUMN profile_id TEXT NOT NULL DEFAULT '`+DefaultProfileID+`'`); err != nil {
+		return err
+	}
+	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN profile_id TEXT NOT NULL DEFAULT '`+DefaultProfileID+`'`); err != nil {
+		return err
+	}
 
 	query := `
 	CREATE TABLE IF NOT EXISTS removal_requests (
@@ -309,7 +343,7 @@ func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query records: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var records []Record
 	for rows.Next() {
@@ -425,7 +459,7 @@ func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time,
 	if err != nil {
 		return nil, fmt.Errorf("failed to query last send times: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	times := make(map[string]time.Time)
 	for rows.Next() {
@@ -512,7 +546,7 @@ func (s *Store) GetAllBrokerStatuses(profileID string) (map[string]BrokerStatus,
 	if err != nil {
 		return nil, fmt.Errorf("failed to query broker statuses: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	statuses := make(map[string]BrokerStatus)
 	for rows.Next() {
@@ -623,27 +657,31 @@ func (s *Store) FindBrokerResponseBySubject(profileID, brokerID, subject string)
 	return &r, nil
 }
 
-// UpdateBrokerResponseClassification updates the classification fields of a response
-func (s *Store) UpdateBrokerResponseClassification(id int64, responseType string, formURL, confirmURL string, confidence float64, needsReview bool) error {
+// UpdateBrokerResponseClassification updates the classification fields of a
+// response, scoped to the given profile - a response belonging to a
+// different profile is left untouched.
+func (s *Store) UpdateBrokerResponseClassification(id int64, profileID string, responseType string, formURL, confirmURL string, confidence float64, needsReview bool) error {
 	query := `UPDATE broker_responses SET response_type = ?, form_url = ?, confirm_url = ?,
-		confidence = ?, needs_review = ?, processed_at = ? WHERE id = ?`
+		confidence = ?, needs_review = ?, processed_at = ? WHERE id = ? AND profile_id = ?`
 
 	needsReviewInt := 0
 	if needsReview {
 		needsReviewInt = 1
 	}
 
-	_, err := s.db.Exec(query, responseType, formURL, confirmURL, confidence, needsReviewInt, time.Now(), id)
+	_, err := s.db.Exec(query, responseType, formURL, confirmURL, confidence, needsReviewInt, time.Now(), id, normalizeProfileID(profileID))
 	if err != nil {
 		return fmt.Errorf("failed to update broker response: %w", err)
 	}
 	return nil
 }
 
-// UpdateBrokerResponseBody updates the email body for an existing response
-func (s *Store) UpdateBrokerResponseBody(id int64, body string) error {
-	query := `UPDATE broker_responses SET email_body = ? WHERE id = ?`
-	_, err := s.db.Exec(query, body, id)
+// UpdateBrokerResponseBody updates the email body for an existing response,
+// scoped to the given profile - a response belonging to a different profile
+// is left untouched.
+func (s *Store) UpdateBrokerResponseBody(id int64, profileID string, body string) error {
+	query := `UPDATE broker_responses SET email_body = ? WHERE id = ? AND profile_id = ?`
+	_, err := s.db.Exec(query, body, id, normalizeProfileID(profileID))
 	if err != nil {
 		return fmt.Errorf("failed to update broker response body: %w", err)
 	}
@@ -671,7 +709,7 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query all broker responses: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var responses []BrokerResponse
 	for rows.Next() {
@@ -733,7 +771,7 @@ func (s *Store) GetBrokerResponses(profileID, responseType string, needsReview b
 	if err != nil {
 		return nil, fmt.Errorf("failed to query broker responses: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var responses []BrokerResponse
 	for rows.Next() {
@@ -770,7 +808,7 @@ func (s *Store) GetResponseStats(profileID string) (map[string]int, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query response stats: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	stats := make(map[string]int)
 	for rows.Next() {
@@ -829,7 +867,7 @@ func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query forms: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var forms []FormWithStatus
 	seen := make(map[string]bool) // Dedupe by broker_id
@@ -958,7 +996,7 @@ func (s *Store) GetPendingTasks(profileID string, taskType TaskType, status stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pending tasks: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tasks []PendingTask
 	for rows.Next() {
@@ -984,19 +1022,18 @@ func (s *Store) GetPendingTasks(profileID string, taskType TaskType, status stri
 }
 
 // GetPendingTaskByID retrieves a specific pending task by its numeric ID,
-// regardless of profile - the returned task's ProfileID field lets callers
-// (e.g. the web UI) verify it belongs to the caller's active profile before
-// showing or acting on it.
-func (s *Store) GetPendingTaskByID(id int64) (*PendingTask, error) {
+// scoped to the given profile - a task belonging to a different profile
+// returns nil, nil, the same as a task that doesn't exist at all.
+func (s *Store) GetPendingTaskByID(id int64, profileID string) (*PendingTask, error) {
 	query := `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
 		browser_state, notes, status, created_at, opened_at, completed_at
-		FROM pending_tasks WHERE id = ?`
+		FROM pending_tasks WHERE id = ? AND profile_id = ?`
 
 	var t PendingTask
 	var createdAt sql.NullTime
 	var formURL, screenshotPath, browserState, notes sql.NullString
 
-	err := s.db.QueryRow(query, id).Scan(&t.ID, &t.ProfileID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
+	err := s.db.QueryRow(query, id, normalizeProfileID(profileID)).Scan(&t.ID, &t.ProfileID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
 		&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -1013,20 +1050,23 @@ func (s *Store) GetPendingTaskByID(id int64) (*PendingTask, error) {
 	return &t, nil
 }
 
-// CompletePendingTask marks a task as completed
-func (s *Store) CompletePendingTask(id int64, status string) error {
-	query := `UPDATE pending_tasks SET status = ?, completed_at = ? WHERE id = ?`
-	_, err := s.db.Exec(query, status, time.Now(), id)
+// CompletePendingTask marks a task as completed, scoped to the given
+// profile - a task belonging to a different profile is left untouched.
+func (s *Store) CompletePendingTask(id int64, profileID string, status string) error {
+	query := `UPDATE pending_tasks SET status = ?, completed_at = ? WHERE id = ? AND profile_id = ?`
+	_, err := s.db.Exec(query, status, time.Now(), id, normalizeProfileID(profileID))
 	if err != nil {
 		return fmt.Errorf("failed to complete pending task: %w", err)
 	}
 	return nil
 }
 
-// MarkTaskOpened sets the opened_at timestamp (only if not already set)
-func (s *Store) MarkTaskOpened(id int64) error {
-	query := `UPDATE pending_tasks SET opened_at = ? WHERE id = ? AND opened_at IS NULL`
-	_, err := s.db.Exec(query, time.Now(), id)
+// MarkTaskOpened sets the opened_at timestamp (only if not already set),
+// scoped to the given profile - a task belonging to a different profile is
+// left untouched.
+func (s *Store) MarkTaskOpened(id int64, profileID string) error {
+	query := `UPDATE pending_tasks SET opened_at = ? WHERE id = ? AND profile_id = ? AND opened_at IS NULL`
+	_, err := s.db.Exec(query, time.Now(), id, normalizeProfileID(profileID))
 	if err != nil {
 		return fmt.Errorf("failed to mark task opened: %w", err)
 	}
@@ -1078,7 +1118,7 @@ func (s *Store) GetPipelineStats(profileID string) (map[PipelineStatus]int, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pipeline stats: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	stats := make(map[PipelineStatus]int)
 	for rows.Next() {

@@ -29,50 +29,66 @@ const (
 	CaptchaTypeUnknown        = "unknown"
 )
 
-// detectCaptcha checks the page for various CAPTCHA types
-func (b *Browser) detectCaptcha(ctx context.Context) CaptchaInfo {
-	info := CaptchaInfo{}
-
+// detectCaptcha checks the page for various CAPTCHA types. It returns an
+// error only when a check hit a real failure (context deadline/cancel --
+// e.g. the browser died or timed out mid-check), never for a CAPTCHA simply
+// not being present, so callers can tell "no CAPTCHA" apart from "couldn't
+// tell because the browser is gone".
+func (b *Browser) detectCaptcha(ctx context.Context) (CaptchaInfo, error) {
 	// Check for reCAPTCHA v2
-	if result := detectRecaptchaV2(ctx); result.Found {
-		return result
+	if result, err := detectRecaptchaV2(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
 	// Check for reCAPTCHA v3 (invisible)
-	if result := detectRecaptchaV3(ctx); result.Found {
-		return result
+	if result, err := detectRecaptchaV3(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
 	// Check for hCaptcha
-	if result := detectHCaptcha(ctx); result.Found {
-		return result
+	if result, err := detectHCaptcha(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
 	// Check for Cloudflare Turnstile
-	if result := detectTurnstile(ctx); result.Found {
-		return result
+	if result, err := detectTurnstile(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
 	// Check for FunCaptcha
-	if result := detectFunCaptcha(ctx); result.Found {
-		return result
+	if result, err := detectFunCaptcha(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
 	// Check for Cloudflare challenge page
-	if result := detectCloudflareChallenge(ctx); result.Found {
-		return result
+	if result, err := detectCloudflareChallenge(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
 	// Check for generic image/text CAPTCHA
-	if result := detectGenericCaptcha(ctx); result.Found {
-		return result
+	if result, err := detectGenericCaptcha(ctx); err != nil {
+		return CaptchaInfo{}, err
+	} else if result.Found {
+		return result, nil
 	}
 
-	return info
+	return CaptchaInfo{}, nil
 }
 
 // detectRecaptchaV2 checks for Google reCAPTCHA v2
-func detectRecaptchaV2(ctx context.Context) CaptchaInfo {
+func detectRecaptchaV2(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		// Check for reCAPTCHA iframe
 		var iframe = document.querySelector('iframe[src*="recaptcha"]');
@@ -97,12 +113,15 @@ func detectRecaptchaV2(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	info := CaptchaInfo{
@@ -119,11 +138,11 @@ func detectRecaptchaV2(ctx context.Context) CaptchaInfo {
 		info.ElementID = id
 	}
 
-	return info
+	return info, nil
 }
 
 // detectRecaptchaV3 checks for Google reCAPTCHA v3 (invisible)
-func detectRecaptchaV3(ctx context.Context) CaptchaInfo {
+func detectRecaptchaV3(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		// reCAPTCHA v3 is typically loaded via script
 		var scripts = document.querySelectorAll('script[src*="recaptcha"]');
@@ -145,12 +164,15 @@ func detectRecaptchaV3(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	return CaptchaInfo{
@@ -158,11 +180,11 @@ func detectRecaptchaV3(ctx context.Context) CaptchaInfo {
 		Type:        CaptchaTypeRecaptchaV3,
 		Confidence:  0.85,
 		Description: "Google reCAPTCHA v3 (invisible) detected - may not require interaction",
-	}
+	}, nil
 }
 
 // detectHCaptcha checks for hCaptcha
-func detectHCaptcha(ctx context.Context) CaptchaInfo {
+func detectHCaptcha(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		// Check for hCaptcha iframe
 		var iframe = document.querySelector('iframe[src*="hcaptcha"]');
@@ -187,12 +209,15 @@ func detectHCaptcha(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	info := CaptchaInfo{
@@ -206,11 +231,11 @@ func detectHCaptcha(ctx context.Context) CaptchaInfo {
 		info.FrameSrc = src
 	}
 
-	return info
+	return info, nil
 }
 
 // detectTurnstile checks for Cloudflare Turnstile
-func detectTurnstile(ctx context.Context) CaptchaInfo {
+func detectTurnstile(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		// Check for Turnstile iframe
 		var iframe = document.querySelector('iframe[src*="challenges.cloudflare.com"]');
@@ -230,12 +255,15 @@ func detectTurnstile(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	return CaptchaInfo{
@@ -243,11 +271,11 @@ func detectTurnstile(ctx context.Context) CaptchaInfo {
 		Type:        CaptchaTypeTurnstile,
 		Confidence:  0.95,
 		Description: "Cloudflare Turnstile detected",
-	}
+	}, nil
 }
 
 // detectFunCaptcha checks for Arkose Labs FunCaptcha
-func detectFunCaptcha(ctx context.Context) CaptchaInfo {
+func detectFunCaptcha(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		// Check for FunCaptcha iframe
 		var iframe = document.querySelector('iframe[src*="funcaptcha"], iframe[src*="arkoselabs"]');
@@ -267,12 +295,15 @@ func detectFunCaptcha(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	return CaptchaInfo{
@@ -280,11 +311,11 @@ func detectFunCaptcha(ctx context.Context) CaptchaInfo {
 		Type:        CaptchaTypeFunCaptcha,
 		Confidence:  0.90,
 		Description: "Arkose Labs FunCaptcha detected",
-	}
+	}, nil
 }
 
 // detectCloudflareChallenge checks for Cloudflare challenge page
-func detectCloudflareChallenge(ctx context.Context) CaptchaInfo {
+func detectCloudflareChallenge(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		// Check for Cloudflare challenge indicators
 		var title = document.title.toLowerCase();
@@ -311,12 +342,15 @@ func detectCloudflareChallenge(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	return CaptchaInfo{
@@ -324,11 +358,11 @@ func detectCloudflareChallenge(ctx context.Context) CaptchaInfo {
 		Type:        CaptchaTypeCloudflare,
 		Confidence:  0.90,
 		Description: "Cloudflare challenge page detected - wait or solve challenge",
-	}
+	}, nil
 }
 
 // detectGenericCaptcha checks for generic image/text CAPTCHAs
-func detectGenericCaptcha(ctx context.Context) CaptchaInfo {
+func detectGenericCaptcha(ctx context.Context) (CaptchaInfo, error) {
 	js := `(function() {
 		var body = document.body.innerHTML.toLowerCase();
 		var text = document.body.innerText.toLowerCase();
@@ -362,12 +396,15 @@ func detectGenericCaptcha(ctx context.Context) CaptchaInfo {
 	var result map[string]interface{}
 	err := chromedp.Run(ctx, chromedp.Evaluate(js, &result))
 	if err != nil {
-		return CaptchaInfo{}
+		if isContextErr(err) {
+			return CaptchaInfo{}, err
+		}
+		return CaptchaInfo{}, nil
 	}
 
 	found, _ := result["found"].(bool)
 	if !found {
-		return CaptchaInfo{}
+		return CaptchaInfo{}, nil
 	}
 
 	captchaType := CaptchaTypeUnknown
@@ -387,7 +424,7 @@ func detectGenericCaptcha(ctx context.Context) CaptchaInfo {
 		Type:        captchaType,
 		Confidence:  0.75,
 		Description: description,
-	}
+	}, nil
 }
 
 // IsCaptchaBlocking returns true if the CAPTCHA requires human intervention

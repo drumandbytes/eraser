@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -15,12 +16,13 @@ import (
 
 // Browser wraps chromedp for headless Chrome automation
 type Browser struct {
-	allocCtx    context.Context
-	allocCancel context.CancelFunc
-	ctx         context.Context
-	cancel      context.CancelFunc
-	config      BrowserConfig
-	profile     *config.Profile
+	allocCtx       context.Context
+	allocCancel    context.CancelFunc
+	ctx            context.Context
+	cancel         context.CancelFunc
+	config         BrowserConfig
+	profile        *config.Profile
+	allowedDomains []string
 }
 
 // BrowserConfig holds browser automation settings
@@ -59,10 +61,14 @@ type FormResult struct {
 	ScreenshotPath string
 	ErrorMessage   string
 	SubmitAttempted bool
+	FillErrors     []string // real (non-"not found") errors hit while filling fields, e.g. context timeouts
 }
 
-// New creates a new Browser instance
-func New(cfg BrowserConfig, profile *config.Profile) (*Browser, error) {
+// New creates a new Browser instance. allowedDomains restricts the hosts
+// NavigateAndFill is willing to navigate to and autofill with profile PII
+// (see matchesAllowedDomain); pass nil/empty to skip that check entirely
+// (e.g. for callers that don't yet have a broker domain list).
+func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*Browser, error) {
 	opts := []chromedp.ExecAllocatorOption{
 		chromedp.NoFirstRun,
 		chromedp.NoDefaultBrowserCheck,
@@ -82,12 +88,13 @@ func New(cfg BrowserConfig, profile *config.Profile) (*Browser, error) {
 	ctx, cancel := chromedp.NewContext(allocCtx)
 
 	return &Browser{
-		allocCtx:    allocCtx,
-		allocCancel: allocCancel,
-		ctx:         ctx,
-		cancel:      cancel,
-		config:      cfg,
-		profile:     profile,
+		allocCtx:       allocCtx,
+		allocCancel:    allocCancel,
+		ctx:            ctx,
+		cancel:         cancel,
+		config:         cfg,
+		profile:        profile,
+		allowedDomains: allowedDomains,
 	}, nil
 }
 
@@ -106,6 +113,24 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 	result := &FormResult{
 		URL:      url,
 		BrokerID: brokerID,
+	}
+
+	// Refuse to navigate to (and autofill PII into) a URL whose host isn't a
+	// known broker domain. Form URLs can originate from email-parsed content
+	// (untrusted), so without this a spoofed link could exfiltrate PII to an
+	// arbitrary site. An empty allowlist means "not configured" and skips
+	// the check, rather than rejecting everything.
+	if len(b.allowedDomains) > 0 {
+		valid, domain, err := matchesAllowedDomain(url, b.allowedDomains)
+		if err != nil {
+			result.ErrorMessage = fmt.Sprintf("invalid URL: %v", err)
+			return result, err
+		}
+		if !valid {
+			err := fmt.Errorf("URL domain not in known broker list: %s", domain)
+			result.ErrorMessage = err.Error()
+			return result, err
+		}
 	}
 
 	// Create a context with timeout
@@ -131,7 +156,11 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 
 	// PHASE 1: Check for blocking CAPTCHA (e.g., Cloudflare challenge, CAPTCHA gate before form)
 	// Some sites like TruePeopleSearch show CAPTCHA before the actual form is visible
-	blockingCaptcha := b.detectCaptcha(ctx)
+	blockingCaptcha, err := b.detectCaptcha(ctx)
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("captcha detection failed: %v", err)
+		return result, err
+	}
 	if blockingCaptcha.Found && blockingCaptcha.IsCaptchaBlocking() {
 		result.CaptchaFound = true
 		result.CaptchaType = blockingCaptcha.Type
@@ -167,12 +196,17 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 	fillResult := b.fillFormFields(ctx)
 	result.FieldsFilled = fillResult.FilledFields
 	result.FieldsMissing = fillResult.MissingFields
+	result.FillErrors = fillResult.Errors
 
 	// Small delay after filling for any dynamic updates
 	time.Sleep(1 * time.Second)
 
 	// PHASE 3: Check for form-level CAPTCHA (e.g., reCAPTCHA on the form itself)
-	formCaptcha := b.detectCaptcha(ctx)
+	formCaptcha, err := b.detectCaptcha(ctx)
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("captcha detection failed: %v", err)
+		return result, err
+	}
 	if formCaptcha.Found && formCaptcha.IsCaptchaBlocking() {
 		result.CaptchaFound = true
 		result.CaptchaType = formCaptcha.Type
@@ -206,7 +240,7 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 					// Take screenshot of result
 					time.Sleep(2 * time.Second)
 					if b.config.ScreenshotDir != "" {
-						b.takeScreenshot(ctx, brokerID, "submitted")
+						_, _ = b.takeScreenshot(ctx, brokerID, "submitted")
 					}
 				}
 			}
@@ -224,8 +258,10 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		result.ScreenshotPath = screenshotPath
 	}
 
+	hasFillErrors := len(result.FillErrors) > 0
+
 	// Submit form if requested and no CAPTCHA
-	if autoSubmit && !result.CaptchaFound && len(result.FieldsFilled) > 0 {
+	if autoSubmit && !result.CaptchaFound && len(result.FieldsFilled) > 0 && !hasFillErrors {
 		err = b.submitForm(ctx)
 		if err != nil {
 			result.ErrorMessage = fmt.Sprintf("submit failed: %v", err)
@@ -236,11 +272,18 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 			// Take screenshot of result
 			time.Sleep(2 * time.Second)
 			if b.config.ScreenshotDir != "" {
-				b.takeScreenshot(ctx, brokerID, "submitted")
+				_, _ = b.takeScreenshot(ctx, brokerID, "submitted")
 			}
 		}
-	} else if len(result.FieldsFilled) > 0 {
+	} else if len(result.FieldsFilled) > 0 && !hasFillErrors {
 		result.Success = true
+	}
+
+	// A real (non-"not found") error during field filling -- e.g. a context
+	// timeout mid-fill -- must not be masked by Success=true just because
+	// some other field happened to fill before the browser died.
+	if hasFillErrors && result.ErrorMessage == "" {
+		result.ErrorMessage = fmt.Sprintf("field fill errors: %s", strings.Join(result.FillErrors, "; "))
 	}
 
 	return result, nil
@@ -254,15 +297,10 @@ func (b *Browser) fillFormFields(ctx context.Context) *FillResult {
 
 // submitForm attempts to submit the form
 func (b *Browser) submitForm(ctx context.Context) error {
-	// Try common submit button selectors
+	// Try common submit button CSS selectors first (fast, precise).
 	submitSelectors := []string{
 		"button[type='submit']",
 		"input[type='submit']",
-		"button:contains('Submit')",
-		"button:contains('Remove')",
-		"button:contains('Opt Out')",
-		"button:contains('Delete')",
-		"button:contains('Request')",
 		".submit-button",
 		"#submit",
 		"#submit-btn",
@@ -282,8 +320,30 @@ func (b *Browser) submitForm(ctx context.Context) error {
 		}
 	}
 
+	// Fall back to matching a button by its visible text. The old selector
+	// list used jQuery-only ":contains('Submit')" etc, which is not valid
+	// CSS -- document.querySelector throws for it every time, so those
+	// selectors were silently dead code. Find-and-click happens in one JS
+	// snippet so we click the exact element we just found.
+	const clickByTextJS = `(() => {
+		const re = /submit|remove|opt.?out|delete|request/i;
+		const btn = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'))
+			.find(b => re.test(b.textContent || b.value || ''));
+		if (btn) {
+			btn.click();
+			return true;
+		}
+		return false;
+	})()`
+
+	var clicked bool
+	err := chromedp.Run(ctx, chromedp.Evaluate(clickByTextJS, &clicked))
+	if err == nil && clicked {
+		return nil
+	}
+
 	// Try pressing Enter on the last input field
-	err := chromedp.Run(ctx,
+	err = chromedp.Run(ctx,
 		chromedp.KeyEvent("\r"),
 	)
 	if err != nil {

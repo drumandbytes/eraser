@@ -526,7 +526,7 @@ func ClassifyBySubjectOnly(subject string) (ResponseType, float64, bool) {
 
 	// Calculate confidence (lower for subject-only)
 	var confidence float64
-	needsReview := true
+	var needsReview bool
 
 	if maxScore >= 3 {
 		confidence = 0.7 // Strong subject match

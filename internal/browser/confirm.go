@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 )
@@ -62,31 +61,18 @@ func NewConfirmationHandler(brokerDomains []string) *ConfirmationHandler {
 
 // ValidateDomain checks if the URL belongs to a known broker domain
 func (h *ConfirmationHandler) ValidateDomain(confirmURL string) (bool, string, error) {
-	parsed, err := url.Parse(confirmURL)
-	if err != nil {
-		return false, "", fmt.Errorf("invalid URL: %w", err)
+	return matchesAllowedDomain(confirmURL, h.domainList())
+}
+
+// domainList returns the handler's known broker domains (including the
+// www./mail./email. variants added in NewConfirmationHandler) as a slice,
+// for use with the shared matchesAllowedDomain helper.
+func (h *ConfirmationHandler) domainList() []string {
+	domains := make([]string, 0, len(h.brokerDomains))
+	for d := range h.brokerDomains {
+		domains = append(domains, d)
 	}
-
-	host := strings.ToLower(parsed.Host)
-
-	// Remove port if present
-	if idx := strings.Index(host, ":"); idx != -1 {
-		host = host[:idx]
-	}
-
-	// Check exact match
-	if h.brokerDomains[host] {
-		return true, host, nil
-	}
-
-	// Check if it's a subdomain of a known domain
-	for domain := range h.brokerDomains {
-		if strings.HasSuffix(host, "."+domain) {
-			return true, domain, nil
-		}
-	}
-
-	return false, host, nil
+	return domains
 }
 
 // ClickConfirmationLink sends a GET request to the confirmation URL
@@ -122,12 +108,25 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Connection", "keep-alive")
 
-	// Track redirects
+	// Track redirects, re-validating each hop against the known broker
+	// domains. Only the initial URL is validated by the caller (or above,
+	// via the validateDomain flag) -- without this, an open redirect on a
+	// broker site (or a compromised first hop) could carry an identifying
+	// token to an arbitrary third party across up to 10 hops.
 	var redirects []string
 	h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {
 			return fmt.Errorf("too many redirects")
 		}
+
+		valid, domain, err := matchesAllowedDomain(req.URL.String(), h.domainList())
+		if err != nil {
+			return fmt.Errorf("redirect validation failed: %w", err)
+		}
+		if !valid {
+			return fmt.Errorf("redirect to disallowed domain %s blocked", domain)
+		}
+
 		redirects = append(redirects, req.URL.String())
 		return nil
 	}
@@ -138,7 +137,7 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 		result.ErrorMessage = fmt.Sprintf("request failed: %v", err)
 		return result, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	result.StatusCode = resp.StatusCode
 	result.FinalURL = resp.Request.URL.String()

@@ -33,9 +33,9 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 
 	var message strings.Builder
-	message.WriteString(fmt.Sprintf("From: %s\r\n", msg.From))
-	message.WriteString(fmt.Sprintf("To: %s\r\n", msg.To))
-	message.WriteString(fmt.Sprintf("Subject: %s\r\n", msg.Subject))
+	fmt.Fprintf(&message, "From: %s\r\n", msg.From)
+	fmt.Fprintf(&message, "To: %s\r\n", msg.To)
+	fmt.Fprintf(&message, "Subject: %s\r\n", msg.Subject)
 	message.WriteString("MIME-Version: 1.0\r\n")
 	message.WriteString("Content-Type: text/plain; charset=utf-8\r\n")
 	message.WriteString("\r\n")
@@ -81,13 +81,13 @@ func (s *SMTPSender) sendWithTLS(addr string, auth smtp.Auth, from, to string, m
 	if err != nil {
 		return fmt.Errorf("TLS connection failed: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	client, err := smtp.NewClient(conn, s.config.Host)
 	if err != nil {
 		return fmt.Errorf("SMTP client creation failed: %w", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err := client.Auth(auth); err != nil {
 		return fmt.Errorf("authentication failed: %w", err)

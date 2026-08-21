@@ -1,6 +1,7 @@
 package inbox
 
 import (
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
@@ -157,7 +158,14 @@ func extractURLsFromText(text string) []string {
 	return matches
 }
 
-// extractURLsFromHTML extracts href values from HTML
+// extractURLsFromHTML extracts href values from HTML.
+//
+// html is always email.HTMLBody, which by the time it reaches here is
+// already a fully-materialized Go string - the actual memory-safety fix
+// for oversized broker-reply emails lives at the read that produced that
+// string (io.LimitReader around the MIME part body in monitor.go's
+// parseMessage), not here, since wrapping this parse in a LimitReader
+// would no longer reduce peak memory once the string already exists.
 func extractURLsFromHTML(html string) []string {
 	var urls []string
 
@@ -201,7 +209,38 @@ func cleanURL(rawURL string) string {
 		return ""
 	}
 
+	// Reject private/loopback/link-local/localhost targets unconditionally.
+	// Broker-reply emails are attacker-influenced, and cmd/eraser's
+	// --validate-domain flag (the domain-allowlist check) can be disabled
+	// by the user, so this is the last line of defense against an
+	// email-supplied URL pointing at an internal service or a cloud
+	// metadata endpoint (e.g. http://169.254.169.254/...).
+	if isPrivateOrLoopbackHost(parsed.Hostname()) {
+		return ""
+	}
+
 	return parsed.String()
+}
+
+// isPrivateOrLoopbackHost reports whether host (already stripped of any
+// port by url.URL.Hostname) is localhost by name, or a literal IP in a
+// loopback/private/link-local/unspecified range. It does not perform a DNS
+// lookup for non-literal hostnames (e.g. "internal.corp") - that would be a
+// heavier change with its own TOCTOU issues; the existing broker-domain
+// allowlist is the intended defense for those.
+func isPrivateOrLoopbackHost(host string) bool {
+	switch strings.ToLower(host) {
+	case "localhost", "127.0.0.1", "0.0.0.0", "::1":
+		return true
+	}
+
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return false
+	}
+
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() || ip.IsUnspecified()
 }
 
 // scoreFormURL calculates how likely a URL is to be an opt-out form

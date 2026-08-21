@@ -109,6 +109,13 @@ func (j *Job) ResetAuthFailures() {
 	j.consecutiveAuthFails = 0
 }
 
+// SetDailyLimit sets the job's daily send limit under lock.
+func (j *Job) SetDailyLimit(limit int) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.DailyLimit = limit
+}
+
 // Cancel cancels the job
 func (j *Job) Cancel() {
 	j.mu.Lock()

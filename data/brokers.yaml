@@ -1360,6 +1360,7 @@ brokers:
     - id: datafy
       name: Datafy LLC
       email: support@datafy.com
+      notes: 'Confirmed: no data found for any of the submitted addresses, added to exclusion list to prevent future collection (2026-08-21). Resolved, no further action.'
       website: https://www.datafy.com/
       opt_out_url: https://www.datafy.com/opt-out
       region: us
@@ -1989,7 +1990,8 @@ brokers:
       category: marketing
     - id: fullcontact
       name: Fullcontact, Inc.
-      email: dpo@fullcontact.com
+      email: ""
+      notes: 'Reply says identity must be verified via their Privacy Choices portal before they''ll act on the request (2026-08-21).'
       website: https://www.fullcontact.com/
       opt_out_url: https://platform.fullcontact.com/your-privacy-choices
       region: us
@@ -3376,9 +3378,10 @@ brokers:
       category: marketing
     - id: nextroll
       name: Nextroll, Inc.
-      email: legal@nextroll.com
+      email: ""
+      notes: 'Reply directs to this privacy-request portal instead of email (2026-08-21); old opt_out_url (adroll.com) replaced with their current one.'
       website: https://www.nextroll.com/
-      opt_out_url: https://app.adroll.com/optout
+      opt_out_url: https://nextroll-privacy.relyance.ai/
       region: us
       category: marketing
     - id: next-wave-marketing-strategies
@@ -3822,11 +3825,12 @@ brokers:
       category: marketing
     - id: pubmatic
       name: PUBMATIC Inc
-      email: pubmaticprivacy@pubmatic.com
+      email: ""
+      notes: 'Reply confirms they operate on digital identifiers only and "do not recognize" name/email - can''t be fulfilled via this tool''s profile data without a digital identifier (2026-08-21).'
       website: https://www.pubmatic.com/
       opt_out_url: https://pubmatic.com/legal/opt-out/
       region: us
-      category: marketing
+      category: device-id-only
     - id: pulsepoint
       name: Pulsepoint, Inc.
       email: ""
@@ -3999,6 +4003,7 @@ brokers:
     - id: reklaim
       name: REKLAIM LTD
       email: info@reklaimyours.com
+      notes: 'Reply also offers a direct deletion link at reklaimyou.com/delete-my-account (2026-08-21) - different domain than the existing opt_out_url (reklaimyours.com), not verified which is authoritative so left opt_out_url as-is.'
       website: https://www.reklaimyours.com/
       opt_out_url: https://www.reklaimyours.com/optout/
       region: us

@@ -2635,7 +2635,7 @@ brokers:
       website: https://www.kargo.com/
       opt_out_url: https://www.kargo.com/privacy-portal
       region: us
-      category: marketing
+      category: device-id-only
       notes: 'Kargo splits privacy rights into two flows (checked their portal 2026-08-20): (1) Opt-out of sale/share/targeted-ads - check the box at opt_out_url, or just send a GPC signal from your browser; no identifiers needed. (2) Access/deletion - they track by cookie/device ID, not name, so they can''t look you up from a standard request; email privacyinfo@kargo.com with your Digital Identifiers instead (the ktcid/krg_uid/krg_crb cookies set on kargo.com, or your phone''s IDFA/Android Ad ID) plus what you''re requesting. Email left blank since eraser''s standard template has no way to include those identifiers.'
     - id: kbm-group
       name: KBM GROUP LLC
@@ -3057,7 +3057,7 @@ brokers:
       website: https://www.matchbookdata.com/
       opt_out_url: https://www.matchbookdata.com/opt-out-form/
       region: us
-      category: marketing
+      category: device-id-only
     - id: maxmind
       name: MAXMIND Inc
       email: legal@maxmind.com
@@ -3239,7 +3239,7 @@ brokers:
       website: https://www.mogean.com/
       opt_out_url: https://www.mogean.com/opt-out
       region: us
-      category: marketing
+      category: device-id-only
     - id: monevo
       name: Monevo, Inc.
       email: usasupport@monevo.com
@@ -4282,7 +4282,7 @@ brokers:
       website: https://www.semasio.com/
       opt_out_url: https://www.semasio.com/legal/privacy-choices
       region: us
-      category: marketing
+      category: device-id-only
     - id: semcastingcom
       name: Semcasting.com
       email: privacychoice@semcasting.com

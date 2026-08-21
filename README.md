@@ -210,7 +210,7 @@ The broker database is at `data/brokers.yaml`. To add one:
   website: https://example.com
   opt_out_url: https://example.com/optout
   region: us  # us, eu, or global
-  category: people-search  # people-search, marketing, background-check, financial-b2b, or data-intermediary
+  category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, or device-id-only
 ```
 
 Or use the interactive command:

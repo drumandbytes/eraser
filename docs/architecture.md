@@ -63,7 +63,7 @@ Each broker in `data/brokers.yaml` (top-level key `brokers:`) has:
 - `website`: Company website (optional)
 - `opt_out_url`: Direct opt-out link (optional)
 - `region`: `us`, `eu`, or `global`
-- `category`: `people-search`, `marketing`, `background-check`, `financial-b2b`, or `data-intermediary`
+- `category`: `people-search`, `marketing`, `background-check`, `financial-b2b`, `data-intermediary`, or `device-id-only` (tracks by cookie/device ID, not name/email - can't be reached via this tool's standard profile-based request)
 - `notes`: Free-text, optional - used to record why an entry looks unusual (e.g. "use the form, not email")
 
 **Brokers with `email: ""`** can't be reached by `send` at all - they only take requests through a web form/DSR portal, or the address bounced and was cleared by `cleanup-bounces`/`mark-bounced`. Use `eraser list-brokers --missing-email` to see them; they need manual follow-up outside the tool.

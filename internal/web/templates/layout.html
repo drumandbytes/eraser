@@ -674,6 +674,15 @@
             </div>
 
             <div class="flex items-center gap-2">
+                <!-- Global active-job indicator: hidden by default, shown/
+                     updated by the job-poll script below on any page while
+                     a send job is running, regardless of which page
+                     started it or is currently open. -->
+                <a id="global-job-indicator" href="/brokers" class="hidden items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full text-decoration-none" style="background: var(--accent-muted); color: var(--accent);">
+                    <span class="spinner" style="width: 0.75rem; height: 0.75rem;"></span>
+                    <span id="global-job-indicator-text">Sending...</span>
+                </a>
+
                 <!-- Profile Switcher (hidden entirely for the common single-profile setup) -->
                 {{if gt (len .Profiles) 1}}
                 <form method="POST" action="/api/profile" class="profile-switcher">
@@ -762,6 +771,88 @@
             // Initialize theme toggle icon
             setTheme(getTheme());
         });
+    </script>
+
+    <!-- Global send-job polling: runs on every page (not just Brokers) so
+         an active send job is visible no matter where you navigate, and
+         survives leaving/returning to the tab - the job itself runs
+         server-side regardless of what's polling it. Page-specific scripts
+         (e.g. brokers.html's detailed progress card) should call
+         window.eraserJobPoll.start(jobId) to begin tracking a job they
+         just started, and listen for the "eraser:job-update" event on
+         window rather than polling independently, so there's only ever
+         one poll loop per page. -->
+    <script>
+        (function() {
+            let jobId = null;
+            let pollTimer = null;
+
+            function updateIndicator(job) {
+                const el = document.getElementById('global-job-indicator');
+                const text = document.getElementById('global-job-indicator-text');
+                if (!el || !text) return;
+                if (job && job.status === 'running') {
+                    const processed = job.sent + job.failed;
+                    text.textContent = `Sending ${processed}/${job.total}`;
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                } else {
+                    el.classList.add('hidden');
+                    el.classList.remove('flex');
+                }
+            }
+
+            async function poll() {
+                if (!jobId) return;
+                try {
+                    const resp = await fetch(`/api/job/${jobId}/status`);
+                    if (!resp.ok) {
+                        stop();
+                        return;
+                    }
+                    const job = await resp.json();
+                    updateIndicator(job);
+                    window.dispatchEvent(new CustomEvent('eraser:job-update', { detail: job }));
+                    if (job.status !== 'running') {
+                        stop();
+                    }
+                } catch (err) {
+                    console.error('job poll error:', err);
+                }
+            }
+
+            function start(id) {
+                jobId = id;
+                stop();
+                poll();
+                pollTimer = setInterval(poll, 1500);
+            }
+
+            function stop() {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+            }
+
+            window.eraserJobPoll = {
+                start,
+                stop,
+                get jobId() { return jobId; },
+            };
+
+            document.addEventListener('DOMContentLoaded', async () => {
+                try {
+                    const resp = await fetch('/api/job/active');
+                    const data = await resp.json();
+                    if (data.job && data.job.status === 'running') {
+                        start(data.job.id);
+                    }
+                } catch (err) {
+                    console.error('active job check failed:', err);
+                }
+            });
+        })();
     </script>
 </body>
 </html>

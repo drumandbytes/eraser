@@ -42,6 +42,11 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 
 	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
 
+	dailyLimit := defaultDailyLimit
+	if cfg := s.getConfig(); cfg != nil && cfg.Options.DailySendLimit > 0 {
+		dailyLimit = cfg.Options.DailySendLimit
+	}
+
 	data := map[string]interface{}{
 		"Title":        "Data Brokers",
 		"Brokers":      brokers,
@@ -54,6 +59,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 		"MissingEmail": missingEmail,
 		"Total":        len(s.brokerDB.Brokers),
 		"Filtered":     len(brokers),
+		"DailyLimit":   dailyLimit,
 	}
 	s.renderWithCSRF(w, r, "brokers.html", data)
 }

@@ -38,7 +38,7 @@
     </div>
 
     <!-- Daily limit info banner -->
-    {{if gt .Filtered 250}}
+    {{if gt .Filtered .DailyLimit}}
     <div class="alert alert-info mb-6">
         <div class="flex items-start gap-3">
             <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,7 +47,7 @@
             <div>
                 <p class="text-sm">
                     <strong>Sending {{.Filtered}} emails will take multiple days.</strong>
-                    To avoid email provider rate limits, Eraser sends up to 250 emails per day.
+                    To avoid email provider rate limits, Eraser sends up to {{.DailyLimit}} emails per day.
                     Remaining emails will automatically continue when you restart the app the next day.
                 </p>
             </div>
@@ -326,24 +326,53 @@
 </div>
 
 <script>
-let currentJobId = null;
-let pollInterval = null;
+// Job tracking is driven by the shared window.eraserJobPoll (layout.html) -
+// it already checks for an active job on load and polls every page, so
+// this file only needs to react to its "eraser:job-update" events (see
+// handleJobUpdate below) rather than running its own independent poll
+// loop. window.eraserJobPoll.jobId is the source of truth for "which job
+// is this page currently showing", not a locally-tracked variable.
+let lastListRefreshProcessed = -1;
+let lastListRefreshAt = 0;
+const LIST_REFRESH_MIN_INTERVAL_MS = 3000;
 
-// Check for active job on page load
-document.addEventListener('DOMContentLoaded', checkForActiveJob);
+window.addEventListener('eraser:job-update', (e) => handleJobUpdate(e.detail));
 
-async function checkForActiveJob() {
-    try {
-        const resp = await fetch('/api/job/active');
-        const data = await resp.json();
-        if (data.job && data.job.status === 'running') {
-            currentJobId = data.job.id;
-            showProgressUI();
-            updateProgressDisplay(data.job);
-            startPolling();
-        }
-    } catch (err) {
-        console.error('Error checking for active job:', err);
+function handleJobUpdate(job) {
+    // First update seen for a running job on this page load - the
+    // progress card doesn't exist yet, so build it (equivalent to what
+    // checkForActiveJob used to do directly).
+    if (job.status === 'running' && !document.getElementById('progress-bar')) {
+        showProgressUI();
+    }
+    if (!document.getElementById('progress-bar')) {
+        // Not a job this page is currently displaying (e.g. it finished
+        // before this page ever rendered a progress card for it).
+        return;
+    }
+
+    updateProgressDisplay(job);
+    maybeRefreshBrokerList(job);
+
+    if (job.status !== 'running') {
+        showCompletionMessage(job);
+        resetButtons();
+        // Final refresh to catch anything the throttled refresh above missed.
+        htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
+    }
+}
+
+// The broker table only reflects each broker's status as of its last
+// fetch - during an active send, rows sit at "Never sent" until this
+// refreshes them. Throttled to once per completed broker (not every
+// 1.5s poll tick) so a 700-broker table isn't re-rendered constantly.
+function maybeRefreshBrokerList(job) {
+    const processed = job.sent + job.failed;
+    const now = Date.now();
+    if (processed > lastListRefreshProcessed && now - lastListRefreshAt >= LIST_REFRESH_MIN_INTERVAL_MS) {
+        lastListRefreshProcessed = processed;
+        lastListRefreshAt = now;
+        htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
     }
 }
 
@@ -392,9 +421,8 @@ async function startSendAll(statusFilter) {
             return;
         }
 
-        currentJobId = data.job_id;
         showProgressUI();
-        startPolling();
+        window.eraserJobPoll.start(data.job_id);
 
     } catch (err) {
         showError('Network error: ' + err.message);
@@ -435,41 +463,6 @@ function updateProgressDisplay(job) {
     if (progressText) {
         const processed = job.sent + job.failed;
         progressText.textContent = `${processed} of ${job.total} complete (${job.sent} sent, ${job.failed} failed)`;
-    }
-}
-
-function startPolling() {
-    // Poll every 1.5 seconds
-    pollInterval = setInterval(pollJobStatus, 1500);
-    // Also poll immediately
-    pollJobStatus();
-}
-
-async function pollJobStatus() {
-    if (!currentJobId) return;
-
-    try {
-        const resp = await fetch(`/api/job/${currentJobId}/status`);
-        const job = await resp.json();
-
-        updateProgressDisplay(job);
-
-        if (job.status === 'completed' || job.status === 'cancelled') {
-            stopPolling();
-            showCompletionMessage(job);
-            resetButtons();
-            // Refresh broker list to show updated statuses
-            htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
-        }
-    } catch (err) {
-        console.error('Error polling job status:', err);
-    }
-}
-
-function stopPolling() {
-    if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
     }
 }
 
@@ -539,12 +532,13 @@ function showCompletionMessage(job) {
 }
 
 async function cancelJob() {
-    if (!currentJobId) return;
+    const jobId = window.eraserJobPoll.jobId;
+    if (!jobId) return;
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     try {
-        await fetch(`/api/job/${currentJobId}/cancel`, {
+        await fetch(`/api/job/${jobId}/cancel`, {
             method: 'POST',
             headers: {
                 'X-CSRF-Token': csrfToken
@@ -584,7 +578,8 @@ function resetButtons() {
     if (sendSpinner) sendSpinner.classList.add('hidden');
     if (retryText) retryText.textContent = 'Retry Failed';
     if (retrySpinner) retrySpinner.classList.add('hidden');
-    currentJobId = null;
+    lastListRefreshProcessed = -1;
+    lastListRefreshAt = 0;
 }
 </script>
 {{end}}

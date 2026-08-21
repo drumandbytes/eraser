@@ -212,7 +212,7 @@ brokers:
       website: https://checkr.com
       region: us
       category: background-check
-      notes: "privacy@checkr.com bounced; hello@checkr.com is the address Checkr's own privacy policy recommends. Updated 2026-08-20."
+      notes: 'privacy@checkr.com bounced; hello@checkr.com is the address Checkr''s own privacy policy recommends. Updated 2026-08-20.'
     - id: goodhire
       name: GoodHire
       email: privacy@goodhire.com
@@ -503,7 +503,7 @@ brokers:
       website: 'https://www.agrgroupinc.com/'
       region: us
       category: marketing
-      notes: "drieke@executiveenergy.com bounced - Gmail's own delivery failure confirmed the executiveenergy.com domain can't be found (not just a one-off DNS blip). All Global Resources operates as AGR Group under parent Executive Energy Management; agrgroupinc.com is live and privacy@agrgroupinc.com is their officially CA-registered contact per oag.ca.gov. Updated 2026-08-20."
+      notes: 'drieke@executiveenergy.com bounced - Gmail''s own delivery failure confirmed the executiveenergy.com domain can''t be found (not just a one-off DNS blip). All Global Resources operates as AGR Group under parent Executive Energy Management; agrgroupinc.com is live and privacy@agrgroupinc.com is their officially CA-registered contact per oag.ca.gov. Updated 2026-08-20.'
     - id: all-good-media
       name: All Good Media LLC
       email: marwan@attribits.com
@@ -977,7 +977,7 @@ brokers:
       region: us
       category: marketing
       opt_out_url: 'https://www.careerbuilder.com/privacy'
-      notes: "privacy@careerbuilder.com bounced; no working email found. CareerBuilder privacy requests now route through Monster's web form. Updated 2026-08-20."
+      notes: 'privacy@careerbuilder.com bounced; no working email found. CareerBuilder privacy requests now route through Monster''s web form. Updated 2026-08-20.'
     - id: car-market-solutions
       name: Car Market Solutions LLC
       email: ben@carmarketsolutions.com
@@ -1679,7 +1679,7 @@ brokers:
       region: us
       category: marketing
       opt_out_url: ""
-      notes: "Both electroniccommerceatoz.com and the on-file contact's actual domain ubiquitysystemsusa.com are dead/parked on GoDaddy (checked 2026-08-20) - appears defunct. Contact email was mismatched from this broker's own website to begin with."
+      notes: 'Both electroniccommerceatoz.com and the on-file contact''s actual domain ubiquitysystemsusa.com are dead/parked on GoDaddy (checked 2026-08-20) - appears defunct. Contact email was mismatched from this broker''s own website to begin with.'
     - id: electronic-voice-services
       name: ELECTRONIC VOICE SERVICES Inc
       email: richard@evs7.com
@@ -1826,7 +1826,7 @@ brokers:
       opt_out_url: https://www.famousbirthdays.com/contact
       region: us
       category: marketing
-      notes: "info@famousbirthdays.com replied that they can no longer evaluate requests sent to this address - use their contact form instead (reply received 2026-08-20)."
+      notes: 'info@famousbirthdays.com replied that they can no longer evaluate requests sent to this address - use their contact form instead (reply received 2026-08-20).'
     - id: fanspoko
       name: Fanspoko, LLC
       email: info@fanspoko.com
@@ -2454,7 +2454,7 @@ brokers:
       region: us
       category: marketing
       opt_out_url: 'https://www.zoominfo.com/trust-center/your-privacy'
-      notes: "InsideView was acquired by ZoomInfo; use ZoomInfo's privacy/opt-out process instead. Updated 2026-08-20."
+      notes: 'InsideView was acquired by ZoomInfo; use ZoomInfo''s privacy/opt-out process instead. Updated 2026-08-20.'
     - id: intalytics
       name: Intalytics, Inc.
       email: privacy@kalibrate.com
@@ -2643,7 +2643,7 @@ brokers:
       region: us
       category: marketing
       opt_out_url: 'https://www.kbmg.com/about-us/ccpa-privacy-policy/#optout'
-      notes: "john.petrillo@wundermandata.com bounced - Gmail's own delivery failure confirmed wundermandata.com can't be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20."
+      notes: 'john.petrillo@wundermandata.com bounced - Gmail''s own delivery failure confirmed wundermandata.com can''t be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20.'
     - id: kb-synergy
       name: KB Synergy Inc
       email: info@kbsynergy.com
@@ -3388,15 +3388,17 @@ brokers:
     - id: nexxa-group
       name: Nexxa Group, Inc.
       email: consumerchoice@nexxagroup.com
+      notes: 'Auto-reply points to this web form for privacy requests (2026-08-21).'
       website: https://www.nexxagroup.com/
-      opt_out_url: https://www.nexxagroup.com/corporate-overview/consumer-opt-out/
+      opt_out_url: https://privacyportal.onetrust.com/webform/c02129bc-bbab-43a6-a0b4-175489cb893e/156ac96a-9d7e-4fe6-bab8-a44df779202b
       region: us
       category: marketing
     - id: nexxen
       name: Nexxen Inc.
       email: privacyrights@nexxen.com
+      notes: 'Auto-reply points to this data subject rights request page (2026-08-21).'
       website: https://www.nexxen.com/
-      opt_out_url: https://yourdata.nexxen.com/
+      opt_out_url: https://nexxen.com/privacy-data-subject-rights-request/
       region: us
       category: marketing
     - id: nfocus-consulting
@@ -3620,6 +3622,7 @@ brokers:
     - id: people-data-labs
       name: People Data Labs, Inc.
       email: privacy@peopledatalabs.com
+      notes: 'Reply confirms this inbox is monitored and points to the existing opt_out_url as the self-service option (2026-08-21).'
       website: https://www.peopledatalabs.com/
       opt_out_url: https://privacy.peopledatalabs.com/policies?name=privacy-center#people-data-labs-privacy-center
       region: us
@@ -3693,9 +3696,10 @@ brokers:
       category: marketing
     - id: pmg-worldwide
       name: PMG Worldwide, LLC
-      email: dataprivacy@pmg.com
+      email: ""
+      notes: 'Reply says "we are unable to accept privacy rights requests via email" (2026-08-21) - use the webform instead.'
       website: https://www.pmg.com/
-      opt_out_url: https://www.pmg.com/do-not-sell-or-share-my-personal-information
+      opt_out_url: https://www.pmg.com/dsr-form
       region: us
       category: marketing
     - id: polity
@@ -3826,7 +3830,9 @@ brokers:
       category: marketing
     - id: purecars-technologies
       name: Purecars Technologies, LLC
-      email: privacy@purecars.com
+      email: ""
+      notes: 'Reply says this email "is no longer part of our data subject request process and it is not being monitored" (2026-08-21) - use the form, or call (877)860-0086.'
+      opt_out_url: https://docs.google.com/forms/d/e/1FAIpQLSdXAQsI4b0angLCONbwT4B4YSFiPyVMMLzizCuBSnPZmsTp_g/viewform
       website: https://www.purecars.com/
       region: us
       category: marketing
@@ -4056,8 +4062,9 @@ brokers:
     - id: revenuebase
       name: Revenuebase Inc
       email: privacy@revenuebase.ai
+      notes: 'Reply points to this Google Form for removal requests (2026-08-21).'
       website: https://www.revenuebase.ai/
-      opt_out_url: https://revenuebase.ai/do-not-sell-my-info/
+      opt_out_url: https://forms.gle/5Cab6bJcRtqVzAJS8
       region: us
       category: marketing
     - id: revoptimal
@@ -4241,8 +4248,9 @@ brokers:
     - id: seamless-contacts
       name: Seamless Contacts, Inc.
       email: privacy@seamlessleads.com
+      notes: 'Reply says the Privacy Request Center is the designated method and this address "does not respond to initial access, correction, deletion, or opt-out" requests (2026-08-21) - but does accept a follow-up email reply containing Full Name, Country/State, City, Email, and Phone if the portal can''t be used.'
       website: https://www.seamless.ai/
-      opt_out_url: https://login.seamless.ai/personalDataRequest
+      opt_out_url: http://preferences.seamless.ai
       region: us
       category: marketing
     - id: search-america
@@ -4587,8 +4595,9 @@ brokers:
     - id: swoopcom
       name: Swoop.Com, Inc.
       email: privacyrights@swoop.com
+      notes: 'Auto-reply points to their Privacy Choices form (2026-08-21); appeals go to privacyrights@swoop.com.'
       website: https://www.swoop.com/
-      opt_out_url: https://optout.swoop.com/
+      opt_out_url: https://swoop.com/your-privacy-choices/
       region: us
       category: marketing
     - id: taboola
@@ -4786,9 +4795,10 @@ brokers:
       category: marketing
     - id: tunnl
       name: Tunnl, LLC
-      email: info@tunnldata.com
+      email: ""
+      notes: 'Auto-reply directs privacy requests to their Privacy Center, not email (2026-08-21) - use the portal, or call 1-866-498-2784.'
       website: https://www.tunnldata.com/
-      opt_out_url: https://www.tunnldata.com/privacy-policy#Universal-Opt-Out-Mechanisms
+      opt_out_url: https://privacy.tunnldata.com/
       region: us
       category: marketing
     - id: twine-data
@@ -5170,8 +5180,9 @@ brokers:
     - id: zipstorm
       name: Zipstorm LLC
       email: privacy@seekout.com
+      notes: 'Auto-reply says their Privacy Choices Portal is "the most efficient way", and that a request made by email must include the requester''s LinkedIn URL or it "cannot take action" (2026-08-21) - this tool doesn''t collect that field.'
       website: https://www.seekout.com/
-      opt_out_url: https://www.seekout.com/privacy/choices
+      opt_out_url: http://www.seekout.com/privacy/choices
       region: us
       category: marketing
     - id: zs-associates
@@ -5188,7 +5199,7 @@ brokers:
       opt_out_url: https://www.192.com/misc/privacy-policy/
       region: eu
       category: financial-b2b
-      notes: "UK people/company data. GDPR erasure request."
+      notes: 'UK people/company data. GDPR erasure request.'
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de
@@ -5196,7 +5207,7 @@ brokers:
       opt_out_url: https://www.creditreform.de/datenschutz
       region: eu
       category: financial-b2b
-      notes: "German credit reporting agency. GDPR erasure request."
+      notes: 'German credit reporting agency. GDPR erasure request.'
     - id: regis24
       name: Regis24
       email: datenschutz@regis24.de
@@ -5204,7 +5215,7 @@ brokers:
       opt_out_url: https://www.regis24.de/datenschutz
       region: eu
       category: financial-b2b
-      notes: "German credit reporting agency. GDPR erasure request."
+      notes: 'German credit reporting agency. GDPR erasure request.'
     - id: seawave-media
       name: Seawave Media
       email: ""
@@ -5220,7 +5231,7 @@ brokers:
       opt_out_url: ""
       region: eu
       category: financial-b2b
-      notes: "Belgium B2B data provider. GDPR erasure request."
+      notes: 'Belgium B2B data provider. GDPR erasure request.'
     - id: athumi
       name: Athumi
       email: privacy@athumi.eu
@@ -5228,7 +5239,7 @@ brokers:
       opt_out_url: https://athumi.eu/en
       region: eu
       category: data-intermediary
-      notes: "Belgian data intermediary (Data Governance Act registered). GDPR erasure request."
+      notes: 'Belgian data intermediary (Data Governance Act registered). GDPR erasure request.'
     - id: adikteev
       name: Adikteev
       email: dpo@adikteev.com

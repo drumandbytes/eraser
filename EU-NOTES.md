@@ -11,7 +11,6 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 - `regis24` (Regis24, Germany)
 - `seawave-media` (Seawave Media, UK)
 - `datajoy-eu` (Datajoy, Belgium)
-- `athumi` (Athumi, Belgium — Data Governance Act registered intermediary)
 - `adikteev` (Adikteev, ad-tech)
 - `scope3` (Scope3, ad-tech)
 - `smartclip` (Smartclip, ad-tech)

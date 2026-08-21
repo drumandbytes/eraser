@@ -5246,14 +5246,6 @@ brokers:
       region: eu
       category: financial-b2b
       notes: 'Replied "We don''t have any data on you. We''re not even a data broker" (2026-08-21) - worth revisiting whether this entry belongs in the database at all.'
-    - id: athumi
-      name: Athumi
-      email: privacy@athumi.eu
-      website: https://athumi.eu/en
-      opt_out_url: https://athumi.eu/en
-      region: eu
-      category: data-intermediary
-      notes: 'Reply came from privacy.datanutsbedrijf@vlaanderen.be (2026-08-21) - Athumi is the Flemish government-linked data-utility/intermediary, so this is its actual privacy contact, correctly routed. They said they generally don''t process non-Belgian residents'' data and asked what specifically made us think they hold data on this person - as a B2B data-utility platform rather than a consumer data broker, may need a reply clarifying the context, or this entry may not be a good fit for individual GDPR erasure requests at all.'
     - id: adikteev
       name: Adikteev
       email: dpo@adikteev.com

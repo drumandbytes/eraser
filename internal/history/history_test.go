@@ -16,7 +16,7 @@ func newTestStore(t *testing.T) *Store {
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
 	}
-	t.Cleanup(func() { s.Close() })
+	t.Cleanup(func() { _ = s.Close() })
 	return s
 }
 
@@ -180,7 +180,7 @@ func TestAddBrokerResponse_EmailBodyColumn(t *testing.T) {
 		t.Fatalf("expected the stored email_body to round-trip, got %+v", all)
 	}
 
-	if err := s.UpdateBrokerResponseBody(resp.ID, "updated body"); err != nil {
+	if err := s.UpdateBrokerResponseBody(resp.ID, resp.ProfileID, "updated body"); err != nil {
 		t.Fatalf("UpdateBrokerResponseBody: %v", err)
 	}
 }
@@ -305,7 +305,7 @@ func TestMigrationBackfillsExistingRowsToDefaultProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insert legacy row: %v", err)
 	}
-	db.Close()
+	_ = db.Close()
 
 	// NewStore runs migrate() on open, which should ALTER TABLE ADD COLUMN
 	// profile_id with the DefaultProfileID default, backfilling this row.
@@ -313,7 +313,7 @@ func TestMigrationBackfillsExistingRowsToDefaultProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewStore on legacy db: %v", err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	records, err := s.GetRecentRequests(DefaultProfileID, 10)
 	if err != nil {
@@ -354,5 +354,223 @@ func TestResolveProfileForBroker(t *testing.T) {
 	}
 	if got != DefaultProfileID {
 		t.Errorf("expected never-sent broker to fall back to %q, got %q", DefaultProfileID, got)
+	}
+}
+
+// ==================== Profile-Scoped Task/Response Isolation ====================
+//
+// Regression coverage for a fix that added "AND profile_id = ?" to
+// GetPendingTaskByID, CompletePendingTask, MarkTaskOpened,
+// UpdateBrokerResponseClassification and UpdateBrokerResponseBody, so a
+// caller in one profile's session can no longer read or mutate a task/
+// response that belongs to another profile just by guessing/reusing its
+// numeric ID. Each test below confirms both halves: the cross-profile call
+// is a no-op (getter returns nil,nil; updater returns no error but leaves
+// the row untouched), and the same call with the correct profile still
+// works as before.
+
+func addPendingTaskForProfile(t *testing.T, s *Store, profileID, brokerID string) *PendingTask {
+	t.Helper()
+	task := &PendingTask{
+		ProfileID:  profileID,
+		BrokerID:   brokerID,
+		BrokerName: brokerID,
+		TaskType:   TaskCaptcha,
+		FormURL:    "https://" + brokerID + ".example.com/form",
+		Notes:      "initial notes",
+	}
+	if err := s.AddPendingTask(task); err != nil {
+		t.Fatalf("AddPendingTask: %v", err)
+	}
+	return task
+}
+
+func TestProfileIsolation_GetPendingTaskByID(t *testing.T) {
+	s := newTestStore(t)
+	task := addPendingTaskForProfile(t, s, "profile-a", "broker-a")
+
+	// Wrong profile: treated as not found, same as a nonexistent ID.
+	got, err := s.GetPendingTaskByID(task.ID, "profile-b")
+	if err != nil {
+		t.Fatalf("GetPendingTaskByID(profile-b): %v", err)
+	}
+	if got != nil {
+		t.Errorf("expected nil for a task belonging to another profile, got %+v", got)
+	}
+
+	// Correct profile: found, with fields intact.
+	got, err = s.GetPendingTaskByID(task.ID, "profile-a")
+	if err != nil {
+		t.Fatalf("GetPendingTaskByID(profile-a): %v", err)
+	}
+	if got == nil {
+		t.Fatal("expected task to be found under its own profile")
+	}
+	if got.BrokerID != "broker-a" || got.Status != "pending" {
+		t.Errorf("unexpected task contents: %+v", got)
+	}
+}
+
+func TestProfileIsolation_CompletePendingTask(t *testing.T) {
+	s := newTestStore(t)
+	task := addPendingTaskForProfile(t, s, "profile-a", "broker-a")
+
+	// Wrong profile: CompletePendingTask returns no error (SQL UPDATE
+	// matching zero rows isn't an error condition in database/sql - Exec
+	// only errors on things like a broken connection or bad SQL, not on
+	// "the WHERE clause matched nothing"), but the row must be unchanged.
+	if err := s.CompletePendingTask(task.ID, "profile-b", "completed"); err != nil {
+		t.Fatalf("CompletePendingTask(profile-b) returned an error for a cross-profile no-op: %v", err)
+	}
+	got, err := s.GetPendingTaskByID(task.ID, "profile-a")
+	if err != nil {
+		t.Fatalf("GetPendingTaskByID: %v", err)
+	}
+	if got == nil {
+		t.Fatal("expected task to still exist under profile-a")
+	}
+	if got.Status != "pending" {
+		t.Errorf("cross-profile CompletePendingTask must not mutate the row - expected status still 'pending', got %q", got.Status)
+	}
+	if got.CompletedAt.Valid {
+		t.Errorf("cross-profile CompletePendingTask must not set completed_at, got %v", got.CompletedAt)
+	}
+
+	// Correct profile: the update takes effect.
+	if err := s.CompletePendingTask(task.ID, "profile-a", "completed"); err != nil {
+		t.Fatalf("CompletePendingTask(profile-a): %v", err)
+	}
+	got, err = s.GetPendingTaskByID(task.ID, "profile-a")
+	if err != nil {
+		t.Fatalf("GetPendingTaskByID: %v", err)
+	}
+	if got == nil || got.Status != "completed" {
+		t.Errorf("expected status 'completed' after same-profile CompletePendingTask, got %+v", got)
+	}
+	if !got.CompletedAt.Valid {
+		t.Errorf("expected completed_at to be set after same-profile CompletePendingTask")
+	}
+}
+
+func TestProfileIsolation_MarkTaskOpened(t *testing.T) {
+	s := newTestStore(t)
+	task := addPendingTaskForProfile(t, s, "profile-a", "broker-a")
+
+	// Wrong profile: no error, but opened_at must stay unset.
+	if err := s.MarkTaskOpened(task.ID, "profile-b"); err != nil {
+		t.Fatalf("MarkTaskOpened(profile-b) returned an error for a cross-profile no-op: %v", err)
+	}
+	got, err := s.GetPendingTaskByID(task.ID, "profile-a")
+	if err != nil {
+		t.Fatalf("GetPendingTaskByID: %v", err)
+	}
+	if got == nil {
+		t.Fatal("expected task to still exist under profile-a")
+	}
+	if got.OpenedAt.Valid {
+		t.Errorf("cross-profile MarkTaskOpened must not set opened_at, got %v", got.OpenedAt)
+	}
+
+	// Correct profile: opened_at gets set.
+	if err := s.MarkTaskOpened(task.ID, "profile-a"); err != nil {
+		t.Fatalf("MarkTaskOpened(profile-a): %v", err)
+	}
+	got, err = s.GetPendingTaskByID(task.ID, "profile-a")
+	if err != nil {
+		t.Fatalf("GetPendingTaskByID: %v", err)
+	}
+	if got == nil || !got.OpenedAt.Valid {
+		t.Errorf("expected opened_at to be set after same-profile MarkTaskOpened, got %+v", got)
+	}
+}
+
+func addBrokerResponseForProfile(t *testing.T, s *Store, profileID, brokerID string) *BrokerResponse {
+	t.Helper()
+	resp := &BrokerResponse{
+		ProfileID:    profileID,
+		BrokerID:     brokerID,
+		BrokerName:   brokerID,
+		ResponseType: "pending",
+		EmailFrom:    "privacy@" + brokerID + ".example.com",
+		EmailSubject: "Re: Personal Data Removal Request",
+		EmailBody:    "original body",
+		Confidence:   0.5,
+	}
+	if err := s.AddBrokerResponse(resp); err != nil {
+		t.Fatalf("AddBrokerResponse: %v", err)
+	}
+	return resp
+}
+
+// findBrokerResponseByID is a small test helper - there's no production
+// GetBrokerResponseByID, so this scans GetAllBrokerResponses (which spans
+// every profile, matching what a full-inbox re-scan uses) for the row under
+// test.
+func findBrokerResponseByID(t *testing.T, s *Store, id int64) *BrokerResponse {
+	t.Helper()
+	all, err := s.GetAllBrokerResponses()
+	if err != nil {
+		t.Fatalf("GetAllBrokerResponses: %v", err)
+	}
+	for i := range all {
+		if all[i].ID == id {
+			return &all[i]
+		}
+	}
+	return nil
+}
+
+func TestProfileIsolation_UpdateBrokerResponseClassification(t *testing.T) {
+	s := newTestStore(t)
+	resp := addBrokerResponseForProfile(t, s, "profile-a", "broker-a")
+
+	// Wrong profile: no error, but the classification fields must stay as inserted.
+	if err := s.UpdateBrokerResponseClassification(resp.ID, "profile-b", "success", "https://form.example.com", "https://confirm.example.com", 0.99, true); err != nil {
+		t.Fatalf("UpdateBrokerResponseClassification(profile-b) returned an error for a cross-profile no-op: %v", err)
+	}
+	got := findBrokerResponseByID(t, s, resp.ID)
+	if got == nil {
+		t.Fatal("expected response to still exist")
+	}
+	if got.ResponseType != "pending" || got.FormURL != "" || got.NeedsReview {
+		t.Errorf("cross-profile UpdateBrokerResponseClassification must not mutate the row, got %+v", got)
+	}
+
+	// Correct profile: the update takes effect.
+	if err := s.UpdateBrokerResponseClassification(resp.ID, "profile-a", "success", "https://form.example.com", "https://confirm.example.com", 0.99, true); err != nil {
+		t.Fatalf("UpdateBrokerResponseClassification(profile-a): %v", err)
+	}
+	got = findBrokerResponseByID(t, s, resp.ID)
+	if got == nil {
+		t.Fatal("expected response to still exist")
+	}
+	if got.ResponseType != "success" || got.FormURL != "https://form.example.com" || got.ConfirmURL != "https://confirm.example.com" || !got.NeedsReview {
+		t.Errorf("expected classification fields updated after same-profile call, got %+v", got)
+	}
+}
+
+func TestProfileIsolation_UpdateBrokerResponseBody(t *testing.T) {
+	s := newTestStore(t)
+	resp := addBrokerResponseForProfile(t, s, "profile-a", "broker-a")
+
+	// Wrong profile: no error, but the body must stay as inserted.
+	if err := s.UpdateBrokerResponseBody(resp.ID, "profile-b", "attacker-controlled body"); err != nil {
+		t.Fatalf("UpdateBrokerResponseBody(profile-b) returned an error for a cross-profile no-op: %v", err)
+	}
+	got := findBrokerResponseByID(t, s, resp.ID)
+	if got == nil {
+		t.Fatal("expected response to still exist")
+	}
+	if got.EmailBody != "original body" {
+		t.Errorf("cross-profile UpdateBrokerResponseBody must not mutate the row, got body %q", got.EmailBody)
+	}
+
+	// Correct profile: the update takes effect.
+	if err := s.UpdateBrokerResponseBody(resp.ID, "profile-a", "updated body"); err != nil {
+		t.Fatalf("UpdateBrokerResponseBody(profile-a): %v", err)
+	}
+	got = findBrokerResponseByID(t, s, resp.ID)
+	if got == nil || got.EmailBody != "updated body" {
+		t.Errorf("expected body updated after same-profile call, got %+v", got)
 	}
 }

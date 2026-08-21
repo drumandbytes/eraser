@@ -4,7 +4,7 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 
 ## What changed
 
-`data/brokers.yaml` originally shipped 764 brokers, 751 of them US-region. That's kept as-is (US-owned platforms, ad-tech, and breach-sourced people-search sites do end up holding EU residents' data too), plus EU/UK entries with direct opt-out emails have been added as they were found, bringing the total to 777:
+`data/brokers.yaml` originally shipped 764 brokers, 751 of them US-region. That's kept as-is (US-owned platforms, ad-tech, and breach-sourced people-search sites do end up holding EU residents' data too), plus EU/UK entries with direct opt-out emails have been added as they were found. The exact count moves around over time - EU/UK additions push it up, campaign-response reviews that find duplicate/dead entries push it back down (see auditing.md) - which is why the docs quote "700+" rather than a specific number. Run `grep -c '^    - id:' data/brokers.yaml` for the current true count:
 
 - `192-com` (192.com, UK)
 - `creditreform-de` (Creditreform, Germany)

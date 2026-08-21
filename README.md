@@ -1,12 +1,12 @@
 # Eraser
 
-Take back your privacy. Eraser sends data removal requests to 777+ data brokers on your behalf—for free.
+Take back your privacy. Eraser sends data removal requests to 700+ data brokers on your behalf—for free.
 
 You know those sites like Spokeo, BeenVerified, and Whitepages that have your home address, phone number, and family members' names? They're called data brokers, and there are hundreds of them. Services like Incogni and DeleteMe charge $100+/year to send opt-out requests to these companies. Eraser does the same thing, but it's open source and completely free.
 
 ### What to Expect
 
-**The good:** Eraser automatically sends removal request emails to 777+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
+**The good:** Eraser automatically sends removal request emails to 700+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
 
 **The reality:** Some brokers require additional steps. They might send you a confirmation link to click, ask you to fill out a form on their website, or request identity verification. Eraser tracks these responses and shows you exactly what needs manual attention.
 
@@ -58,7 +58,7 @@ The wizard walks you through entering your personal information (the data broker
 **Step 4: Send Removal Requests**
 
 From the dashboard, you can:
-- Browse the list of 777+ data brokers
+- Browse the list of 700+ data brokers
 - Send requests one at a time or in bulk
 - Track which requests have been sent and their status
 
@@ -119,7 +119,7 @@ go build -o eraser ./cmd/eraser
 | `eraser send --dry-run` | Preview without sending |
 | `eraser send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
 | `eraser send --resend` | Force re-send even to brokers within the cooldown window |
-| `eraser list-brokers` | Show all 777+ brokers |
+| `eraser list-brokers` | Show all 700+ brokers |
 | `eraser status` | View history and stats |
 | `eraser status --limit 50` | Show more history |
 | `eraser add-broker` | Add a custom broker interactively |
@@ -241,7 +241,7 @@ Yes, with caveats:
 - **It's not instant.** Brokers have up to 30-45 days to process requests (varies by law). Some are faster.
 - **You'll need to repeat this.** Data brokers buy and sell data continuously. Running Eraser every 60-90 days keeps you off their lists.
 
-**The Pipeline view** (`eraser pipeline` or the web UI) shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 777+ emails and tracking responses for you.
+**The Pipeline view** (`eraser pipeline` or the web UI) shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 700+ emails and tracking responses for you.
 
 ---
 
@@ -249,7 +249,7 @@ Yes, with caveats:
 
 | Service | Price | Brokers | Open Source |
 |---------|-------|---------|--------------|
-| **Eraser** | Free | 777+ | Yes |
+| **Eraser** | Free | 700+ | Yes |
 | Incogni | $77/year | 180+ | No |
 | DeleteMe | $129/year | 750+ | No |
 | Privacy Duck | $500+/year | 500+ | No |
@@ -284,7 +284,7 @@ eraser/
 │   │   └── templates/            # gdpr.tmpl, ccpa.tmpl, generic.tmpl
 │   └── web/                     # Web UI - server.go has core setup, handlers_*.go files
 │                                 # hold the actual page/API handlers by resource
-├── data/brokers.yaml           # 777+ broker database
+├── data/brokers.yaml           # 700+ broker database
 ├── config.example.yaml         # Example configuration
 └── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```

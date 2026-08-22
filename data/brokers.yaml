@@ -3870,11 +3870,12 @@ brokers:
       category: marketing
     - id: quadrant-global-pte
       name: Quadrant Global Pte. Ltd.
-      email: privacy@quadrant.io
+      email: ""
+      notes: 'Reply confirms they don''t collect PII (name/DOB/phone/email/address) - only a Mobile Advertising ID (MAID) or Advertising ID (AAID) can be used to search their records (2026-08-22).'
       website: https://www.quadrant.io/
       opt_out_url: https://www.quadrant.io/opt-out
       region: us
-      category: marketing
+      category: device-id-only
     - id: qualfon
       name: Qualfon
       email: consumerprivacy@qualfon.com
@@ -4176,6 +4177,7 @@ brokers:
     - id: saferent-solutions
       name: Saferent Solutions, LLC
       email: licensing@saferentsolutions.com
+      notes: 'SafeRent is a consumer reporting agency; records are subject to the US Fair Credit Reporting Act and explicitly exempt from deletion requests (2026-08-22). They offer only: FTC prescreen opt-out (optoutprescreen.com or 1-888-567-8688), a Consumer File Disclosure, or an SRS File Freeze - none of which delete data, so this is a dead end for this tool''s erasure-request approach.'
       website: https://www.saferentsolutions.com/
       region: us
       category: marketing

@@ -1,0 +1,43 @@
+{{define "content"}}
+<div class="min-h-[80vh] flex items-center justify-center py-8">
+    <div class="max-w-lg w-full fade-in-up">
+        <div class="card p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="font-display text-2xl font-bold text-primary mb-2">Edit Profile</h1>
+                <p class="text-secondary">Update this profile's details. Its ID (<code>{{.ProfileID}}</code>) can't be changed here, since it's how existing send history is tracked.</p>
+            </div>
+
+            {{if index .Errors "_"}}
+            <div class="alert alert-error mb-6">
+                <p class="text-sm">{{index .Errors "_"}}</p>
+            </div>
+            {{end}}
+
+            <form method="POST" action="/settings/profiles/{{.ProfileID}}/edit" class="space-y-6">
+                {{.CSRFField}}
+
+                {{template "profile-fields" .}}
+
+                <!-- Navigation -->
+                <div class="flex items-center justify-between pt-6">
+                    <a href="/settings" class="btn btn-ghost">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{template "layout" .}}

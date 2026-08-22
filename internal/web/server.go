@@ -17,13 +17,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/csrf"
 	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/eraser-privacy/eraser/internal/history"
 	emaTemplate "github.com/eraser-privacy/eraser/internal/template"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
 )
 
 //go:embed static/*
@@ -122,9 +122,16 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 		return nil, fmt.Errorf("failed to generate CSRF key: %w", err)
 	}
 
-	// Get data directory for job persistence
-	home, _ := os.UserHomeDir()
-	dataDir := filepath.Join(home, ".eraser")
+	// Job persistence lives alongside the config file, so an alternate
+	// --config also gets its own isolated pending_job.json instead of
+	// always sharing ~/.eraser (matches history.DBPathFor's same reasoning
+	// for history.db). configPath is only ever "" from tests constructing
+	// a Server directly - preserve the old default there.
+	dataDir := filepath.Dir(configPath)
+	if configPath == "" {
+		home, _ := os.UserHomeDir()
+		dataDir = filepath.Join(home, ".eraser")
+	}
 
 	s := &Server{
 		configPath:     configPath,
@@ -351,6 +358,9 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Post("/settings/inbox", s.handleSettingsInbox)
 	r.Get("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Post("/settings/profiles/new", s.handleSettingsProfileNew)
+	r.Get("/settings/profiles/{profileID}/edit", s.handleSettingsProfileEdit)
+	r.Post("/settings/profiles/{profileID}/edit", s.handleSettingsProfileEdit)
+	r.Post("/settings/profiles/{profileID}/delete", s.handleSettingsProfileDelete)
 	r.Get("/pipeline", s.handlePipeline)
 	r.Get("/tasks", s.handleTasks)
 	r.Get("/tasks/{taskID}", s.handleTaskDetail)

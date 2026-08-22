@@ -7,66 +7,6 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Profile Section -->
-        <div class="card p-6">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
-                    <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                    </svg>
-                </div>
-                <h2 class="font-display text-lg font-semibold text-primary">Profile Information</h2>
-            </div>
-
-            {{if .Config}}
-            <div class="space-y-4">
-                <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
-                    <div>
-                        <p class="text-sm text-muted">Name</p>
-                        <p class="text-primary font-medium">{{.Config.Profile.FirstName}} {{.Config.Profile.LastName}}</p>
-                    </div>
-                </div>
-                <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
-                    <div>
-                        <p class="text-sm text-muted">Email</p>
-                        <p class="text-primary">{{.Config.Profile.Email}}</p>
-                    </div>
-                </div>
-                {{if .Config.Profile.Address}}
-                <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
-                    <div>
-                        <p class="text-sm text-muted">Address</p>
-                        <p class="text-secondary text-sm">
-                            {{.Config.Profile.Address}}<br>
-                            {{.Config.Profile.City}}, {{.Config.Profile.State}} {{.Config.Profile.ZipCode}}<br>
-                            {{.Config.Profile.Country}}
-                        </p>
-                    </div>
-                </div>
-                {{end}}
-                {{if .Config.Profile.Phone}}
-                <div class="flex items-start justify-between py-3">
-                    <div>
-                        <p class="text-sm text-muted">Phone</p>
-                        <p class="text-secondary">{{.Config.Profile.Phone}}</p>
-                    </div>
-                </div>
-                {{end}}
-            </div>
-            {{else}}
-            <p class="text-muted">No profile configured.</p>
-            {{end}}
-
-            <div class="mt-6">
-                <a href="/setup/profile" class="btn btn-secondary">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                    </svg>
-                    Edit Profile
-                </a>
-            </div>
-        </div>
-
         <!-- Profiles Section -->
         <div class="card p-6">
             <div class="flex items-center gap-3 mb-6">
@@ -78,20 +18,26 @@
                 <h2 class="font-display text-lg font-semibold text-primary">Profiles</h2>
             </div>
 
-            {{if gt (len .Profiles) 1}}
             <div class="space-y-3 mb-6">
                 {{range .Profiles}}
-                <div class="flex items-center justify-between py-2 border-b border-[var(--border-subtle)]">
+                <div class="flex items-center justify-between py-3 border-b border-[var(--border-subtle)]">
                     <div>
-                        <p class="text-primary font-medium">{{.FirstName}} {{.LastName}}</p>
+                        <p class="text-primary font-medium">{{.FirstName}} {{if .MiddleName}}{{.MiddleName}} {{end}}{{.LastName}}</p>
                         <p class="text-sm text-muted">{{.Email}} &middot; <code>{{.ID}}</code></p>
                     </div>
-                    {{if eq .ID $.ActiveProfile.ID}}<span class="badge badge-success">Active</span>{{end}}
+                    <div class="flex items-center gap-2">
+                        {{if eq .ID $.ActiveProfile.ID}}<span class="badge badge-success">Active</span>{{end}}
+                        <a href="/settings/profiles/{{.ID}}/edit" class="btn btn-ghost text-sm py-1 px-3">Edit</a>
+                        {{if gt (len $.Profiles) 1}}
+                        <button type="button" onclick="deleteProfile('{{.ID}}')" class="btn btn-ghost text-sm py-1 px-3 text-error">Delete</button>
+                        {{end}}
+                    </div>
                 </div>
                 {{end}}
             </div>
-            {{else}}
-            <p class="text-secondary mb-6">Only one profile configured. Add a second one to send removal requests for another identity (e.g. a spouse or family member) - email/inbox settings stay shared between them.</p>
+
+            {{if le (len .Profiles) 1}}
+            <p class="text-secondary mb-6 text-sm">Add a second profile to send removal requests for another identity (e.g. a spouse or family member) - email/inbox settings stay shared between them.</p>
             {{end}}
 
             <a href="/settings/profiles/new" class="btn btn-secondary">
@@ -367,6 +313,27 @@ async function clearAllHistory() {
 
     btn.disabled = false;
     btn.innerHTML = originalHTML;
+}
+
+async function deleteProfile(id) {
+    if (!confirm(`Remove profile "${id}"? This does not delete its existing send history - just the profile itself.`)) return;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    try {
+        const resp = await fetch('/settings/profiles/' + encodeURIComponent(id) + '/delete', {
+            method: 'POST',
+            headers: { 'X-CSRF-Token': csrfToken }
+        });
+        if (resp.ok) {
+            window.location.href = '/settings';
+        } else {
+            const text = await resp.text();
+            alert('Failed to delete profile: ' + text);
+        }
+    } catch (err) {
+        alert('Network error: ' + err.message);
+    }
 }
 </script>
 {{end}}

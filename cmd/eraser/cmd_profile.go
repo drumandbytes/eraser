@@ -22,6 +22,8 @@ sharing one config file, broker database, and inbox.`,
 
 	cmd.AddCommand(profileListCmd())
 	cmd.AddCommand(profileAddCmd())
+	cmd.AddCommand(profileEditCmd())
+	cmd.AddCommand(profileRemoveCmd())
 
 	return cmd
 }
@@ -44,6 +46,37 @@ func profileAddCmd() *cobra.Command {
 removal requests, check status, etc. for a second identity via --profile <id>.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runProfileAdd()
+		},
+	}
+}
+
+func profileEditCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "edit <id>",
+		Short: "Edit an existing profile's details",
+		Long: `Interactively update a profile's name, email, and address fields. The
+profile's ID itself can't be changed here - it's stored verbatim in
+history.db, so changing it would orphan that profile's existing send
+history.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runProfileEdit(args[0])
+		},
+	}
+}
+
+func profileRemoveCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "remove <id>",
+		Aliases: []string{"rm", "delete"},
+		Short:   "Remove a profile",
+		Long: `Removes a profile from the config file. This does not delete its existing
+send history - removal_requests rows stay in history.db tagged with the
+now-orphaned profile ID, and become visible again if a profile with the
+same ID is re-added. You can't remove the only configured profile.`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runProfileRemove(args[0])
 		},
 	}
 }
@@ -126,6 +159,106 @@ func runProfileAdd() error {
 	fmt.Println()
 	fmt.Printf("✅ Added profile %q\n", id)
 	fmt.Printf("Use it with: eraser send --profile %s\n", id)
+
+	return nil
+}
+
+func runProfileEdit(id string) error {
+	reader := bufio.NewReader(os.Stdin)
+	configPath := resolveConfigPath()
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	existing, err := cfg.GetProfile(id)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✏️  Edit Profile %q\n", existing.ID)
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println("Press Enter on any question to keep its current value, shown in [brackets].")
+	fmt.Println()
+
+	updated := existing
+	updated.FirstName = promptWithDefault(reader, "First name", existing.FirstName)
+	updated.MiddleName = promptWithDefault(reader, "Middle name (optional)", existing.MiddleName)
+	updated.LastName = promptWithDefault(reader, "Last name", existing.LastName)
+	updated.Email = promptWithDefault(reader, "Email address", existing.Email)
+	updated.Address = promptWithDefault(reader, "Street address (optional)", existing.Address)
+	updated.City = promptWithDefault(reader, "City (optional)", existing.City)
+	updated.State = promptWithDefault(reader, "State/Province (optional)", existing.State)
+	updated.ZipCode = promptWithDefault(reader, "ZIP/Postal code (optional)", existing.ZipCode)
+	updated.Country = promptWithDefault(reader, "Country (optional)", existing.Country)
+	updated.Phone = promptWithDefault(reader, "Phone number (optional)", existing.Phone)
+
+	if len(cfg.Profiles) > 0 {
+		for i, p := range cfg.Profiles {
+			if strings.EqualFold(p.ID, existing.ID) {
+				cfg.Profiles[i] = updated
+				break
+			}
+		}
+	} else {
+		// Legacy single-profile mode (no profiles: list yet) - write back to
+		// the top-level profile: block rather than promoting to a profiles:
+		// list just because it was edited.
+		cfg.Profile = updated.Profile
+	}
+
+	if err := config.Save(configPath, cfg); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	fmt.Println()
+	fmt.Printf("✅ Updated profile %q\n", existing.ID)
+
+	return nil
+}
+
+func runProfileRemove(id string) error {
+	reader := bufio.NewReader(os.Stdin)
+	configPath := resolveConfigPath()
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	profiles := cfg.GetProfiles()
+	if len(profiles) <= 1 {
+		return fmt.Errorf("can't remove the only configured profile")
+	}
+
+	existing, err := cfg.GetProfile(id)
+	if err != nil {
+		return err
+	}
+
+	answer := prompt(reader, fmt.Sprintf(
+		"Remove profile %q (%s <%s>)? This does not delete its existing send history - just the profile itself. Type 'yes' to confirm: ",
+		existing.ID, existing.FullName(), existing.Email,
+	))
+	if strings.ToLower(strings.TrimSpace(answer)) != "yes" {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	remaining := make([]config.NamedProfile, 0, len(profiles)-1)
+	for _, p := range profiles {
+		if !strings.EqualFold(p.ID, existing.ID) {
+			remaining = append(remaining, p)
+		}
+	}
+	cfg.Profiles = remaining
+
+	if err := config.Save(configPath, cfg); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	fmt.Printf("✅ Removed profile %q\n", existing.ID)
 
 	return nil
 }

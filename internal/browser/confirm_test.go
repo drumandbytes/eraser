@@ -100,6 +100,79 @@ func TestClickConfirmationLink_AllowsRedirectToAllowedDomain(t *testing.T) {
 	}
 }
 
+// isSuccessResponse is pure text/status matching - the redirect tests above
+// only exercise its "success" branch via a real HTTP round-trip; these check
+// the failure-pattern and ambiguous-response branches directly, without
+// needing a server.
+func TestIsSuccessResponse(t *testing.T) {
+	h := NewConfirmationHandler(nil)
+
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		want       bool
+	}{
+		{"200 with success phrase", 200, "Your request has been successfully processed", true},
+		{"200 with 'confirmed'", 200, "Your email is confirmed", true},
+		{"200 with 'unsubscribed'", 200, "You have been unsubscribed", true},
+		{"200 with no recognizable phrase", 200, "<html><body>OK</body></html>", true},
+		{"200 but body says link expired", 200, "Sorry, this link expired yesterday", false},
+		// Note: the failurePatterns entry "already confirmed" is actually
+		// unreachable - any body containing that phrase also contains the
+		// success pattern "confirmed", which is checked first and wins (see
+		// "success phrase wins when both present" below). This case
+		// documents the real, current behavior rather than the seemingly
+		// intended one.
+		{"200 but body says already confirmed (shadowed by 'confirmed' success match)", 200, "This request was already confirmed", true},
+		{"200 but body says link invalid", 200, "Sorry, link invalid or already used", false},
+		{"200 but body says failed", 200, "Something failed while processing", false},
+		{"404 status", 404, "Page not found", false},
+		{"500 status", 500, "Internal Server Error", false},
+		{"300 redirect status alone", 300, "Moved", false},
+		{"199 below success range", 199, "success", false},
+		// Success phrase present but so is a failure phrase - failure
+		// patterns are checked after success patterns and both loops run
+		// independently, so whichever phrase appears wins by loop order:
+		// success is checked first and returns immediately.
+		{"success phrase wins when both present", 200, "Successfully received, but could not verify identity", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := h.isSuccessResponse(tt.statusCode, tt.body); got != tt.want {
+				t.Errorf("isSuccessResponse(%d, %q) = %v, want %v", tt.statusCode, tt.body, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestExtractConfirmationStatus(t *testing.T) {
+	h := NewConfirmationHandler(nil)
+
+	tests := []struct {
+		name   string
+		result *ConfirmationResult
+		want   string
+	}{
+		{"success short-circuits regardless of body", &ConfirmationResult{Success: true, ResponseBody: "this link expired"}, "Confirmation successful"},
+		{"expired", &ConfirmationResult{Success: false, ResponseBody: "Sorry, this link has expired"}, "Link expired"},
+		{"already processed", &ConfirmationResult{Success: false, ResponseBody: "This was already confirmed"}, "Already confirmed/processed"},
+		{"invalid link", &ConfirmationResult{Success: false, ResponseBody: "The token is invalid"}, "Invalid link"},
+		{"404 status with no matching phrase", &ConfirmationResult{Success: false, StatusCode: 404, ResponseBody: "not found"}, "Link not found (404)"},
+		{"5xx status with no matching phrase", &ConfirmationResult{Success: false, StatusCode: 502, ResponseBody: "bad gateway"}, "Server error"},
+		{"nothing matches", &ConfirmationResult{Success: false, StatusCode: 200, ResponseBody: "hello world"}, "Unknown status"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := h.ExtractConfirmationStatus(tt.result); got != tt.want {
+				t.Errorf("ExtractConfirmationStatus(%+v) = %q, want %q", tt.result, got, tt.want)
+			}
+		})
+	}
+}
+
 // hostOnly returns the host:port-stripped-of-port... actually just the bare
 // host (matchesAllowedDomain strips the port itself, but NewConfirmationHandler
 // stores domains verbatim, so passing host:port would never match an

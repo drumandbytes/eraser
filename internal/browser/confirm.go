@@ -21,7 +21,7 @@ type ConfirmationResult struct {
 
 // ConfirmationHandler handles clicking confirmation links from emails
 type ConfirmationHandler struct {
-	client       *http.Client
+	client        *http.Client
 	brokerDomains map[string]bool
 }
 

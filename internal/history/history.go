@@ -3,6 +3,7 @@ package history
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -560,12 +561,49 @@ func (s *Store) GetAllBrokerStatuses(profileID string) (map[string]BrokerStatus,
 		if lastSent.Valid {
 			if t, err := parseSQLiteTime(lastSent.String); err == nil {
 				bs.LastSent = t
+			} else {
+				// Don't fail the whole batch over one malformed row (the
+				// caller, getBrokersWithStatus, would otherwise fall back to
+				// an empty map and show every broker as "never sent" instead
+				// of just this one missing its timestamp) - but don't stay
+				// silent about it either, unlike this used to.
+				log.Printf("Warning: failed to parse last send time %q for broker %q: %v", lastSent.String, bs.BrokerID, err)
 			}
 		}
 		bs.Status = Status(status)
 		statuses[bs.BrokerID] = bs
 	}
 	return statuses, rows.Err()
+}
+
+// GetBrokerStatus returns one broker's status - the single-broker-scoped
+// equivalent of GetAllBrokerStatuses, used by the web UI to refresh just
+// one row (see handleAPIBrokerStatus) instead of re-running the
+// GROUP-BY-plus-correlated-subquery query over every broker on every poll
+// tick during an active send.
+func (s *Store) GetBrokerStatus(profileID, brokerID string) (BrokerStatus, error) {
+	bs := BrokerStatus{BrokerID: brokerID}
+
+	query := `SELECT MAX(sent_at) as last_sent,
+		(SELECT status FROM removal_requests r2 WHERE r2.profile_id = r.profile_id AND r2.broker_id = r.broker_id ORDER BY sent_at DESC LIMIT 1),
+		COUNT(*) FROM removal_requests r WHERE profile_id = ? AND broker_id = ?`
+
+	var lastSent, status sql.NullString
+	err := s.db.QueryRow(query, normalizeProfileID(profileID), brokerID).Scan(&lastSent, &status, &bs.TotalSent)
+	if err != nil {
+		return bs, fmt.Errorf("failed to query broker status: %w", err)
+	}
+	if lastSent.Valid {
+		if t, err := parseSQLiteTime(lastSent.String); err == nil {
+			bs.LastSent = t
+		} else {
+			log.Printf("Warning: failed to parse last send time %q for broker %q: %v", lastSent.String, brokerID, err)
+		}
+	}
+	if status.Valid {
+		bs.Status = Status(status.String)
+	}
+	return bs, nil
 }
 
 // DeleteByStatus deletes all records with the given status for one profile

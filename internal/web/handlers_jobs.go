@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/eraser-privacy/eraser/internal/email"
 	"github.com/eraser-privacy/eraser/internal/history"
+	"github.com/go-chi/chi/v5"
 )
 
 // checkPendingJob checks for an incomplete job from a previous session and resumes it
@@ -84,7 +84,7 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 		profileID = config.DefaultProfileID
 	}
 	job := s.jobManager.Create(state.Total, profileID)
-	job.Update(state.Sent, state.Failed, "")
+	job.Update(state.Sent, state.Failed, "", "")
 
 	fmt.Printf("Resuming send job: %d brokers remaining...\n", len(toSend))
 
@@ -295,6 +295,21 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 // config.Load already fills this in normally, so this is just a safety net.
 const defaultDailyLimit = 250 // Gmail/SMTP: stay well under 500/day
 
+// effectiveDailyLimit returns the daily send limit to actually use, given a
+// (possibly nil) config: the configured value if it's a usable positive
+// number, else defaultDailyLimit. Used by both the brokers-page banner
+// (handleBrokers) and job enforcement (processSendJob) so they can't
+// disagree - they used to apply different fallback checks (`> 0` vs
+// `== 0`), which meant a hand-edited negative daily_send_limit made the
+// banner show the 250 default while processSendJob treated the negative
+// number as a real limit and paused the job after sending zero emails.
+func effectiveDailyLimit(cfg *config.Config) int {
+	if cfg != nil && cfg.Options.DailySendLimit > 0 {
+		return cfg.Options.DailySendLimit
+	}
+	return defaultDailyLimit
+}
+
 // processSendJob runs in a background goroutine to send emails
 func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender email.Sender) {
 	sent := 0
@@ -323,10 +338,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 
 	// Respect the same daily_send_limit the CLI `send` command uses, so the
 	// web UI and CLI don't disagree about how many emails/day is safe.
-	dailyLimit := cfg.Options.DailySendLimit
-	if dailyLimit == 0 {
-		dailyLimit = defaultDailyLimit
-	}
+	dailyLimit := effectiveDailyLimit(cfg)
 	job.SetDailyLimit(dailyLimit)
 
 	// Track remaining brokers for persistence
@@ -350,14 +362,14 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 		}
 
 		// Update current broker
-		job.Update(sent, failed, b.Name)
+		job.Update(sent, failed, b.Name, b.ID)
 
 		// Generate email using the user's configured template (see the
 		// same fix/comment in handleAPISendOne above)
 		rendered, err := s.tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b.Broker)
 		if err != nil {
 			failed++
-			job.Update(sent, failed, b.Name)
+			job.Update(sent, failed, b.Name, b.ID)
 			// Remove from remaining even on failure
 			remaining = remaining[1:]
 			s.saveJobProgress(job, sent, failed, remaining)
@@ -421,7 +433,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 		}
 
 		// Update job progress
-		job.Update(sent, failed, b.Name)
+		job.Update(sent, failed, b.Name, b.ID)
 
 		// Remove processed broker from remaining and save state
 		remaining = remaining[1:]

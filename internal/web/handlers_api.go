@@ -11,6 +11,7 @@ import (
 
 	"github.com/eraser-privacy/eraser/internal/history"
 	"github.com/eraser-privacy/eraser/internal/inbox"
+	"github.com/go-chi/chi/v5"
 )
 
 // API handlers
@@ -29,6 +30,33 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 		"Brokers":  brokers,
 		"Filtered": len(brokers),
 		"Total":    len(s.brokerDB.Brokers),
+	})
+}
+
+// handleAPIBrokerStatus returns just the status-badge fragment for one
+// broker (the desktop badge, plus an out-of-band swap for the mobile one) -
+// used by the brokers page during an active send job to refresh only the
+// row that just changed, instead of re-fetching and re-rendering the
+// entire (700+) broker table on every poll tick. See
+// internal/history.Store.GetBrokerStatus for the single-broker-scoped query
+// this uses instead of the all-brokers GROUP BY.
+func (s *Server) handleAPIBrokerStatus(w http.ResponseWriter, r *http.Request) {
+	brokerID := chi.URLParam(r, "brokerID")
+	if s.brokerDB.FindByID(brokerID) == nil {
+		http.Error(w, "Broker not found", http.StatusNotFound)
+		return
+	}
+
+	statusStr := "never"
+	if s.historyStore != nil {
+		if bs, err := s.historyStore.GetBrokerStatus(s.activeProfile(r).ID, brokerID); err == nil && bs.TotalSent > 0 {
+			statusStr = string(bs.Status)
+		}
+	}
+
+	s.renderPartial(w, "partials/broker-status-badge.html", map[string]interface{}{
+		"ID":     brokerID,
+		"Status": statusStr,
 	})
 }
 

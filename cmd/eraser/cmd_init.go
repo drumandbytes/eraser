@@ -58,6 +58,7 @@ func runInit() error {
 	fmt.Println()
 
 	cfg.Profile.FirstName = promptWithDefault(reader, "First name", existing.Profile.FirstName)
+	cfg.Profile.MiddleName = promptWithDefault(reader, "Middle name (optional)", existing.Profile.MiddleName)
 	cfg.Profile.LastName = promptWithDefault(reader, "Last name", existing.Profile.LastName)
 	nameVariants := promptWithDefault(reader,
 		"Other spellings of your name brokers might have, e.g. without diacritics - comma separated (optional)",

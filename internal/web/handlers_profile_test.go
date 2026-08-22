@@ -7,34 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/eraser-privacy/eraser/internal/config"
 )
 
-func TestSlugifyProfileID(t *testing.T) {
-	tests := []struct {
-		name      string
-		first     string
-		last      string
-		existing  []config.NamedProfile
-		want      string
-	}{
-		{"basic", "Jane", "Doe", nil, "jane-doe"},
-		{"diacritics and case", "Māris", "Popēns", nil, "m-ris-pop-ns"},
-		{"collision appends -2", "Jane", "Doe", []config.NamedProfile{{ID: "jane-doe"}}, "jane-doe-2"},
-		{"collision is case-insensitive", "Jane", "Doe", []config.NamedProfile{{ID: "JANE-DOE"}}, "jane-doe-2"},
-		{"multiple collisions increment", "Jane", "Doe", []config.NamedProfile{{ID: "jane-doe"}, {ID: "jane-doe-2"}}, "jane-doe-3"},
-		{"empty name falls back", "", "", nil, "profile"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := slugifyProfileID(tt.first, tt.last, tt.existing)
-			if got != tt.want {
-				t.Errorf("slugifyProfileID(%q, %q, %v) = %q, want %q", tt.first, tt.last, tt.existing, got, tt.want)
-			}
-		})
-	}
-}
+// config.SlugifyProfileID's own behavior (basic slugify, collisions,
+// diacritics) is covered by internal/config's tests now that the web
+// package no longer has its own copy of that logic - see
+// internal/config/config_test.go.
 
 func TestHandleSettingsProfileNewCreatesProfile(t *testing.T) {
 	s := newTestServer(t, testConfig())
@@ -51,10 +29,11 @@ func TestHandleSettingsProfileNewCreatesProfile(t *testing.T) {
 	}
 
 	form := url.Values{
-		"first_name": {"Anna"},
-		"last_name":  {"Popena"},
-		"email":      {"anna@example.com"},
-		"city":       {"Riga"},
+		"first_name":  {"Anna"},
+		"middle_name": {"Marija"},
+		"last_name":   {"Popena"},
+		"email":       {"anna@example.com"},
+		"city":        {"Riga"},
 	}
 	postReq := httptest.NewRequest(http.MethodPost, "/settings/profiles/new", strings.NewReader(form.Encode()))
 	postReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -78,7 +57,7 @@ func TestHandleSettingsProfileNewCreatesProfile(t *testing.T) {
 	if profiles[1].ID != "anna-popena" {
 		t.Errorf("expected new profile ID %q, got %q", "anna-popena", profiles[1].ID)
 	}
-	if profiles[1].Email != "anna@example.com" || profiles[1].City != "Riga" {
+	if profiles[1].Email != "anna@example.com" || profiles[1].City != "Riga" || profiles[1].MiddleName != "Marija" {
 		t.Errorf("new profile fields not saved correctly: %+v", profiles[1])
 	}
 }

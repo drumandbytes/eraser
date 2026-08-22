@@ -39,25 +39,37 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 		cfg = &config.Config{}
 	}
 	newCfg := *cfg
-	newCfg.Inbox = config.InboxConfig{
-		Enabled:  true,
-		Provider: "gmail",
-		// This form is Gmail-only (see settings.html) and only collects
-		// email/password - the IMAP server/port must be set explicitly here
-		// rather than left for config.Load's default-filling to apply,
-		// since this struct is also stored directly into the live,
-		// already-loaded s.config via s.config.Store below. Leaving these
-		// zero-valued produced a "dial tcp :0" connect error on the next
-		// inbox scan until the process was restarted (config.Load only
-		// fills Gmail defaults when Server=="" during its own load, which
-		// doesn't run again until the server restarts).
-		Server:        "imap.gmail.com",
-		Port:          993,
-		Email:         email,
-		Password:      password,
-		Folder:        "INBOX",
-		ArchiveFolder: "Eraser",
+
+	// Start from the existing inbox config (not a blank struct) so a
+	// provider configured by hand in config.yaml (e.g. "outlook") keeps its
+	// own Server/Port/AutoArchive when the user submits this form just to
+	// change their email/password - this form only collects those two
+	// fields (see settings.html), it has no provider selector.
+	inbox := newCfg.Inbox
+	inbox.Enabled = true
+	inbox.Email = email
+	inbox.Password = password
+	// Only fill in Gmail defaults for a brand-new setup or an
+	// already-Gmail config - the IMAP server/port must be set explicitly
+	// here rather than left for config.Load's default-filling to apply,
+	// since this struct is also stored directly into the live,
+	// already-loaded s.config via s.config.Store below. Leaving these
+	// zero-valued produced a "dial tcp :0" connect error on the next
+	// inbox scan until the process was restarted (config.Load only fills
+	// Gmail defaults when Server=="" during its own load, which doesn't
+	// run again until the server restarts).
+	if inbox.Provider == "" || inbox.Provider == "gmail" {
+		inbox.Provider = "gmail"
+		inbox.Server = "imap.gmail.com"
+		inbox.Port = 993
 	}
+	if inbox.Folder == "" {
+		inbox.Folder = "INBOX"
+	}
+	if inbox.ArchiveFolder == "" {
+		inbox.ArchiveFolder = "Eraser"
+	}
+	newCfg.Inbox = inbox
 
 	// Save config
 	if err := config.Save(s.configPath, &newCfg); err != nil {

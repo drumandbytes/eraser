@@ -25,31 +25,8 @@ func (s *Server) handleSetupWelcome(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSetupProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
-		profile := config.Profile{
-			FirstName:   strings.TrimSpace(r.FormValue("first_name")),
-			LastName:    strings.TrimSpace(r.FormValue("last_name")),
-			Email:       strings.TrimSpace(r.FormValue("email")),
-			Address:     strings.TrimSpace(r.FormValue("address")),
-			City:        strings.TrimSpace(r.FormValue("city")),
-			State:       strings.TrimSpace(r.FormValue("state")),
-			ZipCode:     strings.TrimSpace(r.FormValue("zip_code")),
-			Country:     strings.TrimSpace(r.FormValue("country")),
-			Phone:       strings.TrimSpace(r.FormValue("phone")),
-			DateOfBirth: strings.TrimSpace(r.FormValue("dob")),
-		}
-
-		errors := make(map[string]string)
-		if profile.FirstName == "" {
-			errors["first_name"] = "First name is required"
-		}
-		if profile.LastName == "" {
-			errors["last_name"] = "Last name is required"
-		}
-		if profile.Email == "" {
-			errors["email"] = "Email is required"
-		} else if err := email.ValidateEmail(profile.Email); err != nil {
-			errors["email"] = "Please enter a valid email address"
-		}
+		profile, errors := buildProfileFromForm(r)
+		profile.DateOfBirth = strings.TrimSpace(r.FormValue("dob"))
 
 		if len(errors) > 0 {
 			data := map[string]interface{}{

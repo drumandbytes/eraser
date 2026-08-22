@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -108,6 +109,45 @@ func profileIDs(profiles []NamedProfile) []string {
 	return ids
 }
 
+var nonSlugChars = regexp.MustCompile(`[^a-z0-9]+`)
+
+// SlugifyID converts arbitrary text into a lowercase-hyphenated identifier
+// safe to use as a NamedProfile.ID - stripping everything outside [a-z0-9].
+// Both the CLI (`eraser profile add`) and the web UI's "add profile" form
+// must funnel a user-typed or name-derived ID through this same function:
+// Go's net/http cookie writer silently drops (rather than quotes) any byte
+// outside 0x20-0x7e when writing a Set-Cookie header, including any
+// non-ASCII UTF-8 byte such as diacritics in a name - an ID that carries
+// one round-trips incorrectly through the web UI's profile-switcher
+// cookie, silently falling back to the first configured profile.
+func SlugifyID(s string) string {
+	base := nonSlugChars.ReplaceAllString(strings.ToLower(strings.TrimSpace(s)), "-")
+	base = strings.Trim(base, "-")
+	if base == "" {
+		return "profile"
+	}
+	return base
+}
+
+// SlugifyProfileID derives a profile ID from a first/last name pair (see
+// SlugifyID for the charset rule), appending -2, -3, ... if the base is
+// already taken by an existing profile - so the web UI's "add profile" form
+// never needs to ask the user to pick an ID themselves.
+func SlugifyProfileID(firstName, lastName string, existing []NamedProfile) string {
+	base := SlugifyID(firstName + "-" + lastName)
+
+	taken := make(map[string]bool, len(existing))
+	for _, p := range existing {
+		taken[strings.ToLower(p.ID)] = true
+	}
+
+	id := base
+	for n := 2; taken[id]; n++ {
+		id = fmt.Sprintf("%s-%d", base, n)
+	}
+	return id
+}
+
 // InboxConfig holds IMAP settings for monitoring broker responses
 type InboxConfig struct {
 	Enabled       bool   `yaml:"enabled"`
@@ -146,8 +186,13 @@ func (p Pipeline) Headless() bool {
 
 type Profile struct {
 	FirstName string `yaml:"first_name"`
-	LastName  string `yaml:"last_name"`
-	Email     string `yaml:"email"`
+	// MiddleName is optional - most brokers only match on first/last name,
+	// but some (especially background-check and financial-b2b brokers)
+	// index records by full legal name, so including it helps them find
+	// (and thus actually delete) the right record.
+	MiddleName string `yaml:"middle_name,omitempty"`
+	LastName   string `yaml:"last_name"`
+	Email      string `yaml:"email"`
 	// AdditionalEmails are other addresses you've used over the years (old
 	// personal accounts, work emails, etc). Brokers often indexed your record
 	// under one of these rather than your current address, so listing them
@@ -175,7 +220,12 @@ type Profile struct {
 	DateOfBirth      string   `yaml:"date_of_birth,omitempty"`
 }
 
-func (p Profile) FullName() string { return p.FirstName + " " + p.LastName }
+func (p Profile) FullName() string {
+	if p.MiddleName == "" {
+		return p.FirstName + " " + p.LastName
+	}
+	return p.FirstName + " " + p.MiddleName + " " + p.LastName
+}
 
 type EmailConfig struct {
 	Provider string     `yaml:"provider"`

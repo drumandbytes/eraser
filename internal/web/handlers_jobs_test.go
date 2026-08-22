@@ -40,7 +40,7 @@ func TestHandleAPIJobStatus_ProfileScoping(t *testing.T) {
 
 	jobA := s.jobManager.Create(10, "a")
 	jobB := s.jobManager.Create(10, "b")
-	jobB.Update(7, 1, "broker-b") // distinguishable state from jobA's zero state
+	jobB.Update(7, 1, "broker-b", "broker-b-id") // distinguishable state from jobA's zero state
 
 	t.Run("own profile sees its own job", func(t *testing.T) {
 		req := requestWithProfileCookie(http.MethodGet, "/api/job/"+jobA.ID+"/status", "a")

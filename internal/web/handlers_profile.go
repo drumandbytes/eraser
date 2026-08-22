@@ -1,9 +1,7 @@
 package web
 
 import (
-	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/eraser-privacy/eraser/internal/config"
@@ -44,30 +42,40 @@ func (s *Server) handleAPISwitchProfile(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
-var nonSlugChars = regexp.MustCompile(`[^a-z0-9]+`)
-
-// slugifyProfileID turns a name into a short, hyphenated ID in the same
-// style as config.NamedProfile.ID's doc comment asks for (e.g. "spouse",
-// "kid1") - "Jane Doe" becomes "jane-doe" - and appends -2, -3, ... if
-// that's already taken by an existing profile, so the web UI's "add
-// profile" form never needs to ask the user to pick one themselves.
-func slugifyProfileID(firstName, lastName string, existing []config.NamedProfile) string {
-	base := nonSlugChars.ReplaceAllString(strings.ToLower(strings.TrimSpace(firstName+"-"+lastName)), "-")
-	base = strings.Trim(base, "-")
-	if base == "" {
-		base = "profile"
+// buildProfileFromForm parses and validates the profile-form fields shared
+// by the setup wizard (handleSetupProfile) and this "add profile" settings
+// form: first/middle/last name, email, and the optional address fields.
+// Returns the parsed profile and a field->message map of validation errors
+// (empty if valid) - factored out so the two handlers can't drift on what
+// "a valid profile" means, the way they previously did as two independent
+// copies of the same three checks.
+func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
+	profile := config.Profile{
+		FirstName:  strings.TrimSpace(r.FormValue("first_name")),
+		MiddleName: strings.TrimSpace(r.FormValue("middle_name")),
+		LastName:   strings.TrimSpace(r.FormValue("last_name")),
+		Email:      strings.TrimSpace(r.FormValue("email")),
+		Address:    strings.TrimSpace(r.FormValue("address")),
+		City:       strings.TrimSpace(r.FormValue("city")),
+		State:      strings.TrimSpace(r.FormValue("state")),
+		ZipCode:    strings.TrimSpace(r.FormValue("zip_code")),
+		Country:    strings.TrimSpace(r.FormValue("country")),
+		Phone:      strings.TrimSpace(r.FormValue("phone")),
 	}
 
-	taken := make(map[string]bool, len(existing))
-	for _, p := range existing {
-		taken[strings.ToLower(p.ID)] = true
+	errors := make(map[string]string)
+	if profile.FirstName == "" {
+		errors["first_name"] = "First name is required"
 	}
-
-	id := base
-	for n := 2; taken[id]; n++ {
-		id = fmt.Sprintf("%s-%d", base, n)
+	if profile.LastName == "" {
+		errors["last_name"] = "Last name is required"
 	}
-	return id
+	if profile.Email == "" {
+		errors["email"] = "Email is required"
+	} else if err := email.ValidateEmail(profile.Email); err != nil {
+		errors["email"] = "Please enter a valid email address"
+	}
+	return profile, errors
 }
 
 // handleSettingsProfileNew adds a second (or third, ...) named profile from
@@ -78,30 +86,7 @@ func slugifyProfileID(firstName, lastName string, existing []config.NamedProfile
 func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
-		profile := config.Profile{
-			FirstName: strings.TrimSpace(r.FormValue("first_name")),
-			LastName:  strings.TrimSpace(r.FormValue("last_name")),
-			Email:     strings.TrimSpace(r.FormValue("email")),
-			Address:   strings.TrimSpace(r.FormValue("address")),
-			City:      strings.TrimSpace(r.FormValue("city")),
-			State:     strings.TrimSpace(r.FormValue("state")),
-			ZipCode:   strings.TrimSpace(r.FormValue("zip_code")),
-			Country:   strings.TrimSpace(r.FormValue("country")),
-			Phone:     strings.TrimSpace(r.FormValue("phone")),
-		}
-
-		errors := make(map[string]string)
-		if profile.FirstName == "" {
-			errors["first_name"] = "First name is required"
-		}
-		if profile.LastName == "" {
-			errors["last_name"] = "Last name is required"
-		}
-		if profile.Email == "" {
-			errors["email"] = "Email is required"
-		} else if err := email.ValidateEmail(profile.Email); err != nil {
-			errors["email"] = "Please enter a valid email address"
-		}
+		profile, errors := buildProfileFromForm(r)
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
@@ -119,7 +104,7 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 		newCfg := *cfg
 		existing := cfg.GetProfiles()
 		newCfg.Profiles = append(append([]config.NamedProfile{}, existing...), config.NamedProfile{
-			ID:      slugifyProfileID(profile.FirstName, profile.LastName, existing),
+			ID:      config.SlugifyProfileID(profile.FirstName, profile.LastName, existing),
 			Profile: profile,
 		})
 

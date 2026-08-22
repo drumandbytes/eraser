@@ -83,3 +83,50 @@ func TestLoadPreservesExplicitBrowserHeadlessTrue(t *testing.T) {
 		t.Errorf("expected BrowserHeadless to be a non-nil true, got %v", cfg.Pipeline.BrowserHeadless)
 	}
 }
+
+func TestSlugifyProfileID(t *testing.T) {
+	tests := []struct {
+		name     string
+		first    string
+		last     string
+		existing []NamedProfile
+		want     string
+	}{
+		{"basic", "Jane", "Doe", nil, "jane-doe"},
+		{"diacritics and case", "Māris", "Popēns", nil, "m-ris-pop-ns"},
+		{"collision appends -2", "Jane", "Doe", []NamedProfile{{ID: "jane-doe"}}, "jane-doe-2"},
+		{"collision is case-insensitive", "Jane", "Doe", []NamedProfile{{ID: "JANE-DOE"}}, "jane-doe-2"},
+		{"multiple collisions increment", "Jane", "Doe", []NamedProfile{{ID: "jane-doe"}, {ID: "jane-doe-2"}}, "jane-doe-3"},
+		{"empty name falls back", "", "", nil, "profile"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SlugifyProfileID(tt.first, tt.last, tt.existing)
+			if got != tt.want {
+				t.Errorf("SlugifyProfileID(%q, %q, %v) = %q, want %q", tt.first, tt.last, tt.existing, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSlugifyID(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"plain", "spouse", "spouse"},
+		{"spaces and punctuation", "María López!", "mar-a-l-pez"},
+		{"already valid", "kid1", "kid1"},
+		{"empty falls back", "", "profile"},
+		{"only symbols falls back", "!!!", "profile"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SlugifyID(tt.in)
+			if got != tt.want {
+				t.Errorf("SlugifyID(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}

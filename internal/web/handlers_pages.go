@@ -6,8 +6,8 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/eraser-privacy/eraser/internal/history"
+	"github.com/go-chi/chi/v5"
 )
 
 // Handler implementations
@@ -42,10 +42,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 
 	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
 
-	dailyLimit := defaultDailyLimit
-	if cfg := s.getConfig(); cfg != nil && cfg.Options.DailySendLimit > 0 {
-		dailyLimit = cfg.Options.DailySendLimit
-	}
+	dailyLimit := effectiveDailyLimit(s.getConfig())
 
 	data := map[string]interface{}{
 		"Title":        "Data Brokers",

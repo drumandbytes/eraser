@@ -128,7 +128,7 @@ func (f *FormFiller) getFieldMappings() []FieldMapping {
 		},
 		{
 			FieldType:    "fullName",
-			ProfileValue: f.profile.FirstName + " " + f.profile.LastName,
+			ProfileValue: f.profile.FullName(),
 			Selectors: []string{
 				"input[name='name']",
 				"input[name='fullName']",

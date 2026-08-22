@@ -164,7 +164,7 @@ func runSend() error {
 	}
 
 	if len(cfg.GetProfiles()) > 1 {
-		fmt.Printf("👤 Profile: %s (%s %s)\n", activeProfile.ID, activeProfile.FirstName, activeProfile.LastName)
+		fmt.Printf("👤 Profile: %s (%s)\n", activeProfile.ID, activeProfile.FullName())
 	}
 	fmt.Printf("📤 Processing %d brokers...\n", len(brokers))
 	fmt.Println()

@@ -33,7 +33,7 @@ func TestJobConcurrentUpdateAndReadIsConsistent(t *testing.T) {
 			for i := 0; i < iterations; i++ {
 				sent := (g*iterations + i) % total
 				failed := (total - sent) % total
-				job.Update(sent, failed, "broker-x")
+				job.Update(sent, failed, "broker-x", "broker-x-id")
 			}
 		}(g)
 	}
@@ -94,7 +94,7 @@ func TestJobUpdateSetsAllFieldsUnderOneLock(t *testing.T) {
 	jm := NewJobManager()
 	job := jm.Create(10, "profile-a")
 
-	job.Update(3, 2, "broker-y")
+	job.Update(3, 2, "broker-y", "broker-y-id")
 	snap := job.ToJSON()
 	if got, want := snap["sent"].(int), 3; got != want {
 		t.Errorf("sent = %d, want %d", got, want)
@@ -107,6 +107,9 @@ func TestJobUpdateSetsAllFieldsUnderOneLock(t *testing.T) {
 	}
 	if got, want := snap["current_broker"].(string), "broker-y"; got != want {
 		t.Errorf("current_broker = %q, want %q", got, want)
+	}
+	if got, want := snap["current_broker_id"].(string), "broker-y-id"; got != want {
+		t.Errorf("current_broker_id = %q, want %q", got, want)
 	}
 
 	job.SetDailyLimit(42)

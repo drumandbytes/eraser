@@ -332,48 +332,84 @@
 // handleJobUpdate below) rather than running its own independent poll
 // loop. window.eraserJobPoll.jobId is the source of truth for "which job
 // is this page currently showing", not a locally-tracked variable.
-let lastListRefreshProcessed = -1;
-let lastListRefreshAt = 0;
-const LIST_REFRESH_MIN_INTERVAL_MS = 3000;
+let lastSeenBrokerId = null;
 
 window.addEventListener('eraser:job-update', (e) => handleJobUpdate(e.detail));
 
 function handleJobUpdate(job) {
-    // First update seen for a running job on this page load - the
-    // progress card doesn't exist yet, so build it (equivalent to what
-    // checkForActiveJob used to do directly).
-    if (job.status === 'running' && !document.getElementById('progress-bar')) {
+    // Build the progress card on the first update this page sees for a
+    // job, regardless of its status - not just when status is 'running'.
+    // On page load, the active-job check and this event's own poll() are
+    // two separate fetches; if the job finished in the gap between them,
+    // the very first update here can already be non-running, and without
+    // this the completion UI/final refresh below would be silently
+    // skipped because the card never existed to update.
+    if (!document.getElementById('progress-bar')) {
         showProgressUI();
     }
-    if (!document.getElementById('progress-bar')) {
-        // Not a job this page is currently displaying (e.g. it finished
-        // before this page ever rendered a progress card for it).
+
+    if (job.status === 'error' && job.error_type === 'lost') {
+        // Polling itself failed (job vanished - profile switch, or aged
+        // out of the job manager) - we have no real progress data, so
+        // don't try to render it as one.
+        showLostJobMessage();
+        resetButtons();
+        htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
         return;
     }
 
     updateProgressDisplay(job);
-    maybeRefreshBrokerList(job);
+    maybeRefreshBrokerRow(job);
 
     if (job.status !== 'running') {
+        if (lastSeenBrokerId) {
+            refreshBrokerRow(lastSeenBrokerId);
+            lastSeenBrokerId = null;
+        }
         showCompletionMessage(job);
         resetButtons();
-        // Final refresh to catch anything the throttled refresh above missed.
+        // One full refresh at the very end to catch anything the
+        // per-row updates above missed (e.g. several brokers completing
+        // within a single 1.5s poll tick).
         htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
     }
 }
 
 // The broker table only reflects each broker's status as of its last
-// fetch - during an active send, rows sit at "Never sent" until this
-// refreshes them. Throttled to once per completed broker (not every
-// 1.5s poll tick) so a 700-broker table isn't re-rendered constantly.
-function maybeRefreshBrokerList(job) {
-    const processed = job.sent + job.failed;
-    const now = Date.now();
-    if (processed > lastListRefreshProcessed && now - lastListRefreshAt >= LIST_REFRESH_MIN_INTERVAL_MS) {
-        lastListRefreshProcessed = processed;
-        lastListRefreshAt = now;
-        htmx.ajax('GET', '/api/brokers', {target: '#broker-list', swap: 'innerHTML'});
+// fetch - during an active send, rows sit at "Never sent" until updated.
+// Refetching the entire ~700-row table on every 1.5s poll tick was
+// expensive for no reason: only one row actually changes per tick, so
+// this instead fetches and swaps just that single row's status badge.
+// job.current_broker_id is the broker currently being processed; the
+// *previous* current_broker_id is the one that just finished, so that's
+// the row refreshed here (deferred by one tick, cheap either way).
+function maybeRefreshBrokerRow(job) {
+    if (job.current_broker_id && job.current_broker_id !== lastSeenBrokerId) {
+        if (lastSeenBrokerId) {
+            refreshBrokerRow(lastSeenBrokerId);
+        }
+        lastSeenBrokerId = job.current_broker_id;
     }
+}
+
+function refreshBrokerRow(brokerId) {
+    const statusEl = document.getElementById('status-' + brokerId);
+    if (!statusEl) {
+        // Not present in the current filtered/searched view - nothing to
+        // update; the final full refresh on completion covers it.
+        return;
+    }
+    htmx.ajax('GET', '/api/brokers/' + brokerId + '/status', { target: '#status-' + brokerId, swap: 'innerHTML' });
+}
+
+function showLostJobMessage() {
+    const progressArea = document.getElementById('send-all-progress');
+    progressArea.innerHTML = `
+        <div class="alert alert-warning px-4 py-3 rounded">
+            <strong>Lost track of this send.</strong> It may have finished, or you switched profiles mid-send.
+            <a href="/brokers" class="underline ml-2">Refresh page</a> to check the latest status.
+        </div>
+    `;
 }
 
 // statusFilter is optional: pass 'failed' from the Retry Failed button to

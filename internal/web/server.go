@@ -376,6 +376,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	// API routes (for HTMX)
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/brokers", s.handleAPIBrokers)
+		r.Get("/brokers/{brokerID}/status", s.handleAPIBrokerStatus)
 		r.Delete("/history/failed", s.handleAPIDeleteFailed)
 		r.Delete("/history", s.handleAPIDeleteAllHistory)
 		r.Post("/send/{brokerID}", s.handleAPISendOne)

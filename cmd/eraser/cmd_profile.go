@@ -60,7 +60,7 @@ func runProfileList() error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	for _, p := range profiles {
 		fmt.Printf("\n%s\n", p.ID)
-		fmt.Printf("  %s %s <%s>\n", p.FirstName, p.LastName, p.Email)
+		fmt.Printf("  %s <%s>\n", p.FullName(), p.Email)
 	}
 	fmt.Println()
 
@@ -88,10 +88,17 @@ func runProfileAdd() error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
 
-	id := strings.ToLower(strings.TrimSpace(prompt(reader, "Profile ID (short, unique, e.g. 'spouse', 'kid1'): ")))
-	if id == "" {
+	rawID := strings.TrimSpace(prompt(reader, "Profile ID (short, unique, e.g. 'spouse', 'kid1'): "))
+	if rawID == "" {
 		return fmt.Errorf("profile ID is required")
 	}
+	// Run the typed ID through the same charset rule the web UI's
+	// auto-generated IDs use (config.SlugifyID) - a raw ID with spaces,
+	// punctuation, or non-ASCII characters would otherwise round-trip
+	// incorrectly through the web UI's cookie-based profile switcher (Go's
+	// cookie writer silently drops bytes outside 0x20-0x7e instead of
+	// quoting them).
+	id := config.SlugifyID(rawID)
 	for _, p := range existingProfiles {
 		if strings.EqualFold(p.ID, id) {
 			return fmt.Errorf("profile %q already exists", id)
@@ -100,6 +107,7 @@ func runProfileAdd() error {
 
 	np := config.NamedProfile{ID: id}
 	np.FirstName = prompt(reader, "First name: ")
+	np.MiddleName = prompt(reader, "Middle name (optional): ")
 	np.LastName = prompt(reader, "Last name: ")
 	np.Email = prompt(reader, "Email address: ")
 	np.Address = prompt(reader, "Street address (optional): ")

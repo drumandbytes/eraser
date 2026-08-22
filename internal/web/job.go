@@ -18,41 +18,46 @@ const (
 	JobStatusRunning   JobStatus = "running"
 	JobStatusCompleted JobStatus = "completed"
 	JobStatusCancelled JobStatus = "cancelled"
-	JobStatusPaused    JobStatus = "paused"    // Paused due to daily limit
-	JobStatusError     JobStatus = "error"     // Stopped due to auth/config error
+	JobStatusPaused    JobStatus = "paused" // Paused due to daily limit
+	JobStatusError     JobStatus = "error"  // Stopped due to auth/config error
 )
 
 // Job represents a background email sending job
 type Job struct {
-	ID            string    `json:"id"`
-	ProfileID     string    `json:"profile_id"`
-	Status        JobStatus `json:"status"`
-	Progress      int       `json:"progress"`
-	Sent          int       `json:"sent"`
-	Failed        int       `json:"failed"`
-	Total         int       `json:"total"`
-	CurrentBroker string    `json:"current_broker"`
-	StartedAt     time.Time `json:"started_at"`
-	CompletedAt   time.Time `json:"completed_at,omitempty"`
-	Error         string    `json:"error,omitempty"`
-	ErrorType     string    `json:"error_type,omitempty"`   // "auth", "rate_limit", etc.
-	DailyLimit    int       `json:"daily_limit,omitempty"`  // Max emails per day
-	DaySent       int       `json:"day_sent,omitempty"`     // Emails sent today
+	ID              string    `json:"id"`
+	ProfileID       string    `json:"profile_id"`
+	Status          JobStatus `json:"status"`
+	Progress        int       `json:"progress"`
+	Sent            int       `json:"sent"`
+	Failed          int       `json:"failed"`
+	Total           int       `json:"total"`
+	CurrentBroker   string    `json:"current_broker"`
+	CurrentBrokerID string    `json:"current_broker_id"`
+	StartedAt       time.Time `json:"started_at"`
+	CompletedAt     time.Time `json:"completed_at,omitempty"`
+	Error           string    `json:"error,omitempty"`
+	ErrorType       string    `json:"error_type,omitempty"`  // "auth", "rate_limit", etc.
+	DailyLimit      int       `json:"daily_limit,omitempty"` // Max emails per day
+	DaySent         int       `json:"day_sent,omitempty"`    // Emails sent today
 
-	ctx              context.Context
-	cancelFunc       context.CancelFunc
-	mu               sync.Mutex
+	ctx                  context.Context
+	cancelFunc           context.CancelFunc
+	mu                   sync.Mutex
 	consecutiveAuthFails int // Track consecutive auth failures
 }
 
-// Update updates the job progress
-func (j *Job) Update(sent, failed int, currentBroker string) {
+// Update updates the job progress. currentBrokerID is used by the brokers
+// page to refresh only the one row that just changed (see
+// internal/web/templates/brokers.html's refreshBrokerRow) instead of
+// re-fetching the entire broker table on every poll tick.
+func (j *Job) Update(sent, failed int, currentBroker, currentBrokerID string) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
 	j.Sent = sent
 	j.Failed = failed
 	j.CurrentBroker = currentBroker
+	j.CurrentBrokerID = currentBrokerID
 	if j.Total > 0 {
 		j.Progress = ((sent + failed) * 100) / j.Total
 	}
@@ -67,6 +72,7 @@ func (j *Job) Complete() {
 	j.CompletedAt = time.Now()
 	j.Progress = 100
 	j.CurrentBroker = ""
+	j.CurrentBrokerID = ""
 }
 
 // StopWithError stops the job due to an error
@@ -79,6 +85,7 @@ func (j *Job) StopWithError(errorType, errorMsg string) {
 	j.Error = errorMsg
 	j.ErrorType = errorType
 	j.CurrentBroker = ""
+	j.CurrentBrokerID = ""
 }
 
 // Pause marks the job paused (daily send limit reached) with the given
@@ -166,20 +173,21 @@ func (j *Job) ToJSON() map[string]interface{} {
 	defer j.mu.Unlock()
 
 	return map[string]interface{}{
-		"id":             j.ID,
-		"profile_id":     j.ProfileID,
-		"status":         j.Status,
-		"progress":       j.Progress,
-		"sent":           j.Sent,
-		"failed":         j.Failed,
-		"total":          j.Total,
-		"current_broker": j.CurrentBroker,
-		"started_at":     j.StartedAt,
-		"completed_at":   j.CompletedAt,
-		"error":          j.Error,
-		"error_type":     j.ErrorType,
-		"daily_limit":    j.DailyLimit,
-		"day_sent":       j.DaySent,
+		"id":                j.ID,
+		"profile_id":        j.ProfileID,
+		"status":            j.Status,
+		"progress":          j.Progress,
+		"sent":              j.Sent,
+		"failed":            j.Failed,
+		"total":             j.Total,
+		"current_broker":    j.CurrentBroker,
+		"current_broker_id": j.CurrentBrokerID,
+		"started_at":        j.StartedAt,
+		"completed_at":      j.CompletedAt,
+		"error":             j.Error,
+		"error_type":        j.ErrorType,
+		"daily_limit":       j.DailyLimit,
+		"day_sent":          j.DaySent,
 	}
 }
 

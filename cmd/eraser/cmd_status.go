@@ -36,7 +36,7 @@ func runStatus(limit int) error {
 		return err
 	}
 
-	store, err := history.NewStore(history.DefaultDBPath())
+	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to open history: %w", err)
 	}

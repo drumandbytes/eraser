@@ -75,7 +75,7 @@ func runMonitor(days int, once bool, watch bool) error {
 	}
 
 	// Initialize history store
-	store, err := history.NewStore(history.DefaultDBPath())
+	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

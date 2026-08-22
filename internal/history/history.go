@@ -54,17 +54,17 @@ const (
 )
 
 type Record struct {
-	ID         int64
-	ProfileID  string
-	BrokerID   string
-	BrokerName string
-	Email      string
-	Template   string
-	Status     Status
-	MessageID  string
-	Error      string
-	SentAt     time.Time
-	CreatedAt  time.Time
+	ID             int64
+	ProfileID      string
+	BrokerID       string
+	BrokerName     string
+	Email          string
+	Template       string
+	Status         Status
+	MessageID      string
+	Error          string
+	SentAt         time.Time
+	CreatedAt      time.Time
 	PipelineStatus PipelineStatus // Current stage in pipeline
 }
 
@@ -635,6 +635,23 @@ func DefaultDBPath() string {
 		return "eraser_history.db"
 	}
 	return filepath.Join(home, ".eraser", "history.db")
+}
+
+// DBPathFor returns the history database path to use alongside a given
+// config file: history.db in the same directory as configPath, rather than
+// always the default ~/.eraser/history.db. Every command already accepts
+// --config to point at an alternate config file, but used to still read/
+// write the one shared default history.db regardless - this makes an
+// alternate --config imply an isolated data directory too, the way a user
+// pointing --config at a scratch file would expect. Falls back to
+// DefaultDBPath() when configPath is empty (matches DefaultConfigPath's own
+// fallback path, so behavior for the normal default-config case is
+// unchanged).
+func DBPathFor(configPath string) string {
+	if configPath == "" {
+		return DefaultDBPath()
+	}
+	return filepath.Join(filepath.Dir(configPath), "history.db")
 }
 
 // ==================== Broker Response Methods ====================

@@ -59,7 +59,7 @@ func runServe(port int) error {
 	}
 
 	// Initialize history store
-	store, err := history.NewStore(history.DefaultDBPath())
+	store, err := history.NewStore(history.DBPathFor(configPath))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

@@ -394,10 +394,11 @@ brokers:
     - id: adadapted
       name: Adadapted Inc.
       email: ""
+      notes: 'AdAdapted''s opt-out policy: "does not store or receive email address, only the mobile advertising identifier - requests cannot be processed without one."'
       website: https://www.adadapted.com/
       opt_out_url: https://www.adadapted.com/legal/do-not-sell
       region: us
-      category: marketing
+      category: device-id-only
     - id: address-clearing-house
       name: Address Clearing House
       email: lisa@achcoop.com
@@ -1128,11 +1129,12 @@ brokers:
       category: marketing
     - id: collective-data-solutions
       name: Collective Data Solutions, LLC
-      email: privacy@collectivedata.io
+      email: ""
+      notes: 'Opt-out form (collectivedata.io) requires a Mobile Advertising ID and notes requests are device-specific; no name/email path offered.'
       website: https://www.collectivedata.io/
       opt_out_url: https://www.collectivedata.io/opt-out-do-not-sell-request-process/
       region: us
-      category: marketing
+      category: device-id-only
     - id: command-precision
       name: Command Precision Inc.
       email: info@persistent.id
@@ -1522,11 +1524,12 @@ brokers:
       category: marketing
     - id: digicenter
       name: Digicenter, LLC.
-      email: privacy@digicenter.com
+      email: ""
+      notes: 'Opt-out form (via the same collectivedata.io platform as collective-data-solutions) requires a Mobile Advertising ID; explicitly says not to enter a phone number.'
       website: https://www.digicenter.com/
       opt_out_url: https://www.collectivedata.io/opt-out-do-not-sell-request-process/
       region: us
-      category: marketing
+      category: device-id-only
     - id: digital-media-solutions
       name: Digital Media Solutions, LLC
       email: tax@dmsgroup.com
@@ -1796,11 +1799,12 @@ brokers:
       category: marketing
     - id: exponential-interactive
       name: Exponential Interactive, Inc.
-      email: privacy@vdx.tv
+      email: ""
+      notes: 'Privacy policy: data is "completely anonymized and de-identified" - can''t honor requests requiring identification of a specific person/device; wants a tribalfusion.com ANON_ID cookie value instead.'
       website: https://www.vdx.tv/
       opt_out_url: https://www.vdx.tv/policies/privacy#opting-out
       region: us
-      category: marketing
+      category: device-id-only
     - id: eyeota-pte
       name: Eyeota Pte Ltd
       email: privacy@eyeota.com
@@ -2998,11 +3002,12 @@ brokers:
       category: marketing
     - id: magnite
       name: MAGNITE Inc
-      email: privacy@magnite.com
+      email: ""
+      notes: 'Privacy notice: needs "Digital Identifiers" (device/browser identifiers) to act on access/correction/deletion requests; doesn''t process directly-identifying info like names.'
       website: https://www.magnite.com/
       opt_out_url: https://www.magnite.com/legal/user-choice-portal/#optout
       region: us
-      category: marketing
+      category: device-id-only
     - id: malvern-media
       name: Malvern Media Inc.
       email: info@malvernmedia.com
@@ -3208,11 +3213,12 @@ brokers:
       category: marketing
     - id: mobilewalla
       name: Mobilewalla, Inc.
-      email: jclark@mobilewalla.com
+      email: ""
+      notes: 'Global opt-out page: "we cannot process your request without a valid MAID [Mobile Advertising ID]" even with an email address provided.'
       website: https://www.mobilewalla.com/
       opt_out_url: https://www.mobilewalla.com/global-opt-out-request
       region: us
-      category: marketing
+      category: device-id-only
     - id: modernize
       name: Modernize, Inc.
       email: support@modernize.com
@@ -3527,11 +3533,12 @@ brokers:
       category: marketing
     - id: outlogic
       name: OUTLOGIC LLC
-      email: privacy@outlogic.io
+      email: ""
+      notes: 'Opt-out form requires an Advertising ID or Installation ID to process requests. OUTLOGIC LLC is X-Mode Social''s current name (rebranded 2023) - the separate x-mode-social entry (same opt_out_url) was merged into this one.'
       website: https://www.outlogic.io/
       opt_out_url: https://outlogic.io/opt-out-form/
       region: us
-      category: marketing
+      category: device-id-only
     - id: outward-media
       name: Outward Media, Inc.
       email: accounting@outwardmedia.com
@@ -3834,11 +3841,11 @@ brokers:
     - id: pulsepoint
       name: Pulsepoint, Inc.
       email: ""
-      notes: Email privacy@pulsepoint.com hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Privacy policy: requests need PulsePoint cookies, a MAID, or an IP address - they generally hold only pseudonymous data, no name/email path. (Email was already cleared separately after a hard bounce.)'
       website: https://www.pulsepoint.com/
       opt_out_url: https://www.pulsepoint.com/legal/platform-privacy-policy#opt-out
       region: us
-      category: marketing
+      category: device-id-only
     - id: purecars-technologies
       name: Purecars Technologies, LLC
       email: ""
@@ -4060,6 +4067,7 @@ brokers:
     - id: reveal-mobile
       name: Reveal Mobile Inc
       email: info@revealmobile.com
+      notes: 'Privacy policy says mobile in-app data can only be located via IDFA/Android Advertiser ID ("we don''t collect any email addresses, names, or phone numbers from mobile apps") - but website-collected data can still be requested via name/email, so NOT recategorized as device-id-only. Email kept.'
       website: https://www.revealmobile.com/
       opt_out_url: https://revealmobile.com/ccpa/
       region: us
@@ -4492,12 +4500,12 @@ brokers:
       category: marketing
     - id: startio
       name: Start.Io Inc.
-      email: privacy@start.io
-      notes: Email was privay@start.io (typo, missing "c") which hard-bounced (2026-08-21) - corrected to privacy@start.io, unverified.
+      email: ""
+      notes: 'Opt-out page''s primary/stated mechanism explicitly requires an Advertising ID (AAID/IDFA), with detailed instructions on finding it since it''s hidden by default; the phone hotline is only a secondary CCPA fallback, not a name/email path - the corrected email address is unlikely to get this processed either.'
       website: https://www.start.io/
       opt_out_url: https://www.start.io/do-not-sell-or-sharemy-personal-information/
       region: us
-      category: marketing
+      category: device-id-only
     - id: statara-solutions
       name: Statara Solutions LLC
       email: privacy@statara.com
@@ -4991,11 +4999,12 @@ brokers:
       category: marketing
     - id: videoamp
       name: Videoamp, Inc.
-      email: legal@videoamp.com
+      email: ""
+      notes: 'Consumer rights page requires a device/advertising identifier to locate and act on a request; no name/email-only path offered.'
       website: https://www.videoamp.com/
       opt_out_url: https://www.videoamp.com/consumer-rights-under-ccpa
       region: us
-      category: marketing
+      category: device-id-only
     - id: virtual-marketing
       name: Virtual Marketing LLC
       email: databroker@fusion92.com
@@ -5144,22 +5153,16 @@ brokers:
       category: marketing
     - id: xad
       name: Xad, Inc.
-      email: legal@groundtruth.com
+      email: ""
+      notes: 'GroundTruth (Xad''s current brand) consumer-rights page requires a device/advertising identifier; no name/email-only path offered.'
       website: https://www.groundtruth.com/
       opt_out_url: https://www.groundtruth.com/privacy-rights/
       region: us
-      category: marketing
+      category: device-id-only
     - id: xcelerated-data
       name: Xcelerated Data LLC
       email: privacy@xcelerated.com
       website: https://www.xcelerated.com/
-      region: us
-      category: marketing
-    - id: x-mode-social
-      name: X-Mode Social, Inc.
-      email: ap@xmodesocial.com
-      website: https://www.xmode.io/
-      opt_out_url: https://outlogic.io/opt-out-form/
       region: us
       category: marketing
     - id: xome-leads

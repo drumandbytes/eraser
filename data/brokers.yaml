@@ -95,13 +95,15 @@ brokers:
       category: people-search
     - id: publicrecordsnow
       name: PublicRecordsNow
-      email: privacy@publicrecordsnow.com
+      email: ""
+      notes: Email privacy@publicrecordsnow.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.publicrecordsnow.com
       region: us
       category: people-search
     - id: addresses
       name: Addresses.com
-      email: privacy@addresses.com
+      email: ""
+      notes: Email privacy@addresses.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.addresses.com
       opt_out_url: https://www.addresses.com/optout.php
       region: us
@@ -281,7 +283,8 @@ brokers:
       category: marketing
     - id: veromi
       name: Veromi
-      email: privacy@veromi.net
+      email: ""
+      notes: Email privacy@veromi.net hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.veromi.net
       region: us
       category: people-search
@@ -315,7 +318,8 @@ brokers:
       category: marketing
     - id: 4eyesai
       name: 4Eyes.Ai, Inc.
-      email: privacy@4-eyes.ai
+      email: ""
+      notes: Email privacy@4-eyes.ai hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.4-eyes.ai/
       opt_out_url: https://www.4-eyes.ai/privacy-policy?cord_section=privacy_options_dns
       region: us
@@ -416,7 +420,8 @@ brokers:
       category: marketing
     - id: adrea-rubin-marketing
       name: Adrea Rubin Marketing, Inc.
-      email: jenniferv@adrearubin.com
+      email: ""
+      notes: Email jenniferv@adrearubin.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.adrearubin.com/
       region: us
       category: marketing
@@ -982,7 +987,8 @@ brokers:
       notes: 'privacy@careerbuilder.com bounced; no working email found. CareerBuilder privacy requests now route through Monster''s web form. Updated 2026-08-20.'
     - id: car-market-solutions
       name: Car Market Solutions LLC
-      email: ben@carmarketsolutions.com
+      email: ""
+      notes: Email ben@carmarketsolutions.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.carmarketsolutions.com/
       region: us
       category: marketing
@@ -1180,7 +1186,8 @@ brokers:
       category: marketing
     - id: connect-computer
       name: Connect Computer LLC
-      email: support@calltruth.com
+      email: ""
+      notes: Email support@calltruth.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.calltruth.com/
       opt_out_url: https://www.calltruth.com/opt_out.php
       region: us
@@ -1701,12 +1708,12 @@ brokers:
       category: marketing
     - id: email-marketing-services
       name: Email Marketing Services, Inc
-      email: dataprivacy@listmatch.com
+      email: ""
       website: https://www.listmatch.com/
       region: us
       category: marketing
       opt_out_url: 'https://listmatch.com/privacy/'
-      notes: 'dataprivacy@listmatch.com bounced on 2026-08-20 despite being the officially CA-registered contact - may be transient. Added their web form as a fallback; phone opt-out also available: (888) 757-2614.'
+      notes: 'dataprivacy@listmatch.com bounced on 2026-08-20 despite being the officially CA-registered contact, then hard-bounced again (address not found) on 2026-08-23 - confirmed dead, not transient. Use the web form; phone opt-out also available: (888) 757-2614.'
     - id: emailmovers
       name: Emailmovers Ltd
       email: compliance@emailmovers.com
@@ -1932,7 +1939,8 @@ brokers:
       category: marketing
     - id: fourleaf
       name: Fourleaf LLC
-      email: privacy@thefourleaf.com
+      email: ""
+      notes: Email privacy@thefourleaf.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.fourleafdata.com/
       opt_out_url: https://www.fourleafdata.com/privacy-policy
       region: us
@@ -2301,7 +2309,8 @@ brokers:
       category: marketing
     - id: idengine
       name: Idengine LLC
-      email: chad@idengine.ai
+      email: ""
+      notes: Email chad@idengine.ai hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.idengine.com/
       opt_out_url: https://idengine.com/dnsmpi/
       region: us
@@ -2355,7 +2364,8 @@ brokers:
       category: marketing
     - id: infinite-knot
       name: Infinite Knot Inc.
-      email: barrygold@contacts411.com
+      email: ""
+      notes: Email barrygold@contacts411.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.contacts411.com/
       opt_out_url: https://www.contacts411.com/opt-out
       region: us
@@ -2470,7 +2480,8 @@ brokers:
       category: marketing
     - id: integrated-medical-data
       name: Integrated Medical Data, LLC.
-      email: bzink@integratedmedicaldata.com
+      email: ""
+      notes: Email bzink@integratedmedicaldata.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.integratedmedicaldata.com/
       region: us
       category: marketing
@@ -2712,7 +2723,8 @@ brokers:
       notes: dataprivacy@koddi.com replied that they do not accept privacy requests via email at all - web form only (reply received 2026-08-20).
     - id: kols-key-opinion-leaders
       name: Kols (Key Opinion Leaders)
-      email: kol-privacy@keyopinionleaders.com
+      email: ""
+      notes: Email kol-privacy@keyopinionleaders.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.keyopinionleaders.com/
       opt_out_url: https://www.keyopinionleaders.com/
       region: us
@@ -2825,7 +2837,8 @@ brokers:
       category: marketing
     - id: let-it-ride-sports
       name: LET IT RIDE SPORTS LLC
-      email: brenton@outlastdfs.com
+      email: ""
+      notes: Email brenton@outlastdfs.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.outlastdfs.com/
       region: us
       category: marketing
@@ -2905,7 +2918,8 @@ brokers:
       category: marketing
     - id: localblox
       name: Localblox
-      email: sabira@localblox.com
+      email: ""
+      notes: Email sabira@localblox.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.localblox.com/
       opt_out_url: https://consumer.localblox.com/privacy_policy
       region: us
@@ -4836,7 +4850,8 @@ brokers:
       category: marketing
     - id: tymax-media
       name: Tymax Media
-      email: privacyofficer@datacomplianceportal.com
+      email: ""
+      notes: Email privacyofficer@datacomplianceportal.com hard-bounced (2026-08-23) - address not found.
       website: https://www.tymaxmedia.com/
       opt_out_url: https://www.tymaxmedia.com/ccpa.php
       region: us

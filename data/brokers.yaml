@@ -3081,11 +3081,12 @@ brokers:
       category: device-id-only
     - id: maxmind
       name: MAXMIND Inc
-      email: legal@maxmind.com
+      email: ""
       website: https://www.maxmind.com/
-      opt_out_url: https://www.maxmind.com/en/opt-out
+      opt_out_url: https://www.maxmind.com/en/data-deletion-and-verification
       region: us
       category: marketing
+      notes: 'Reply (2026-08-24) said a GDPR deletion request must go through their Personal Data Deletion Request and Verification web form (the opt_out_url above) - email is not processed. They also do not sell/share names, emails, phones, or addresses; a separate opt-out form covers IP address data only.'
     - id: mch
       name: MCH Inc
       email: privacy@mchdata.com
@@ -3533,7 +3534,8 @@ brokers:
       category: marketing
     - id: origin8
       name: ORIGIN8 Inc
-      email: compliance@pushint.com
+      email: ""
+      notes: Email compliance@pushint.com hard-bounced (2026-08-24) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.pushint.com/
       opt_out_url: https://pushint.com/manage-my-data
       region: us
@@ -3720,7 +3722,8 @@ brokers:
       category: marketing
     - id: plural-marketing-solutions
       name: Plural Marketing Solutions Inc.
-      email: george@plmrkg.com
+      email: ""
+      notes: Email george@plmrkg.com hard-bounced (2026-08-24) - recipient server rejected all delivery attempts.
       website: https://www.plmrkg.com/
       region: us
       category: marketing
@@ -3947,7 +3950,8 @@ brokers:
       category: marketing
     - id: reality-media
       name: Reality Media, Inc.
-      email: cform@realitymediainc.com
+      email: ""
+      notes: Email cform@realitymediainc.com hard-bounced (2026-08-24) - recipient server rejected all delivery attempts.
       website: https://www.realitydebtsolutions.com/
       opt_out_url: https://www.realitydebtsolutions.com/do-not-sell-my-personal-information/
       region: us
@@ -4361,10 +4365,12 @@ brokers:
       category: marketing
     - id: similarweb
       name: Similarweb Ltd.
-      email: legal@similarweb.com
+      email: ""
       website: https://www.similarweb.com/
+      opt_out_url: https://similarweb.privacy.saymine.io/similarweb
       region: us
       category: marketing
+      notes: 'Reply (2026-08-24) said a GDPR request must go through their saymine.io-hosted data subject request form (the opt_out_url above) - email is not processed.'
     - id: simio-cloud
       name: SIMIO CLOUD LLC
       email: privacy@simiocloud.com
@@ -4402,7 +4408,8 @@ brokers:
       category: marketing
     - id: sma-communications
       name: SMA Communications, LLC.
-      email: steven@smacomm.com
+      email: ""
+      notes: Email steven@smacomm.com hard-bounced (2026-08-24) - recipient server rejected all delivery attempts.
       website: https://www.smacomm.com/
       opt_out_url: https://smacomm.com/do-not-sell/
       region: us
@@ -4580,7 +4587,8 @@ brokers:
       category: marketing
     - id: strategic-information-resources
       name: Strategic Information Resources
-      email: jdrziak@strategicinfo.com
+      email: ""
+      notes: Email jdrziak@strategicinfo.com hard-bounced (2026-08-24) - recipient server rejected all delivery attempts.
       website: https://www.strategicinfo.com/
       region: us
       category: marketing
@@ -4592,7 +4600,8 @@ brokers:
       category: marketing
     - id: structure
       name: Structure
-      email: thoran@structure.ac
+      email: ""
+      notes: Email thoran@structure.ac hard-bounced (2026-08-24) - recipient server rejected all delivery attempts.
       website: https://www.structure.ac/
       opt_out_url: https://www.structure.ac/opt_outs/new
       region: us
@@ -5113,7 +5122,8 @@ brokers:
       category: marketing
     - id: whoodle
       name: Whoodle, LLC
-      email: support@whoodle.com
+      email: ""
+      notes: Email support@whoodle.com hard-bounced (2026-08-24) - domain has no working mail server (DNS MX lookup failed).
       website: https://www.whoodle.com/
       region: us
       category: marketing

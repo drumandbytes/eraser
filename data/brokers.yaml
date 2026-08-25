@@ -740,11 +740,12 @@ brokers:
       category: marketing
     - id: azerion-us
       name: Azerion US Inc.
-      email: dpo_hybridtheory@azerion.com
+      email: ""
       website: https://www.azerion.com/
-      opt_out_url: https://www.hybridtheory.com/do-not-sell/
+      opt_out_url: https://www.hybridtheory.com/opt-out/
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-08-24): same Hybrid Theory infrastructure/DPO team - only holds pseudonymous cookie/User-ID data, no name/email/address. Deletion requires emailing them the cookie ID shown on the opt-out page after visiting it from the browser/device in question - not reachable via this tool''s profile-based request.'
     - id: azira
       name: AZIRA LLC
       email: sonal@azira.com
@@ -1546,10 +1547,11 @@ brokers:
       category: marketing
     - id: digital-safety-products
       name: Digital Safety Products, LLC
-      email: privacyinfo@spyfly.com
+      email: ""
       website: https://www.spyfly.com/
       region: us
       category: marketing
+      notes: 'Reply (2026-08-24) said to submit the privacy request via "Do Not Sell My Personal Information" at the bottom of their homepage (no direct form link given) - email is not processed.'
     - id: digital-segment
       name: DIGITAL SEGMENT LLC
       email: info@digitalsegment.com
@@ -2289,10 +2291,12 @@ brokers:
       category: marketing
     - id: hybrid-theory
       name: Hybrid Theory
-      email: privacy@hybridtheory.com
+      email: ""
       website: https://www.hybridtheory.com/
+      opt_out_url: https://www.hybridtheory.com/opt-out/
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-08-24): only holds pseudonymous cookie/User-ID data, no name/email/address. Deletion requires emailing them the cookie ID shown on the opt-out page after visiting it from the browser/device in question - not reachable via this tool''s profile-based request.'
     - id: i360
       name: I360, LLC
       email: privacy@i-360.com
@@ -4247,11 +4251,12 @@ brokers:
       category: marketing
     - id: scalable-commerce
       name: Scalable Commerce, LLC
-      email: privacyinfo@kidslivesafe.com
+      email: ""
       website: https://www.kidslivesafe.com/
       opt_out_url: https://www.kidslivesafe.com/help-center/privacy-requests
       region: us
       category: marketing
+      notes: 'Reply (2026-08-24) said to submit the privacy request through their form (the opt_out_url above) or via "Do Not Sell My Personal Information" at the bottom of their homepage - email is not processed.'
     - id: scanbuy
       name: Scanbuy, Inc
       email: chai.outmezguine@scanbuy.com

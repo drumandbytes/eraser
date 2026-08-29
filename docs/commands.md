@@ -35,6 +35,6 @@ User config is stored at `~/.eraser/config.yaml` (see `config.example.yaml` for 
 - `profile` - the legacy/primary profile: name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities
 - `profiles` - optional list of additional named profiles (see [multi-profile.md](multi-profile.md)); when present, this list is authoritative and `profile` above becomes vestigial unless one entry has `id: default`
 - `email` - SMTP only
-- `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `regions`, `excluded_brokers`
+- `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`)
 - `inbox` - IMAP settings, for `monitor`/`pipeline`/the web UI's inbox scan (shared across all profiles - see [multi-profile.md](multi-profile.md#shared-inbox))
 - `pipeline` - browser automation settings for `fill`

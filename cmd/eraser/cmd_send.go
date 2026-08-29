@@ -77,7 +77,7 @@ func runSend() error {
 	}
 
 	// Filter brokers
-	brokers := brokerDB.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers)
+	brokers := brokerDB.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories)
 	if len(brokers) == 0 {
 		fmt.Println("No brokers to process.")
 		return nil

@@ -75,3 +75,9 @@ options:
   # excluded_brokers:
   #   - spokeo
   #   - whitepages
+
+  # Skip every broker in these categories (optional) - e.g. "requires-id" to
+  # skip brokers that demand a government-issued ID document before they'll
+  # act on a request (this tool won't supply one on your behalf)
+  # excluded_categories:
+  #   - requires-id

@@ -254,6 +254,12 @@ type Options struct {
 	DailySendLimit  int      `yaml:"daily_send_limit,omitempty"`
 	Regions         []string `yaml:"regions"`
 	ExcludedBrokers []string `yaml:"excluded_brokers,omitempty"`
+	// ExcludedCategories skips every broker whose category (case-insensitive)
+	// matches one of these - e.g. "requires-id" to skip brokers that ask for
+	// a government-issued ID document or similar heavyweight identity
+	// verification before they'll act on a request, which this tool won't
+	// supply on your behalf.
+	ExcludedCategories []string `yaml:"excluded_categories,omitempty"`
 }
 
 func DefaultConfigPath() string {

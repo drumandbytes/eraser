@@ -124,6 +124,7 @@ func runInit() error {
 	cfg.Options.DailySendLimit = existing.Options.DailySendLimit
 	cfg.Options.Regions = existing.Options.Regions
 	cfg.Options.ExcludedBrokers = existing.Options.ExcludedBrokers
+	cfg.Options.ExcludedCategories = existing.Options.ExcludedCategories
 
 	// Carry forward inbox/pipeline settings too - init only manages the
 	// profile/email/template fields above.

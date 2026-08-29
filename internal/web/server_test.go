@@ -140,3 +140,27 @@ func TestServerConfigLoadCopyMutateStoreIsolation(t *testing.T) {
 		t.Fatalf("getConfig after Store: got %q, want %q", after.Options.Template, "changed")
 	}
 }
+
+// TestGetBrokersWithStatusRespectsExclusions is a regression test:
+// excluded_brokers/excluded_categories used to only be enforced by the CLI's
+// `send` command (via broker.Filter) - the web UI's brokers list and bulk
+// "Send to All" both go through getBrokersWithStatus instead, which never
+// looked at either option, so a configured exclusion silently had no effect
+// there.
+func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
+	cfg := testConfig()
+	cfg.Options.ExcludedBrokers = []string{"spokeo"}
+	cfg.Options.ExcludedCategories = []string{"requires-id"}
+	s := newTestServer(t, cfg)
+	s.brokerDB.Brokers = []broker.Broker{
+		{ID: "spokeo", Name: "Spokeo", Region: "us", Category: "people-search"},
+		{ID: "altisource-holdings", Name: "Altisource Holdings, LLC", Region: "us", Category: "requires-id"},
+		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
+	}
+
+	got := s.getBrokersWithStatus("default", "", "", "", "", false)
+
+	if len(got) != 1 || got[0].ID != "beenverified" {
+		t.Errorf("expected only beenverified to survive exclusion, got %+v", got)
+	}
+}

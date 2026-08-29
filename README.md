@@ -181,6 +181,12 @@ options:
   #   - spokeo
   #   - whitepages
 
+  # Optional: skip every broker in these categories - e.g. "requires-id" to
+  # skip brokers that demand a government-issued ID document before they'll
+  # act on a request (this tool won't supply one on your behalf)
+  # excluded_categories:
+  #   - requires-id
+
 # Optional: monitor your inbox for broker replies (used by `eraser monitor`)
 # inbox:
 #   enabled: true
@@ -210,7 +216,7 @@ The broker database is at `data/brokers.yaml`. To add one:
   website: https://example.com
   opt_out_url: https://example.com/optout
   region: us  # us, eu, or global
-  category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, or device-id-only
+  category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, device-id-only, or requires-id
 ```
 
 Or use the interactive command:

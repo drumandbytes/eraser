@@ -72,12 +72,19 @@ func toSet(items []string) map[string]bool {
 	return m
 }
 
-func (db *BrokerDatabase) Filter(regions []string, excluded []string) []Broker {
-	regionSet, excludedSet := toSet(regions), toSet(excluded)
+// Filter returns brokers matching the given regions (empty means "all"),
+// excluding any broker whose ID/name is in excluded or whose category
+// (case-insensitive) is in excludedCategories - e.g. "requires-id" to skip
+// brokers that demand a government ID document before acting on a request.
+func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCategories []string) []Broker {
+	regionSet, excludedSet, excludedCatSet := toSet(regions), toSet(excluded), toSet(excludedCategories)
 
 	var result []Broker
 	for _, b := range db.Brokers {
 		if excludedSet[strings.ToLower(b.ID)] || excludedSet[strings.ToLower(b.Name)] {
+			continue
+		}
+		if excludedCatSet[strings.ToLower(b.Category)] {
 			continue
 		}
 		if len(regionSet) > 0 {

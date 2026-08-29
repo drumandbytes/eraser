@@ -529,6 +529,26 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		brokerStatuses = make(map[string]history.BrokerStatus)
 	}
 
+	// excluded_brokers/excluded_categories (config.yaml) used to only be
+	// enforced by the CLI's `send` command via broker.Filter - the web UI's
+	// list and bulk-send both went through this function instead, which
+	// never looked at either option, so a configured exclusion silently had
+	// no effect here. Apply the same two checks broker.Filter does.
+	var excludedIDs, excludedNames, excludedCats map[string]bool
+	if cfg := s.getConfig(); cfg != nil {
+		excludedIDs = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
+		excludedNames = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
+		for _, e := range cfg.Options.ExcludedBrokers {
+			e = strings.ToLower(e)
+			excludedIDs[e] = true
+			excludedNames[e] = true
+		}
+		excludedCats = make(map[string]bool, len(cfg.Options.ExcludedCategories))
+		for _, c := range cfg.Options.ExcludedCategories {
+			excludedCats[strings.ToLower(c)] = true
+		}
+	}
+
 	search = strings.ToLower(strings.TrimSpace(search))
 	category = strings.ToLower(strings.TrimSpace(category))
 	region = strings.ToLower(strings.TrimSpace(region))
@@ -536,6 +556,13 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
+		if excludedIDs[strings.ToLower(b.ID)] || excludedNames[strings.ToLower(b.Name)] {
+			continue
+		}
+		if excludedCats[strings.ToLower(b.Category)] {
+			continue
+		}
+
 		// Search filter
 		if search != "" {
 			name := strings.ToLower(b.Name)

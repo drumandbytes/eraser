@@ -545,7 +545,8 @@ brokers:
       website: https://www.altisource.com/
       opt_out_url: https://www.altisource.com/us-consumer-privacy-notice
       region: us
-      category: marketing
+      category: requires-id
+      notes: 'Reply (2026-08-26) requires identity verification via a government-issued ID document (or confirming a password-protected account email) before they''ll act on the request - this tool does not supply ID documents on your behalf.'
     - id: american-city-business-journals
       name: American City Business Journals, Inc.
       email: legal@bizjournals.com
@@ -4231,11 +4232,12 @@ brokers:
       category: marketing
     - id: free-stream-media
       name: Free Stream Media Corp.
-      email: privacy@samba.tv
+      email: ""
       website: https://www.samba.tv/
-      opt_out_url: https://www.samba.tv/users/notice-of-right-to-opt-out
+      opt_out_url: 'https://privacyportal-cdn.onetrust.com/dsarwebform/87c5ee85-893d-4972-ba26-2e82b743d041/d84d9664-facb-4de3-85fd-a2e339b73dbf.html'
       region: us
       category: marketing
+      notes: 'Reply (2026-08-28, Samba TV/support@sambatv.zendesk.com) requires their OneTrust DSAR web form (the opt_out_url above) to verify identity - email is not processed.'
     - id: sawyer-lists
       name: Sawyer Lists, LLC
       email: ""
@@ -4281,10 +4283,11 @@ brokers:
       category: marketing
     - id: scraping-robot
       name: Scraping Robot, LLC
-      email: support@scrapingrobot.com
+      email: support+euprivacy@scrapingrobot.com
       website: https://www.scrapingrobot.com/
       region: us
       category: marketing
+      notes: 'Reply (2026-08-25, from support@sprious.com) said they are not a data processor/broker and asked EU residents to use support+euprivacy@scrapingrobot.com specifically (not the general support@ address) to exercise GDPR rights.'
     - id: scryer
       name: Scryer, Inc.
       email: info@reonomy.com
@@ -4514,11 +4517,12 @@ brokers:
       notes: 'Auto-reply says info@spydialer.com "is not intended for privacy-related requests" (2026-08-21) - use the opt_out_url form instead.'
     - id: stackadapt
       name: STACKADAPT Inc
-      email: legal@stackadapt.com
+      email: ""
       website: https://www.stackadapt.com/
       opt_out_url: https://www.stackadapt.com/legal-document-centre/opt-out-of-sale-targeted-advertising
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-08-28): found no match on name/email/address - relies on device ID, cookie ID (sa-user-id), IP address, and user agent instead. Requires emailing those identifiers directly (not reachable via this tool''s profile-based request); use the opt_out_url form as the general opt-out path.'
     - id: staircase
       name: Staircase, Inc.
       email: ""
@@ -4662,11 +4666,12 @@ brokers:
       category: marketing
     - id: amplemarket
       name: Amplemarket
-      email: privacy@amplemarket.com
+      email: ""
       website: https://www.amplemarket.com/
       opt_out_url: https://www.amplemarket.com/legal/do-not-sell-my-info
       region: us
       category: marketing
+      notes: 'Reply (2026-08-26) directed removal requests to their Removal Form (the opt_out_url above) rather than confirming email-based processing.'
     - id: tandem-marketing
       name: Tandem Marketing, LLC
       email: info@tandemmarketingnv.com
@@ -5045,18 +5050,20 @@ brokers:
       category: marketing
     - id: visitiqio
       name: Visitiq.Io
-      email: support@visitiq.io
+      email: ""
       website: https://www.visitiq.io/
-      opt_out_url: https://visitiq.io/opt-out-form/
+      opt_out_url: https://visitiq.io/data-rights-and-privacy/
       region: us
       category: marketing
+      notes: 'Reply (2026-08-27) said "we do not process data requests via email" - use the data-rights form (the opt_out_url above, superseding the older opt-out-form page).'
     - id: vistar-media
       name: Vistar Media, Inc.
-      email: privacy@vistarmedia.com
+      email: ""
       website: https://www.vistarmedia.com/
       opt_out_url: https://www.vistarmedia.com/privacy-choices
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-08-26): found no match on name/email/address - relies on mobile advertiser ID (IDFA/AAID) instead. Requires emailing that identifier directly (not reachable via this tool''s profile-based request); use the opt_out_url as the general privacy-choices path.'
     - id: visual-visitor
       name: VISUAL VISITOR LLC
       email: privacy@visualvisitor.com

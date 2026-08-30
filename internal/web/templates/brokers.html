@@ -29,7 +29,7 @@
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                 </svg>
-                <span id="send-all-text">Send to All</span>
+                <span id="send-all-text">Send to Selected</span>
                 <span id="send-all-spinner" class="hidden">
                     <span class="spinner"></span>
                 </span>
@@ -657,7 +657,7 @@ function resetButtons() {
     const retrySpinner = document.getElementById('retry-failed-spinner');
 
     setButtonsDisabled(false);
-    if (sendText) sendText.textContent = 'Send to All';
+    if (sendText) sendText.textContent = 'Send to Selected';
     if (sendSpinner) sendSpinner.classList.add('hidden');
     if (retryText) retryText.textContent = 'Retry Failed';
     if (retrySpinner) retrySpinner.classList.add('hidden');

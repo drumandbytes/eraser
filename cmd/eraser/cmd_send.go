@@ -20,6 +20,8 @@ var (
 	ignoreDailyLimit bool
 	resend           bool
 	templateOverride string
+	onlyCategories   string
+	onlyBrokers      string
 	sendPriorities   string
 )
 
@@ -57,7 +59,18 @@ erasure request are separate sends to the same broker. UK residents can run:
 Running the access pass first is usually worth it: the reply names the source
 they bought your data from and the recipients they sold it to, which is how
 you find the next brokers to chase. Once a broker has erased your record it
-can no longer tell you any of that.`,
+can no longer tell you any of that.
+
+--category and --broker narrow a run to the brokers worth clearing first,
+rather than working through the list in file order:
+
+  eraser send --category people-search       # the ones that surface publicly
+  eraser send --broker acxiom,epsilon        # upstream sources; suppression
+                                             # here reduces re-listing downstream
+
+Both compose with the daily cap and the per-request-type cooldown, so a
+narrowed run can be repeated safely and a later full run still picks up
+everyone it skipped.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend()
 		},
@@ -66,6 +79,8 @@ can no longer tell you any of that.`,
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
 	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
+	cmd.Flags().StringVar(&onlyCategories, "category", "", "Only send to brokers in these categories, comma-separated (e.g. people-search). Use 'eraser list-brokers' to see what exists")
+	cmd.Flags().StringVar(&onlyBrokers, "broker", "", "Only send to these brokers, comma-separated IDs or names (e.g. acxiom,epsilon)")
 	cmd.Flags().StringVar(&templateOverride, "template", "", "Template for this run, overriding options.template (one of: "+strings.Join(template.TemplateNames(), ", ")+")")
 	cmd.Flags().StringVar(&sendPriorities, "priority", "", "Only send to brokers with these priorities (comma-separated: high,medium,low)")
 
@@ -134,6 +149,26 @@ func runSend() error {
 	if len(brokers) == 0 {
 		fmt.Println("No brokers to process.")
 		return nil
+	}
+
+	// Positive selection, applied after the config-level excludes so an
+	// excluded broker stays excluded even if named here.
+	if cats := splitAndTrim(onlyCategories); len(cats) > 0 {
+		brokers = broker.SelectCategories(brokers, cats)
+		if len(brokers) == 0 {
+			return fmt.Errorf("no brokers in %s (available: %s)",
+				strings.Join(cats, ", "), strings.Join(brokerDB.Categories(), ", "))
+		}
+	}
+	if ids := splitAndTrim(onlyBrokers); len(ids) > 0 {
+		brokers = broker.SelectIDs(brokers, ids)
+		if len(brokers) == 0 {
+			return fmt.Errorf("no brokers matched %s - check the IDs with 'eraser list-brokers'",
+				strings.Join(ids, ", "))
+		}
+	}
+	if onlyCategories != "" || onlyBrokers != "" {
+		fmt.Printf("🎯 Narrowed to %d broker(s) by filter\n", len(brokers))
 	}
 
 	// Resolve which template this run uses before anything reads it: --template

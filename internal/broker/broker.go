@@ -153,6 +153,62 @@ func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCa
 	return result
 }
 
+// SelectCategories narrows list to brokers whose category matches one of
+// cats (case-insensitive). An empty cats returns list unchanged.
+//
+// This is the positive counterpart to Filter's excludedCategories: with 700+
+// brokers against a daily send cap, saying "only these" is a far more
+// practical way to prioritise than enumerating everything to skip. The
+// people-search category in particular is the handful of brokers that
+// actually surface someone's address in a search engine, so it's worth
+// clearing first.
+func SelectCategories(list []Broker, cats []string) []Broker {
+	if len(cats) == 0 {
+		return list
+	}
+	want := toSet(cats)
+	var out []Broker
+	for _, b := range list {
+		if want[strings.ToLower(b.Category)] {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// SelectIDs narrows list to brokers whose ID or name matches one of ids
+// (case-insensitive). An empty ids returns list unchanged. Name is accepted
+// alongside ID to match Filter's excluded-broker handling, which does the same.
+func SelectIDs(list []Broker, ids []string) []Broker {
+	if len(ids) == 0 {
+		return list
+	}
+	want := toSet(ids)
+	var out []Broker
+	for _, b := range list {
+		if want[strings.ToLower(b.ID)] || want[strings.ToLower(b.Name)] {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// Categories returns the distinct categories present, in first-seen order,
+// for use in "unknown category" error messages.
+func (db *BrokerDatabase) Categories() []string {
+	seen := make(map[string]bool)
+	var out []string
+	for _, b := range db.Brokers {
+		c := strings.ToLower(b.Category)
+		if c == "" || seen[c] {
+			continue
+		}
+		seen[c] = true
+		out = append(out, c)
+	}
+	return out
+}
+
 // FilterByPriority returns the brokers whose priority is in priorities.
 // An empty/nil priorities means "all", so it composes with Filter without
 // needing a sentinel. Note this does NOT mirror the "global" escape hatch

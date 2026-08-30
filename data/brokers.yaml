@@ -180,6 +180,7 @@ brokers:
       region: global
       category: marketing
       priority: high
+      notes: 'Reaches Equifax''s UK DPO, which also covers Equifax Ltd (equifax.co.uk); do not add that as a separate entry or the same desk is emailed twice.'
     - id: transunion-marketing
       name: TransUnion Marketing
       email: privacy@transunion.com
@@ -6024,7 +6025,7 @@ brokers:
       region: eu
       category: financial-b2b
       priority: high
-      notes: 'Replied "no data stored about you" (2026-08-21) - no further action taken.'
+      notes: 'Replied "no data stored about you" (2026-08-21) - no further action taken. Verband der Vereine Creditreform e.V. shares this DPO address and website; do not add it as a separate entry or it gets emailed twice.'
     - id: regis24
       name: Regis24
       email: datenschutz@regis24.de
@@ -6461,13 +6462,6 @@ brokers:
       region: global
       category: financial-b2b
       priority: high
-    - id: creditreform-verband
-      name: Verband der Vereine Creditreform e.V.
-      email: datenschutz@verband.creditreform.de
-      website: https://www.creditreform.de
-      region: eu
-      category: financial-b2b
-      priority: high
     - id: crif-at
       name: CRIF GmbH
       email: auskunft@crif.com
@@ -6537,13 +6531,6 @@ brokers:
       website: https://www.dnb.com/de-de
       region: eu
       category: marketing
-      priority: high
-    - id: equifax-gb
-      name: Equifax Ltd.
-      email: UKDPO@equifax.com
-      website: https://www.equifax.co.uk
-      region: global
-      category: financial-b2b
       priority: high
     - id: europro
       name: EURO-PRO Ges. für Data Processing mbH

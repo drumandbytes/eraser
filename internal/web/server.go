@@ -577,8 +577,22 @@ type BrokerWithStatus struct {
 	TotalSent int
 }
 
+// brokerQuery is the set of filters the brokers page, its HTMX fragment
+// endpoint and the bulk-send job all narrow the broker list with. It's a
+// struct rather than a positional argument list because there are enough
+// of them now that call sites were getting hard to read (and easy to
+// transpose).
+type brokerQuery struct {
+	Search       string
+	Category     string
+	Region       string
+	Priority     string
+	Status       string
+	MissingEmail bool
+}
+
 // getBrokersWithStatus returns brokers with their history status
-func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, missingEmail bool) []BrokerWithStatus {
+func (s *Server) getBrokersWithStatus(profileID string, q brokerQuery) []BrokerWithStatus {
 	// Get all broker statuses from history, scoped to the active profile
 	var brokerStatuses map[string]history.BrokerStatus
 	if s.historyStore != nil {
@@ -608,10 +622,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 	}
 
-	search = strings.ToLower(strings.TrimSpace(search))
-	category = strings.ToLower(strings.TrimSpace(category))
-	region = strings.ToLower(strings.TrimSpace(region))
-	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
+	search := strings.ToLower(strings.TrimSpace(q.Search))
+	category := strings.ToLower(strings.TrimSpace(q.Category))
+	region := strings.ToLower(strings.TrimSpace(q.Region))
+	statusFilter := strings.ToLower(strings.TrimSpace(q.Status))
+	// An unrecognized priority normalizes to "" - i.e. "no priority filter" -
+	// rather than matching nothing, matching how a bogus category or region
+	// in the query string already behaves.
+	priority := broker.NormalizePriority(q.Priority)
 
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
@@ -641,9 +659,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 			continue
 		}
 
+		// Priority filter
+		if priority != "" && broker.NormalizePriority(b.Priority) != priority {
+			continue
+		}
+
 		// Missing-email filter - brokers with no contact address on file,
 		// mirrors the CLI's `list-brokers --missing-email`
-		if missingEmail && b.Email != "" {
+		if q.MissingEmail && b.Email != "" {
 			continue
 		}
 

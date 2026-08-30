@@ -256,3 +256,27 @@ func TestBrokersPageRendersPriorityFilter(t *testing.T) {
 		})
 	}
 }
+
+// TestSendAllExcludesMissingEmailBrokers is a regression test: "Send to All"
+// claimed in a comment that it never targeted address-less brokers, but only
+// passed MissingEmail:false (which means "don't narrow *to* them"), so every
+// web-form-only broker, every address cleared by cleanup-bounces, and the
+// whole non-broker category went into the job and handed SMTP an empty To:.
+func TestSendAllExcludesMissingEmailBrokers(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.brokerDB.Brokers = []broker.Broker{
+		{ID: "spokeo", Name: "Spokeo", Email: "privacy@spokeo.com", Region: "us", Category: "people-search", Priority: "high"},
+		{ID: "whitepages", Name: "Whitepages", Email: "", Region: "us", Category: "people-search", Priority: "high"},
+		{ID: "donotcall-registry", Name: "Do Not Call Registry", Email: "", Region: "us", Category: "non-broker", Priority: "high"},
+	}
+
+	got := withEmail(s.getBrokersWithStatus("default", brokerQuery{}))
+
+	if len(got) != 1 || got[0].ID != "spokeo" {
+		var ids []string
+		for _, b := range got {
+			ids = append(ids, b.ID)
+		}
+		t.Errorf("bulk send target list = %v, want only [spokeo] - address-less brokers must not be emailed", ids)
+	}
+}

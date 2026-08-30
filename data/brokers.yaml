@@ -6689,3 +6689,119 @@ brokers:
       category: people-search
       priority: high
       notes: 'Latvia''s main phone-directory / people-lookup service. No DSR address verified from here - check 1188.lv privacy policy before sending.'
+    - id: google-search-removal
+      name: Google Search (results removal)
+      email: ""
+      website: https://www.google.com
+      opt_out_url: https://support.google.com/websearch/answer/12719076
+      region: global
+      category: non-broker
+      priority: high
+      notes: 'Not a data broker - Google indexes what brokers publish. Use the "Results about you" tool at the opt_out_url to suppress pages exposing your address/phone, and the removal troubleshooter at https://support.google.com/websearch/troubleshooter/3111061 for individual URLs. Worth doing after the brokers themselves, since delisting does not remove the source page.'
+    - id: bing-content-removal
+      name: Microsoft Bing (content removal)
+      email: ""
+      website: https://www.bing.com
+      opt_out_url: https://www.microsoft.com/en-us/concern/bing
+      region: global
+      category: non-broker
+      priority: high
+      notes: 'Not a data broker - search-index removal only, same caveat as Google. Removes results, not the underlying broker page.'
+    - id: daa-webchoices
+      name: DAA WebChoices (About Ads)
+      email: ""
+      website: https://optout.aboutads.info
+      opt_out_url: https://optout.aboutads.info
+      region: global
+      category: non-broker
+      priority: high
+      notes: 'Not a data broker - an industry opt-out portal that sets opt-out cookies across participating ad-tech vendors in one pass. Browser/device-scoped, so it must be re-run per browser and is lost when cookies are cleared. Complements, and does not replace, emailing the device-id-only brokers.'
+    - id: optoutprescreen
+      name: OptOutPrescreen
+      email: ""
+      website: https://www.optoutprescreen.com
+      opt_out_url: https://www.optoutprescreen.com
+      region: us
+      category: non-broker
+      priority: high
+      notes: 'Not a data broker - the joint credit-bureau portal for opting out of prescreened credit/insurance offers (US). Stops the bureaus selling your file for firm-offer marketing; a five-year opt-out is online, permanent needs a mailed form.'
+    - id: donotcall-registry
+      name: National Do Not Call Registry
+      email: ""
+      website: https://www.donotcall.gov
+      opt_out_url: https://www.donotcall.gov
+      region: us
+      category: non-broker
+      priority: high
+      notes: 'Not a data broker - the US FTC telemarketing suppression registry. Registration is free and permanent.'
+    - id: dmachoice
+      name: DMAChoice
+      email: ""
+      website: https://www.dmachoice.org
+      opt_out_url: https://dmachoice.org/static/consumer_choice_tools.php
+      region: us
+      category: non-broker
+      priority: high
+      notes: 'Not a data broker - the US direct-marketing industry mail preference service. Suppresses postal marketing from participating members for ten years; charges a small processing fee.'
+    - id: dmachoice-deceased
+      name: Deceased Do Not Contact (DMAChoice)
+      email: ""
+      website: https://www.ims-dm.com
+      opt_out_url: https://www.ims-dm.com/cgi/ddnc.php
+      region: us
+      category: non-broker
+      priority: medium
+      notes: 'Not a data broker - DMAChoice''s register for suppressing marketing to a deceased person. Listed for completeness when handling a relative''s data.'
+    - id: catalog-choice
+      name: Catalog Choice
+      email: ""
+      website: https://www.catalogchoice.org
+      opt_out_url: https://www.catalogchoice.org
+      region: us
+      category: non-broker
+      priority: medium
+      notes: 'Not a data broker - a free nonprofit service for cancelling individual mail-order catalogs, per merchant.'
+    - id: valpak-mail
+      name: Valpak (mailing list removal)
+      email: ""
+      website: https://www.valpak.com
+      opt_out_url: https://www.valpak.com/remove-address
+      region: us
+      category: non-broker
+      priority: medium
+      notes: 'Not a data broker - direct removal of an address from Valpak''s coupon-mailer list.'
+    - id: paperkarma
+      name: PaperKarma
+      email: ""
+      website: https://www.paperkarma.com
+      region: us
+      category: non-broker
+      priority: low
+      notes: 'Not a data broker - a paid third-party app that files junk-mail removals on your behalf. Listed so it is not mistaken for a broker; nothing to send here.'
+    - id: ancestry
+      name: Ancestry.com
+      email: privacy@ancestry.com
+      website: https://www.ancestry.com
+      opt_out_url: https://support.ancestry.com/s/reportissue?language=en_US
+      region: global
+      category: data-intermediary
+      priority: medium
+      notes: 'Genealogy service rather than a broker that sells your file, but it does publish family/records data about living people; a GDPR Article 17 request to the privacy address is legitimate. Deleting your own account and any trees you own is the more direct route.'
+    - id: familysearch
+      name: FamilySearch
+      email: ""
+      website: https://www.familysearch.org
+      opt_out_url: https://submit-irm.trustarc.com/services/validation/b8d6e704-e5b1-42a0-9f86-bbdec35939a1
+      region: global
+      category: data-intermediary
+      priority: medium
+      notes: 'Nonprofit genealogy archive publishing records on living people. Requests go through the TrustArc-hosted form at the opt_out_url, not by email.'
+    - id: chexsystems
+      name: ChexSystems
+      email: ""
+      website: https://www.chexsystems.com
+      opt_out_url: https://www.chexsystems.com/security-freeze/place-freeze
+      region: us
+      category: financial-b2b
+      priority: high
+      notes: 'US banking-history consumer reporting agency. As a CRA it will not erase an accurate file, but it takes a security freeze and a free disclosure request through the opt_out_url.'

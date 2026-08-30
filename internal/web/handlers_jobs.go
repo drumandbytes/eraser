@@ -66,6 +66,13 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 	var toSend []BrokerWithStatus
 	for _, id := range state.RemainingBrokers {
 		if b, ok := brokerMap[id]; ok {
+			// Skip brokers with no address, same as the initial build in
+			// handleAPISendAll. A job persisted before cleanup-bounces (or
+			// mark-bounced) cleared an address would otherwise resume into
+			// a send with an empty To:.
+			if strings.TrimSpace(b.Email) == "" {
+				continue
+			}
 			toSend = append(toSend, BrokerWithStatus{Broker: b, Status: "never"})
 		}
 	}
@@ -232,14 +239,20 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		status = "pending"
 	}
 
-	// Bulk send never targets missing-email brokers - there's nowhere to send.
-	toSend := s.getBrokersWithStatus(activeProfile.ID, brokerQuery{
+	// Bulk send never targets missing-email brokers - there's nowhere to
+	// send. MissingEmail:false only means "don't narrow *to* them", so the
+	// exclusion has to be done here: without it a bulk send walked every
+	// address-less broker (web-form-only brokers, ones cleared by
+	// cleanup-bounces, and the whole non-broker category), handing SMTP an
+	// empty To: and burning daily-limit budget on guaranteed failures. The
+	// CLI `send` and the single-broker endpoint have always skipped them.
+	toSend := withEmail(s.getBrokersWithStatus(activeProfile.ID, brokerQuery{
 		Search:   search,
 		Category: category,
 		Region:   region,
 		Priority: priority,
 		Status:   status,
-	})
+	}))
 
 	// Order high-priority brokers first, the same way `eraser send` does.
 	// processSendJob pauses this job when it hits daily_send_limit and
@@ -306,6 +319,21 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		"job_id": job.ID,
 		"total":  len(toSend),
 	})
+}
+
+// withEmail drops brokers with no contact address on file. They can't be
+// emailed by definition - they take requests through a web form or DSR
+// portal, or their address bounced and was cleared - and belong in the
+// manual-follow-up flow (`list-brokers --missing-email`, `pipeline`)
+// instead of in a send job's total.
+func withEmail(brokers []BrokerWithStatus) []BrokerWithStatus {
+	result := make([]BrokerWithStatus, 0, len(brokers))
+	for _, b := range brokers {
+		if strings.TrimSpace(b.Email) != "" {
+			result = append(result, b)
+		}
+	}
+	return result
 }
 
 // defaultDailyLimit is used only if the config's daily_send_limit is unset -

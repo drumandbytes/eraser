@@ -218,3 +218,38 @@ func TestShippedBrokerDatabasePriorities(t *testing.T) {
 		}
 	}
 }
+
+// TestNonBrokerEntriesHaveNoEmail enforces the invariant the "non-broker"
+// category depends on. Those entries are search engines, industry
+// preference services and suppression registries - things you act on
+// yourself through a web form, not parties you send an erasure request to.
+// Giving one an address would put it in a bulk send's target list and mail
+// an erasure demand to, say, the FTC's Do Not Call registry.
+func TestNonBrokerEntriesHaveNoEmail(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "data", "brokers.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var db BrokerDatabase
+	if err := yaml.Unmarshal(data, &db); err != nil {
+		t.Fatal(err)
+	}
+
+	found := 0
+	for _, b := range db.Brokers {
+		if b.Category != "non-broker" {
+			continue
+		}
+		found++
+		if strings.TrimSpace(b.Email) != "" {
+			t.Errorf("non-broker entry %q has email %q; non-brokers must not be emailable", b.ID, b.Email)
+		}
+		if b.Notes == "" {
+			t.Errorf("non-broker entry %q has no notes; it needs to say what to do there instead", b.ID)
+		}
+	}
+	if found == 0 {
+		t.Error("no non-broker entries found - did the category get renamed?")
+	}
+}

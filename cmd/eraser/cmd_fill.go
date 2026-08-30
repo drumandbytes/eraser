@@ -109,6 +109,17 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		}
 	}
 
+	// The browser refuses to autofill PII when this list is empty (fail
+	// closed). Catch that here so the failure is one clear message rather
+	// than an identical per-form rejection with no stated cause - the list
+	// comes out empty if the broker file parsed to zero entries, or if a
+	// stub data/brokers.yaml in the current directory shadowed the real one.
+	if len(brokerDomains) == 0 {
+		return fmt.Errorf("no broker domains loaded from %s - refusing to autofill "+
+			"personal data into pages that can't be checked against the broker list",
+			resolveBrokerPath())
+	}
+
 	// --headless wins if you passed it explicitly; otherwise fall back to
 	// the config's pipeline.browser_headless (true if that's unset too).
 	if !headlessFlagSet {

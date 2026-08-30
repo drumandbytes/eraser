@@ -16,6 +16,7 @@ require (
 )
 
 require (
+	filippo.io/csrf v0.2.1 // indirect
 	github.com/andybalholm/cascadia v1.3.4 // indirect
 	github.com/chromedp/cdproto v0.0.0-20260804232424-e85f50dbfd32 // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect

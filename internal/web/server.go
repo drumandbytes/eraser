@@ -356,6 +356,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/history", s.handleHistory)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
+	r.Post("/settings/template", s.handleSettingsTemplate)
 	r.Get("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Post("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Get("/settings/profiles/{profileID}/edit", s.handleSettingsProfileEdit)
@@ -399,6 +400,7 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Post("/inbox/rescan", s.handleAPIInboxRescan)
 		r.Post("/inbox/reclassify", s.handleAPIReclassify)
 		r.Post("/profile", s.handleAPISwitchProfile)
+		r.Get("/template/preview", s.handleAPITemplatePreview)
 	})
 
 	return r

@@ -15,6 +15,7 @@ import (
 	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/eraser-privacy/eraser/internal/email"
 	"github.com/eraser-privacy/eraser/internal/history"
+	emaTemplate "github.com/eraser-privacy/eraser/internal/template"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -169,7 +170,13 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		BrokerName: br.Name,
 		Email:      br.Email,
 		Template:   tmplName,
-		SentAt:     time.Now(),
+		// Without this the row defaults to "erasure" regardless of the
+		// template actually used, so a uk-access send from the web UI would
+		// be recorded as a deletion request - and the resend cooldown, which
+		// is keyed on (broker, request type), would then suppress the real
+		// erasure request to that broker.
+		RequestType: emaTemplate.RequestTypeFor(tmplName),
+		SentAt:      time.Now(),
 	}
 
 	if result.Success {
@@ -435,12 +442,13 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 
 		// Record in history
 		record := &history.Record{
-			ProfileID:  activeProfile.ID,
-			BrokerID:   b.ID,
-			BrokerName: b.Name,
-			Email:      b.Email,
-			Template:   cfg.Options.Template,
-			SentAt:     time.Now(),
+			ProfileID:   activeProfile.ID,
+			BrokerID:    b.ID,
+			BrokerName:  b.Name,
+			Email:       b.Email,
+			Template:    cfg.Options.Template,
+			RequestType: emaTemplate.RequestTypeFor(cfg.Options.Template),
+			SentAt:      time.Now(),
 		}
 
 		if result.Success {

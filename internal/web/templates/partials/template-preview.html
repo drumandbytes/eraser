@@ -1,0 +1,19 @@
+{{define "partials/template-preview.html"}}
+{{if .Error}}
+<div class="rounded-xl p-4 text-sm text-error" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);">
+    {{.Error}}
+</div>
+{{else}}
+<div class="rounded-xl overflow-hidden" style="border: 1px solid var(--border-subtle);">
+    <div class="px-4 py-2 text-xs" style="background: var(--accent-muted);">
+        <span class="text-muted">Subject:</span>
+        <span class="text-primary font-medium">{{.Subject}}</span>
+    </div>
+    {{/* Fixed height with its own scroll: these letters run long, and the
+         preview shouldn't push the rest of the settings page off-screen.
+         pre-wrap preserves the template's paragraph breaks without letting
+         long lines force the page to scroll sideways. */}}
+    <pre class="px-4 py-3 text-xs text-secondary overflow-auto" style="max-height: 22rem; white-space: pre-wrap; word-break: break-word; margin: 0;">{{.Body}}</pre>
+</div>
+{{end}}
+{{end}}

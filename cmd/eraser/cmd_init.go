@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/eraser-privacy/eraser/internal/template"
 	"github.com/spf13/cobra"
 )
 
@@ -112,7 +113,20 @@ func runInit() error {
 		// audience. An existing config's own template choice always wins.
 		defaultTemplate = "gdpr"
 	}
-	cfg.Options.Template = promptWithDefault(reader, "Default template (gdpr/ccpa/generic)", defaultTemplate)
+	fmt.Println("  Templates:")
+	fmt.Println("    gdpr        - EU GDPR erasure (Article 17)")
+	fmt.Println("    ccpa        - California CCPA deletion")
+	fmt.Println("    generic     - references several privacy laws, works anywhere")
+	fmt.Println("    uk-access   - UK GDPR subject access request (Article 15) - asks what they hold")
+	fmt.Println("    uk-erasure  - UK GDPR erasure (Article 17)")
+	fmt.Println("    uk-combined - UK GDPR: both, with the access request answered first")
+	fmt.Println()
+	fmt.Println("  UK residents: the uk-* templates cite UK GDPR and the ICO rather than")
+	fmt.Println("  EU GDPR. Sending uk-access before uk-erasure is usually worth it - the")
+	fmt.Println("  reply names who they bought your data from and who they sold it to,")
+	fmt.Println("  which a broker can no longer tell you once it has erased your record.")
+	fmt.Println()
+	cfg.Options.Template = promptWithDefault(reader, "Default template ("+strings.Join(template.TemplateNames(), "/")+")", defaultTemplate)
 
 	// Carry forward tuning options rather than resetting them, so a
 	// hand-edited rate_limit_ms/daily_send_limit in the YAML survives

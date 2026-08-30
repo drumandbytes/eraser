@@ -168,6 +168,8 @@ func runMonitor(days int, once bool, watch bool) error {
 			pipelineStatus = history.PipelineRejected
 		case inbox.ResponsePending:
 			pipelineStatus = history.PipelineAwaitingResponse
+		case inbox.ResponseDisclosure:
+			pipelineStatus = history.PipelineDisclosureReceived
 		default:
 			pipelineStatus = history.PipelineAwaitingResponse
 		}
@@ -280,6 +282,8 @@ func printClassifiedResponse(r inbox.ClassifiedResponse) {
 		icon = "❌"
 	case inbox.ResponsePending:
 		icon = "⏳"
+	case inbox.ResponseDisclosure:
+		icon = "📄"
 	default:
 		icon = "❓"
 	}
@@ -292,6 +296,10 @@ func printClassifiedResponse(r inbox.ClassifiedResponse) {
 	}
 	if r.ConfirmURL != "" {
 		fmt.Printf("   🔗 Confirm URL: %s\n", r.ConfirmURL)
+	}
+	if r.Type == inbox.ResponseDisclosure {
+		fmt.Printf("   📄 Subject access response - read this before erasing. Look for the\n")
+		fmt.Printf("      source they got your data from and the recipients they sold it to.\n")
 	}
 	if r.NeedsReview {
 		fmt.Printf("   ⚠️  Confidence: %.0f%% - manual review recommended\n", r.Confidence*100)

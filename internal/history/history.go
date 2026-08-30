@@ -12,6 +12,19 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// Request types recorded against each send. These are the storage vocabulary
+// for which right a request exercised; internal/template.RequestTypeFor maps
+// a template name onto one of them.
+//
+// They matter for the resend cooldown: it is keyed on (broker, request type),
+// so asking a broker what they hold and then asking them to erase it are two
+// distinct sends rather than one being suppressed as a duplicate of the other.
+const (
+	RequestErasure  = "erasure"  // right to erasure / deletion only
+	RequestAccess   = "access"   // right of access - asks what they hold
+	RequestCombined = "combined" // both, access to be answered before erasure
+)
+
 type Status string
 
 const (
@@ -41,6 +54,13 @@ const (
 	PipelineConfirmed            PipelineStatus = "confirmed"
 	PipelineFailed               PipelineStatus = "failed"
 	PipelineRejected             PipelineStatus = "rejected"
+	// PipelineDisclosureReceived marks a broker that answered a subject
+	// access request with the data it holds. Deliberately distinct from
+	// "confirmed": that means the business is finished, whereas this one
+	// still needs a human to read the disclosure - it names the source the
+	// broker bought your data from and the recipients it sold it to, which
+	// is where the next set of brokers to chase comes from.
+	PipelineDisclosureReceived PipelineStatus = "disclosure_received"
 )
 
 // TaskType represents the type of pending task
@@ -54,12 +74,18 @@ const (
 )
 
 type Record struct {
-	ID             int64
-	ProfileID      string
-	BrokerID       string
-	BrokerName     string
-	Email          string
-	Template       string
+	ID         int64
+	ProfileID  string
+	BrokerID   string
+	BrokerName string
+	Email      string
+	Template   string
+	// RequestType is which right this send exercised - "erasure", "access"
+	// or "combined" (see internal/template.RequestTypeFor). Stored rather
+	// than derived from Template so the resend cooldown can treat an access
+	// request and an erasure request to the same broker as separate sends,
+	// and so the record stays meaningful if a template is later renamed.
+	RequestType    string
 	Status         Status
 	MessageID      string
 	Error          string
@@ -114,12 +140,20 @@ func scanRecord(scanner interface{ Scan(...any) error }) (*Record, error) {
 	var sentAt, createdAt sql.NullTime
 	var messageID, errStr sql.NullString
 
+	var requestType sql.NullString
+
 	err := scanner.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.Email, &r.Template,
-		&r.Status, &messageID, &errStr, &sentAt, &createdAt)
+		&requestType, &r.Status, &messageID, &errStr, &sentAt, &createdAt)
 	if err != nil {
 		return nil, err
 	}
 
+	// Rows written before the request_type migration scan as NULL; they were
+	// all erasure requests.
+	r.RequestType = requestType.String
+	if r.RequestType == "" {
+		r.RequestType = RequestErasure
+	}
 	r.MessageID = messageID.String
 	r.Error = errStr.String
 	r.SentAt = sentAt.Time
@@ -198,6 +232,12 @@ func (s *Store) migrate() error {
 	// DefaultProfileID here, matching what a single-profile config's
 	// GetProfiles() synthesizes, so existing history stays fully visible
 	// after upgrading rather than silently vanishing behind a profile filter.
+	// Every row written before request types existed was a deletion request,
+	// so defaulting to "erasure" keeps existing history correctly attributed
+	// and keeps the resend cooldown behaving exactly as it did for them.
+	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN request_type TEXT NOT NULL DEFAULT '`+RequestErasure+`'`); err != nil {
+		return err
+	}
 	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN profile_id TEXT NOT NULL DEFAULT '`+DefaultProfileID+`'`); err != nil {
 		return err
 	}
@@ -216,6 +256,7 @@ func (s *Store) migrate() error {
 		broker_name TEXT NOT NULL,
 		email TEXT NOT NULL,
 		template TEXT NOT NULL,
+		request_type TEXT NOT NULL DEFAULT '` + RequestErasure + `',
 		status TEXT NOT NULL,
 		message_id TEXT,
 		error TEXT,
@@ -305,9 +346,16 @@ func normalizeProfileID(id string) string {
 func (s *Store) Add(record *Record) error {
 	record.ProfileID = normalizeProfileID(record.ProfileID)
 
+	// Callers that predate request types (or construct a Record by hand)
+	// leave this empty; treat that as the erasure default rather than
+	// writing a row with no type.
+	if record.RequestType == "" {
+		record.RequestType = RequestErasure
+	}
+
 	query := `
-	INSERT INTO removal_requests (profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO removal_requests (profile_id, broker_id, broker_name, email, template, request_type, status, message_id, error, sent_at, created_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := s.db.Exec(query,
@@ -316,6 +364,7 @@ func (s *Store) Add(record *Record) error {
 		record.BrokerName,
 		record.Email,
 		record.Template,
+		record.RequestType,
 		record.Status,
 		record.MessageID,
 		record.Error,
@@ -337,7 +386,7 @@ func (s *Store) Add(record *Record) error {
 
 func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error) {
 	query := `
-	SELECT id, profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at
+	SELECT id, profile_id, broker_id, broker_name, email, template, request_type, status, message_id, error, sent_at, created_at
 	FROM removal_requests WHERE profile_id = ? ORDER BY sent_at DESC LIMIT ?`
 
 	rows, err := s.db.Query(query, normalizeProfileID(profileID), limit)
@@ -448,13 +497,23 @@ func parseFlexibleTimeString(s sql.NullString) time.Time {
 	return t
 }
 
-// LastSuccessfulSendTimes returns, for every broker with at least one
-// successful send, the timestamp of its most recent one - in a single
-// query, so callers filtering a large broker list against a resend
+// SendKey identifies one broker/request-type pair. The resend cooldown is
+// keyed on both parts, not on the broker alone: a subject access request and
+// an erasure request to the same broker are separate exercises of separate
+// rights, and sending one must not suppress the other as a duplicate.
+type SendKey struct {
+	BrokerID    string
+	RequestType string
+}
+
+// LastSuccessfulSendTimes returns, for every broker and request type with at
+// least one successful send, the timestamp of its most recent one - in a
+// single query, so callers filtering a large broker list against a resend
 // cooldown don't need one query per broker.
-func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time, error) {
+func (s *Store) LastSuccessfulSendTimes(profileID string) (map[SendKey]time.Time, error) {
 	rows, err := s.db.Query(
-		`SELECT broker_id, MAX(sent_at) FROM removal_requests WHERE profile_id = ? AND status = ? GROUP BY broker_id`,
+		`SELECT broker_id, request_type, MAX(sent_at) FROM removal_requests
+		 WHERE profile_id = ? AND status = ? GROUP BY broker_id, request_type`,
 		normalizeProfileID(profileID), string(StatusSent),
 	)
 	if err != nil {
@@ -462,11 +521,12 @@ func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time,
 	}
 	defer func() { _ = rows.Close() }()
 
-	times := make(map[string]time.Time)
+	times := make(map[SendKey]time.Time)
 	for rows.Next() {
 		var id string
+		var reqType sql.NullString
 		var sentAtStr sql.NullString
-		if err := rows.Scan(&id, &sentAtStr); err != nil {
+		if err := rows.Scan(&id, &reqType, &sentAtStr); err != nil {
 			return nil, fmt.Errorf("failed to scan last send time: %w", err)
 		}
 		if !sentAtStr.Valid {
@@ -476,7 +536,11 @@ func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time,
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse last send time %q for broker %q: %w", sentAtStr.String, id, err)
 		}
-		times[id] = t
+		rt := reqType.String
+		if rt == "" {
+			rt = RequestErasure
+		}
+		times[SendKey{BrokerID: id, RequestType: rt}] = t
 	}
 	return times, rows.Err()
 }

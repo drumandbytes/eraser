@@ -1,0 +1,72 @@
+To the Data Protection Officer at {{.BrokerName}},
+
+I am writing to make a subject access request under Article 15 of the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018. I am a UK resident.
+
+PERSONAL IDENTIFICATION:
+- Full Name: {{.FullName}}
+{{- if .OtherNames}}
+- Also Known As: {{.OtherNames}}
+{{- end}}
+- Email Address: {{.Email}}
+{{- if .OtherEmails}}
+- Other Email Addresses Used: {{.OtherEmails}}
+{{- end}}
+{{- if .Address}}
+- Address: {{.Address}}
+{{- end}}
+{{- if .City}}
+- City: {{.City}}
+{{- end}}
+{{- if .State}}
+- County/Region: {{.State}}
+{{- end}}
+{{- if .ZipCode}}
+- Postcode: {{.ZipCode}}
+{{- end}}
+{{- if .Country}}
+- Country: {{.Country}}
+{{- end}}
+{{- if .OtherAddresses}}
+- Previously Lived At: {{.OtherAddresses}}
+{{- end}}
+{{- if .Phone}}
+- Phone: {{.Phone}}
+{{- end}}
+{{- if .OtherPhones}}
+- Other Phone Numbers: {{.OtherPhones}}
+{{- end}}
+{{- if .DateOfBirth}}
+- Date of Birth: {{.DateOfBirth}}
+{{- end}}
+
+WHAT I AM REQUESTING:
+Please confirm whether you are processing personal data concerning me and, if so, provide a copy of that data together with all of the information required by Article 15(1):
+
+1. A copy of all personal data you hold about me, in a commonly used electronic format (Article 15(3)).
+2. The purposes of the processing (Article 15(1)(a)).
+3. The categories of personal data concerned (Article 15(1)(b)).
+4. The recipients or categories of recipient to whom my data has been or will be disclosed, including any recipients in third countries or international organisations, and the safeguards relied upon for any such transfer (Article 15(1)(c) and Article 15(2)). Please name the specific organisations rather than describing them generically.
+5. The envisaged retention period, or the criteria used to determine it (Article 15(1)(d)).
+6. The source from which my personal data was obtained, since it was not collected from me directly (Article 15(1)(g)). Please identify the specific source, not merely "publicly available records" or "third party partners".
+7. The existence of any automated decision-making, including profiling, together with meaningful information about the logic involved and the significance and envisaged consequences of such processing for me (Article 15(1)(h) and Article 22).
+8. Any inferences, scores, segments, classifications or derived attributes you have generated about me. These are personal data and fall within the scope of this request.
+
+If you hold data about me under any name variant, former address, or email address listed above, please include it. If you operate multiple brands, databases or products, please treat this request as covering all of them.
+
+TIMEFRAME:
+Under Article 12(3) of the UK GDPR you must respond without undue delay and in any event within one month of receipt of this request. If you consider the request complex or numerous and intend to rely on the two-month extension, you must inform me of that, and of the reasons for the delay, within one month of receipt.
+
+This request is made free of charge. A fee may only be charged where a request is manifestly unfounded or excessive, and I would ask you to explain your reasoning in writing should you seek to rely on that.
+
+IDENTITY VERIFICATION:
+If you require further information to verify my identity, please tell me specifically what you need and why it is necessary. Please note that under Article 12(6) you may only request information necessary to confirm my identity. I will not supply identity documents beyond what is proportionate to that purpose, and I would ask that you do not require me to create an account or supply data you do not already hold in order to exercise this right.
+
+If you do not hold any personal data about me, please confirm that explicitly in writing.
+
+If I do not receive an adequate response within the statutory period, I intend to complain to the Information Commissioner's Office under Article 77 of the UK GDPR.
+
+Please send your response to {{.Email}}.
+
+Yours faithfully,
+{{.FullName}}
+{{.Date}}

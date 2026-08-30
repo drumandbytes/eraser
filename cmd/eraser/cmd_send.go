@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ var (
 	dryRun           bool
 	ignoreDailyLimit bool
 	resend           bool
+	templateOverride string
 	sendPriorities   string
 )
 
@@ -43,7 +45,19 @@ safe to just re-run 'eraser send' until it reports nothing left to do.
 
 Within a run, brokers are ordered high-priority first, so when the daily cap
 truncates the list it spends the budget on the brokers that matter most. Use
---priority to narrow the run to specific tiers, e.g. --priority high.`,
+--priority to narrow the run to specific tiers, e.g. --priority high.
+
+The cooldown is tracked per request type, so a subject access request and an
+erasure request are separate sends to the same broker. UK residents can run:
+
+  eraser send --template uk-access     # ask what they hold (Art. 15)
+  eraser send --template uk-erasure    # ask them to delete it (Art. 17)
+  eraser send --template uk-combined   # both in one email, access answered first
+
+Running the access pass first is usually worth it: the reply names the source
+they bought your data from and the recipients they sold it to, which is how
+you find the next brokers to chase. Once a broker has erased your record it
+can no longer tell you any of that.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend()
 		},
@@ -52,6 +66,7 @@ truncates the list it spends the budget on the brokers that matter most. Use
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
 	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
+	cmd.Flags().StringVar(&templateOverride, "template", "", "Template for this run, overriding options.template (one of: "+strings.Join(template.TemplateNames(), ", ")+")")
 	cmd.Flags().StringVar(&sendPriorities, "priority", "", "Only send to brokers with these priorities (comma-separated: high,medium,low)")
 
 	return cmd
@@ -121,6 +136,19 @@ func runSend() error {
 		return nil
 	}
 
+	// Resolve which template this run uses before anything reads it: --template
+	// wins over options.template, and the request type it implies drives both
+	// the cooldown lookup below and what gets recorded against each send.
+	activeTemplate := cfg.Options.Template
+	if templateOverride != "" {
+		if !slices.Contains(template.TemplateNames(), templateOverride) {
+			return fmt.Errorf("unknown template %q (available: %s)",
+				templateOverride, strings.Join(template.TemplateNames(), ", "))
+		}
+		activeTemplate = templateOverride
+	}
+	requestType := template.RequestTypeFor(activeTemplate)
+
 	// Order high-priority brokers first. This matters because of the daily
 	// send cap below: it truncates the list, and without this the budget
 	// goes to whoever happens to sit at the top of data/brokers.yaml. The
@@ -149,20 +177,24 @@ func runSend() error {
 		filtered := brokers[:0:0]
 		skipped := 0
 		for _, b := range brokers {
-			if sentAt, ok := lastSent[b.ID]; ok && time.Since(sentAt) < resendCooldown {
+			// Keyed on request type too, so having already sent an erasure
+			// request doesn't suppress a subject access request to the same
+			// broker (and vice versa) - they exercise different rights.
+			key := history.SendKey{BrokerID: b.ID, RequestType: requestType}
+			if sentAt, ok := lastSent[key]; ok && time.Since(sentAt) < resendCooldown {
 				skipped++
 				continue
 			}
 			filtered = append(filtered, b)
 		}
 		if skipped > 0 {
-			fmt.Printf("⏭️  Skipping %d broker(s) already emailed in the last %d days (use --resend to override)\n", skipped, int(resendCooldown.Hours()/24))
+			fmt.Printf("⏭️  Skipping %d broker(s) already sent a %s request in the last %d days (use --resend to override)\n", skipped, requestType, int(resendCooldown.Hours()/24))
 		}
 		brokers = filtered
 	}
 
 	if len(brokers) == 0 {
-		fmt.Println("Nothing to send - every broker has been emailed recently. Run with --resend to force, or check back after the cooldown window.")
+		fmt.Printf("Nothing to send - every broker has had a %s request recently. Run with --resend to force, or check back after the cooldown window.\n", requestType)
 		return nil
 	}
 
@@ -234,7 +266,7 @@ func runSend() error {
 		}
 
 		// Render email
-		emailMsg, err := tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b)
+		emailMsg, err := tmplEngine.Render(activeTemplate, activeProfile.Profile, b)
 		if err != nil {
 			fmt.Printf("  ❌ Failed to render template: %v\n", err)
 			failCount++
@@ -259,12 +291,13 @@ func runSend() error {
 
 			// Record in history
 			record := &history.Record{
-				ProfileID:  activeProfile.ID,
-				BrokerID:   b.ID,
-				BrokerName: b.Name,
-				Email:      b.Email,
-				Template:   cfg.Options.Template,
-				SentAt:     time.Now(),
+				ProfileID:   activeProfile.ID,
+				BrokerID:    b.ID,
+				BrokerName:  b.Name,
+				Email:       b.Email,
+				Template:    activeTemplate,
+				RequestType: requestType,
+				SentAt:      time.Now(),
 			}
 
 			if result.Success {

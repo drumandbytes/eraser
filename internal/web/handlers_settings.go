@@ -1,17 +1,162 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 
+	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
+	emaTemplate "github.com/eraser-privacy/eraser/internal/template"
 )
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
+	s.renderSettings(w, r, nil)
+}
+
+// templateChoice is one entry in the Selected Template dropdown.
+type templateChoice struct {
+	Name        string
+	Description string
+	Selected    bool
+}
+
+// templateDescriptions gives each template a one-line summary in the
+// dropdown, so the choice can be made without opening the preview - the
+// names alone don't say which law a template invokes or whether it asks for
+// data, deletes it, or both.
+var templateDescriptions = map[string]string{
+	"gdpr":        "EU GDPR erasure (Art. 17)",
+	"ccpa":        "California CCPA deletion",
+	"generic":     "Several privacy laws, works anywhere",
+	"uk-access":   "UK GDPR access (Art. 15) - asks what they hold",
+	"uk-erasure":  "UK GDPR erasure (Art. 17)",
+	"uk-combined": "UK GDPR access + erasure, access answered first",
+}
+
+// templatePreview is what the preview partial renders. Error is set instead
+// of Subject/Body when the template can't be rendered.
+type templatePreview struct {
+	Subject string
+	Body    string
+	Error   string
+}
+
+// previewFor renders templateName with the active profile and a sample
+// broker, so the preview shows the letter as it will actually be sent -
+// name, address and contact details filled in - rather than raw
+// placeholders.
+func (s *Server) previewFor(r *http.Request, templateName string) templatePreview {
+	if s.tmplEngine == nil {
+		return templatePreview{Error: "Template engine unavailable."}
+	}
+	if !s.tmplEngine.IsKnownTemplate(templateName) {
+		return templatePreview{Error: fmt.Sprintf("Unknown template %q.", templateName)}
+	}
+
+	sample := broker.Broker{
+		Name:    "Example Broker",
+		Email:   "privacy@example-broker.com",
+		Website: "https://example-broker.com",
+	}
+	rendered, err := s.tmplEngine.Render(templateName, s.activeProfile(r).Profile, sample)
+	if err != nil {
+		return templatePreview{Error: "Could not render this template: " + err.Error()}
+	}
+	return templatePreview{Subject: rendered.Subject, Body: rendered.Body}
+}
+
+// renderSettings draws the settings page, merging in any extra keys (status
+// messages from a save) supplied by the caller.
+func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra map[string]interface{}) {
+	cfg := s.getConfig()
+
+	selected := ""
+	if cfg != nil {
+		selected = cfg.Options.Template
+	}
+	if selected == "" {
+		selected = "gdpr"
+	}
+
+	choices := make([]templateChoice, 0, len(emaTemplate.TemplateNames()))
+	for _, name := range emaTemplate.TemplateNames() {
+		choices = append(choices, templateChoice{
+			Name:        name,
+			Description: templateDescriptions[name],
+			Selected:    name == selected,
+		})
+	}
+
 	data := map[string]interface{}{
-		"Title":  "Settings",
-		"Config": s.getConfig(),
+		"Title":     "Settings",
+		"Config":    cfg,
+		"Templates": choices,
+		"Preview":   s.previewFor(r, selected),
+	}
+	for k, v := range extra {
+		data[k] = v
 	}
 	s.renderWithCSRF(w, r, "settings.html", data)
+}
+
+// handleSettingsTemplate saves the template used for every send. The CLI and
+// the web UI both read options.template, so this is the same setting `eraser
+// send` uses when no --template flag overrides it.
+func (s *Server) handleSettingsTemplate(w http.ResponseWriter, r *http.Request) {
+	limitFormBody(w, r)
+	if err := r.ParseForm(); err != nil {
+		s.renderSettings(w, r, map[string]interface{}{
+			"TemplateMessage": "Failed to parse form", "TemplateSuccess": false,
+		})
+		return
+	}
+
+	name := r.FormValue("template")
+	// Validate against the engine rather than trusting the posted value: an
+	// unknown name would be written to config.yaml and then fail at send
+	// time, once per broker, with no obvious cause.
+	if s.tmplEngine == nil || !s.tmplEngine.IsKnownTemplate(name) {
+		s.renderSettings(w, r, map[string]interface{}{
+			"TemplateMessage": fmt.Sprintf("Unknown template %q.", name), "TemplateSuccess": false,
+		})
+		return
+	}
+
+	// Load-copy-mutate-store, matching handleSettingsInbox: a concurrent
+	// reader (another handler, or a running send job) may be holding the
+	// pointer returned by getConfig.
+	cfg := s.getConfig()
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+	newCfg := *cfg
+	newCfg.Options.Template = name
+
+	if err := config.Save(s.configPath, &newCfg); err != nil {
+		s.renderSettings(w, r, map[string]interface{}{
+			"TemplateMessage": "Failed to save configuration: " + err.Error(), "TemplateSuccess": false,
+		})
+		return
+	}
+	s.config.Store(&newCfg)
+
+	s.renderSettings(w, r, map[string]interface{}{
+		"TemplateMessage": fmt.Sprintf("Saved. Removal requests will use %q.", name),
+		"TemplateSuccess": true,
+	})
+}
+
+// handleAPITemplatePreview backs the dropdown's live preview. It only
+// renders - selecting a template in the dropdown does not change what gets
+// sent until the form is saved.
+func (s *Server) handleAPITemplatePreview(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("template")
+	if name == "" {
+		if cfg := s.getConfig(); cfg != nil {
+			name = cfg.Options.Template
+		}
+	}
+	s.renderPartial(w, "partials/template-preview.html", s.previewFor(r, name))
 }
 
 func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
@@ -93,11 +238,11 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderSettingsWithMessage(w http.ResponseWriter, r *http.Request, message string, success bool) {
-	data := map[string]interface{}{
-		"Title":        "Settings",
-		"Config":       s.getConfig(),
+	// Routed through renderSettings so an inbox save still renders the
+	// template selector and its preview - building the data map by hand here
+	// would leave .Templates empty and silently drop the dropdown.
+	s.renderSettings(w, r, map[string]interface{}{
 		"InboxMessage": message,
 		"InboxSuccess": success,
-	}
-	s.renderWithCSRF(w, r, "settings.html", data)
+	})
 }

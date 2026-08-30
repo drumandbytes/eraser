@@ -21,7 +21,53 @@ func isValidURL(rawURL string) bool {
 	return scheme == "http" || scheme == "https"
 }
 
+// Priority values, in descending order of importance. Also the display
+// order used by the CLI and the web UI's priority selector - don't derive
+// that list from the values present in the database (the way categories and
+// regions are derived), since priority has a meaningful rank order.
+const (
+	PriorityHigh   = "high"
+	PriorityMedium = "medium"
+	PriorityLow    = "low"
+)
+
+var Priorities = []string{PriorityHigh, PriorityMedium, PriorityLow}
+
+// NormalizePriority lowercases/trims a priority value and returns "" for
+// anything that isn't one of Priorities, so a typo in the YAML or a config
+// file degrades to "unclassified" instead of silently matching nothing.
+func NormalizePriority(p string) string {
+	switch strings.ToLower(strings.TrimSpace(p)) {
+	case PriorityHigh:
+		return PriorityHigh
+	case PriorityMedium:
+		return PriorityMedium
+	case PriorityLow:
+		return PriorityLow
+	default:
+		return ""
+	}
+}
+
+// PriorityRank orders priorities high < medium < low < unclassified, for
+// sorting. Filtering doesn't use it - a priority filter is an exact match,
+// not a "this and above" threshold.
+func PriorityRank(p string) int {
+	switch NormalizePriority(p) {
+	case PriorityHigh:
+		return 0
+	case PriorityMedium:
+		return 1
+	case PriorityLow:
+		return 2
+	default:
+		return 3
+	}
+}
+
 func sanitizeBroker(b *Broker) {
+	b.Priority = NormalizePriority(b.Priority)
+
 	if !isValidURL(b.OptOutURL) {
 		b.OptOutURL = ""
 	}
@@ -31,13 +77,20 @@ func sanitizeBroker(b *Broker) {
 }
 
 type Broker struct {
-	ID         string   `yaml:"id"`
-	Name       string   `yaml:"name"`
-	Email      string   `yaml:"email"`
-	Website    string   `yaml:"website,omitempty"`
-	OptOutURL  string   `yaml:"opt_out_url,omitempty"`
-	Region     string   `yaml:"region"`             // "us", "eu", "global"
-	Category   string   `yaml:"category,omitempty"` // "people-search", "marketing", "background-check", etc.
+	ID        string `yaml:"id"`
+	Name      string `yaml:"name"`
+	Email     string `yaml:"email"`
+	Website   string `yaml:"website,omitempty"`
+	OptOutURL string `yaml:"opt_out_url,omitempty"`
+	Region    string `yaml:"region"`             // "us", "eu", "global"
+	Category  string `yaml:"category,omitempty"` // "people-search", "marketing", "background-check", etc.
+	// Priority is how much this broker matters to a person trying to get
+	// removed: "high", "medium" or "low" (see Priorities). It's a filter,
+	// not a schedule - nothing sends automatically based on it. An empty
+	// or unrecognized value means "unclassified" and is only matched by a
+	// blank (all-priorities) filter. See docs/broker-priority.md for how
+	// the shipped values were derived.
+	Priority   string   `yaml:"priority,omitempty"`
 	Notes      string   `yaml:"notes,omitempty"`
 	RequiresID bool     `yaml:"requires_id,omitempty"` // If they require ID verification
 	Tags       []string `yaml:"tags,omitempty"`

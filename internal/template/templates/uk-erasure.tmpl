@@ -1,0 +1,74 @@
+To the Data Protection Officer at {{.BrokerName}},
+
+I am writing to exercise my right to erasure under Article 17 of the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018. I am a UK resident. I request that you erase all personal data you hold about me.
+
+PERSONAL IDENTIFICATION:
+- Full Name: {{.FullName}}
+{{- if .OtherNames}}
+- Also Known As: {{.OtherNames}}
+{{- end}}
+- Email Address: {{.Email}}
+{{- if .OtherEmails}}
+- Other Email Addresses Used: {{.OtherEmails}}
+{{- end}}
+{{- if .Address}}
+- Address: {{.Address}}
+{{- end}}
+{{- if .City}}
+- City: {{.City}}
+{{- end}}
+{{- if .State}}
+- County/Region: {{.State}}
+{{- end}}
+{{- if .ZipCode}}
+- Postcode: {{.ZipCode}}
+{{- end}}
+{{- if .Country}}
+- Country: {{.Country}}
+{{- end}}
+{{- if .OtherAddresses}}
+- Previously Lived At: {{.OtherAddresses}}
+{{- end}}
+{{- if .Phone}}
+- Phone: {{.Phone}}
+{{- end}}
+{{- if .OtherPhones}}
+- Other Phone Numbers: {{.OtherPhones}}
+{{- end}}
+{{- if .DateOfBirth}}
+- Date of Birth: {{.DateOfBirth}}
+{{- end}}
+
+LEGAL BASIS:
+Under Article 17(1) of the UK GDPR I have the right to obtain erasure of personal data concerning me without undue delay where, among other grounds:
+- The personal data is no longer necessary for the purposes for which it was collected or otherwise processed (Article 17(1)(a));
+- I withdraw consent on which the processing is based and there is no other legal ground for the processing (Article 17(1)(b));
+- I object to the processing under Article 21(1) and there are no overriding legitimate grounds, or I object to processing for direct marketing purposes under Article 21(2), in which case the right to object is absolute (Article 17(1)(c));
+- The personal data has been unlawfully processed (Article 17(1)(d)).
+
+To the extent you rely on legitimate interests under Article 6(1)(f), I hereby also object to that processing under Article 21(1) on the grounds relating to my particular situation, namely that I did not provide this data to you, I have no relationship with you, and its compilation and onward sale causes me demonstrable harm to my privacy. Insofar as my data is processed for direct marketing purposes, I object under Article 21(2) and note that this objection admits of no balancing test.
+
+WHAT I AM REQUESTING:
+1. Erase all personal data you hold about me, including any inferences, scores, segments or derived attributes generated from it.
+2. Cease all processing of my personal data, including its sale, licensing or disclosure to any third party.
+3. Where you have disclosed my personal data to others, take reasonable steps to inform those recipients of this erasure request, as required by Article 19, and provide me with the identity of those recipients.
+4. Where my data has been made public, take reasonable steps to inform other controllers processing it that I have requested erasure of any links to, or copies of, that data (Article 17(2)).
+5. Confirm in writing once the erasure has been carried out.
+
+Please retain only the minimum record necessary to ensure I am not re-added to your database, as permitted for compliance with a legal obligation, and confirm that this suppression record will not be used for any other purpose.
+
+TIMEFRAME:
+Under Article 12(3) of the UK GDPR you must respond without undue delay and in any event within one month of receipt. If you intend to rely on the two-month extension for complex or numerous requests, you must inform me of that and of the reasons within one month of receipt.
+
+IDENTITY VERIFICATION:
+If you require further information to verify my identity, please tell me specifically what you need and why. Under Article 12(6) you may only request information necessary to confirm my identity, and I would ask that you do not require me to create an account or supply data you do not already hold in order to exercise this right.
+
+If you believe an exemption applies, or you intend to refuse this request in whole or in part, you must tell me why within one month and inform me of my right to complain to the Information Commissioner's Office and to seek a judicial remedy (Article 12(4)).
+
+If I do not receive an adequate response within the statutory period, I intend to complain to the Information Commissioner's Office under Article 77 of the UK GDPR.
+
+Please send your response to {{.Email}}.
+
+Yours faithfully,
+{{.FullName}}
+{{.Date}}

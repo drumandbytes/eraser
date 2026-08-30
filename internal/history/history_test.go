@@ -66,17 +66,92 @@ func TestLastSuccessfulSendTimes(t *testing.T) {
 		t.Fatalf("LastSuccessfulSendTimes: %v", err)
 	}
 
-	if _, ok := times["broker-b"]; ok {
+	if _, ok := times[SendKey{BrokerID: "broker-b", RequestType: RequestErasure}]; ok {
 		t.Errorf("broker-b never had a successful send, should not appear")
 	}
 
-	got, ok := times["broker-a"]
+	got, ok := times[SendKey{BrokerID: "broker-a", RequestType: RequestErasure}]
 	if !ok {
 		t.Fatalf("expected broker-a in results")
 	}
 	wantApprox := now.Add(-2 * 24 * time.Hour)
 	if got.Before(wantApprox.Add(-time.Minute)) || got.After(wantApprox.Add(time.Minute)) {
 		t.Errorf("expected broker-a's last send near %v, got %v", wantApprox, got)
+	}
+}
+
+// The resend cooldown is keyed on (broker, request type) so that asking a
+// broker what they hold and asking them to erase it are separate sends. If
+// this collapsed back to a broker-only key, sending an Article 15 access
+// request would silently suppress the Article 17 erasure request to the same
+// broker for the whole cooldown window (and vice versa).
+func TestLastSuccessfulSendTimesSeparatesRequestTypes(t *testing.T) {
+	s := newTestStore(t)
+	now := time.Now()
+
+	addRecordOfType(t, s, "broker-a", RequestAccess, StatusSent, now.Add(-3*24*time.Hour))
+
+	times, err := s.LastSuccessfulSendTimes("")
+	if err != nil {
+		t.Fatalf("LastSuccessfulSendTimes: %v", err)
+	}
+
+	if _, ok := times[SendKey{BrokerID: "broker-a", RequestType: RequestAccess}]; !ok {
+		t.Error("the access request that was sent should be recorded under the access key")
+	}
+	if _, ok := times[SendKey{BrokerID: "broker-a", RequestType: RequestErasure}]; ok {
+		t.Error("an access request must not mark the erasure request as already sent - " +
+			"that would suppress the erasure send for the whole cooldown window")
+	}
+
+	// And the reverse: an erasure send must not suppress a later access request.
+	addRecordOfType(t, s, "broker-b", RequestErasure, StatusSent, now.Add(-3*24*time.Hour))
+	times, err = s.LastSuccessfulSendTimes("")
+	if err != nil {
+		t.Fatalf("LastSuccessfulSendTimes: %v", err)
+	}
+	if _, ok := times[SendKey{BrokerID: "broker-b", RequestType: RequestAccess}]; ok {
+		t.Error("an erasure request must not mark the access request as already sent")
+	}
+}
+
+// Records written before the request_type column existed were all erasure
+// requests; they must keep behaving that way rather than reading as a blank
+// type that matches nothing.
+func TestAddDefaultsRequestTypeToErasure(t *testing.T) {
+	s := newTestStore(t)
+	addRecord(t, s, "broker-a", StatusSent, time.Now().Add(-time.Hour)) // no RequestType set
+
+	times, err := s.LastSuccessfulSendTimes("")
+	if err != nil {
+		t.Fatalf("LastSuccessfulSendTimes: %v", err)
+	}
+	if _, ok := times[SendKey{BrokerID: "broker-a", RequestType: RequestErasure}]; !ok {
+		t.Error("a record added with no RequestType should be stored as an erasure request")
+	}
+
+	recs, err := s.GetRecentRequests("", 10)
+	if err != nil {
+		t.Fatalf("GetRecentRequests: %v", err)
+	}
+	if len(recs) != 1 || recs[0].RequestType != RequestErasure {
+		t.Errorf("expected one record with RequestType=%q, got %+v", RequestErasure, recs)
+	}
+}
+
+func addRecordOfType(t *testing.T, s *Store, brokerID, requestType string, status Status, sentAt time.Time) {
+	t.Helper()
+	rec := &Record{
+		BrokerID:    brokerID,
+		BrokerName:  brokerID,
+		Email:       brokerID + "@example.com",
+		Template:    "uk-access",
+		RequestType: requestType,
+		Status:      status,
+		SentAt:      sentAt,
+	}
+	if err := s.Add(rec); err != nil {
+		t.Fatalf("Add: %v", err)
 	}
 }
 
@@ -145,7 +220,7 @@ func TestMarkFailedRemovesFromResendCooldown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LastSuccessfulSendTimes: %v", err)
 	}
-	if _, ok := times["broker-a"]; ok {
+	if _, ok := times[SendKey{BrokerID: "broker-a", RequestType: RequestErasure}]; ok {
 		t.Errorf("broker-a was just marked failed, should no longer count as a successful send")
 	}
 }

@@ -15,6 +15,7 @@ const (
 	ResponseRejected             ResponseType = "rejected"              // Request denied
 	ResponsePending              ResponseType = "pending"               // Processing, will follow up
 	ResponseBounced              ResponseType = "bounced"               // Email bounced - invalid address
+	ResponseDisclosure           ResponseType = "disclosure"            // Article 15 subject access response - contains your data, read it
 	ResponseUnknown              ResponseType = "unknown"               // Needs manual review
 )
 
@@ -142,6 +143,35 @@ var (
 		regexp.MustCompile(`(?i)request\s+(will\s+be\s+)?(processed|fulfilled)`),
 		regexp.MustCompile(`(?i)automatic\s+reply`),
 		regexp.MustCompile(`(?i)auto[\s-]?response`),
+	}
+
+	// Article 15 subject access disclosures. These carry the data the broker
+	// holds, plus - most usefully - the source they obtained it from and the
+	// recipients they sold it to. They must not be filed as a generic
+	// "success": a deletion confirmation is finished business, whereas one of
+	// these needs to actually be read, and often names brokers not yet in
+	// brokers.yaml.
+	disclosurePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(subject\s+access|access)\s+request.{0,40}(response|fulfil|complete|attached|enclosed)`),
+		regexp.MustCompile(`(?i)(in\s+)?response\s+to\s+your\s+(subject\s+access|access|article\s*15|dsar)`),
+		regexp.MustCompile(`(?i)\b(dsar|sar)\b.{0,40}(response|complete|attached|ready)`),
+		regexp.MustCompile(`(?i)article\s*15`),
+		regexp.MustCompile(`(?i)(copy|copies)\s+of\s+(the\s+|your\s+)?(personal\s+)?(data|information)\s+we\s+(hold|process|have)`),
+		regexp.MustCompile(`(?i)(data|information)\s+we\s+hold\s+about\s+you`),
+		regexp.MustCompile(`(?i)(please\s+find|attached|enclosed).{0,40}(your\s+)?(personal\s+)?(data|information|report|records)`),
+		regexp.MustCompile(`(?i)(download|access)\s+your\s+(data|report|records|file)`),
+		regexp.MustCompile(`(?i)categories\s+of\s+(personal\s+)?data`),
+		regexp.MustCompile(`(?i)(source|sources)\s+of\s+(the\s+|your\s+)?(personal\s+)?data`),
+		regexp.MustCompile(`(?i)recipients\s+(of\s+|to\s+whom)`),
+		regexp.MustCompile(`(?i)retention\s+period`),
+	}
+
+	// Subject lines that make a disclosure unambiguous.
+	subjectDisclosurePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?i)(subject\s+access|access)\s+request`),
+		regexp.MustCompile(`(?i)\b(dsar|sar)\b`),
+		regexp.MustCompile(`(?i)article\s*15`),
+		regexp.MustCompile(`(?i)your\s+(personal\s+)?(data|information)\s+(report|copy|disclosure)`),
 	}
 
 	// Subject-specific pending patterns (stronger signal when in subject)
@@ -278,6 +308,7 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 		ResponseConfirmationRequired: 0,
 		ResponseRejected:             0,
 		ResponsePending:              0,
+		ResponseDisclosure:           0,
 	}
 
 	// Check for subject-specific patterns (strong signal - worth +3)
@@ -334,6 +365,20 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 	for _, pattern := range pendingPatterns {
 		if pattern.MatchString(content) {
 			scores[ResponsePending]++
+		}
+	}
+
+	// Check Article 15 disclosure patterns. Scored from subject and body:
+	// these replies are often mostly an attachment or a portal link, so the
+	// body alone can be thin.
+	for _, pattern := range disclosurePatterns {
+		if pattern.MatchString(content) || pattern.MatchString(subject) {
+			scores[ResponseDisclosure]++
+		}
+	}
+	for _, pattern := range subjectDisclosurePatterns {
+		if pattern.MatchString(subject) {
+			scores[ResponseDisclosure] += 3
 		}
 	}
 
@@ -421,6 +466,8 @@ func getClassificationReason(responseType ResponseType, score int) string {
 		return "Broker rejected or could not process the removal request"
 	case ResponsePending:
 		return "Request is being processed, follow-up may be needed"
+	case ResponseDisclosure:
+		return "Subject access response - contains the data they hold, including sources and recipients; read it before erasing"
 	case ResponseUnknown:
 		return "Could not automatically classify this response"
 	default:
@@ -473,6 +520,7 @@ func ClassifyBySubjectOnly(subject string) (ResponseType, float64, bool) {
 		ResponseConfirmationRequired: 0,
 		ResponseRejected:             0,
 		ResponsePending:              0,
+		ResponseDisclosure:           0,
 	}
 
 	// Check subject-specific patterns (strong signal - worth +3)

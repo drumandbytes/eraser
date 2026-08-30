@@ -1,0 +1,105 @@
+To the Data Protection Officer at {{.BrokerName}},
+
+I am writing to exercise two rights under the UK General Data Protection Regulation (UK GDPR) and the Data Protection Act 2018. I am a UK resident. This letter contains:
+
+  PART A - a subject access request under Article 15; and
+  PART B - a request for erasure under Article 17.
+
+IMPORTANT - ORDER OF PROCESSING:
+These requests are made together but are to be actioned in sequence. Please complete the Article 15 disclosure in PART A and send it to me BEFORE carrying out the erasure in PART B. Erasing my data first would deprive the access request of its content and would not constitute compliance with Article 15. If your processes cannot accommodate this sequence, please treat PART A as the operative request, respond to it, and contact me before proceeding with PART B.
+
+PERSONAL IDENTIFICATION:
+- Full Name: {{.FullName}}
+{{- if .OtherNames}}
+- Also Known As: {{.OtherNames}}
+{{- end}}
+- Email Address: {{.Email}}
+{{- if .OtherEmails}}
+- Other Email Addresses Used: {{.OtherEmails}}
+{{- end}}
+{{- if .Address}}
+- Address: {{.Address}}
+{{- end}}
+{{- if .City}}
+- City: {{.City}}
+{{- end}}
+{{- if .State}}
+- County/Region: {{.State}}
+{{- end}}
+{{- if .ZipCode}}
+- Postcode: {{.ZipCode}}
+{{- end}}
+{{- if .Country}}
+- Country: {{.Country}}
+{{- end}}
+{{- if .OtherAddresses}}
+- Previously Lived At: {{.OtherAddresses}}
+{{- end}}
+{{- if .Phone}}
+- Phone: {{.Phone}}
+{{- end}}
+{{- if .OtherPhones}}
+- Other Phone Numbers: {{.OtherPhones}}
+{{- end}}
+{{- if .DateOfBirth}}
+- Date of Birth: {{.DateOfBirth}}
+{{- end}}
+
+--------------------------------------------------------------------
+PART A - SUBJECT ACCESS REQUEST (Article 15 UK GDPR)
+--------------------------------------------------------------------
+
+Please confirm whether you are processing personal data concerning me and, if so, provide a copy of that data together with all information required by Article 15(1):
+
+1. A copy of all personal data you hold about me, in a commonly used electronic format (Article 15(3)).
+2. The purposes of the processing (Article 15(1)(a)).
+3. The categories of personal data concerned (Article 15(1)(b)).
+4. The recipients or categories of recipient to whom my data has been or will be disclosed, including any in third countries, and the safeguards relied upon for such transfers (Article 15(1)(c) and Article 15(2)). Please name the specific organisations rather than describing them generically.
+5. The envisaged retention period, or the criteria used to determine it (Article 15(1)(d)).
+6. The source from which my personal data was obtained, since it was not collected from me directly (Article 15(1)(g)). Please identify the specific source, not merely "publicly available records" or "third party partners".
+7. The existence of any automated decision-making, including profiling, with meaningful information about the logic involved and the significance and envisaged consequences for me (Article 15(1)(h) and Article 22).
+8. Any inferences, scores, segments, classifications or derived attributes you have generated about me. These are personal data and fall within the scope of this request.
+
+If you hold data about me under any name variant, former address or email address listed above, please include it. If you operate multiple brands, databases or products, please treat this request as covering all of them.
+
+--------------------------------------------------------------------
+PART B - REQUEST FOR ERASURE (Article 17 UK GDPR)
+--------------------------------------------------------------------
+
+Following your response to PART A, I request that you erase all personal data you hold about me.
+
+Under Article 17(1) I have the right to obtain erasure without undue delay where, among other grounds, the data is no longer necessary for the purposes for which it was collected (Article 17(1)(a)), I withdraw consent and no other legal ground applies (Article 17(1)(b)), I object under Article 21 and there are no overriding legitimate grounds (Article 17(1)(c)), or the data has been unlawfully processed (Article 17(1)(d)).
+
+To the extent you rely on legitimate interests under Article 6(1)(f), I also object to that processing under Article 21(1) on grounds relating to my particular situation, namely that I did not provide this data to you, I have no relationship with you, and its compilation and onward sale causes me demonstrable harm to my privacy. Insofar as my data is processed for direct marketing, I object under Article 21(2), where the right to object is absolute.
+
+Specifically, I request that you:
+
+1. Erase all personal data you hold about me, including any inferences, scores, segments or derived attributes.
+2. Cease all processing of my personal data, including its sale, licensing or disclosure to any third party.
+3. Inform any recipients to whom my data has been disclosed of this erasure request, as required by Article 19, and provide me with their identity.
+4. Where my data has been made public, take reasonable steps to inform other controllers processing it that I have requested erasure of any links to, or copies of, that data (Article 17(2)).
+5. Confirm in writing once erasure has been carried out.
+
+Please retain only the minimum record necessary to ensure I am not re-added to your database, and confirm that this suppression record will not be used for any other purpose.
+
+--------------------------------------------------------------------
+
+TIMEFRAME:
+Under Article 12(3) of the UK GDPR you must respond to both parts without undue delay and in any event within one month of receipt. If you intend to rely on the two-month extension for complex or numerous requests, you must inform me of that and of the reasons within one month of receipt.
+
+These requests are made free of charge. A fee may only be charged where a request is manifestly unfounded or excessive, and I would ask you to explain your reasoning in writing should you seek to rely on that.
+
+IDENTITY VERIFICATION:
+If you require further information to verify my identity, please tell me specifically what you need and why. Under Article 12(6) you may only request information necessary to confirm my identity, and I would ask that you do not require me to create an account or supply data you do not already hold in order to exercise these rights.
+
+If you do not hold any personal data about me, please confirm that explicitly in writing.
+
+If you intend to refuse either request in whole or in part, you must tell me why within one month and inform me of my right to complain and to seek a judicial remedy (Article 12(4)).
+
+If I do not receive an adequate response within the statutory period, I intend to complain to the Information Commissioner's Office under Article 77 of the UK GDPR.
+
+Please send your response to {{.Email}}.
+
+Yours faithfully,
+{{.FullName}}
+{{.Date}}

@@ -183,7 +183,7 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Classify and store each email
-	var success, formRequired, confirmRequired, rejected, unknown int
+	var success, formRequired, confirmRequired, rejected, disclosure, unknown int
 	var processedUIDs []uint32 // Track UIDs for archiving
 	for _, email := range emails {
 		classified := inbox.ClassifyResponse(&email)
@@ -242,6 +242,8 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 			confirmRequired++
 		case inbox.ResponseRejected:
 			rejected++
+		case inbox.ResponseDisclosure:
+			disclosure++
 		default:
 			unknown++
 		}
@@ -267,6 +269,7 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 				<div>Form required: <span class="font-semibold">%d</span></div>
 				<div>Confirm required: <span class="font-semibold">%d</span></div>
 				<div>Rejected: <span class="font-semibold">%d</span></div>
+				<div>Data disclosures: <span class="font-semibold">%d</span></div>
 				<div>Unknown: <span class="font-semibold">%d</span></div>
 			</div>
 			<p class="mt-2 text-sm">
@@ -274,7 +277,7 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, len(emails), success, formRequired, confirmRequired, rejected, unknown)
+	`, len(emails), success, formRequired, confirmRequired, rejected, disclosure, unknown)
 }
 
 // handleAPIInboxRescan rescans all emails and reclassifies them with the improved classifier
@@ -353,7 +356,7 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Classify and store/update each email
-	var success, formRequired, confirmRequired, rejected, pending, unknown int
+	var success, formRequired, confirmRequired, rejected, pending, disclosure, unknown int
 	var updated, inserted int
 	for _, email := range emails {
 		classified := inbox.ClassifyResponse(&email)
@@ -436,6 +439,8 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 			rejected++
 		case inbox.ResponsePending:
 			pending++
+		case inbox.ResponseDisclosure:
+			disclosure++
 		default:
 			unknown++
 		}
@@ -455,6 +460,7 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 				<div>Confirm required: <span class="font-semibold">%d</span></div>
 				<div>Pending: <span class="font-semibold">%d</span></div>
 				<div>Rejected: <span class="font-semibold">%d</span></div>
+				<div>Data disclosures: <span class="font-semibold">%d</span></div>
 				<div>Unknown: <span class="font-semibold">%d</span></div>
 			</div>
 			<p class="mt-2 text-sm">
@@ -462,7 +468,7 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, len(emails), updated, inserted, success, formRequired, confirmRequired, pending, rejected, unknown)
+	`, len(emails), updated, inserted, success, formRequired, confirmRequired, pending, rejected, disclosure, unknown)
 }
 
 // handleAPIReclassify reclassifies all existing database records using subject-only patterns
@@ -585,7 +591,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 
 	// Reclassify each response - use full classifier if body available, otherwise subject-only
 	var updated, unchanged int
-	var pending, rejected, success, formRequired, confirmRequired, unknown int
+	var pending, rejected, success, formRequired, confirmRequired, disclosure, unknown int
 
 	for _, resp := range responses {
 		var newType inbox.ResponseType
@@ -643,6 +649,8 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			rejected++
 		case inbox.ResponsePending:
 			pending++
+		case inbox.ResponseDisclosure:
+			disclosure++
 		default:
 			unknown++
 		}
@@ -662,6 +670,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				<div>Success: <span class="font-semibold">%d</span></div>
 				<div>Form required: <span class="font-semibold">%d</span></div>
 				<div>Confirm required: <span class="font-semibold">%d</span></div>
+				<div>Data disclosures: <span class="font-semibold">%d</span></div>
 				<div>Unknown: <span class="font-semibold">%d</span></div>
 			</div>
 			<p class="mt-2 text-sm">
@@ -669,5 +678,5 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, len(responses), updated, unchanged, pending, rejected, success, formRequired, confirmRequired, unknown)
+	`, len(responses), updated, unchanged, pending, rejected, success, formRequired, confirmRequired, disclosure, unknown)
 }

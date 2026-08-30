@@ -10,6 +10,7 @@ import (
 
 	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/eraser-privacy/eraser/internal/history"
 )
 
 //go:embed templates/*.tmpl
@@ -64,7 +65,7 @@ func NewEngine() (*Engine, error) {
 		templates: make(map[string]*template.Template),
 	}
 
-	templateNames := []string{"gdpr", "ccpa", "generic"}
+	templateNames := []string{"gdpr", "ccpa", "generic", "uk-access", "uk-erasure", "uk-combined"}
 	for _, name := range templateNames {
 		content, err := embeddedTemplates.ReadFile("templates/" + name + ".tmpl")
 		if err != nil {
@@ -135,7 +136,40 @@ func (e *Engine) getSubject(templateName, brokerName string) string {
 		return "GDPR Data Erasure Request - Article 17 Right to Erasure"
 	case "ccpa":
 		return "CCPA Data Deletion Request - Right to Delete Personal Information"
+	case "uk-access":
+		return "Subject Access Request - Article 15 UK GDPR"
+	case "uk-erasure":
+		return "Request for Erasure - Article 17 UK GDPR"
+	case "uk-combined":
+		return "Subject Access Request (Art. 15) and Request for Erasure (Art. 17) - UK GDPR"
 	default:
 		return "Personal Data Removal Request"
 	}
+}
+
+// RequestTypeFor reports which right a template exercises. Unknown templates
+// are treated as erasure: every template that shipped before request types
+// existed was a deletion request, and existing history rows default to the
+// same value, so an unrecognised custom template keeps the old behaviour
+// rather than silently creating a second sendable category per broker.
+func RequestTypeFor(templateName string) string {
+	switch templateName {
+	case "uk-access":
+		return history.RequestAccess
+	case "uk-combined":
+		return history.RequestCombined
+	default:
+		return history.RequestErasure
+	}
+}
+
+// TemplateNames lists every built-in template, for CLI help and validation.
+func TemplateNames() []string {
+	return []string{"gdpr", "ccpa", "generic", "uk-access", "uk-erasure", "uk-combined"}
+}
+
+// IsKnownTemplate reports whether name is a built-in template.
+func (e *Engine) IsKnownTemplate(name string) bool {
+	_, ok := e.templates[name]
+	return ok
 }

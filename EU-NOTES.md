@@ -20,16 +20,22 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 
 ### EU/GDPR broker expansion
 
-The EU-region set was later widened from 9 entries to 45, sourced from
+The EU-region set was later widened from 9 entries to 44, sourced from
 [datenanfragen.de's company database](https://github.com/datenanfragen/data)
 (CC0), which carries verified GDPR/DSR contact addresses. Added: the German
 and Austrian credit agencies (SCHUFA, CRIF/CRIFBÜRGEL, Bisnode, Regis24,
-infoscore/Experian, Creditreform, KSV1870, AKV Europa, IHD, Intrum), the
+infoscore/Experian, KSV1870, AKV Europa, IHD, Intrum), the
 address dealers and marketing-list brokers (AZ Direct, Deutsche Post Direkt,
 Deutsche Post Adress, Schober, Nexiga, Panadress, bedirect, SAZ, Uniserv,
 Quadress, Das Telefonbuch), and the UK credit-reference entities
-(Experian UK, Equifax UK, Callcredit, Creditreform UK) as `global` rather
+(Experian UK, Callcredit, Creditreform UK) as `global` rather
 than `eu`, since post-Brexit they fall under UK GDPR rather than EU law.
+
+Two entries from that import were later removed as duplicates: Equifax Ltd
+and Verband der Vereine Creditreform e.V. each shared a DPO address with a
+broker already in the database, so a full run would have emailed those two
+desks twice. The import deduplicated on broker ID only, which didn't catch
+them; `TestShippedBrokerDatabaseHasNoDuplicateEmails` now does.
 
 Four Latvia-specific brokers are listed with **no email on file** -
 `lursoft`, `firmas-lv`, `creditinfo-lv` and `1188-lv`. They are the most

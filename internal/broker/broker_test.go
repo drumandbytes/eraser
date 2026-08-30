@@ -253,3 +253,38 @@ func TestNonBrokerEntriesHaveNoEmail(t *testing.T) {
 		t.Error("no non-broker entries found - did the category get renamed?")
 	}
 }
+
+// TestShippedBrokerDatabaseHasNoDuplicateEmails guards against the same
+// address appearing on two entries, which would mail that desk twice in a
+// single run. Two entries legitimately sharing a *domain* is fine and
+// common - separate registered entities under one corporate site, each with
+// its own privacy contact - so this checks the address, not the domain.
+//
+// This caught two real duplicates introduced by a bulk EU import that
+// deduplicated on broker ID only: Equifax Ltd against the existing Equifax
+// entry (both on the UK DPO address), and Verband der Vereine Creditreform
+// against the existing Creditreform entry.
+func TestShippedBrokerDatabaseHasNoDuplicateEmails(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "data", "brokers.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var db BrokerDatabase
+	if err := yaml.Unmarshal(data, &db); err != nil {
+		t.Fatal(err)
+	}
+
+	seen := make(map[string]string, len(db.Brokers))
+	for _, b := range db.Brokers {
+		email := strings.ToLower(strings.TrimSpace(b.Email))
+		if email == "" {
+			continue
+		}
+		if first, dup := seen[email]; dup {
+			t.Errorf("brokers %q and %q share the email %s; a send run would email that address twice", first, b.ID, email)
+			continue
+		}
+		seen[email] = b.ID
+	}
+}

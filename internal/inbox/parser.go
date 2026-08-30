@@ -403,7 +403,7 @@ func GetPrimaryFormURL(urls ExtractedURLs, brokerDomain string) string {
 		}
 
 		// Bonus for matching broker domain (+20)
-		if brokerDomain != "" && strings.Contains(lowerURL, strings.ToLower(brokerDomain)) {
+		if urlHostMatchesDomain(u, brokerDomain) {
 			score += 20
 		}
 
@@ -425,11 +425,36 @@ func GetPrimaryFormURL(urls ExtractedURLs, brokerDomain string) string {
 	return best.url
 }
 
+// urlHostMatchesDomain reports whether rawURL's host is domain, or a
+// subdomain of it.
+//
+// Compares the parsed host rather than searching the whole URL string: a
+// substring test also matches the path and query, so an emailed
+// "https://evil.example/?ref=spokeo.com" counted as a spokeo.com URL and
+// could be promoted over the genuine link. Both sides are lowercased, which
+// a caller previously forgot, so a mixed-case broker domain never matched.
+//
+// An empty domain matches nothing, leaving callers on their existing
+// fallback (first/highest-scored URL) rather than accidentally matching
+// everything.
+func urlHostMatchesDomain(rawURL, domain string) bool {
+	if domain == "" {
+		return false
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	domain = strings.ToLower(strings.TrimSuffix(domain, "."))
+	return host == domain || strings.HasSuffix(host, "."+domain)
+}
+
 // GetPrimaryConfirmationURL returns the most likely confirmation URL
 func GetPrimaryConfirmationURL(urls ExtractedURLs, brokerDomain string) string {
-	// Prefer URLs that match the broker domain
+	// Prefer URLs actually hosted on the broker's domain
 	for _, u := range urls.ConfirmationURLs {
-		if strings.Contains(strings.ToLower(u), brokerDomain) {
+		if urlHostMatchesDomain(u, brokerDomain) {
 			return u
 		}
 	}

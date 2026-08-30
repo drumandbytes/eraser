@@ -21,9 +21,16 @@ import (
 	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/eraser-privacy/eraser/internal/history"
 	emaTemplate "github.com/eraser-privacy/eraser/internal/template"
+	// filippo.io/csrf/gorilla is a drop-in for github.com/gorilla/csrf, taken
+	// because gorilla/csrf is subject to GO-2025-3884 (CVE-2025-47909) with
+	// no fixed release available. It enforces same-origin via Fetch metadata
+	// headers instead of tokens; csrf.Token/TemplateField remain as no-op
+	// stubs so the existing templates and the X-CSRF-Token header keep
+	// compiling unchanged. Note that tokens are ignored - the same-origin
+	// check is what provides the protection now.
+	csrf "filippo.io/csrf/gorilla"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/csrf"
 )
 
 //go:embed static/*
@@ -331,6 +338,9 @@ func (s *Server) setupRouter() *chi.Mux {
 	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	// Before CSRF and before any session/token work: a rebound request must
+	// be turned away without ever reaching the token store.
+	r.Use(hostCheck(s.port))
 	r.Use(middleware.Compress(5))
 	r.Use(securityHeaders)
 
@@ -342,7 +352,15 @@ func (s *Server) setupRouter() *chi.Mux {
 		csrf.HttpOnly(true),
 		csrf.SameSite(csrf.SameSiteLaxMode), // Lax mode for form submissions
 		csrf.RequestHeader("X-CSRF-Token"),  // For HTMX AJAX requests
-		csrf.TrustedOrigins([]string{"localhost", "127.0.0.1", fmt.Sprintf("localhost:%d", s.port), fmt.Sprintf("127.0.0.1:%d", s.port)}),
+		// Scheme-qualified, and http:// specifically: this package prefixes
+		// bare hosts with https://, so the old bare-host list would silently
+		// match nothing over plain-HTTP localhost. Both spellings are listed
+		// so that browsing on 127.0.0.1 while posting to localhost (or vice
+		// versa) keeps working exactly as it does today.
+		csrf.TrustedOrigins([]string{
+			fmt.Sprintf("http://localhost:%d", s.port),
+			fmt.Sprintf("http://127.0.0.1:%d", s.port),
+		}),
 	)
 	r.Use(csrfMiddleware)
 
@@ -402,6 +420,47 @@ func (s *Server) setupRouter() *chi.Mux {
 	})
 
 	return r
+}
+
+// hostCheck rejects any request whose Host header isn't one of the loopback
+// names this server is actually reachable at.
+//
+// The server binds 127.0.0.1 only (see Start), but that does NOT stop a
+// malicious web page the user happens to visit from reaching it via DNS
+// rebinding: the page's domain re-resolves to 127.0.0.1, after which the
+// browser treats the attacker's origin as same-origin with this server and
+// its JavaScript can read every page here - including the stored app
+// password on /settings. Such a request carries the attacker's hostname in
+// Host, so pinning Host to the loopback names is what actually closes it.
+//
+// Origin/Sec-Fetch-Site checks (i.e. the CSRF layer) do NOT help here: after
+// rebinding the browser genuinely considers the request same-origin and
+// labels it as such. This middleware is the only defense, which is why it
+// matches exactly - no prefix or suffix matching. Hostnames like
+// "localhost.evil.com" or the *.nip.io / localtest.me wildcard services all
+// resolve to loopback and would slip past a looser comparison.
+func hostCheck(port int) func(http.Handler) http.Handler {
+	allowed := map[string]bool{
+		"localhost":                       true,
+		fmt.Sprintf("localhost:%d", port): true,
+		"127.0.0.1":                       true,
+		fmt.Sprintf("127.0.0.1:%d", port): true,
+		"[::1]":                           true,
+		fmt.Sprintf("[::1]:%d", port):     true,
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// An empty Host is rejected along with everything else: Go's
+			// http.Server already 400s HTTP/1.1 requests that omit it, and
+			// every browser sends it, so allowing empty would buy no
+			// compatibility while reopening the exact bypass being closed.
+			if !allowed[strings.ToLower(r.Host)] {
+				http.Error(w, "Forbidden: unexpected Host header", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // securityHeaders adds security headers to all responses
@@ -518,8 +577,22 @@ type BrokerWithStatus struct {
 	TotalSent int
 }
 
+// brokerQuery is the set of filters the brokers page, its HTMX fragment
+// endpoint and the bulk-send job all narrow the broker list with. It's a
+// struct rather than a positional argument list because there are enough
+// of them now that call sites were getting hard to read (and easy to
+// transpose).
+type brokerQuery struct {
+	Search       string
+	Category     string
+	Region       string
+	Priority     string
+	Status       string
+	MissingEmail bool
+}
+
 // getBrokersWithStatus returns brokers with their history status
-func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, missingEmail bool) []BrokerWithStatus {
+func (s *Server) getBrokersWithStatus(profileID string, q brokerQuery) []BrokerWithStatus {
 	// Get all broker statuses from history, scoped to the active profile
 	var brokerStatuses map[string]history.BrokerStatus
 	if s.historyStore != nil {
@@ -549,10 +622,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 	}
 
-	search = strings.ToLower(strings.TrimSpace(search))
-	category = strings.ToLower(strings.TrimSpace(category))
-	region = strings.ToLower(strings.TrimSpace(region))
-	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
+	search := strings.ToLower(strings.TrimSpace(q.Search))
+	category := strings.ToLower(strings.TrimSpace(q.Category))
+	region := strings.ToLower(strings.TrimSpace(q.Region))
+	statusFilter := strings.ToLower(strings.TrimSpace(q.Status))
+	// An unrecognized priority normalizes to "" - i.e. "no priority filter" -
+	// rather than matching nothing, matching how a bogus category or region
+	// in the query string already behaves.
+	priority := broker.NormalizePriority(q.Priority)
 
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
@@ -582,9 +659,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 			continue
 		}
 
+		// Priority filter
+		if priority != "" && broker.NormalizePriority(b.Priority) != priority {
+			continue
+		}
+
 		// Missing-email filter - brokers with no contact address on file,
 		// mirrors the CLI's `list-brokers --missing-email`
-		if missingEmail && b.Email != "" {
+		if q.MissingEmail && b.Email != "" {
 			continue
 		}
 
@@ -681,18 +763,27 @@ func (s *Server) renderPartial(w http.ResponseWriter, name string, data interfac
 }
 
 func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name string, data map[string]interface{}) {
-	// Add CSRF token to data
-	data["CSRFToken"] = csrf.Token(r)
-	data["CSRFField"] = template.HTML(fmt.Sprintf(`<input type="hidden" name="gorilla.csrf.Token" value="%s">`, csrf.Token(r)))
+	// Add CSRF token to data. Resolved once, not twice: with the
+	// Fetch-metadata-based implementation csrf.Token is a stub returning a
+	// fresh random string per call, so calling it twice would put two
+	// different values in the page. Harmless while tokens are ignored, but
+	// wrong the moment anything starts comparing them.
+	csrfToken := csrf.Token(r)
+	data["CSRFToken"] = csrfToken
+	data["CSRFField"] = template.HTML(fmt.Sprintf(`<input type="hidden" name="gorilla.csrf.Token" value="%s">`, csrfToken))
 
 	// Every page gets the profile switcher's data, regardless of whether the
 	// handler itself needed the active profile - Profiles has length 1 for a
 	// single-profile config, in which case layout.html hides the switcher.
+	// Set unconditionally (even pre-setup, when cfg is nil) so layout.html's
+	// `len .Profiles` never sees a missing/nil field.
 	if cfg := s.getConfig(); cfg != nil {
 		data["Profiles"] = cfg.GetProfiles()
-		data["ActiveProfile"] = s.activeProfile(r)
-		data["CurrentPath"] = r.URL.Path
+	} else {
+		data["Profiles"] = []config.NamedProfile{}
 	}
+	data["ActiveProfile"] = s.activeProfile(r)
+	data["CurrentPath"] = r.URL.Path
 
 	tmpl, ok := s.templates[name]
 	if !ok {

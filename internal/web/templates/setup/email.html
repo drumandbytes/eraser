@@ -94,10 +94,15 @@
                 <!-- App Password -->
                 <div>
                     <label for="smtp_password" class="label">App Password</label>
+                    {{/* No value= attribute - see the matching note in
+                         settings.html. Submitting this blank keeps whatever
+                         password is already held in the wizard session, so
+                         returning here from a failed test send doesn't force
+                         a full retype. */}}
                     <input type="password" name="smtp_password" id="smtp_password"
-                        value="{{.Email.SMTP.Password}}"
+                        autocomplete="new-password"
                         class="input {{if .Errors.smtp_password}}border-error{{end}}"
-                        placeholder="xxxx xxxx xxxx xxxx">
+                        placeholder="{{if .Email.SMTP.Password}}•••••••• (leave blank to keep current){{else}}xxxx xxxx xxxx xxxx{{end}}">
                     {{if .Errors.smtp_password}}
                     <p class="mt-1 text-sm text-error">{{.Errors.smtp_password}}</p>
                     {{end}}

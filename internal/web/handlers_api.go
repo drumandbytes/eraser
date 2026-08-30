@@ -17,13 +17,14 @@ import (
 // API handlers
 
 func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
-	search := r.URL.Query().Get("search")
-	category := r.URL.Query().Get("category")
-	region := r.URL.Query().Get("region")
-	status := r.URL.Query().Get("status")
-	missingEmail := r.URL.Query().Get("missing_email") == "true"
-
-	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, brokerQuery{
+		Search:       r.URL.Query().Get("search"),
+		Category:     r.URL.Query().Get("category"),
+		Region:       r.URL.Query().Get("region"),
+		Priority:     r.URL.Query().Get("priority"),
+		Status:       r.URL.Query().Get("status"),
+		MissingEmail: r.URL.Query().Get("missing_email") == "true",
+	})
 
 	// Returns broker list as HTML fragment for HTMX
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{

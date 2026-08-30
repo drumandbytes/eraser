@@ -52,7 +52,7 @@ Safety features:
 	cmd.Flags().StringVar(&confirmURL, "url", "", "Direct confirmation URL to click")
 	cmd.Flags().StringVar(&brokerID, "broker", "", "Broker ID to confirm for (uses URL from pipeline)")
 	cmd.Flags().BoolVar(&pending, "pending", false, "Confirm all pending confirmation links")
-	cmd.Flags().BoolVar(&validateDomain, "validate-domain", true, "Validate URL domain against known brokers (private/localhost addresses are always blocked regardless of this flag)")
+	cmd.Flags().BoolVar(&validateDomain, "validate-domain", true, "Validate the URL and every redirect hop against known broker domains. Turn this off for brokers that confirm via a third-party privacy portal (TrustArc, OneTrust) or a click-tracker link. Connections to loopback/private/link-local addresses are refused at dial time either way, on every hop.")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview links without clicking them")
 
 	return cmd
@@ -209,7 +209,11 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 		}
 
 		// Click the confirmation link
-		result, err := handler.ClickConfirmationLink(link.URL, false) // Domain already validated above
+		// Pass the flag through rather than hardcoding false: the initial URL
+		// was already checked above, but ClickConfirmationLink also applies
+		// this to each redirect hop, and hardcoding false there silently
+		// dropped hop validation even for a default (validating) run.
+		result, err := handler.ClickConfirmationLink(link.URL, validateDomain)
 		if err != nil {
 			fmt.Printf("       ❌ Error: %v\n", err)
 			failCount++

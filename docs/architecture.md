@@ -46,7 +46,7 @@ eraser/
 │       │                        # (setup wizard), handlers_profile.go (profile switching)
 │       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
 │       └── session.go           # Setup-wizard session store
-├── data/brokers.yaml            # 700+ data broker database
+├── data/brokers.yaml            # 800+ data broker database (each entry priority-tagged)
 ├── docs/                        # Granular reference docs (this directory)
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
@@ -63,8 +63,51 @@ Each broker in `data/brokers.yaml` (top-level key `brokers:`) has:
 - `website`: Company website (optional)
 - `opt_out_url`: Direct opt-out link (optional)
 - `region`: `us`, `eu`, or `global`
-- `category`: `people-search`, `marketing`, `background-check`, `financial-b2b`, `data-intermediary`, `device-id-only` (tracks by cookie/device ID, not name/email - can't be reached via this tool's standard profile-based request), or `requires-id` (won't act on a request without a government-issued ID document or similar heavyweight identity verification - this tool won't supply one on your behalf)
+- `category`: `people-search`, `marketing`, `background-check`, `financial-b2b`, `data-intermediary`, `device-id-only` (tracks by cookie/device ID, not name/email - can't be reached via this tool's standard profile-based request), `requires-id` (won't act on a request without a government-issued ID document or similar heavyweight identity verification - this tool won't supply one on your behalf), or `non-broker` (see below)
+- `priority`: `high`, `medium` or `low` - how much this broker matters to someone trying to get removed. Purely a filter (`--priority`, and the web UI's priority selector); it composes with `category`/`region`/status rather than replacing them, so "high priority people-search brokers" is one query. `send` and the web UI's bulk send also order high-priority brokers first, which matters when `daily_send_limit` truncates a run. See [Broker priority](#broker-priority) for how the shipped values were assigned.
 - `notes`: Free-text, optional - used to record why an entry looks unusual (e.g. "use the form, not email")
+
+#### The `non-broker` category
+
+A handful of entries aren't data brokers at all: search engines, industry
+preference services and suppression registries - Google/Bing results
+removal, DMAChoice, OptOutPrescreen, the Do Not Call registry, the DAA
+WebChoices ad-industry opt-out. They show up on every published opt-out
+list, so leaving them out of the database means the information lives
+nowhere; but they are things you act on yourself through a web form, not
+parties you send an erasure request to.
+
+They are therefore recorded with **`email: ""` always**, which is enforced
+by a test (`TestNonBrokerEntriesHaveNoEmail`). That keeps them out of every
+send path automatically - `send`, the single-broker endpoint and bulk "Send
+to All" all skip address-less entries - while still surfacing them in
+`list-brokers --missing-email` and the pipeline, which is exactly the
+manual-follow-up flow they belong in. Each carries a `notes` explaining
+what to do there instead (also test-enforced).
+
+Note the ordering caveat recorded in their notes: delisting a page from a
+search engine doesn't remove the broker page behind it, so search-engine
+removal is worth doing *after* the brokers themselves have been dealt with.
+
+To hide them from listings entirely, add `non-broker` to
+`options.excluded_categories` in `config.yaml`.
+
+#### Broker priority
+
+The shipped `priority` values were assigned by cross-matching the database against published broker-coverage lists, then banding the result. A broker scores points for each independent source that names it, plus a bump for being a people-search site (those publish a searchable profile of you personally) or an EU broker (this fork exists for GDPR Article 17 use, so an EU-established broker is the most actionable target for its user). `high` is roughly "named by several sources, or a top-tier aggregator"; `medium` is "named by at least one"; `low` is the long tail. Any site categorised `people-search` is `high` regardless of score.
+
+For `non-broker` entries, priority means "how much this manual action is worth doing" rather than "how badly this party needs emailing" - they are never emailed either way.
+
+Sources used, in rough order of weight:
+
+- Consumer Reports' *Data Defense* study (the 13 people-search sites it tested against 7 removal services)
+- Optery's open-source data broker directory (CC BY-NC-SA), specifically its plan-tier field - their entry-level ("Core") coverage is the closest published proxy for "what the base plans actually include"
+- PersProtect's open dataset of 499 US brokers and opt-out links (CC BY 4.0)
+- The *Big-Ass Data Broker Opt-Out List* (yaelwrites)
+- The Duke Sanford report's list of the largest US consumer-data aggregators, plus the credit bureaus, applied as an explicit override so the big aggregators aren't ranked by people-search popularity
+- datenanfragen.de's company database (CC0) for EU credit agencies and address dealers
+
+None of these agree with each other, which is the point of scoring across them rather than adopting any one list wholesale. To re-derive the values, re-run that cross-match and rewrite the `priority:` line of each entry; the tests in `internal/broker` assert every shipped entry carries a valid value.
 
 **Brokers with `email: ""`** can't be reached by `send` at all - they only take requests through a web form/DSR portal, or the address bounced and was cleared by `cleanup-bounces`/`mark-bounced`. Use `eraser list-brokers --missing-email` to see them; they need manual follow-up outside the tool.
 
@@ -77,7 +120,7 @@ Three email templates (`internal/template/templates/`):
 ### Flow
 1. Load user config from `~/.eraser/config.yaml`, resolve the active profile (see [multi-profile.md](multi-profile.md))
 2. Load brokers from `data/brokers.yaml`
-3. Filter by region and exclusions (`broker.Filter`)
+3. Filter by region and exclusions (`broker.Filter`), then by `--priority` if given (`broker.FilterByPriority`), then order high-priority first (`broker.SortByPriority`)
 4. For each broker, render email template with profile + broker data
 5. Send via SMTP, capped at `options.daily_send_limit` per rolling 24h window (`send` and the web UI's job sender both read this same config value - keep them in sync, see [code-patterns.md](code-patterns.md#known-quirks) for the history)
 6. Record result in SQLite history, tagged with the active profile's ID; `send` skips brokers already successfully emailed in the last 25 days (per profile) so re-running is always safe

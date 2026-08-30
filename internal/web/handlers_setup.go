@@ -90,6 +90,18 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		emailCfg.SMTP.Password = strings.TrimSpace(r.FormValue("smtp_password"))
 		emailCfg.SMTP.UseTLS = r.FormValue("smtp_tls") == "on"
 
+		// An empty password means "keep the one already in the wizard
+		// session" - the form no longer echoes it back into the page, so it
+		// arrives blank whenever the user didn't retype it. This is what
+		// makes the common "test send failed -> Back to Email Settings ->
+		// fix the host -> resubmit" loop work without retyping the app
+		// password each time. Sourced from the session (the wizard's own
+		// store), not from the saved config file. Applied before validation
+		// below, so a first-time setup with no password anywhere still errors.
+		if emailCfg.SMTP.Password == "" {
+			emailCfg.SMTP.Password = session.Email.SMTP.Password
+		}
+
 		// Validate required fields
 		if emailCfg.SMTP.Host == "" {
 			errors["smtp_host"] = "SMTP host is required"
@@ -247,16 +259,29 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg := &config.Config{
-		Profile: session.Profile,
-		Email:   session.Email,
-		Options: config.Options{
-			// This fork is customized for GDPR Article 17 use (see
-			// EU-NOTES.md) - default fresh setups to gdpr, not upstream's
-			// US/CCPA-oriented "generic". Matches the CLI's `init` default.
-			Template:    "gdpr",
-			RateLimitMs: 2000,
-		},
+	// Start from the existing config rather than a blank struct. The wizard
+	// only ever collects Profile and Email, but Config also carries Profiles,
+	// Inbox, Pipeline and the rest of Options - building a fresh struct here
+	// silently discarded all of them, so re-running the wizard on a
+	// configured install wiped the saved inbox app password, any additional
+	// household profiles, and every excluded-broker/region setting.
+	cfg := &config.Config{}
+	if existing := s.getConfig(); existing != nil {
+		*cfg = *existing
+	}
+	cfg.Profile = session.Profile
+	cfg.Email = session.Email
+
+	// Fill defaults only where nothing is configured yet, so a re-run keeps
+	// whatever the user already chose.
+	if cfg.Options.Template == "" {
+		// This fork is customized for GDPR Article 17 use (see EU-NOTES.md) -
+		// default fresh setups to gdpr, not upstream's US/CCPA-oriented
+		// "generic". Matches the CLI's `init` default.
+		cfg.Options.Template = "gdpr"
+	}
+	if cfg.Options.RateLimitMs == 0 {
+		cfg.Options.RateLimitMs = 2000
 	}
 
 	if err := config.Save(s.configPath, cfg); err != nil {

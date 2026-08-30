@@ -10,6 +10,7 @@
             <tr>
                 <th>Broker</th>
                 <th>Category</th>
+                <th>Priority</th>
                 <th>Region</th>
                 <th>Status</th>
                 <th class="text-right">Actions</th>
@@ -33,6 +34,13 @@
                     <span class="badge badge-neutral">{{.Category}}</span>
                     {{else}}
                     <span class="text-muted">—</span>
+                    {{end}}
+                </td>
+                <td>
+                    {{if .Priority}}
+                    <span class="badge {{if eq .Priority "high"}}badge-warning{{else if eq .Priority "medium"}}badge-info{{else}}badge-neutral{{end}}">{{.Priority}}</span>
+                    {{else}}
+                    <span class="text-muted">&mdash;</span>
                     {{end}}
                 </td>
                 <td>
@@ -93,7 +101,7 @@
             </tr>
             {{else}}
             <tr>
-                <td colspan="5" class="py-12 text-center">
+                <td colspan="6" class="py-12 text-center">
                     <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style="background: var(--bg-elevated);">
                         <svg class="w-8 h-8 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -134,6 +142,9 @@
         <div class="flex items-center gap-2 mb-3 text-sm">
             {{if .Category}}
             <span class="badge badge-neutral">{{.Category}}</span>
+            {{end}}
+            {{if .Priority}}
+            <span class="badge {{if eq .Priority "high"}}badge-warning{{else if eq .Priority "medium"}}badge-info{{else}}badge-neutral{{end}}">{{.Priority}}</span>
             {{end}}
             {{if .Region}}
             <span class="text-muted uppercase">{{.Region}}</span>

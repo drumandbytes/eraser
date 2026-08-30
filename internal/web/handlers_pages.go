@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/history"
 	"github.com/go-chi/chi/v5"
 )
@@ -34,13 +35,16 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
-	search := r.URL.Query().Get("search")
-	category := r.URL.Query().Get("category")
-	region := r.URL.Query().Get("region")
-	status := r.URL.Query().Get("status")
-	missingEmail := r.URL.Query().Get("missing_email") == "true"
+	q := brokerQuery{
+		Search:       r.URL.Query().Get("search"),
+		Category:     r.URL.Query().Get("category"),
+		Region:       r.URL.Query().Get("region"),
+		Priority:     r.URL.Query().Get("priority"),
+		Status:       r.URL.Query().Get("status"),
+		MissingEmail: r.URL.Query().Get("missing_email") == "true",
+	}
 
-	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, q)
 
 	dailyLimit := effectiveDailyLimit(s.getConfig())
 
@@ -49,11 +53,13 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 		"Brokers":      brokers,
 		"Categories":   s.getUniqueCategories(),
 		"Regions":      s.getUniqueRegions(),
-		"Search":       search,
-		"Category":     category,
-		"Region":       region,
-		"Status":       status,
-		"MissingEmail": missingEmail,
+		"Priorities":   broker.Priorities,
+		"Search":       q.Search,
+		"Category":     q.Category,
+		"Region":       q.Region,
+		"Priority":     q.Priority,
+		"Status":       q.Status,
+		"MissingEmail": q.MissingEmail,
 		"Total":        len(s.brokerDB.Brokers),
 		"Filtered":     len(brokers),
 		"DailyLimit":   dailyLimit,

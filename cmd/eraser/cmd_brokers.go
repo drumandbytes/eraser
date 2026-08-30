@@ -11,7 +11,7 @@ import (
 )
 
 func listBrokersCmd() *cobra.Command {
-	var region, category, search string
+	var region, category, search, priority string
 	var missingEmail bool
 
 	cmd := &cobra.Command{
@@ -19,12 +19,13 @@ func listBrokersCmd() *cobra.Command {
 		Short: "List all data brokers in the database",
 		Long:  "Show all data brokers that will receive removal requests.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runListBrokers(region, category, search, missingEmail)
+			return runListBrokers(region, category, priority, search, missingEmail)
 		},
 	}
 
 	cmd.Flags().StringVar(&region, "region", "", "Only show brokers in this region (us, eu, or global)")
 	cmd.Flags().StringVar(&category, "category", "", "Only show brokers in this category")
+	cmd.Flags().StringVar(&priority, "priority", "", "Only show brokers with this priority (high, medium, or low)")
 	cmd.Flags().StringVar(&search, "search", "", "Only show brokers whose name or ID contains this text")
 	cmd.Flags().BoolVar(&missingEmail, "missing-email", false, "Only show brokers with no email on file (need manual follow-up)")
 
@@ -42,7 +43,7 @@ func addBrokerCmd() *cobra.Command {
 	}
 }
 
-func runListBrokers(region, category, search string, missingEmail bool) error {
+func runListBrokers(region, category, priority, search string, missingEmail bool) error {
 	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
@@ -52,12 +53,24 @@ func runListBrokers(region, category, search string, missingEmail bool) error {
 	category = strings.ToLower(strings.TrimSpace(category))
 	search = strings.ToLower(strings.TrimSpace(search))
 
+	// An unrecognized --priority normalizes to "", which would silently mean
+	// "no priority filter" and list everything - tell the user instead.
+	if strings.TrimSpace(priority) != "" {
+		priority = broker.NormalizePriority(priority)
+		if priority == "" {
+			return fmt.Errorf("invalid --priority: must be one of %s", strings.Join(broker.Priorities, ", "))
+		}
+	}
+
 	matched := make([]broker.Broker, 0, len(brokerDB.Brokers))
 	for _, b := range brokerDB.Brokers {
 		if region != "" && strings.ToLower(b.Region) != region {
 			continue
 		}
 		if category != "" && strings.ToLower(b.Category) != category {
+			continue
+		}
+		if priority != "" && broker.NormalizePriority(b.Priority) != priority {
 			continue
 		}
 		if search != "" && !strings.Contains(strings.ToLower(b.Name), search) && !strings.Contains(strings.ToLower(b.ID), search) {
@@ -69,7 +82,7 @@ func runListBrokers(region, category, search string, missingEmail bool) error {
 		matched = append(matched, b)
 	}
 
-	if region != "" || category != "" || search != "" || missingEmail {
+	if region != "" || category != "" || priority != "" || search != "" || missingEmail {
 		fmt.Printf("📋 Data Brokers (%d of %d total match your filters)\n", len(matched), len(brokerDB.Brokers))
 	} else {
 		fmt.Printf("📋 Data Brokers (%d total)\n", len(matched))
@@ -93,6 +106,9 @@ func runListBrokers(region, category, search string, missingEmail bool) error {
 		if b.Category != "" {
 			fmt.Printf("  📁 Category: %s\n", b.Category)
 		}
+		if b.Priority != "" {
+			fmt.Printf("  ⭐ Priority: %s\n", b.Priority)
+		}
 	}
 
 	return nil
@@ -114,6 +130,7 @@ func runAddBroker() error {
 	b.OptOutURL = prompt(reader, "Opt-out URL (optional): ")
 	b.Region = prompt(reader, "Region (us/eu/global): ")
 	b.Category = prompt(reader, "Category (people-search/marketing/background-check): ")
+	b.Priority = broker.NormalizePriority(prompt(reader, "Priority (high/medium/low, optional): "))
 
 	// Load existing brokers
 	brokerPath := brokerFile

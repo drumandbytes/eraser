@@ -169,12 +169,6 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("inbox_email")
 	password := r.FormValue("inbox_password")
 
-	// Validate required fields
-	if email == "" || password == "" {
-		s.renderSettingsWithMessage(w, r, "Email and password are required", false)
-		return
-	}
-
 	// Update config with inbox settings. Load-copy-mutate-store rather than
 	// mutating the struct returned by getConfig() in place - a concurrent
 	// reader (another handler, or a background send-job goroutine) may be
@@ -184,6 +178,22 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 		cfg = &config.Config{}
 	}
 	newCfg := *cfg
+
+	// An empty password means "keep the stored one", not "clear it". The
+	// form no longer renders the saved password back into the page (it would
+	// be readable by anything that can reach this origin), so an unchanged
+	// field arrives blank on every save - without this, editing just the
+	// email address would wipe the working IMAP credential.
+	if password == "" {
+		password = newCfg.Inbox.Password
+	}
+
+	// Validate required fields. Checked after the substitution above, so a
+	// genuinely new setup with no password anywhere is still rejected.
+	if email == "" || password == "" {
+		s.renderSettingsWithMessage(w, r, "Email and password are required", false)
+		return
+	}
 
 	// Start from the existing inbox config (not a blank struct) so a
 	// provider configured by hand in config.yaml (e.g. "outlook") keeps its

@@ -164,17 +164,26 @@
                     <label for="inbox_email" class="label">Gmail Address</label>
                     <input type="email" name="inbox_email" id="inbox_email"
                         value="{{if and .Config .Config.Inbox}}{{.Config.Inbox.Email}}{{else if .Config}}{{.Config.Profile.Email}}{{end}}"
+                        autocomplete="username"
                         class="input"
                         placeholder="you@gmail.com">
                 </div>
 
                 <div>
                     <label for="inbox_password" class="label">App Password</label>
+                    {{/* No value= attribute: rendering the stored password here
+                         would put it in the page source, readable by anything
+                         that can reach this origin. autocomplete="new-password"
+                         stops the browser's password manager from filling a
+                         saved localhost login into the now-empty field, which
+                         would otherwise be saved over the real credential.
+                         Submitting this blank keeps the stored password - see
+                         handleSettingsInbox. */}}
                     <input type="password" name="inbox_password" id="inbox_password"
-                        value="{{if and .Config .Config.Inbox}}{{.Config.Inbox.Password}}{{end}}"
+                        autocomplete="new-password"
                         class="input"
-                        placeholder="xxxx xxxx xxxx xxxx">
-                    <p class="text-xs text-muted mt-1">Your 16-character Google App Password (not your regular password)</p>
+                        placeholder="{{if and .Config .Config.Inbox .Config.Inbox.Password}}•••••••• (leave blank to keep current){{else}}xxxx xxxx xxxx xxxx{{end}}">
+                    <p class="text-xs text-muted mt-1">Your 16-character Google App Password (not your regular password){{if and .Config .Config.Inbox .Config.Inbox.Password}} &mdash; leave blank to keep the one already saved{{end}}</p>
                 </div>
 
                 <div class="flex items-center gap-3 pt-2">

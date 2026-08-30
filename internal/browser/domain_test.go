@@ -129,13 +129,11 @@ func TestMatchesAllowedDomain(t *testing.T) {
 	}
 }
 
-// The empty-allowlist behavior documented above (matchesAllowedDomain itself
-// always returns false for an empty/nil list) is deliberately *not* what
-// Browser.NavigateAndFill does at the call site -- it treats an empty list as
-// "no restriction configured" and skips the check entirely (see browser.go,
-// `if len(b.allowedDomains) > 0`). This test just pins down the lower-level
-// function's own behavior so that call-site policy doesn't get confused with
-// it.
+// matchesAllowedDomain returns false for an empty/nil allowlist, and
+// Browser.NavigateAndFill now agrees with it: an empty list rejects every
+// navigation rather than being read as "no restriction configured". This test
+// pins down the lower-level function's own behavior; the call site's matching
+// fail-closed policy lives in browser.go.
 func TestMatchesAllowedDomain_EmptyAllowlistIsDocumentedAsNoMatch(t *testing.T) {
 	match, _, err := matchesAllowedDomain("https://anything.example.com", []string{})
 	if err != nil {

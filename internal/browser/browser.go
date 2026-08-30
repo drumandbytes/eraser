@@ -66,8 +66,14 @@ type FormResult struct {
 
 // New creates a new Browser instance. allowedDomains restricts the hosts
 // NavigateAndFill is willing to navigate to and autofill with profile PII
-// (see matchesAllowedDomain); pass nil/empty to skip that check entirely
-// (e.g. for callers that don't yet have a broker domain list).
+// (see matchesAllowedDomain).
+//
+// An empty allowedDomains rejects every navigation rather than allowing all
+// of them: this list is the only thing standing between an untrusted,
+// email-derived form URL and the user's name, address, phone and date of
+// birth being typed into it, so "not configured" has to fail closed. Callers
+// are expected to check for an empty broker list themselves and report a
+// useful error - see cmd/eraser/cmd_fill.go.
 func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*Browser, error) {
 	opts := []chromedp.ExecAllocatorOption{
 		chromedp.NoFirstRun,
@@ -118,19 +124,21 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 	// Refuse to navigate to (and autofill PII into) a URL whose host isn't a
 	// known broker domain. Form URLs can originate from email-parsed content
 	// (untrusted), so without this a spoofed link could exfiltrate PII to an
-	// arbitrary site. An empty allowlist means "not configured" and skips
-	// the check, rather than rejecting everything.
-	if len(b.allowedDomains) > 0 {
-		valid, domain, err := matchesAllowedDomain(url, b.allowedDomains)
-		if err != nil {
-			result.ErrorMessage = fmt.Sprintf("invalid URL: %v", err)
-			return result, err
-		}
-		if !valid {
-			err := fmt.Errorf("URL domain not in known broker list: %s", domain)
-			result.ErrorMessage = err.Error()
-			return result, err
-		}
+	// arbitrary site. Fails closed on an empty allowlist - see New.
+	if len(b.allowedDomains) == 0 {
+		err := fmt.Errorf("no broker domains configured; refusing to autofill personal data into an unvalidated page")
+		result.ErrorMessage = err.Error()
+		return result, err
+	}
+	valid, domain, err := matchesAllowedDomain(url, b.allowedDomains)
+	if err != nil {
+		result.ErrorMessage = fmt.Sprintf("invalid URL: %v", err)
+		return result, err
+	}
+	if !valid {
+		err := fmt.Errorf("URL domain not in known broker list: %s", domain)
+		result.ErrorMessage = err.Error()
+		return result, err
 	}
 
 	// Create a context with timeout
@@ -138,7 +146,7 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 	defer cancel()
 
 	// Navigate to the URL
-	err := chromedp.Run(ctx, chromedp.Navigate(url))
+	err = chromedp.Run(ctx, chromedp.Navigate(url))
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("navigation failed: %v", err)
 		return result, err
@@ -150,6 +158,24 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		result.ErrorMessage = fmt.Sprintf("page load failed: %v", err)
 		return result, err
 	}
+
+	// Re-check where we actually ended up. The check above only covers the
+	// URL we asked for; Chrome does its own DNS resolution and follows its
+	// own HTTP redirects and JS navigations, none of which the Go process
+	// sees. Without this, a broker URL that redirects offsite would still
+	// get the profile's name, address, phone and date of birth typed into
+	// whatever page loaded. This runs before any field is filled.
+	var finalURL string
+	if err = chromedp.Run(ctx, chromedp.Location(&finalURL)); err != nil {
+		result.ErrorMessage = fmt.Sprintf("could not determine final URL: %v", err)
+		return result, err
+	}
+	if valid, host, _ := matchesAllowedDomain(finalURL, b.allowedDomains); !valid {
+		err := fmt.Errorf("navigation ended on non-broker host %s; refusing to autofill personal data", host)
+		result.ErrorMessage = err.Error()
+		return result, err
+	}
+	result.URL = finalURL
 
 	// Small delay for dynamic content
 	time.Sleep(2 * time.Second)
@@ -368,7 +394,11 @@ func (b *Browser) takeScreenshot(ctx context.Context, brokerID, suffix string) (
 		return "", err
 	}
 
-	filename := fmt.Sprintf("%s_%s_%d.png", brokerID, suffix, time.Now().Unix())
+	// Slugify rather than interpolate raw: brokerID comes from
+	// data/brokers.yaml, which takes community contributions, and a value
+	// containing path separators would place the file outside ScreenshotDir.
+	// Lossless for every broker ID in use (all match [a-z0-9-]).
+	filename := fmt.Sprintf("%s_%s_%d.png", config.SlugifyID(brokerID), suffix, time.Now().Unix())
 	filepath := filepath.Join(b.config.ScreenshotDir, filename)
 
 	if err := os.WriteFile(filepath, buf, 0600); err != nil {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
@@ -34,8 +35,11 @@ const (
 var Priorities = []string{PriorityHigh, PriorityMedium, PriorityLow}
 
 // NormalizePriority lowercases/trims a priority value and returns "" for
-// anything that isn't one of Priorities, so a typo in the YAML or a config
-// file degrades to "unclassified" instead of silently matching nothing.
+// anything that isn't one of Priorities. It's used on values coming *in*
+// (a --priority flag, a query param, an add-broker prompt) - deliberately
+// not on load, since sanitizeBroker's result is what Save writes back to
+// data/brokers.yaml, and normalizing there would erase a hand-added tag
+// the code doesn't recognize the next time anyone edits the file.
 func NormalizePriority(p string) string {
 	switch strings.ToLower(strings.TrimSpace(p)) {
 	case PriorityHigh:
@@ -66,8 +70,6 @@ func PriorityRank(p string) int {
 }
 
 func sanitizeBroker(b *Broker) {
-	b.Priority = NormalizePriority(b.Priority)
-
 	if !isValidURL(b.OptOutURL) {
 		b.OptOutURL = ""
 	}
@@ -149,6 +151,37 @@ func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCa
 		result = append(result, b)
 	}
 	return result
+}
+
+// FilterByPriority returns the brokers whose priority is in priorities.
+// An empty/nil priorities means "all", so it composes with Filter without
+// needing a sentinel. Note this does NOT mirror the "global" escape hatch
+// Filter applies to regions: priorities of []string{"high"} really does
+// exclude every medium, low and unclassified broker.
+func FilterByPriority(brokers []Broker, priorities []string) []Broker {
+	if len(priorities) == 0 {
+		return brokers
+	}
+	want := toSet(priorities)
+
+	result := make([]Broker, 0, len(brokers))
+	for _, b := range brokers {
+		if want[NormalizePriority(b.Priority)] {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// SortByPriority stably reorders brokers high-then-medium-then-low, leaving
+// the database's own order intact within each band. `send` uses this so a
+// run that gets truncated by the daily send cap spends its budget on the
+// brokers that matter most, rather than on whatever happens to sit at the
+// top of the file.
+func SortByPriority(brokers []Broker) {
+	sort.SliceStable(brokers, func(i, j int) bool {
+		return PriorityRank(brokers[i].Priority) < PriorityRank(brokers[j].Priority)
+	})
 }
 
 func (db *BrokerDatabase) FindByID(id string) *Broker {

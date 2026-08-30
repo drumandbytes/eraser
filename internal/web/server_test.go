@@ -2,6 +2,10 @@ package web
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -158,9 +162,97 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
 	}
 
-	got := s.getBrokersWithStatus("default", "", "", "", "", false)
+	got := s.getBrokersWithStatus("default", brokerQuery{})
 
 	if len(got) != 1 || got[0].ID != "beenverified" {
 		t.Errorf("expected only beenverified to survive exclusion, got %+v", got)
+	}
+}
+
+func TestGetBrokersWithStatusPriorityFilter(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.brokerDB.Brokers = []broker.Broker{
+		{ID: "spokeo", Name: "Spokeo", Region: "us", Category: "people-search", Priority: "high"},
+		{ID: "acxiom", Name: "Acxiom", Region: "us", Category: "marketing", Priority: "high"},
+		{ID: "smalltown", Name: "SmallTown Data", Region: "us", Category: "marketing", Priority: "low"},
+		{ID: "untagged", Name: "Untagged Broker", Region: "us", Category: "marketing"},
+	}
+
+	tests := []struct {
+		name  string
+		query brokerQuery
+		want  []string
+	}{
+		{"blank priority returns everything", brokerQuery{}, []string{"spokeo", "acxiom", "smalltown", "untagged"}},
+		{"high only", brokerQuery{Priority: "high"}, []string{"spokeo", "acxiom"}},
+		{"low only", brokerQuery{Priority: "low"}, []string{"smalltown"}},
+		{"case-insensitive", brokerQuery{Priority: "HIGH"}, []string{"spokeo", "acxiom"}},
+		{"unrecognized priority is treated as no filter, like a bogus category", brokerQuery{Priority: "urgent"}, []string{"spokeo", "acxiom", "smalltown", "untagged"}},
+		{"medium matches nothing here", brokerQuery{Priority: "medium"}, nil},
+		{"combines with category", brokerQuery{Priority: "high", Category: "marketing"}, []string{"acxiom"}},
+		{"combines with a category that has no high brokers", brokerQuery{Priority: "low", Category: "people-search"}, nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := s.getBrokersWithStatus("default", tt.query)
+
+			var ids []string
+			for _, b := range got {
+				ids = append(ids, b.ID)
+			}
+			if !reflect.DeepEqual(ids, tt.want) {
+				t.Errorf("getBrokersWithStatus(%+v) = %v, want %v", tt.query, ids, tt.want)
+			}
+		})
+	}
+}
+
+// TestBrokersPageRendersPriorityFilter exercises the real templates end to
+// end. The brokers page's table and partials/broker-list.html are
+// hand-duplicated markup (see docs/code-patterns.md), so this is the guard
+// that both actually parse and that the priority filter survives the trip
+// through the handler - a template typo in either one is otherwise only
+// visible by loading the page by hand.
+func TestBrokersPageRendersPriorityFilter(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.brokerDB.Brokers = []broker.Broker{
+		{ID: "spokeo", Name: "Spokeo", Email: "privacy@spokeo.com", Region: "us", Category: "people-search", Priority: "high"},
+		{ID: "smalltown", Name: "SmallTown Data", Email: "p@smalltown.example", Region: "us", Category: "marketing", Priority: "low"},
+	}
+	router := s.setupRouter()
+
+	tests := []struct {
+		name         string
+		url          string
+		wantContains []string
+		wantMissing  string
+	}{
+		{"page, unfiltered", "/brokers", []string{"All Priorities", "Spokeo", "SmallTown Data"}, ""},
+		{"page, high only", "/brokers?priority=high", []string{"Spokeo"}, "SmallTown Data"},
+		{"htmx fragment, high only", "/api/brokers?priority=high", []string{"Spokeo"}, "SmallTown Data"},
+		{"htmx fragment, low only", "/api/brokers?priority=low", []string{"SmallTown Data"}, "Spokeo"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			req.Host = "127.0.0.1"
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("GET %s = %d, want 200", tt.url, rec.Code)
+			}
+			body := rec.Body.String()
+			for _, want := range tt.wantContains {
+				if !strings.Contains(body, want) {
+					t.Errorf("GET %s: response is missing %q", tt.url, want)
+				}
+			}
+			if tt.wantMissing != "" && strings.Contains(body, tt.wantMissing) {
+				t.Errorf("GET %s: priority filter let %q through", tt.url, tt.wantMissing)
+			}
+		})
 	}
 }

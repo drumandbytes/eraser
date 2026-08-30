@@ -18,6 +18,27 @@ This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted fo
 - `etarget-sk` (eTarget s.r.o., Slovakia)
 - `creditsafe` (Creditsafe, financial/B2B credit reporting)
 
+### EU/GDPR broker expansion
+
+The EU-region set was later widened from 9 entries to 45, sourced from
+[datenanfragen.de's company database](https://github.com/datenanfragen/data)
+(CC0), which carries verified GDPR/DSR contact addresses. Added: the German
+and Austrian credit agencies (SCHUFA, CRIF/CRIFBÜRGEL, Bisnode, Regis24,
+infoscore/Experian, Creditreform, KSV1870, AKV Europa, IHD, Intrum), the
+address dealers and marketing-list brokers (AZ Direct, Deutsche Post Direkt,
+Deutsche Post Adress, Schober, Nexiga, Panadress, bedirect, SAZ, Uniserv,
+Quadress, Das Telefonbuch), and the UK credit-reference entities
+(Experian UK, Equifax UK, Callcredit, Creditreform UK) as `global` rather
+than `eu`, since post-Brexit they fall under UK GDPR rather than EU law.
+
+Four Latvia-specific brokers are listed with **no email on file** -
+`lursoft`, `firmas-lv`, `creditinfo-lv` and `1188-lv`. They are the most
+locally relevant targets for this fork's user, but their sites could not be
+reached to verify a DSR address, and an unverified privacy address is worse
+than none. Look the contact up on each site and fill the `email:` field in
+before sending; until then `eraser list-brokers --missing-email` will keep
+surfacing them. All four are tagged `priority: high`.
+
 ## What's NOT in brokers.yaml
 
 Other EU/UK adtech, credit-reporting, B2B-intelligence, and Data Governance Act brokers exist that do **not** take a plain removal email — they require submitting a GDPR Article 15/17 request through their own web form or DSR portal (often a Termly/OneTrust/saymine.io-hosted page), or are cookie-identifier-based deletions that don't apply if you're not carrying their tracking cookies (e.g. browsing with Brave's strict cookie blocking). Bulk-emailing those wouldn't do anything, and auto-filling arbitrary DSR portals reliably isn't safe to automate. Track those manually outside this repo — a spreadsheet works fine — rather than committing a personal review-status file here.

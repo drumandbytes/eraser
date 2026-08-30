@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -223,6 +224,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	search := r.FormValue("search")
 	category := r.FormValue("category")
 	region := r.FormValue("region")
+	priority := r.FormValue("priority")
 	status := r.FormValue("status")
 
 	// If no status filter specified, default to pending (never sent)
@@ -231,7 +233,22 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Bulk send never targets missing-email brokers - there's nowhere to send.
-	toSend := s.getBrokersWithStatus(activeProfile.ID, search, category, region, status, false)
+	toSend := s.getBrokersWithStatus(activeProfile.ID, brokerQuery{
+		Search:   search,
+		Category: category,
+		Region:   region,
+		Priority: priority,
+		Status:   status,
+	})
+
+	// Order high-priority brokers first, the same way `eraser send` does.
+	// processSendJob pauses this job when it hits daily_send_limit and
+	// resumes it later from the persisted ID list, so without this the
+	// brokers that matter most could sit behind a day's worth of long-tail
+	// ones. Stable, so the database's own order still decides within a band.
+	sort.SliceStable(toSend, func(i, j int) bool {
+		return broker.PriorityRank(toSend[i].Priority) < broker.PriorityRank(toSend[j].Priority)
+	})
 
 	if len(toSend) == 0 {
 		noneMsg := "No pending brokers to send to."

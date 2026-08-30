@@ -119,7 +119,7 @@ go build -o eraser ./cmd/eraser
 | `eraser send --dry-run` | Preview without sending |
 | `eraser send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
 | `eraser send --resend` | Force re-send even to brokers within the cooldown window |
-| `eraser list-brokers` | Show all 700+ brokers |
+| `eraser list-brokers` | Show all 800+ brokers (`--priority high`, `--category people-search`, `--region eu` all combine) |
 | `eraser status` | View history and stats |
 | `eraser status --limit 50` | Show more history |
 | `eraser add-broker` | Add a custom broker interactively |
@@ -217,6 +217,7 @@ The broker database is at `data/brokers.yaml`. To add one:
   opt_out_url: https://example.com/optout
   region: us  # us, eu, or global
   category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, device-id-only, or requires-id
+  priority: high  # high, medium, or low - see docs/architecture.md#broker-priority
 ```
 
 Or use the interactive command:

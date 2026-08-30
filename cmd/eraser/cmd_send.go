@@ -18,6 +18,7 @@ var (
 	dryRun           bool
 	ignoreDailyLimit bool
 	resend           bool
+	sendPriorities   string
 )
 
 // resendCooldown is how long after a successful send a broker is skipped by
@@ -38,7 +39,11 @@ bulk spam to it), each run only sends up to options.daily_send_limit emails
 (default 450) and skips brokers it already emailed successfully in the last
 25 days. Run it again - the same day or tomorrow - to keep working through
 a large broker list; already-sent brokers are automatically skipped, so it's
-safe to just re-run 'eraser send' until it reports nothing left to do.`,
+safe to just re-run 'eraser send' until it reports nothing left to do.
+
+Within a run, brokers are ordered high-priority first, so when the daily cap
+truncates the list it spends the budget on the brokers that matter most. Use
+--priority to narrow the run to specific tiers, e.g. --priority high.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend()
 		},
@@ -47,8 +52,30 @@ safe to just re-run 'eraser send' until it reports nothing left to do.`,
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
 	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
+	cmd.Flags().StringVar(&sendPriorities, "priority", "", "Only send to brokers with these priorities (comma-separated: high,medium,low)")
 
 	return cmd
+}
+
+// parsePriorities splits and validates a comma-separated --priority value.
+// An unknown tier is an error rather than a silent no-match, so a typo
+// can't quietly turn "send to the important ones" into "send to nobody".
+func parsePriorities(raw string) ([]string, error) {
+	var priorities []string
+	for _, p := range strings.Split(raw, ",") {
+		if strings.TrimSpace(p) == "" {
+			continue
+		}
+		normalized := broker.NormalizePriority(p)
+		if normalized == "" {
+			return nil, fmt.Errorf("invalid --priority %q: must be one of %s", strings.TrimSpace(p), strings.Join(broker.Priorities, ", "))
+		}
+		priorities = append(priorities, normalized)
+	}
+	if len(priorities) == 0 {
+		return nil, fmt.Errorf("--priority was empty: expected one or more of %s", strings.Join(broker.Priorities, ", "))
+	}
+	return priorities, nil
 }
 
 func runSend() error {
@@ -78,10 +105,28 @@ func runSend() error {
 
 	// Filter brokers
 	brokers := brokerDB.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories)
+
+	if strings.TrimSpace(sendPriorities) != "" {
+		priorities, err := parsePriorities(sendPriorities)
+		if err != nil {
+			return err
+		}
+		before := len(brokers)
+		brokers = broker.FilterByPriority(brokers, priorities)
+		fmt.Printf("⭐ Priority filter %s: %d of %d brokers match\n", strings.Join(priorities, "/"), len(brokers), before)
+	}
+
 	if len(brokers) == 0 {
 		fmt.Println("No brokers to process.")
 		return nil
 	}
+
+	// Order high-priority brokers first. This matters because of the daily
+	// send cap below: it truncates the list, and without this the budget
+	// goes to whoever happens to sit at the top of data/brokers.yaml. The
+	// sort is stable, so file order still decides within a priority band,
+	// and nobody is dropped - the rest go out on the next run.
+	broker.SortByPriority(brokers)
 
 	// Initialize history store early - needed for both the resend-cooldown
 	// skip and the daily send cap below.

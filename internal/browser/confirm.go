@@ -3,10 +3,85 @@ package browser
 import (
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
+	"syscall"
 	"time"
 )
+
+// isBlockedIP reports whether ip is anything other than a routable public
+// address. A broker's confirmation link always lives on the public internet,
+// so every one of these ranges is illegitimate as a target and is refused
+// regardless of any user flag.
+//
+// net.IP's own predicates cover the common cases, including IPv6 unique-local
+// (fc00::/7, via IsPrivate) and the IPv4-mapped IPv6 spellings of all of them
+// (the predicates call To4 internally), so ::ffff:127.0.0.1 is caught as
+// loopback without special handling.
+func isBlockedIP(ip net.IP) bool {
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() ||
+		ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+		ip.IsInterfaceLocalMulticast() || ip.IsMulticast() {
+		return true
+	}
+
+	// Ranges net.IP has no predicate for.
+	if v4 := ip.To4(); v4 != nil {
+		switch {
+		case v4[0] == 0: // 0.0.0.0/8 "this network"
+			return true
+		case v4[0] == 100 && v4[1] >= 64 && v4[1] <= 127: // 100.64.0.0/10 CGNAT
+			return true
+		case v4[0] >= 240: // 240.0.0.0/4 reserved
+			return true
+		}
+	}
+	return false
+}
+
+// guardedTransport returns an http.Transport that refuses to open a
+// connection to any non-public address.
+//
+// The check lives in Dialer.Control, which the runtime invokes after DNS
+// resolution and before connect, once per candidate address. That placement
+// matters for three reasons:
+//
+//   - It sees the IP actually being dialed, not the hostname, so an
+//     attacker-controlled name with an A record pointing at 127.0.0.1 or
+//     169.254.169.254 is caught where a string check on the URL is not.
+//   - There is no TOCTOU gap: Go connects to the exact address handed to
+//     Control, not to a name it re-resolves afterwards.
+//   - It applies to every connection the client opens, including each
+//     redirect hop, without the redirect policy having to re-check anything.
+//
+// Proxy is disabled deliberately. With HTTP_PROXY/HTTPS_PROXY set, the only
+// address dialed is the proxy's and the real target travels inside the
+// request, which would silently void the guarantee above.
+func guardedTransport() *http.Transport {
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.Proxy = nil
+	tr.DialContext = (&net.Dialer{
+		Timeout:   10 * time.Second,
+		KeepAlive: 30 * time.Second,
+		Control: func(_, address string, _ syscall.RawConn) error {
+			host, _, err := net.SplitHostPort(address)
+			if err != nil {
+				return fmt.Errorf("blocked connection to unparseable address %q", address)
+			}
+			ip := net.ParseIP(host)
+			if ip == nil {
+				return fmt.Errorf("blocked connection to unresolvable address %q", host)
+			}
+			if isBlockedIP(ip) {
+				return fmt.Errorf("blocked connection to non-public address %s "+
+					"(loopback/private/link-local targets are never allowed)", ip)
+			}
+			return nil
+		},
+	}).DialContext
+	return tr
+}
 
 // ConfirmationResult holds the outcome of clicking a confirmation link
 type ConfirmationResult struct {
@@ -46,9 +121,11 @@ func NewConfirmationHandler(brokerDomains []string) *ConfirmationHandler {
 
 	return &ConfirmationHandler{
 		client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout:   30 * time.Second,
+			Transport: guardedTransport(),
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				// Allow up to 10 redirects
+				// Allow up to 10 redirects. Per-call policy (including the
+				// domain check) is installed in ClickConfirmationLink.
 				if len(via) >= 10 {
 					return fmt.Errorf("too many redirects")
 				}
@@ -108,23 +185,46 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Connection", "keep-alive")
 
-	// Track redirects, re-validating each hop against the known broker
-	// domains. Only the initial URL is validated by the caller (or above,
-	// via the validateDomain flag) -- without this, an open redirect on a
-	// broker site (or a compromised first hop) could carry an identifying
-	// token to an arbitrary third party across up to 10 hops.
+	// Track redirects, applying the same domain rule to each hop that was
+	// applied to the initial URL -- an open redirect on a broker site (or a
+	// compromised first hop) could otherwise carry an identifying token to
+	// an arbitrary third party across up to 10 hops.
+	//
+	// The hop check follows validateDomain rather than running
+	// unconditionally, because most real broker confirmations arrive as a
+	// click-tracker link (SendGrid, Mailgun) that redirects to a third-party
+	// privacy portal (TrustArc, OneTrust) -- neither domain is in
+	// brokers.yaml. Validating hops unconditionally made
+	// --validate-domain=false useless for exactly the links it exists to
+	// handle: the first hop was permitted and the redirect was then refused.
+	//
+	// Disabling the domain check never permits an internal target: the
+	// transport's dial guard rejects loopback/private/link-local addresses
+	// on every hop regardless of this flag, so the worst case here is a
+	// token reaching an unexpected *public* host, which is the tradeoff the
+	// user opts into by passing a non-default flag. Every hop is recorded in
+	// RedirectPath so the chain stays auditable.
+	//
+	// Assigned on a copy of the client so concurrent calls can't clobber
+	// each other's policy; the Transport pointer is shared, so connection
+	// pooling and the dial guard are preserved.
 	var redirects []string
-	h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+	client := *h.client
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {
 			return fmt.Errorf("too many redirects")
 		}
 
-		valid, domain, err := matchesAllowedDomain(req.URL.String(), h.domainList())
-		if err != nil {
-			return fmt.Errorf("redirect validation failed: %w", err)
-		}
-		if !valid {
-			return fmt.Errorf("redirect to disallowed domain %s blocked", domain)
+		if validateDomain {
+			valid, domain, err := matchesAllowedDomain(req.URL.String(), h.domainList())
+			if err != nil {
+				return fmt.Errorf("redirect validation failed: %w", err)
+			}
+			if !valid {
+				return fmt.Errorf("redirect to disallowed domain %s blocked "+
+					"(pass --validate-domain=false if this broker confirms via a "+
+					"third-party privacy portal)", domain)
+			}
 		}
 
 		redirects = append(redirects, req.URL.String())
@@ -132,7 +232,7 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 	}
 
 	// Make the request
-	resp, err := h.client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("request failed: %v", err)
 		return result, err

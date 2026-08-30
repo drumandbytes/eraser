@@ -88,6 +88,13 @@ func TestClickConfirmationLink_AllowsRedirectToAllowedDomain(t *testing.T) {
 	}
 	handler := NewConfirmationHandler(domains)
 
+	// httptest servers bind loopback, which the production transport's dial
+	// guard refuses by design (see guardedTransport). Swap in a plain
+	// transport so this test exercises the redirect/domain logic it's about;
+	// the guard itself is covered by
+	// TestClickConfirmationLink_BlocksNonPublicAddressRegardlessOfFlag.
+	handler.client.Transport = &http.Transport{}
+
 	result, err := handler.ClickConfirmationLink(first.URL+"/confirm", true)
 	if err != nil {
 		t.Fatalf("unexpected error following an allowed redirect: %v", err)
@@ -97,6 +104,121 @@ func TestClickConfirmationLink_AllowsRedirectToAllowedDomain(t *testing.T) {
 	}
 	if result.FinalURL != final.URL+"/done" {
 		t.Errorf("FinalURL = %q, want %q", result.FinalURL, final.URL+"/done")
+	}
+}
+
+// TestClickConfirmationLink_FollowsRedirectToThirdPartyPortalWhenFlagOff is
+// the functionality-preservation test for --validate-domain=false.
+//
+// Most real broker confirmations arrive as a click-tracker link (SendGrid,
+// Mailgun) that redirects to a third-party privacy portal (TrustArc,
+// OneTrust). Neither host is in brokers.yaml, which is exactly why the flag
+// exists. Before this change the hop check ran unconditionally, so the flag
+// permitted the first hop and then refused the redirect - making the escape
+// hatch useless for the links it was added for.
+func TestClickConfirmationLink_FollowsRedirectToThirdPartyPortalWhenFlagOff(t *testing.T) {
+	portal := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("your opt-out request has been confirmed"))
+	}))
+	defer portal.Close()
+
+	tracker := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, portal.URL+"/done", http.StatusFound)
+	}))
+	defer tracker.Close()
+
+	// Allowlist contains only a real broker - neither the tracker nor the
+	// portal is in it, mirroring the production situation.
+	handler := NewConfirmationHandler([]string{"spokeo.com"})
+	// httptest binds loopback, which the dial guard blocks by design; that
+	// guard is covered separately. This test is about the domain policy.
+	handler.client.Transport = &http.Transport{}
+
+	// With validation on, the hop must still be refused.
+	if _, err := handler.ClickConfirmationLink(tracker.URL+"/click", true); err == nil {
+		t.Fatal("expected redirect to an unknown domain to be blocked when validateDomain=true")
+	}
+
+	// With validation off, the chain must complete.
+	result, err := handler.ClickConfirmationLink(tracker.URL+"/click", false)
+	if err != nil {
+		t.Fatalf("third-party portal redirect must be followed when validateDomain=false, got: %v", err)
+	}
+	if !result.Success {
+		t.Errorf("expected Success=true after reaching the portal, got %+v", result)
+	}
+	if result.FinalURL != portal.URL+"/done" {
+		t.Errorf("FinalURL = %q, want %q", result.FinalURL, portal.URL+"/done")
+	}
+	if len(result.RedirectPath) < 2 {
+		t.Errorf("RedirectPath = %v; every hop must be recorded so the chain stays auditable", result.RedirectPath)
+	}
+}
+
+// TestClickConfirmationLink_BlocksNonPublicAddressRegardlessOfFlag pins the
+// core invariant of the dial guard: --validate-domain=false relaxes the
+// *domain* allowlist (needed for third-party privacy portals), but it must
+// never permit a connection to an internal address. A confirmation URL is
+// attacker-influenced -- it arrives in a broker reply email -- so without
+// this an emailed link could reach a service on the user's own machine or a
+// cloud metadata endpoint.
+func TestClickConfirmationLink_BlocksNonPublicAddressRegardlessOfFlag(t *testing.T) {
+	var reached int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&reached, 1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	// Empty allowlist + validateDomain=false: every domain-based defense is
+	// switched off, leaving only the dial guard.
+	handler := NewConfirmationHandler(nil)
+
+	_, err := handler.ClickConfirmationLink(srv.URL+"/confirm", false)
+	if err == nil {
+		t.Fatal("expected loopback target to be refused, got nil error")
+	}
+	if !strings.Contains(err.Error(), "non-public address") {
+		t.Errorf("error should name the dial guard as the cause, got: %v", err)
+	}
+	if got := atomic.LoadInt32(&reached); got != 0 {
+		t.Errorf("server handler ran %d times; the connection must be refused before connect", got)
+	}
+}
+
+func TestIsBlockedIP(t *testing.T) {
+	blocked := []string{
+		"127.0.0.1", "::1", "::ffff:127.0.0.1", // loopback, incl. v4-mapped
+		"10.0.0.1", "172.16.0.1", "192.168.1.1", // RFC1918
+		"169.254.169.254",        // cloud metadata (link-local)
+		"fc00::1", "fd12:3456::", // IPv6 unique-local
+		"0.0.0.0", "0.1.2.3", // unspecified / "this network"
+		"100.64.0.1", "100.127.255.255", // CGNAT
+		"240.0.0.1", "255.255.255.255", // reserved / broadcast
+		"224.0.0.1", // multicast
+	}
+	for _, s := range blocked {
+		if ip := net.ParseIP(s); ip == nil {
+			t.Fatalf("test bug: %q is not a valid IP", s)
+		} else if !isBlockedIP(ip) {
+			t.Errorf("isBlockedIP(%s) = false, want true", s)
+		}
+	}
+
+	// Real broker and third-party privacy-portal endpoints live on public
+	// addresses; blocking any of these would break the tool's actual job.
+	allowed := []string{
+		"8.8.8.8", "1.1.1.1", "104.16.0.1",
+		"99.255.255.255", "101.0.0.1", // just outside CGNAT 100.64/10
+		"2606:4700::1111",
+	}
+	for _, s := range allowed {
+		if ip := net.ParseIP(s); ip == nil {
+			t.Fatalf("test bug: %q is not a valid IP", s)
+		} else if isBlockedIP(ip) {
+			t.Errorf("isBlockedIP(%s) = true, want false (public address)", s)
+		}
 	}
 }
 

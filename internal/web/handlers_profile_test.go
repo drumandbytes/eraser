@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -239,5 +240,193 @@ func TestHandleSettingsProfileDeleteClearsActiveProfileCookie(t *testing.T) {
 	}
 	if !cleared {
 		t.Error("expected the active-profile cookie to be cleared after deleting the profile it pointed to")
+	}
+}
+
+// profileWithExtras returns a config whose sole profile carries every field
+// the web profile form does *not* render an input for. These are reachable
+// only from `eraser init` / `eraser profile edit` on the CLI, which makes
+// them exactly the fields a web-side edit is liable to quietly drop.
+func profileWithExtras() *config.Config {
+	return &config.Config{
+		Profiles: []config.NamedProfile{{
+			ID: "spouse",
+			Profile: config.Profile{
+				FirstName:         "Test",
+				LastName:          "Spouse",
+				Email:             "spouse@example.com",
+				AdditionalEmails:  []string{"old@example.com", "work@company.com"},
+				NameVariants:      []string{"Maris"},
+				PreviousAddresses: []string{"1 Old St, Riga"},
+				AdditionalPhones:  []string{"+371 20000000"},
+				DateOfBirth:       "1990-01-01",
+			},
+		}},
+	}
+}
+
+func postProfileEdit(t *testing.T, s *Server, id string, form url.Values) *httptest.ResponseRecorder {
+	t.Helper()
+	req := withURLParam(
+		httptest.NewRequest(http.MethodPost, "/settings/profiles/"+id+"/edit", strings.NewReader(form.Encode())),
+		"profileID", id)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileEdit(rec, req)
+	return rec
+}
+
+// TestHandleSettingsProfileEditPreservesCLIOnlyFields is the regression test
+// for the silent wipe: buildProfileFromForm used to construct a fresh
+// config.Profile from the ten form inputs, and both write paths assign that
+// over the whole stored struct. Editing your city in the web UI therefore
+// erased additional emails, name variants, previous addresses, additional
+// phones and date of birth - weakening every later removal request with no
+// visible sign that anything had been lost.
+func TestHandleSettingsProfileEditPreservesCLIOnlyFields(t *testing.T) {
+	s := newTestServer(t, profileWithExtras())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	// A submission from a form that has no input for any of the extras. The
+	// additional_emails key is absent entirely, standing in for any page that
+	// edits a profile without rendering that textarea.
+	rec := postProfileEdit(t, s, "spouse", url.Values{
+		"first_name": {"Test"},
+		"last_name":  {"Spouse"},
+		"email":      {"spouse@example.com"},
+		"city":       {"Vilnius"},
+	})
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	got := s.getConfig().GetProfiles()[0].Profile
+	if got.City != "Vilnius" {
+		t.Errorf("the edited field should still be applied, got City=%q", got.City)
+	}
+	if len(got.AdditionalEmails) != 2 || got.AdditionalEmails[0] != "old@example.com" {
+		t.Errorf("AdditionalEmails wiped by edit: %+v", got.AdditionalEmails)
+	}
+	if len(got.NameVariants) != 1 || got.NameVariants[0] != "Maris" {
+		t.Errorf("NameVariants wiped by edit: %+v", got.NameVariants)
+	}
+	if len(got.PreviousAddresses) != 1 {
+		t.Errorf("PreviousAddresses wiped by edit: %+v", got.PreviousAddresses)
+	}
+	if len(got.AdditionalPhones) != 1 {
+		t.Errorf("AdditionalPhones wiped by edit: %+v", got.AdditionalPhones)
+	}
+	if got.DateOfBirth != "1990-01-01" {
+		t.Errorf("DateOfBirth wiped by edit: %q", got.DateOfBirth)
+	}
+}
+
+func TestHandleSettingsProfileEditSavesAdditionalEmails(t *testing.T) {
+	s := newTestServer(t, testConfig("spouse"))
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	// Newlines are the documented format; a comma-separated line is accepted
+	// too, since that's what the CLI prompt asks for and what a user pasting
+	// from it will type.
+	rec := postProfileEdit(t, s, "spouse", url.Values{
+		"first_name":        {"Test"},
+		"last_name":         {"Spouse"},
+		"email":             {"spouse@example.com"},
+		"additional_emails": {"  old@example.com \n\n work@company.com, third@example.com \n"},
+	})
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	got := s.getConfig().GetProfiles()[0].AdditionalEmails
+	want := []string{"old@example.com", "work@company.com", "third@example.com"}
+	if len(got) != len(want) {
+		t.Fatalf("got %d addresses %+v, want %d %+v", len(got), got, len(want), want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("address %d: got %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+// An empty textarea has to actually clear the list. This is the case that
+// breaks if preservation is keyed off "is the parsed value empty" rather than
+// "was the input present in the submission" - the old values would resurrect
+// on every save and the field could never be emptied from the UI.
+func TestHandleSettingsProfileEditClearsAdditionalEmails(t *testing.T) {
+	s := newTestServer(t, profileWithExtras())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	rec := postProfileEdit(t, s, "spouse", url.Values{
+		"first_name":        {"Test"},
+		"last_name":         {"Spouse"},
+		"email":             {"spouse@example.com"},
+		"additional_emails": {"   \n  "},
+	})
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	got := s.getConfig().GetProfiles()[0].Profile
+	if len(got.AdditionalEmails) != 0 {
+		t.Errorf("submitting an empty textarea should clear the list, got %+v", got.AdditionalEmails)
+	}
+	// Clearing the field the form owns must not disturb the ones it doesn't.
+	if len(got.NameVariants) != 1 {
+		t.Errorf("clearing emails should not touch NameVariants, got %+v", got.NameVariants)
+	}
+}
+
+func TestHandleSettingsProfileEditDedupesAndDropsPrimaryEmail(t *testing.T) {
+	s := newTestServer(t, testConfig("spouse"))
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	rec := postProfileEdit(t, s, "spouse", url.Values{
+		"first_name":        {"Test"},
+		"last_name":         {"Spouse"},
+		"email":             {"spouse@example.com"},
+		"additional_emails": {"old@example.com\nSPOUSE@example.com\nOld@Example.com\nkeep@example.com"},
+	})
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	got := s.getConfig().GetProfiles()[0].AdditionalEmails
+	want := []string{"old@example.com", "keep@example.com"}
+	if len(got) != len(want) {
+		t.Fatalf("got %+v, want %+v (primary and case-insensitive dupes dropped)", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("address %d: got %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestHandleSettingsProfileEditRejectsInvalidAdditionalEmail(t *testing.T) {
+	s := newTestServer(t, profileWithExtras())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	rec := postProfileEdit(t, s, "spouse", url.Values{
+		"first_name":        {"Test"},
+		"last_name":         {"Spouse"},
+		"email":             {"spouse@example.com"},
+		"additional_emails": {"good@example.com\nnot-an-email"},
+	})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 re-render with errors, got %d", rec.Code)
+	}
+
+	body := rec.Body.String()
+	if !strings.Contains(body, "not-an-email") {
+		t.Error("the offending entry should be echoed back in the textarea so the user can fix it")
+	}
+	if !strings.Contains(body, "Not a valid email address") {
+		t.Errorf("expected a field error message, body: %s", body)
+	}
+	// Nothing may be persisted on a failed validation.
+	if got := s.getConfig().GetProfiles()[0].AdditionalEmails; len(got) != 2 || got[0] != "old@example.com" {
+		t.Errorf("stored addresses should be untouched on validation failure, got %+v", got)
 	}
 }

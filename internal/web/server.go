@@ -197,6 +197,15 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		"add": func(a, b int) int {
 			return a + b
 		},
+		// join renders a []string profile field (additional emails, name
+		// variants, ...) back into the free-text form control it was typed
+		// into. Doing it here rather than precomputing a string per handler
+		// keeps it to one call site: a missing map key in a render-data map
+		// doesn't fail loudly, it prints "<no value>" straight into the
+		// input's value, and these forms render from eight different places.
+		"join": func(items []string, sep string) string {
+			return strings.Join(items, sep)
+		},
 	}
 
 	// Read layout template

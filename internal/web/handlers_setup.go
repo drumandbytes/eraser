@@ -25,8 +25,20 @@ func (s *Server) handleSetupWelcome(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSetupProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
-		profile, errors := buildProfileFromForm(r)
-		profile.DateOfBirth = strings.TrimSpace(r.FormValue("dob"))
+		// Seed from the saved profile, not the session: handleSetupComplete
+		// assigns cfg.Profile = session.Profile wholesale, and /setup stays
+		// reachable on an already-configured install (the wizard is
+		// explicitly expected to be re-run - see the comment there about
+		// rescuing Config-level fields). Without this, walking back through
+		// the wizard erased the CLI-only profile fields - additional emails,
+		// name variants, previous addresses, additional phones, date of
+		// birth - even though the config-level rescue was already in place.
+		// A fresh install has no config, so this is the zero Profile there.
+		var prev config.Profile
+		if cfg := s.getConfig(); cfg != nil {
+			prev = cfg.Profile
+		}
+		profile, errors := buildProfileFromForm(r, prev)
 
 		if len(errors) > 0 {
 			data := map[string]interface{}{
@@ -57,6 +69,21 @@ func (s *Server) handleSetupProfile(w http.ResponseWriter, r *http.Request) {
 	var profile config.Profile
 	if session != nil {
 		profile = session.Profile
+	}
+	// Fall back to the saved profile when this wizard run hasn't collected
+	// one yet, so re-running /setup on a configured install pre-fills what's
+	// already there instead of presenting blank fields. Beyond being the
+	// friendlier default, it's load-bearing for the additional-emails
+	// textarea: that input is always submitted, and an empty one legitimately
+	// means "the user cleared this". Rendering it blank while the config had
+	// entries would turn a harmless walk back through the wizard into a
+	// silent delete. FirstName is the "session has a profile" signal used
+	// elsewhere in the wizard (see handleSetupEmail) - it's required to
+	// advance past this step, so it can't be blank on a real one.
+	if profile.FirstName == "" {
+		if cfg := s.getConfig(); cfg != nil {
+			profile = cfg.Profile
+		}
 	}
 	data := map[string]interface{}{
 		"Title":   "Setup - Profile",

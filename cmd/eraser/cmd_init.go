@@ -217,20 +217,12 @@ func splitAndTrim(s string) []string {
 // splitAndTrimBy splits s on sep into a trimmed, non-empty slice. Returns nil
 // for blank input. Use a non-comma separator (e.g. ";") for values - like
 // addresses - that may themselves contain commas.
+//
+// sep must be a single character: it's passed through to
+// config.SplitAndTrimAny, which treats its argument as a set of separator
+// characters rather than a separator string. Both call sites here pass one
+// character ("," and ";"), so the two are equivalent - sharing the
+// implementation keeps the CLI and the web UI's parsing from drifting.
 func splitAndTrimBy(s, sep string) []string {
-	if strings.TrimSpace(s) == "" {
-		return nil
-	}
-	parts := strings.Split(s, sep)
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			result = append(result, p)
-		}
-	}
-	if len(result) == 0 {
-		return nil
-	}
-	return result
+	return config.SplitAndTrimAny(s, sep)
 }

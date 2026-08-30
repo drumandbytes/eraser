@@ -44,6 +44,17 @@
     <p class="mt-1 text-sm text-muted">This email will receive responses from data brokers, and identifies this profile in removal requests</p>
 </div>
 
+<div>
+    <label for="additional_emails" class="label">Other Email Addresses</label>
+    <textarea name="additional_emails" id="additional_emails" rows="3"
+        class="input {{if .Errors.additional_emails}}border-error{{end}}"
+        placeholder="old.address@example.com&#10;work@company.com">{{join .Profile.AdditionalEmails "\n"}}</textarea>
+    {{if .Errors.additional_emails}}
+    <p class="mt-1 text-sm text-error">{{.Errors.additional_emails}}</p>
+    {{end}}
+    <p class="mt-1 text-sm text-muted">One per line. Old personal accounts, work addresses, anything you've signed up to things with - brokers often filed your record under one of these rather than your current address, so listing them helps them actually find and delete it. Leave empty if you have none.</p>
+</div>
+
 <!-- Optional Fields -->
 <div class="pt-6 border-t border-[var(--border)]">
     <p class="text-sm text-muted mb-4">Optional: Helps brokers find your records</p>

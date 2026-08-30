@@ -45,23 +45,46 @@ func (s *Server) handleAPISwitchProfile(w http.ResponseWriter, r *http.Request) 
 
 // buildProfileFromForm parses and validates the profile-form fields shared
 // by the setup wizard (handleSetupProfile) and this "add profile" settings
-// form: first/middle/last name, email, and the optional address fields.
-// Returns the parsed profile and a field->message map of validation errors
-// (empty if valid) - factored out so the two handlers can't drift on what
-// "a valid profile" means, the way they previously did as two independent
-// copies of the same three checks.
-func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
-	profile := config.Profile{
-		FirstName:  strings.TrimSpace(r.FormValue("first_name")),
-		MiddleName: strings.TrimSpace(r.FormValue("middle_name")),
-		LastName:   strings.TrimSpace(r.FormValue("last_name")),
-		Email:      strings.TrimSpace(r.FormValue("email")),
-		Address:    strings.TrimSpace(r.FormValue("address")),
-		City:       strings.TrimSpace(r.FormValue("city")),
-		State:      strings.TrimSpace(r.FormValue("state")),
-		ZipCode:    strings.TrimSpace(r.FormValue("zip_code")),
-		Country:    strings.TrimSpace(r.FormValue("country")),
-		Phone:      strings.TrimSpace(r.FormValue("phone")),
+// form: first/middle/last name, email, additional emails, and the optional
+// address fields. Returns the parsed profile and a field->message map of
+// validation errors (empty if valid) - factored out so the two handlers can't
+// drift on what "a valid profile" means, the way they previously did as two
+// independent copies of the same three checks.
+//
+// prev is the profile being edited (config.Profile{} when creating a new
+// one), and every field this form does *not* collect is carried over from it.
+// That matters because Profile has fields reachable only from the CLI
+// (name_variants, previous_addresses, additional_phones) plus date_of_birth,
+// and both callers assign the result over the whole stored struct: building a
+// fresh Profile here silently erased all four the moment anyone edited their
+// city in the web UI, quietly weakening every subsequent removal request with
+// no visible sign. Start from prev, overwrite what the form owns.
+//
+// Fields the form *does* own are read back unconditionally, so clearing a
+// field in the UI actually clears it. Ownership is decided by whether the
+// input was present in the submission (r.Form) rather than whether it was
+// left blank - an absent input means "this page doesn't edit that field, keep
+// it", while a present-but-empty one means "the user cleared it". Keying off
+// emptiness instead would make additional emails impossible to delete once
+// set, since the old value would resurrect on every save.
+func buildProfileFromForm(r *http.Request, prev config.Profile) (config.Profile, map[string]string) {
+	// r.FormValue parses on demand but discards the error and, more
+	// importantly here, we need r.Form itself for the presence checks below.
+	_ = r.ParseForm()
+
+	profile := prev
+	profile.FirstName = strings.TrimSpace(r.FormValue("first_name"))
+	profile.MiddleName = strings.TrimSpace(r.FormValue("middle_name"))
+	profile.LastName = strings.TrimSpace(r.FormValue("last_name"))
+	profile.Email = strings.TrimSpace(r.FormValue("email"))
+	profile.Address = strings.TrimSpace(r.FormValue("address"))
+	profile.City = strings.TrimSpace(r.FormValue("city"))
+	profile.State = strings.TrimSpace(r.FormValue("state"))
+	profile.ZipCode = strings.TrimSpace(r.FormValue("zip_code"))
+	profile.Country = strings.TrimSpace(r.FormValue("country"))
+	profile.Phone = strings.TrimSpace(r.FormValue("phone"))
+	if _, ok := r.Form["dob"]; ok {
+		profile.DateOfBirth = strings.TrimSpace(r.FormValue("dob"))
 	}
 
 	errors := make(map[string]string)
@@ -76,6 +99,27 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 	} else if err := email.ValidateEmail(profile.Email); err != nil {
 		errors["email"] = "Please enter a valid email address"
 	}
+
+	if _, ok := r.Form["additional_emails"]; ok {
+		// Split before validating, not after: ValidateEmail rejects commas
+		// and semicolons outright, so a whole list handed to it never passes.
+		entries := config.SplitAndTrimAny(r.FormValue("additional_emails"), ",\n\r")
+		var invalid []string
+		for _, e := range entries {
+			if err := email.ValidateEmail(e); err != nil {
+				invalid = append(invalid, e)
+			}
+		}
+		if len(invalid) > 0 {
+			errors["additional_emails"] = "Not a valid email address: " + strings.Join(invalid, ", ")
+			// Keep what the user actually typed so the re-rendered textarea
+			// still shows the entry the error is complaining about.
+			profile.AdditionalEmails = entries
+		} else {
+			profile.AdditionalEmails = config.NormalizeAdditionalEmails(profile.Email, entries)
+		}
+	}
+
 	return profile, errors
 }
 
@@ -87,7 +131,8 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
-		profile, errors := buildProfileFromForm(r)
+		// A brand new profile has nothing to carry forward.
+		profile, errors := buildProfileFromForm(r, config.Profile{})
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
@@ -151,7 +196,8 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 
 	if r.Method == "POST" {
 		limitFormBody(w, r)
-		profile, errors := buildProfileFromForm(r)
+		// Carry forward the CLI-only fields on the profile being edited.
+		profile, errors := buildProfileFromForm(r, existing.Profile)
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{

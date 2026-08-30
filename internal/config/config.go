@@ -148,6 +148,66 @@ func SlugifyProfileID(firstName, lastName string, existing []NamedProfile) strin
 	return id
 }
 
+// SplitAndTrimAny splits s on any single character appearing in seps, then
+// trims each part and drops the empties - returning nil rather than an empty
+// slice for blank input, so an unset value marshals away under `omitempty`.
+//
+// seps is a *set of characters*, not a separator string: passing ",\n" splits
+// on a comma or a newline (either one), which is what a free-text field needs
+// when the user may type one address per line, a comma-separated list, or a
+// mix of both. Callers that need to split on a single character (the CLI's
+// prompts) just pass that one character.
+func SplitAndTrimAny(s, seps string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return strings.ContainsRune(seps, r)
+	})
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			result = append(result, p)
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// NormalizeAdditionalEmails cleans a parsed additional-address list for
+// storage: it drops case-insensitive duplicates and any entry that merely
+// repeats the primary address (which every template already prints on its own
+// line, so listing it again just pads the request). Original casing of the
+// first occurrence is kept - some brokers echo the address back verbatim, and
+// the local part of an address is technically case-sensitive.
+//
+// It deliberately does no validity checking; callers validate before storing
+// (see internal/email.ValidateEmail) so that an invalid entry can be reported
+// against the field the user typed it into rather than silently dropped here.
+func NormalizeAdditionalEmails(primary string, emails []string) []string {
+	seen := make(map[string]bool, len(emails)+1)
+	if primary = strings.TrimSpace(primary); primary != "" {
+		seen[strings.ToLower(primary)] = true
+	}
+
+	result := make([]string, 0, len(emails))
+	for _, e := range emails {
+		e = strings.TrimSpace(e)
+		key := strings.ToLower(e)
+		if e == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, e)
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
 // InboxConfig holds IMAP settings for monitoring broker responses
 type InboxConfig struct {
 	Enabled       bool   `yaml:"enabled"`

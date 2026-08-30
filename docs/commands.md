@@ -32,7 +32,7 @@ Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a g
 
 User config is stored at `~/.eraser/config.yaml` (see `config.example.yaml` for the full schema). Key sections:
 
-- `profile` - the legacy/primary profile: name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities
+- `profile` - the legacy/primary profile: name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities. `additional_emails` is editable from the web UI too (one address per line, commas also accepted); the other three are set via `eraser init` / `eraser profile edit` and are preserved unchanged by web-side profile edits.
 - `profiles` - optional list of additional named profiles (see [multi-profile.md](multi-profile.md)); when present, this list is authoritative and `profile` above becomes vestigial unless one entry has `id: default`
 - `email` - SMTP only
 - `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`, or `non-broker` to hide the search-engine/preference-service entries)

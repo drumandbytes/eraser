@@ -130,3 +130,101 @@ func TestSlugifyID(t *testing.T) {
 		})
 	}
 }
+
+func TestSplitAndTrimAny(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		seps string
+		want []string
+	}{
+		{"blank", "", ",\n", nil},
+		{"whitespace only", "  \n \t ", ",\n", nil},
+		{"single value", "a@example.com", ",\n", []string{"a@example.com"}},
+		{"newline separated", "a@x.com\nb@x.com", ",\n", []string{"a@x.com", "b@x.com"}},
+		{"comma separated", "a@x.com, b@x.com", ",\n", []string{"a@x.com", "b@x.com"}},
+		// The web textarea accepts either separator, so a user who pastes the
+		// CLI's comma-separated answer into it gets the same result.
+		{"mixed separators", "a@x.com, b@x.com\nc@x.com", ",\n", []string{"a@x.com", "b@x.com", "c@x.com"}},
+		{"blank lines and padding", " a@x.com \n\n\n  b@x.com  \n", ",\n", []string{"a@x.com", "b@x.com"}},
+		{"CRLF input", "a@x.com\r\nb@x.com", ",\n\r", []string{"a@x.com", "b@x.com"}},
+		// seps is a character set, not a separator string: each of these is
+		// one delimiter, and callers passing a single character (the CLI)
+		// behave exactly as they did with strings.Split.
+		{"semicolon only, commas preserved", "1 Main St, Riga; 2 Oak Ave, Vilnius", ";",
+			[]string{"1 Main St, Riga", "2 Oak Ave, Vilnius"}},
+		{"comma only", "Maris, Māris", ",", []string{"Maris", "Māris"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := SplitAndTrimAny(tt.in, tt.seps)
+			if len(got) != len(tt.want) {
+				t.Fatalf("got %d parts %+v, want %d %+v", len(got), got, len(tt.want), tt.want)
+			}
+			for i := range tt.want {
+				if got[i] != tt.want[i] {
+					t.Errorf("part %d: got %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func TestNormalizeAdditionalEmails(t *testing.T) {
+	tests := []struct {
+		name    string
+		primary string
+		in      []string
+		want    []string
+	}{
+		{"empty", "me@x.com", nil, nil},
+		{"passthrough", "me@x.com", []string{"a@x.com", "b@x.com"}, []string{"a@x.com", "b@x.com"}},
+		{"drops primary", "me@x.com", []string{"me@x.com", "a@x.com"}, []string{"a@x.com"}},
+		{"drops primary case-insensitively", "Me@X.com", []string{"me@x.com", "a@x.com"}, []string{"a@x.com"}},
+		{"dedupes case-insensitively", "me@x.com", []string{"A@x.com", "a@x.com"}, []string{"A@x.com"}},
+		{"keeps first casing", "me@x.com", []string{"Alias@X.com", "alias@x.com"}, []string{"Alias@X.com"}},
+		{"all redundant returns nil", "me@x.com", []string{"me@x.com", "ME@X.COM"}, nil},
+		{"tolerates blank primary", "", []string{"a@x.com"}, []string{"a@x.com"}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizeAdditionalEmails(tt.primary, tt.in)
+			if len(got) != len(tt.want) {
+				t.Fatalf("got %+v, want %+v", got, tt.want)
+			}
+			for i := range tt.want {
+				if got[i] != tt.want[i] {
+					t.Errorf("entry %d: got %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+// The whole point of AdditionalEmails is that it reaches the rendered request,
+// so pin the round-trip: a profile saved with additional emails survives a
+// YAML save/load cycle with them intact.
+func TestAdditionalEmailsSurviveSaveLoad(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	cfg := &Config{
+		Profile: Profile{
+			FirstName:        "Test",
+			LastName:         "User",
+			Email:            "me@example.com",
+			AdditionalEmails: []string{"old@example.com", "work@company.com"},
+		},
+	}
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	loaded, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	got := loaded.Profile.AdditionalEmails
+	if len(got) != 2 || got[0] != "old@example.com" || got[1] != "work@company.com" {
+		t.Errorf("additional emails did not survive save/load: %+v", got)
+	}
+}

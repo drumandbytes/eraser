@@ -2149,6 +2149,7 @@ brokers:
       opt_out_url: https://gundir.com/opt-out/
       region: us
       category: marketing
+      notes: 'Reply (2026-08-31): "Gundir does not collect, hold, share or license data" - no personal data held, nothing further to action.'
     - id: h1-insights
       name: H1 Insights Inc.
       email: inquiries@h1insights.com

@@ -39,8 +39,9 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 	region := r.URL.Query().Get("region")
 	status := r.URL.Query().Get("status")
 	missingEmail := r.URL.Query().Get("missing_email") == "true"
+	showExcluded := r.URL.Query().Get("show_excluded") == "true"
 
-	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail, showExcluded)
 
 	dailyLimit := effectiveDailyLimit(s.getConfig())
 
@@ -54,6 +55,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 		"Region":       region,
 		"Status":       status,
 		"MissingEmail": missingEmail,
+		"ShowExcluded": showExcluded,
 		"Total":        len(s.brokerDB.Brokers),
 		"Filtered":     len(brokers),
 		"DailyLimit":   dailyLimit,

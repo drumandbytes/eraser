@@ -3,7 +3,7 @@ module github.com/eraser-privacy/eraser
 go 1.26
 
 require (
-	github.com/PuerkitoBio/goquery v1.12.0
+	github.com/PuerkitoBio/goquery v1.13.0
 	github.com/chromedp/chromedp v0.16.0
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.18.2

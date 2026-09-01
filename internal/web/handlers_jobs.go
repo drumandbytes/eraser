@@ -230,8 +230,9 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		status = "pending"
 	}
 
-	// Bulk send never targets missing-email brokers - there's nowhere to send.
-	toSend := s.getBrokersWithStatus(activeProfile.ID, search, category, region, status, false)
+	// Bulk send never targets missing-email or excluded brokers - there's
+	// nowhere to send, and exclusion means "don't send to this one".
+	toSend := s.getBrokersWithStatus(activeProfile.ID, search, category, region, status, false, false)
 
 	if len(toSend) == 0 {
 		noneMsg := "No pending brokers to send to."

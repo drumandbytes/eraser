@@ -73,6 +73,7 @@ send via Gmail SMTP.`,
 	rootCmd.AddCommand(confirmCmd())
 	rootCmd.AddCommand(cleanupBouncesCmd())
 	rootCmd.AddCommand(markBouncedCmd())
+	rootCmd.AddCommand(auditBrokersCmd())
 	rootCmd.AddCommand(profileCmd())
 
 	if err := rootCmd.Execute(); err != nil {

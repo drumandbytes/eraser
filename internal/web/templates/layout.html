@@ -7,24 +7,6 @@
     <title>{{.Title}} - Eraser</title>
     {{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
 
-    <!-- Self-hosted: this is the Tailwind CDN's runtime JIT compiler (a JS
-         file, despite the historical "tailwind.min.css" name it had before
-         this fork self-hosted it) - not a precompiled stylesheet. It still
-         needs 'unsafe-eval' in the CSP below. Swapping to a real Tailwind
-         CLI build (removing the runtime compiler and unsafe-eval entirely)
-         is a further followup, not done here. -->
-    <script src="/static/js/tailwind-jit.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        accent: '#6366f1',
-                    }
-                }
-            }
-        }
-    </script>
     <script src="/static/js/htmx.min.js"></script>
 
     <style>
@@ -621,6 +603,28 @@
             .mobile-menu { display: block; }
         }
     </style>
+
+    <!-- Precompiled with the Tailwind standalone CLI (v3.4.17, no Node
+         needed) against internal/web/templates/**/*.html - replaces the
+         413KB runtime JIT compiler this used to ship (which compiled CSS in
+         the browser on every page load, and needed 'unsafe-eval' in the CSP
+         below just to run). Same visual output, generated ahead of time
+         instead. Deliberately loaded AFTER the hand-authored <style> block
+         above: the old JIT compiler injected its generated stylesheet at
+         runtime, which landed after this static block in the DOM, so a
+         Tailwind utility like .w-auto already won the cascade over a
+         same-specificity component class like .input{width:100%} - loading
+         this file first instead (as a <link> in <head>, before <style>)
+         silently inverted that and broke every element combining a
+         component class with a sizing utility. If a template adds a *new*
+         Tailwind utility class that isn't in this file yet, it won't render
+         until regenerated:
+             tailwindcss -i internal/web/static/css/tailwind.input.css \
+               -o internal/web/static/css/tailwind.css \
+               -c <config with content: ["./internal/web/templates/**/*.html"],
+                    theme.extend.colors.accent = '#6366f1'> --minify
+         See docs/architecture.md for the full command. -->
+    <link rel="stylesheet" href="/static/css/tailwind.css">
 
     <script>
         // Theme management

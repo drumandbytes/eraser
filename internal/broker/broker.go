@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -31,16 +32,14 @@ func sanitizeBroker(b *Broker) {
 }
 
 type Broker struct {
-	ID         string   `yaml:"id"`
-	Name       string   `yaml:"name"`
-	Email      string   `yaml:"email"`
-	Website    string   `yaml:"website,omitempty"`
-	OptOutURL  string   `yaml:"opt_out_url,omitempty"`
-	Region     string   `yaml:"region"`             // "us", "eu", "global"
-	Category   string   `yaml:"category,omitempty"` // "people-search", "marketing", "background-check", etc.
-	Notes      string   `yaml:"notes,omitempty"`
-	RequiresID bool     `yaml:"requires_id,omitempty"` // If they require ID verification
-	Tags       []string `yaml:"tags,omitempty"`
+	ID        string `yaml:"id"`
+	Name      string `yaml:"name"`
+	Email     string `yaml:"email"`
+	Website   string `yaml:"website,omitempty"`
+	OptOutURL string `yaml:"opt_out_url,omitempty"`
+	Region    string `yaml:"region"`             // "us", "eu", "global"
+	Category  string `yaml:"category,omitempty"` // "people-search", "marketing", "background-check", etc.
+	Notes     string `yaml:"notes,omitempty"`
 }
 
 type BrokerDatabase struct {
@@ -147,6 +146,33 @@ func (db *BrokerDatabase) RemoveByEmail(email string) *Broker {
 		}
 	}
 	return nil
+}
+
+// MarkEmailUnreachable finds a broker by their current email address and
+// clears it, recording the old address and the reason in Notes, instead of
+// removing the broker entirely. A bounced email usually means the company
+// changed its privacy-request address, not that it stopped existing -
+// deleting the whole record (name, category, website, opt-out URL) on a
+// bounce throws away everything needed to give it a working address later.
+// Returns the mutated broker, or nil if no broker has that email.
+func (db *BrokerDatabase) MarkEmailUnreachable(email, reason string) *Broker {
+	b := db.FindByEmail(email)
+	if b == nil {
+		return nil
+	}
+
+	oldEmail := b.Email
+	b.Email = ""
+
+	note := fmt.Sprintf("Email %s became undeliverable (%s, %s) - cleared, needs a working address.",
+		oldEmail, reason, time.Now().Format("2006-01-02"))
+	if b.Notes != "" {
+		b.Notes = b.Notes + " " + note
+	} else {
+		b.Notes = note
+	}
+
+	return b
 }
 
 // RemoveByID removes a broker by their ID

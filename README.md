@@ -71,6 +71,7 @@ From the dashboard, you can:
 - Browse the list of 700+ data brokers
 - Send requests one at a time or in bulk
 - Track which requests have been sent and their status
+- Exclude a broker from sends with one click (and bring it back later) - useful for a broker you'd rather skip, e.g. one that demands ID verification
 
 That's it. The whole process takes about 10 minutes to set up, and then Eraser handles the rest.
 
@@ -136,7 +137,8 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser status --limit 50` | Show more history |
 | `eraser add-broker` | Add a custom broker interactively |
 | `eraser mark-bounced <broker-id>...` | Correct the record for brokers whose email actually bounced |
-| `eraser cleanup-bounces` | Find and remove bounced broker email addresses |
+| `eraser cleanup-bounces` | Find and clear bounced broker email addresses (keeps the broker entry) |
+| `eraser audit-brokers` | Check broker websites/email domains for signs of life |
 | `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
 | `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
 | `eraser confirm` | Click confirmation links found in broker emails |

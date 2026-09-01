@@ -161,10 +161,43 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
 	}
 
-	got := s.getBrokersWithStatus("default", "", "", "", "", false)
+	got := s.getBrokersWithStatus("default", "", "", "", "", false, false)
 
 	if len(got) != 1 || got[0].ID != "beenverified" {
 		t.Errorf("expected only beenverified to survive exclusion, got %+v", got)
+	}
+}
+
+// TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem is a companion to
+// TestGetBrokersWithStatusRespectsExclusions: the brokers page's "Show
+// excluded" checkbox needs excluded brokers back in the result (so an
+// Include button can be rendered for them), each flagged via Excluded so
+// the template can tell them apart from a normal sendable row.
+func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
+	cfg := testConfig()
+	cfg.Options.ExcludedBrokers = []string{"spokeo"}
+	cfg.Options.ExcludedCategories = []string{"requires-id"}
+	s := newTestServer(t, cfg)
+	s.brokerDB.Brokers = []broker.Broker{
+		{ID: "spokeo", Name: "Spokeo", Region: "us", Category: "people-search"},
+		{ID: "altisource-holdings", Name: "Altisource Holdings, LLC", Region: "us", Category: "requires-id"},
+		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
+	}
+
+	got := s.getBrokersWithStatus("default", "", "", "", "", false, true)
+
+	if len(got) != 3 {
+		t.Fatalf("expected all 3 brokers with showExcluded=true, got %d: %+v", len(got), got)
+	}
+	excluded := map[string]bool{}
+	for _, b := range got {
+		excluded[b.ID] = b.Excluded
+	}
+	if !excluded["spokeo"] || !excluded["altisource-holdings"] {
+		t.Errorf("expected spokeo and altisource-holdings marked Excluded, got %+v", excluded)
+	}
+	if excluded["beenverified"] {
+		t.Errorf("beenverified should not be marked Excluded, got %+v", excluded)
 	}
 }
 

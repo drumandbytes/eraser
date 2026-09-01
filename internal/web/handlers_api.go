@@ -7,8 +7,10 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/eraser-privacy/eraser/internal/history"
 	"github.com/eraser-privacy/eraser/internal/inbox"
 	"github.com/go-chi/chi/v5"
@@ -22,14 +24,16 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 	region := r.URL.Query().Get("region")
 	status := r.URL.Query().Get("status")
 	missingEmail := r.URL.Query().Get("missing_email") == "true"
+	showExcluded := r.URL.Query().Get("show_excluded") == "true"
 
-	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail, showExcluded)
 
 	// Returns broker list as HTML fragment for HTMX
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{
-		"Brokers":  brokers,
-		"Filtered": len(brokers),
-		"Total":    len(s.brokerDB.Brokers),
+		"Brokers":      brokers,
+		"Filtered":     len(brokers),
+		"Total":        len(s.brokerDB.Brokers),
+		"ShowExcluded": showExcluded,
 	})
 }
 
@@ -57,6 +61,69 @@ func (s *Server) handleAPIBrokerStatus(w http.ResponseWriter, r *http.Request) {
 	s.renderPartial(w, "partials/broker-status-badge.html", map[string]interface{}{
 		"ID":     brokerID,
 		"Status": statusStr,
+	})
+}
+
+// handleAPIExcludeBroker adds a broker to Options.ExcludedBrokers so it's
+// skipped by every send path (bulk send, per-row send, and job resume on
+// startup - see getBrokersWithStatus), and re-renders just that row's
+// actions fragment so the brokers page can toggle it without a full reload.
+func (s *Server) handleAPIExcludeBroker(w http.ResponseWriter, r *http.Request) {
+	s.setBrokerExcluded(w, r, true)
+}
+
+// handleAPIIncludeBroker undoes handleAPIExcludeBroker.
+func (s *Server) handleAPIIncludeBroker(w http.ResponseWriter, r *http.Request) {
+	s.setBrokerExcluded(w, r, false)
+}
+
+func (s *Server) setBrokerExcluded(w http.ResponseWriter, r *http.Request, exclude bool) {
+	brokerID := chi.URLParam(r, "brokerID")
+	b := s.brokerDB.FindByID(brokerID)
+	if b == nil {
+		http.Error(w, "Broker not found", http.StatusNotFound)
+		return
+	}
+
+	// Load-copy-mutate-store, same pattern as handleSettingsInbox - s.config
+	// is read concurrently by other handlers and background send-job
+	// goroutines, so the pointer from getConfig() must never be mutated in
+	// place.
+	cfg := s.getConfig()
+	if cfg == nil {
+		cfg = &config.Config{}
+	}
+	newCfg := *cfg
+
+	id := strings.ToLower(b.ID)
+	var updated []string
+	found := false
+	for _, e := range newCfg.Options.ExcludedBrokers {
+		if strings.ToLower(e) == id {
+			found = true
+			if exclude {
+				updated = append(updated, e) // already excluded, keep as-is
+			}
+			continue // drop it when including
+		}
+		updated = append(updated, e)
+	}
+	if exclude && !found {
+		updated = append(updated, id)
+	}
+	newCfg.Options.ExcludedBrokers = updated
+
+	if err := config.Save(s.configPath, &newCfg); err != nil {
+		http.Error(w, "Failed to save configuration: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	s.config.Store(&newCfg)
+
+	s.renderPartial(w, "partials/broker-actions.html", map[string]interface{}{
+		"ID":        b.ID,
+		"Email":     b.Email,
+		"OptOutURL": b.OptOutURL,
+		"Excluded":  exclude,
 	})
 }
 

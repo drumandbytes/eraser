@@ -387,6 +387,8 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Route("/api", func(r chi.Router) {
 		r.Get("/brokers", s.handleAPIBrokers)
 		r.Get("/brokers/{brokerID}/status", s.handleAPIBrokerStatus)
+		r.Post("/brokers/{brokerID}/exclude", s.handleAPIExcludeBroker)
+		r.Post("/brokers/{brokerID}/include", s.handleAPIIncludeBroker)
 		r.Delete("/history/failed", s.handleAPIDeleteFailed)
 		r.Delete("/history", s.handleAPIDeleteAllHistory)
 		r.Post("/send/{brokerID}", s.handleAPISendOne)
@@ -418,12 +420,12 @@ func securityHeaders(next http.Handler) http.Handler {
 
 		// Content Security Policy - restrict resource loading
 		// 'unsafe-inline' needed for Tailwind CSS and inline scripts (HTMX attributes)
-		// 'unsafe-eval' is needed because /static/js/tailwind-jit.js is still the
-		// Tailwind CDN's runtime JIT compiler (self-hosted, but still eval-based) -
-		// see the comment in layout.html. Google Fonts is the one remaining
-		// external origin; Tailwind and HTMX are self-hosted under /static/.
+		// No 'unsafe-eval' - the Tailwind CDN's runtime JIT compiler (which
+		// needed it) was replaced with a precompiled stylesheet; see the
+		// comment in layout.html. Google Fonts is the one remaining external
+		// origin; Tailwind and HTMX are self-hosted under /static/.
 		csp := "default-src 'self'; " +
-			"script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+			"script-src 'self' 'unsafe-inline'; " +
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
 			"img-src 'self' data:; " +
 			"font-src 'self' https://fonts.gstatic.com; " +
@@ -516,10 +518,16 @@ type BrokerWithStatus struct {
 	Status    string // "never", "sent", "failed"
 	LastSent  string // formatted date or empty
 	TotalSent int
+	Excluded  bool // true if excluded via config.Options.ExcludedBrokers/ExcludedCategories
 }
 
-// getBrokersWithStatus returns brokers with their history status
-func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, missingEmail bool) []BrokerWithStatus {
+// getBrokersWithStatus returns brokers with their history status. When
+// showExcluded is false (the normal case - the default brokers view, and
+// every send path), brokers matching ExcludedBrokers/ExcludedCategories are
+// dropped entirely, same as broker.Filter. When true (the brokers page's
+// "Show excluded" checkbox), they're included instead, with Excluded set,
+// so the UI can render an Include button instead of Send.
+func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, missingEmail, showExcluded bool) []BrokerWithStatus {
 	// Get all broker statuses from history, scoped to the active profile
 	var brokerStatuses map[string]history.BrokerStatus
 	if s.historyStore != nil {
@@ -556,10 +564,8 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
-		if excludedIDs[strings.ToLower(b.ID)] || excludedNames[strings.ToLower(b.Name)] {
-			continue
-		}
-		if excludedCats[strings.ToLower(b.Category)] {
+		excluded := excludedIDs[strings.ToLower(b.ID)] || excludedNames[strings.ToLower(b.Name)] || excludedCats[strings.ToLower(b.Category)]
+		if excluded && !showExcluded {
 			continue
 		}
 
@@ -589,8 +595,9 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 
 		bws := BrokerWithStatus{
-			Broker: b,
-			Status: "never",
+			Broker:   b,
+			Status:   "never",
+			Excluded: excluded,
 		}
 
 		if status, ok := brokerStatuses[b.ID]; ok {

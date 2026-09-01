@@ -76,7 +76,7 @@
                     hx-get="/api/brokers"
                     hx-trigger="keyup changed delay:300ms"
                     hx-target="#broker-list"
-                    hx-include="[name='status'],[name='category'],[name='region'],[name='missing_email']"
+                    hx-include="[name='status'],[name='category'],[name='region'],[name='missing_email'],[name='show_excluded']"
                 >
             </div>
 
@@ -88,7 +88,7 @@
                     hx-get="/api/brokers"
                     hx-trigger="change"
                     hx-target="#broker-list"
-                    hx-include="#broker-search,[name='category'],[name='region'],[name='missing_email']"
+                    hx-include="#broker-search,[name='category'],[name='region'],[name='missing_email'],[name='show_excluded']"
                 >
                     <option value="">All Statuses</option>
                     <option value="pending" {{if eq $.Status "pending"}}selected{{end}}>Pending</option>
@@ -101,7 +101,7 @@
                     hx-get="/api/brokers"
                     hx-trigger="change"
                     hx-target="#broker-list"
-                    hx-include="#broker-search,[name='status'],[name='region'],[name='missing_email']"
+                    hx-include="#broker-search,[name='status'],[name='region'],[name='missing_email'],[name='show_excluded']"
                 >
                     <option value="">All Categories</option>
                     {{range .Categories}}
@@ -114,7 +114,7 @@
                     hx-get="/api/brokers"
                     hx-trigger="change"
                     hx-target="#broker-list"
-                    hx-include="#broker-search,[name='status'],[name='category'],[name='missing_email']"
+                    hx-include="#broker-search,[name='status'],[name='category'],[name='missing_email'],[name='show_excluded']"
                 >
                     <option value="">All Regions</option>
                     {{range .Regions}}
@@ -130,9 +130,22 @@
                         hx-get="/api/brokers"
                         hx-trigger="change"
                         hx-target="#broker-list"
-                        hx-include="#broker-search,[name='status'],[name='category'],[name='region']"
+                        hx-include="#broker-search,[name='status'],[name='category'],[name='region'],[name='show_excluded']"
                     >
                     Missing email only
+                </label>
+                <label class="flex items-center gap-2 text-sm text-secondary select-none cursor-pointer whitespace-nowrap">
+                    <input
+                        type="checkbox"
+                        name="show_excluded"
+                        value="true"
+                        {{if .ShowExcluded}}checked{{end}}
+                        hx-get="/api/brokers"
+                        hx-trigger="change"
+                        hx-target="#broker-list"
+                        hx-include="#broker-search,[name='status'],[name='category'],[name='region'],[name='missing_email']"
+                    >
+                    Show excluded
                 </label>
             </div>
         </div>
@@ -203,7 +216,18 @@
                             {{end}}
                         </td>
                         <td class="text-right">
-                            <div class="flex items-center justify-end gap-2">
+                            <div id="actions-{{.ID}}" class="flex items-center justify-end gap-2">
+                                {{if .Excluded}}
+                                <span class="badge badge-neutral">Excluded</span>
+                                <button
+                                    class="btn btn-ghost text-sm py-1 px-3"
+                                    hx-post="/api/brokers/{{.ID}}/include"
+                                    hx-target="#actions-{{.ID}}"
+                                    hx-swap="innerHTML"
+                                >
+                                    Include
+                                </button>
+                                {{else}}
                                 {{if .Email}}
                                 <button
                                     class="btn btn-ghost text-sm py-1 px-3"
@@ -229,6 +253,16 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                                     </svg>
                                 </a>
+                                {{end}}
+                                <button
+                                    class="btn btn-ghost text-sm py-1 px-3 text-error"
+                                    hx-post="/api/brokers/{{.ID}}/exclude"
+                                    hx-target="#actions-{{.ID}}"
+                                    hx-swap="innerHTML"
+                                    title="Exclude this broker from sends"
+                                >
+                                    Exclude
+                                </button>
                                 {{end}}
                             </div>
                         </td>
@@ -281,7 +315,18 @@
                     <span class="text-muted uppercase">{{.Region}}</span>
                     {{end}}
                 </div>
-                <div class="flex gap-2">
+                <div id="actions-mobile-{{.ID}}" class="flex gap-2">
+                    {{if .Excluded}}
+                    <button class="btn btn-secondary flex-1 py-2" disabled>Excluded</button>
+                    <button
+                        class="btn btn-primary py-2"
+                        hx-post="/api/brokers/{{.ID}}/include"
+                        hx-target="#actions-mobile-{{.ID}}"
+                        hx-swap="innerHTML"
+                    >
+                        Include
+                    </button>
+                    {{else}}
                     {{if .Email}}
                     <button
                         class="btn btn-primary flex-1 py-2"
@@ -302,6 +347,16 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                         </svg>
                     </a>
+                    {{end}}
+                    <button
+                        class="btn btn-ghost py-2 text-error"
+                        hx-post="/api/brokers/{{.ID}}/exclude"
+                        hx-target="#actions-mobile-{{.ID}}"
+                        hx-swap="innerHTML"
+                        title="Exclude this broker from sends"
+                    >
+                        Exclude
+                    </button>
                     {{end}}
                 </div>
             </div>

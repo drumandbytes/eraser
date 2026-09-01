@@ -43,11 +43,21 @@ cd eraser
 go build -o eraser ./cmd/eraser
 ```
 
+**Windows users:** name the output `eraser.exe` instead of `eraser` -
+Windows won't run (or let a browser open) a downloaded file with no
+extension, and will offer to "Save" it instead:
+
+```powershell
+go build -o eraser.exe ./cmd/eraser
+```
+
 **Step 2: Start the Web Interface**
 
 ```bash
 ./eraser serve
 ```
+
+On Windows, run `.\eraser.exe serve` instead.
 
 Open your browser and go to `http://localhost:8080`
 
@@ -93,6 +103,8 @@ git clone https://github.com/drumandbytes/eraser.git
 cd eraser
 go build -o eraser ./cmd/eraser
 ```
+
+On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eraser`) and run commands as `.\eraser.exe <command>` - see the note above.
 
 ### Quick Start
 

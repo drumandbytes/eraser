@@ -1,0 +1,17 @@
+version: 2
+updates:
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Grouped into a single PR so related action bumps land together rather than
+  # as a stream of separate PRs. Auto-merge handles them once CI passes.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]

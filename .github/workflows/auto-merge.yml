@@ -1,0 +1,21 @@
+name: Auto merge
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+jobs:
+  auto-merge:
+    # The reusable workflow cannot grant itself more than the caller has, and
+    # the org default for GITHUB_TOKEN is read-only — so declare it here.
+    permissions:
+      contents: write
+      pull-requests: write
+    # Only the conclusion is checked, not workflow_run.event: a same-repo
+    # branch (which is how Dependabot pushes) triggers CI as 'push', not
+    # 'pull_request', so gating on the event silently skipped every run. The
+    # reusable workflow looks up the PR and enforces the author allow-list,
+    # which is the actual safety gate; a run with no open PR just no-ops.
+    if: github.event.workflow_run.conclusion == 'success'
+    uses: drumandbytes/reusable-actions/.github/workflows/auto-merge.yml@v1

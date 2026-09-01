@@ -74,6 +74,37 @@ Three email templates (`internal/template/templates/`):
 - **CCPA**: Invokes California Consumer Privacy Act
 - **Generic**: General privacy request referencing multiple laws
 
+### Web UI static assets
+`internal/web/static/` (embedded via `//go:embed static/*`) holds two things worth
+knowing about:
+- `js/htmx.min.js` - vendored as-is.
+- `css/tailwind.css` - a **precompiled** stylesheet, generated ahead of time with the
+  [Tailwind standalone CLI](https://github.com/tailwindlabs/tailwindcss/releases) (no
+  Node/npm needed - this is a pure Go module) from `css/tailwind.input.css` and the
+  classes actually used in `internal/web/templates/**/*.html`. This replaced an earlier
+  runtime JIT compiler (`tailwind-jit.js`, self-hosted CDN bundle) that compiled CSS in
+  the browser on every page load and needed `'unsafe-eval'` in the CSP for it. If you
+  add a template with a **new** Tailwind utility class, it won't render until you
+  regenerate the file:
+  ```
+  ./tailwindcss -i internal/web/static/css/tailwind.input.css \
+    -o internal/web/static/css/tailwind.css \
+    -c tailwind.config.js --minify
+  ```
+  where `tailwind.config.js` is:
+  ```js
+  module.exports = {
+    content: ["./internal/web/templates/**/*.html"],
+    theme: { extend: { colors: { accent: '#6366f1' } } }
+  }
+  ```
+  The `<link>` for it in `layout.html` is deliberately placed *after* the
+  hand-authored `<style>` block, not in `<head>` before it - same-specificity rules
+  are decided by source order, and a Tailwind utility like `.w-auto` needs to win over
+  a same-specificity component class like `.input{width:100%}`. Moving it earlier
+  silently breaks every element that combines a component class with a sizing utility
+  (this happened once already - see the comment above the `<link>` in `layout.html`).
+
 ### Flow
 1. Load user config from `~/.eraser/config.yaml`, resolve the active profile (see [multi-profile.md](multi-profile.md))
 2. Load brokers from `data/brokers.yaml`

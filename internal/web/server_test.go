@@ -2,6 +2,9 @@ package web
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -162,5 +165,30 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 
 	if len(got) != 1 || got[0].ID != "beenverified" {
 		t.Errorf("expected only beenverified to survive exclusion, got %+v", got)
+	}
+}
+
+// TestRenderWithCSRFHandlesNilConfig is a regression test for
+// https://github.com/drumandbytes/eraser/issues/1: on a brand-new install
+// with no config.yaml yet, s.getConfig() returns nil for the very first
+// page served (GET /setup, the welcome step). renderWithCSRF used to only
+// set the "Profiles"/"ActiveProfile" map keys inside its `cfg != nil`
+// branch, so on that request they were absent entirely rather than merely
+// empty - and layout.html's nav bar unconditionally does
+// `{{if gt (len .Profiles) 1}}`, which fails with "error calling len:
+// reflect: call of reflect.Value.Type on zero Value" when the key is
+// missing (as opposed to present-but-nil, which len handles fine).
+func TestRenderWithCSRFHandlesNilConfig(t *testing.T) {
+	s := newTestServer(t, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/setup", nil)
+	rec := httptest.NewRecorder()
+	s.handleSetupWelcome(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "Template error") {
+		t.Errorf("response contains a template execution error: %s", rec.Body.String())
 	}
 }

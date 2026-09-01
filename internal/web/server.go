@@ -688,10 +688,17 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	// Every page gets the profile switcher's data, regardless of whether the
 	// handler itself needed the active profile - Profiles has length 1 for a
 	// single-profile config, in which case layout.html hides the switcher.
+	// Profiles/ActiveProfile must always be set, even when cfg is nil (a
+	// fresh install with no config.yaml yet, e.g. the very first /setup
+	// page) - leaving the map key entirely absent used to make layout.html's
+	// `{{len .Profiles}}` fail with "error calling len: reflect: call of
+	// reflect.Value.Type on zero Value" on every brand-new install.
+	data["Profiles"] = []config.NamedProfile{}
+	data["ActiveProfile"] = config.NamedProfile{}
+	data["CurrentPath"] = r.URL.Path
 	if cfg := s.getConfig(); cfg != nil {
 		data["Profiles"] = cfg.GetProfiles()
 		data["ActiveProfile"] = s.activeProfile(r)
-		data["CurrentPath"] = r.URL.Path
 	}
 
 	tmpl, ok := s.templates[name]

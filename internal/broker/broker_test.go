@@ -1,6 +1,9 @@
 package broker
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func testDB() *BrokerDatabase {
 	return &BrokerDatabase{
@@ -69,5 +72,59 @@ func TestFilterNoExclusionsReturnsEverything(t *testing.T) {
 
 	if len(got) != len(db.Brokers) {
 		t.Errorf("Filter(nil, nil, nil) returned %d brokers, want all %d", len(got), len(db.Brokers))
+	}
+}
+
+func TestMarkEmailUnreachableClearsEmailAndKeepsRecord(t *testing.T) {
+	db := &BrokerDatabase{
+		Brokers: []Broker{
+			{ID: "spokeo", Name: "Spokeo", Email: "privacy@spokeo.com", Website: "https://spokeo.com", OptOutURL: "https://spokeo.com/optout", Region: "us", Category: "people-search"},
+		},
+	}
+
+	got := db.MarkEmailUnreachable("privacy@spokeo.com", "mailbox full")
+	if got == nil {
+		t.Fatal("MarkEmailUnreachable returned nil for a known email")
+	}
+
+	b := db.FindByID("spokeo")
+	if b.Email != "" {
+		t.Errorf("Email = %q, want cleared", b.Email)
+	}
+	if b.Name != "Spokeo" || b.Website != "https://spokeo.com" || b.OptOutURL != "https://spokeo.com/optout" || b.Category != "people-search" {
+		t.Errorf("MarkEmailUnreachable altered fields other than Email/Notes: %+v", b)
+	}
+	if !strings.Contains(b.Notes, "privacy@spokeo.com") || !strings.Contains(b.Notes, "mailbox full") {
+		t.Errorf("Notes = %q, want it to mention the old address and reason", b.Notes)
+	}
+	if len(db.Brokers) != 1 {
+		t.Errorf("len(db.Brokers) = %d, want 1 (broker must not be removed)", len(db.Brokers))
+	}
+}
+
+func TestMarkEmailUnreachableMergesWithExistingNotes(t *testing.T) {
+	db := &BrokerDatabase{
+		Brokers: []Broker{
+			{ID: "spokeo", Email: "privacy@spokeo.com", Notes: "Confirmed EU region."},
+		},
+	}
+
+	db.MarkEmailUnreachable("privacy@spokeo.com", "hard bounce")
+
+	b := db.FindByID("spokeo")
+	if !strings.Contains(b.Notes, "Confirmed EU region.") {
+		t.Errorf("Notes = %q, want existing note preserved", b.Notes)
+	}
+	if !strings.Contains(b.Notes, "privacy@spokeo.com") {
+		t.Errorf("Notes = %q, want new bounce note appended", b.Notes)
+	}
+}
+
+func TestMarkEmailUnreachableUnknownEmailReturnsNil(t *testing.T) {
+	db := testDB()
+
+	got := db.MarkEmailUnreachable("nobody@example.com", "bounce")
+	if got != nil {
+		t.Errorf("MarkEmailUnreachable(unknown email) = %+v, want nil", got)
 	}
 }

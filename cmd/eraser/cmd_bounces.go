@@ -20,23 +20,30 @@ func cleanupBouncesCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "cleanup-bounces",
-		Short: "Find and remove bounced broker email addresses",
+		Short: "Find and clear bounced broker email addresses",
 		Long: `Scan your inbox for bounced/undeliverable emails and identify
-invalid broker email addresses. Optionally remove them from the database.
+invalid broker email addresses. Optionally clear them in the database.
 
-By default, this command shows what would be removed without making changes.
-Use --remove to actually remove the invalid brokers from the database.
+A bounce usually means the company changed its privacy-request address, not
+that it stopped existing, so this never deletes the broker itself - it only
+clears the dead email address (keeping name, category, website, and opt-out
+URL) and records the old address in the broker's notes. Use
+'list-brokers --missing-email' afterward to find brokers that need a new
+address.
+
+By default, this command shows what would be cleared without making changes.
+Use --remove to actually clear the invalid addresses in the database.
 
 Examples:
   eraser cleanup-bounces                 # Show bounced emails (dry run)
-  eraser cleanup-bounces --remove        # Remove bounced brokers
+  eraser cleanup-bounces --remove        # Clear bounced addresses
   eraser cleanup-bounces --days 30       # Look back 30 days`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runCleanupBounces(remove, days)
 		},
 	}
 
-	cmd.Flags().BoolVar(&remove, "remove", false, "Actually remove bounced brokers from database")
+	cmd.Flags().BoolVar(&remove, "remove", false, "Actually clear bounced email addresses in the database")
 	cmd.Flags().IntVar(&days, "days", 30, "Number of days to scan for bounced emails")
 
 	return cmd
@@ -135,18 +142,18 @@ func runCleanupBounces(remove bool, days int) error {
 
 	if !remove {
 		fmt.Printf("\n📊 Found %d broker(s) with invalid email addresses\n", len(bouncedBrokers))
-		fmt.Println("Run with --remove to delete these brokers from the database")
+		fmt.Println("Run with --remove to clear these addresses in the database")
 		return nil
 	}
 
-	// Remove the brokers
-	fmt.Printf("\n🗑️  Removing %d broker(s) from database...\n\n", len(bouncedBrokers))
+	// Clear the dead addresses (the broker entries themselves are kept)
+	fmt.Printf("\n🧹 Clearing %d broker email address(es)...\n\n", len(bouncedBrokers))
 
-	removed := 0
+	cleared := 0
 	for _, bb := range bouncedBrokers {
-		if brokerDB.RemoveByEmail(bb.email) != nil {
-			fmt.Printf("✓ Removed %s (%s)\n", bb.broker.Name, bb.email)
-			removed++
+		if brokerDB.MarkEmailUnreachable(bb.email, bb.subject) != nil {
+			fmt.Printf("✓ Cleared %s (%s)\n", bb.broker.Name, bb.email)
+			cleared++
 		}
 	}
 
@@ -157,7 +164,8 @@ func runCleanupBounces(remove bool, days int) error {
 
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Printf("✓ Removed %d broker(s) with invalid email addresses\n", removed)
+	fmt.Printf("✓ Cleared %d broker email address(es) - entries kept, ready for a new address\n", cleared)
+	fmt.Println("  Run 'eraser list-brokers --missing-email' to see them")
 	fmt.Printf("  Backup saved to: %s.bak\n", brokerPath)
 
 	return nil

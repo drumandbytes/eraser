@@ -1,13 +1,13 @@
 name: Release
 
 on:
-  # Cut a release from the Actions tab: Run workflow -> type e.g. v0.2.0.
+  # Cut a release from the Actions tab: Run workflow -> type e.g. v0.3.1.
   workflow_dispatch:
     inputs:
       tag:
         description: "Version tag to release (vX.Y.Z)"
         required: true
-  # Or push a tag directly: git tag v0.2.0 && git push --tags
+  # Or push a tag directly: git tag v0.3.1 && git push origin v0.3.1
   push:
     tags:
       - "v*"
@@ -16,14 +16,30 @@ permissions:
   contents: write
 
 jobs:
-  tag:
-    if: github.event_name == 'workflow_dispatch'
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-      - name: Validate and push tag
+          fetch-depth: 0 # full history + tags for the changelog and git describe
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.ref }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          # setup-go caches the module cache; add the build cache ourselves,
+          # keyed on the toolchain + deps + release config. Cross-compiling
+          # six targets from a cold build cache is most of the run time.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-release-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-release-
+            ${{ runner.os }}-go-build-
+
+      - name: Validate and create tag
+        if: github.event_name == 'workflow_dispatch'
         run: |
           tag='${{ inputs.tag }}'
           if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$ ]]; then
@@ -35,29 +51,9 @@ jobs:
           git tag "$tag"
           git push origin "$tag"
 
-  goreleaser:
-    needs: [tag]
-    # Run for a directly-pushed tag, or once the tag job has pushed one.
-    # (A tag pushed by GITHUB_TOKEN does not re-trigger `push`, so this job
-    # can't just wait for that event.)
-    if: >-
-      always() &&
-      (needs.tag.result == 'success' ||
-       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.26"
-
       # Short-lived token for the dnb-robot GitHub App, scoped to this repo (to
       # publish the release) and homebrew-tap (for GoReleaser to push the
-      # updated Formula). The default GITHUB_TOKEN can't write to another repo.
+      # updated cask). The default GITHUB_TOKEN can't write to another repo.
       - uses: actions/create-github-app-token@v2
         id: app_token
         with:
@@ -72,3 +68,4 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
+          GORELEASER_CURRENT_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || '' }}

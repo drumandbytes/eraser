@@ -321,7 +321,7 @@ func runSendManual(cfg *config.Config, activeProfile config.NamedProfile, broker
 			skipped++
 			continue
 		}
-		fmt.Printf("To: %s\nSubject: %s\n\n%s\n", b.Email, email.Subject, email.Body)
+		fmt.Printf("From: %s\nTo: %s\nSubject: %s\n\n%s\n", from, b.Email, email.Subject, email.Body)
 
 		ans := strings.ToLower(prompt(reader, "Sent it? [s]ent / [n]ext / [q]uit: "))
 		switch {

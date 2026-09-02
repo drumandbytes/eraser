@@ -194,6 +194,10 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		"add": func(a, b int) int {
 			return a + b
 		},
+		// percent formats a 0..1 confidence score as a whole-number percentage.
+		"percent": func(f float64) string {
+			return fmt.Sprintf("%.0f%%", f*100)
+		},
 		// dict builds a map from alternating key/value args so a partial can be
 		// invoked with more than one parameter, e.g.
 		// {{template "partials/broker-row.html" (dict "Broker" . "IDPrefix" "mobile-")}}

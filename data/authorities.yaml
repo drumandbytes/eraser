@@ -40,7 +40,7 @@ authorities:
     code: CY
     region: European Union / EEA
     authority: Office of the Commissioner for Personal Data Protection
-    website: https://www.dataprotection.gov.cy
+    website: https://www.gov.cy/dataprotection/
   - country: Czech Republic
     code: CZ
     region: European Union / EEA
@@ -311,3 +311,42 @@ authorities:
     authority: Agencia de Acceso a la Información Pública
     acronym: AAIP
     website: https://www.argentina.gob.ar/aaip
+  - country: India
+    code: IN
+    region: Rest of world
+    law: Digital Personal Data Protection Act 2023
+    authority: Data Protection Board of India
+    acronym: DPBI
+    website: https://www.meity.gov.in
+    notes: >-
+      The Board was constituted in November 2025 but its complaint and
+      penalty powers take effect only in a later phase (expected late 2026);
+      until its own portal is live, notices appear on the MeitY site.
+  - country: Israel
+    code: IL
+    region: Rest of world
+    law: Protection of Privacy Law
+    authority: Privacy Protection Authority
+    acronym: PPA
+    website: https://www.gov.il/en/departments/the_privacy_protection_authority
+  - country: Kenya
+    code: KE
+    region: Rest of world
+    law: Data Protection Act 2019
+    authority: Office of the Data Protection Commissioner
+    acronym: ODPC
+    website: https://www.odpc.go.ke
+  - country: Nigeria
+    code: NG
+    region: Rest of world
+    law: Nigeria Data Protection Act 2023
+    authority: Nigeria Data Protection Commission
+    acronym: NDPC
+    website: https://ndpc.gov.ng
+  - country: Thailand
+    code: TH
+    region: Rest of world
+    law: PDPA (B.E. 2562)
+    authority: Office of the Personal Data Protection Committee
+    acronym: PDPC
+    website: https://www.pdpc.or.th

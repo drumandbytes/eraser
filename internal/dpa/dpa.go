@@ -10,16 +10,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Authority is one supervisory authority.
+// Authority is one supervisory authority. Website is the authority's own site
+// in its own language - the resident complaining to their national authority
+// reads it, so there is no separate English URL.
 type Authority struct {
-	Country    string `yaml:"country" json:"country"`
-	Code       string `yaml:"code" json:"code"`
-	EEA        bool   `yaml:"eea" json:"eea"`
-	Authority  string `yaml:"authority" json:"authority"`
-	Acronym    string `yaml:"acronym,omitempty" json:"acronym,omitempty"`
-	Website    string `yaml:"website" json:"website"`
-	EnglishURL string `yaml:"english_url,omitempty" json:"english_url,omitempty"`
-	Notes      string `yaml:"notes,omitempty" json:"notes,omitempty"`
+	Country   string `yaml:"country" json:"country"`
+	Code      string `yaml:"code" json:"code"`
+	EEA       bool   `yaml:"eea" json:"eea"`
+	Authority string `yaml:"authority" json:"authority"`
+	Acronym   string `yaml:"acronym,omitempty" json:"acronym,omitempty"`
+	Website   string `yaml:"website" json:"website"`
+	Notes     string `yaml:"notes,omitempty" json:"notes,omitempty"`
 }
 
 type file struct {
@@ -60,18 +61,10 @@ func ForCountry(name string) *Authority {
 	return nil
 }
 
-// Link returns the best public URL for an authority (English page if known).
-func (a Authority) Link() string {
-	if a.EnglishURL != "" {
-		return a.EnglishURL
-	}
-	return a.Website
-}
-
-// Describe is a one-line "Authority (ACRONYM) - link" for CLI/report output.
+// Describe is a one-line "Authority (ACRONYM) - website" for CLI/report output.
 func (a Authority) Describe() string {
 	if a.Acronym != "" {
-		return fmt.Sprintf("%s (%s) - %s", a.Authority, a.Acronym, a.Link())
+		return fmt.Sprintf("%s (%s) - %s", a.Authority, a.Acronym, a.Website)
 	}
-	return fmt.Sprintf("%s - %s", a.Authority, a.Link())
+	return fmt.Sprintf("%s - %s", a.Authority, a.Website)
 }

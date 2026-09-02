@@ -6,10 +6,9 @@
 # the alleged infringement.
 #
 # `authority` names and `website` hosts are from the EDPB members list
-# (edpb.europa.eu/about-edpb/about-edpb/members_en). `english_url` is filled in
-# only where an English entry point is known; otherwise start from `website`
-# and look for "complaint" / "Beschwerde" / "réclamation" / "reclamação" etc.
-# Re-check the links before relying on them.
+# (edpb.europa.eu/about-edpb/about-edpb/members_en). `website` is the
+# authority's own site, in its own language - a resident complaining to their
+# national authority reads it. Re-check the links before relying on them.
 
 authorities:
   - country: Austria
@@ -18,74 +17,63 @@ authorities:
     authority: Österreichische Datenschutzbehörde (Austrian Data Protection Authority)
     acronym: DSB
     website: https://www.dsb.gv.at
-    english_url: https://www.data-protection-authority.gv.at/data-protection-in-austria/right-to-lodge-a-complaint
   - country: Belgium
     code: BE
     eea: true
     authority: Gegevensbeschermingsautoriteit / Autorité de la protection des données
     acronym: GBA/APD
     website: https://www.gegevensbeschermingsautoriteit.be
-    english_url: https://www.dataprotectionauthority.be
   - country: Bulgaria
     code: BG
     eea: true
     authority: Commission for Personal Data Protection
     acronym: CPDP
     website: https://www.cpdp.bg
-    english_url: https://www.cpdp.bg/en/
   - country: Croatia
     code: HR
     eea: true
     authority: Agencija za zaštitu osobnih podataka
     acronym: AZOP
     website: https://azop.hr
-    english_url: https://azop.hr/en/
   - country: Cyprus
     code: CY
     eea: true
     authority: Office of the Commissioner for Personal Data Protection
     website: https://www.dataprotection.gov.cy
-    english_url: https://www.dataprotection.gov.cy/dataprotection/dataprotection.nsf/home_en/home_en
   - country: Czech Republic
     code: CZ
     eea: true
     authority: Úřad pro ochranu osobních údajů (Office for Personal Data Protection)
     acronym: ÚOOÚ
     website: https://www.uoou.gov.cz
-    english_url: https://www.uoou.gov.cz/en
   - country: Denmark
     code: DK
     eea: true
     authority: Datatilsynet
     website: https://www.datatilsynet.dk
-    english_url: https://www.datatilsynet.dk/english
   - country: Estonia
     code: EE
     eea: true
     authority: Andmekaitse Inspektsioon (Data Protection Inspectorate)
     acronym: AKI
     website: https://www.aki.ee
-    english_url: https://www.aki.ee/en
   - country: Finland
     code: FI
     eea: true
     authority: Office of the Data Protection Ombudsman (Tietosuojavaltuutetun toimisto)
     website: https://tietosuoja.fi
-    english_url: https://tietosuoja.fi/en/home
   - country: France
     code: FR
     eea: true
     authority: Commission Nationale de l'Informatique et des Libertés
     acronym: CNIL
     website: https://www.cnil.fr
-    english_url: https://www.cnil.fr/en
   - country: Germany
     code: DE
     eea: true
     authority: Die Bundesbeauftragte für den Datenschutz und die Informationsfreiheit
     acronym: BfDI
     website: https://www.bfdi.bund.de
-    english_url: https://www.bfdi.bund.de/EN/Home/home_node.html
     notes: >-
       For a complaint against a private company (a data broker), a resident
       normally goes to the supervisory authority of their own federal state
@@ -97,14 +85,12 @@ authorities:
     authority: Hellenic Data Protection Authority
     acronym: HDPA
     website: https://www.dpa.gr
-    english_url: https://www.dpa.gr/en
   - country: Hungary
     code: HU
     eea: true
     authority: Nemzeti Adatvédelmi és Információszabadság Hatóság
     acronym: NAIH
     website: https://www.naih.hu
-    english_url: https://naih.hu/about-the-authority
   - country: Ireland
     code: IE
     eea: true
@@ -116,28 +102,24 @@ authorities:
     eea: true
     authority: Garante per la protezione dei dati personali
     website: https://www.garanteprivacy.it
-    english_url: https://www.garanteprivacy.it/home_en
   - country: Latvia
     code: LV
     eea: true
     authority: Datu valsts inspekcija (Data State Inspectorate)
     acronym: DVI
     website: https://www.dvi.gov.lv
-    english_url: https://www.dvi.gov.lv/en
   - country: Lithuania
     code: LT
     eea: true
     authority: Valstybinė duomenų apsaugos inspekcija (State Data Protection Inspectorate)
     acronym: VDAI
     website: https://vdai.lrv.lt
-    english_url: https://vdai.lrv.lt/en/
   - country: Luxembourg
     code: LU
     eea: true
     authority: Commission Nationale pour la Protection des Données
     acronym: CNPD
     website: https://cnpd.public.lu
-    english_url: https://cnpd.public.lu/en.html
   - country: Malta
     code: MT
     eea: true
@@ -150,56 +132,48 @@ authorities:
     authority: Autoriteit Persoonsgegevens
     acronym: AP
     website: https://www.autoriteitpersoonsgegevens.nl
-    english_url: https://www.autoriteitpersoonsgegevens.nl/en
   - country: Poland
     code: PL
     eea: true
     authority: Urząd Ochrony Danych Osobowych
     acronym: UODO
     website: https://uodo.gov.pl
-    english_url: https://uodo.gov.pl/en
   - country: Portugal
     code: PT
     eea: true
     authority: Comissão Nacional de Proteção de Dados
     acronym: CNPD
     website: https://www.cnpd.pt
-    english_url: https://www.cnpd.pt/en/
   - country: Romania
     code: RO
     eea: true
     authority: Autoritatea Naţională de Supraveghere a Prelucrării Datelor cu Caracter Personal
     acronym: ANSPDCP
     website: https://www.dataprotection.ro
-    english_url: https://www.dataprotection.ro/?page=homepage&lang=en
   - country: Slovakia
     code: SK
     eea: true
     authority: Úrad na ochranu osobných údajov Slovenskej republiky
     acronym: ÚOOÚ
     website: https://dataprotection.gov.sk
-    english_url: https://dataprotection.gov.sk/en/
   - country: Slovenia
     code: SI
     eea: true
     authority: Informacijski pooblaščenec (Information Commissioner)
     acronym: IP-RS
     website: https://www.ip-rs.si
-    english_url: https://www.ip-rs.si/en/
   - country: Spain
     code: ES
     eea: true
     authority: Agencia Española de Protección de Datos
     acronym: AEPD
     website: https://www.aepd.es
-    english_url: https://www.aepd.es/en
   - country: Sweden
     code: SE
     eea: true
     authority: Integritetsskyddsmyndigheten (Authority for Privacy Protection)
     acronym: IMY
     website: https://www.imy.se
-    english_url: https://www.imy.se/en/
   - country: Iceland
     code: IS
     eea: true
@@ -219,14 +193,12 @@ authorities:
     eea: true
     authority: Datatilsynet (Norwegian Data Protection Authority)
     website: https://www.datatilsynet.no
-    english_url: https://www.datatilsynet.no/en/
   - country: United Kingdom
     code: GB
     eea: false
     authority: Information Commissioner's Office
     acronym: ICO
     website: https://ico.org.uk
-    english_url: https://ico.org.uk/make-a-complaint/
     notes: >-
       Not an EDPB member since Brexit; enforces the UK GDPR, which mirrors the
       EU GDPR's right to erasure. Relevant if you are a UK resident.

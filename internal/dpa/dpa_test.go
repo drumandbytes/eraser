@@ -43,12 +43,9 @@ func TestForCountry(t *testing.T) {
 	}
 }
 
-func TestLinkAndDescribe(t *testing.T) {
+func TestDescribe(t *testing.T) {
 	lv := ForCountry("Latvia")
-	if lv.Link() != "https://www.dvi.gov.lv/en" {
-		t.Errorf("Link() = %q", lv.Link())
-	}
-	if got := lv.Describe(); got == "" || got[:4] != "Datu" {
+	if got := lv.Describe(); got != "Datu valsts inspekcija (Data State Inspectorate) (DVI) - https://www.dvi.gov.lv" {
 		t.Errorf("Describe() = %q", got)
 	}
 }

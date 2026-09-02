@@ -12,7 +12,7 @@ data, `site/`, or the guide generator.
 ```
 
 That runs `eraser guides` to generate `content/brokers/*.md` +
-`static/brokers.json`, copies `data/eu-dpas.yaml` in, and runs `hugo --minify`
+`static/brokers.json`, copies `data/authorities.yaml` in, and runs `hugo --minify`
 into `site/public/`. All generated files are gitignored.
 
 ## Layout

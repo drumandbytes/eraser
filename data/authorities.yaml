@@ -1,0 +1,313 @@
+# Privacy / data protection authorities, worldwide.
+#
+# Where to complain if a data broker ignores or refuses a deletion request.
+# `eraser export` names the authority for the data subject's `country`; the
+# docs site renders the whole table grouped by `region`.
+#
+# EU/EEA entries are the GDPR supervisory authorities from the EDPB members
+# list (edpb.europa.eu/about-edpb/about-edpb/members_en) - under GDPR Art. 77
+# you complain to the one where you live, work, or where the infringement
+# happened; `law` is omitted for them (it's always GDPR). Non-EU entries carry
+# the relevant `law`. `website` is the authority's own site, in its own
+# language. Re-check links before relying on them.
+
+authorities:
+  - country: Austria
+    code: AT
+    region: European Union / EEA
+    authority: Österreichische Datenschutzbehörde (Austrian Data Protection Authority)
+    acronym: DSB
+    website: https://www.dsb.gv.at
+  - country: Belgium
+    code: BE
+    region: European Union / EEA
+    authority: Gegevensbeschermingsautoriteit / Autorité de la protection des données
+    acronym: GBA/APD
+    website: https://www.gegevensbeschermingsautoriteit.be
+  - country: Bulgaria
+    code: BG
+    region: European Union / EEA
+    authority: Commission for Personal Data Protection
+    acronym: CPDP
+    website: https://www.cpdp.bg
+  - country: Croatia
+    code: HR
+    region: European Union / EEA
+    authority: Agencija za zaštitu osobnih podataka
+    acronym: AZOP
+    website: https://azop.hr
+  - country: Cyprus
+    code: CY
+    region: European Union / EEA
+    authority: Office of the Commissioner for Personal Data Protection
+    website: https://www.dataprotection.gov.cy
+  - country: Czech Republic
+    code: CZ
+    region: European Union / EEA
+    authority: Úřad pro ochranu osobních údajů (Office for Personal Data Protection)
+    acronym: ÚOOÚ
+    website: https://www.uoou.gov.cz
+  - country: Denmark
+    code: DK
+    region: European Union / EEA
+    authority: Datatilsynet
+    website: https://www.datatilsynet.dk
+  - country: Estonia
+    code: EE
+    region: European Union / EEA
+    authority: Andmekaitse Inspektsioon (Data Protection Inspectorate)
+    acronym: AKI
+    website: https://www.aki.ee
+  - country: Finland
+    code: FI
+    region: European Union / EEA
+    authority: Office of the Data Protection Ombudsman (Tietosuojavaltuutetun toimisto)
+    website: https://tietosuoja.fi
+  - country: France
+    code: FR
+    region: European Union / EEA
+    authority: Commission Nationale de l'Informatique et des Libertés
+    acronym: CNIL
+    website: https://www.cnil.fr
+  - country: Germany
+    code: DE
+    region: European Union / EEA
+    authority: Die Bundesbeauftragte für den Datenschutz und die Informationsfreiheit
+    acronym: BfDI
+    website: https://www.bfdi.bund.de
+    notes: >-
+      For a complaint against a private company (a data broker), a resident
+      normally goes to the supervisory authority of their own federal state
+      (Land), not the federal BfDI. The BfDI site links the list of the 16
+      Landesdatenschutzbehörden.
+  - country: Greece
+    code: GR
+    region: European Union / EEA
+    authority: Hellenic Data Protection Authority
+    acronym: HDPA
+    website: https://www.dpa.gr
+  - country: Hungary
+    code: HU
+    region: European Union / EEA
+    authority: Nemzeti Adatvédelmi és Információszabadság Hatóság
+    acronym: NAIH
+    website: https://www.naih.hu
+  - country: Ireland
+    code: IE
+    region: European Union / EEA
+    authority: Data Protection Commission
+    acronym: DPC
+    website: https://www.dataprotection.ie
+  - country: Italy
+    code: IT
+    region: European Union / EEA
+    authority: Garante per la protezione dei dati personali
+    website: https://www.garanteprivacy.it
+  - country: Latvia
+    code: LV
+    region: European Union / EEA
+    authority: Datu valsts inspekcija (Data State Inspectorate)
+    acronym: DVI
+    website: https://www.dvi.gov.lv
+  - country: Lithuania
+    code: LT
+    region: European Union / EEA
+    authority: Valstybinė duomenų apsaugos inspekcija (State Data Protection Inspectorate)
+    acronym: VDAI
+    website: https://vdai.lrv.lt
+  - country: Luxembourg
+    code: LU
+    region: European Union / EEA
+    authority: Commission Nationale pour la Protection des Données
+    acronym: CNPD
+    website: https://cnpd.public.lu
+  - country: Malta
+    code: MT
+    region: European Union / EEA
+    authority: Office of the Information and Data Protection Commissioner
+    acronym: IDPC
+    website: https://idpc.org.mt
+  - country: Netherlands
+    code: NL
+    region: European Union / EEA
+    authority: Autoriteit Persoonsgegevens
+    acronym: AP
+    website: https://www.autoriteitpersoonsgegevens.nl
+  - country: Poland
+    code: PL
+    region: European Union / EEA
+    authority: Urząd Ochrony Danych Osobowych
+    acronym: UODO
+    website: https://uodo.gov.pl
+  - country: Portugal
+    code: PT
+    region: European Union / EEA
+    authority: Comissão Nacional de Proteção de Dados
+    acronym: CNPD
+    website: https://www.cnpd.pt
+  - country: Romania
+    code: RO
+    region: European Union / EEA
+    authority: Autoritatea Naţională de Supraveghere a Prelucrării Datelor cu Caracter Personal
+    acronym: ANSPDCP
+    website: https://www.dataprotection.ro
+  - country: Slovakia
+    code: SK
+    region: European Union / EEA
+    authority: Úrad na ochranu osobných údajov Slovenskej republiky
+    acronym: ÚOOÚ
+    website: https://dataprotection.gov.sk
+  - country: Slovenia
+    code: SI
+    region: European Union / EEA
+    authority: Informacijski pooblaščenec (Information Commissioner)
+    acronym: IP-RS
+    website: https://www.ip-rs.si
+  - country: Spain
+    code: ES
+    region: European Union / EEA
+    authority: Agencia Española de Protección de Datos
+    acronym: AEPD
+    website: https://www.aepd.es
+  - country: Sweden
+    code: SE
+    region: European Union / EEA
+    authority: Integritetsskyddsmyndigheten (Authority for Privacy Protection)
+    acronym: IMY
+    website: https://www.imy.se
+  - country: Iceland
+    code: IS
+    region: European Union / EEA
+    authority: Persónuvernd (Data Protection Authority)
+    website: https://island.is/s/personuvernd
+    notes: >-
+      The authority's site moved onto Iceland's national portal island.is;
+      www.personuvernd.is redirects there.
+  - country: Liechtenstein
+    code: LI
+    region: European Union / EEA
+    authority: Datenschutzstelle (Data Protection Authority)
+    acronym: DSS
+    website: https://www.datenschutzstelle.li
+  - country: Norway
+    code: "NO"
+    region: European Union / EEA
+    authority: Datatilsynet (Norwegian Data Protection Authority)
+    website: https://www.datatilsynet.no
+  - country: United Kingdom
+    code: GB
+    region: United Kingdom
+    law: UK GDPR / Data Protection Act 2018
+    authority: Information Commissioner's Office
+    acronym: ICO
+    website: https://ico.org.uk/make-a-complaint/
+    notes: >-
+      Post-Brexit; the UK GDPR mirrors the EU GDPR's right to erasure.
+
+  # --- North America ---
+  - country: United States (federal)
+    code: US
+    region: North America
+    law: FTC Act §5 (unfair or deceptive practices)
+    authority: Federal Trade Commission
+    acronym: FTC
+    website: https://reportfraud.ftc.gov
+    notes: >-
+      The catch-all US regulator for data brokers, regardless of which state
+      you live in. It doesn't act on individual complaints one by one, but
+      complaints feed its enforcement and it has repeatedly sued data brokers.
+  - country: United States (California)
+    code: US-CA
+    region: North America
+    law: CCPA / CPRA
+    authority: California Privacy Protection Agency
+    acronym: CPPA
+    website: https://cppa.ca.gov/
+    notes: >-
+      Runs the DELETE Act data-broker registry and (from 2026) the DROP
+      one-request deletion service. Complaints also go to the California
+      Attorney General: oag.ca.gov/privacy/ccpa.
+  - country: United States (other states)
+    code: US-OTHER
+    region: North America
+    law: State privacy acts (VA, CO, CT, UT, TX, OR, MT, ...)
+    authority: Your state Attorney General's consumer-protection office
+    website: https://www.usa.gov/state-attorney-general
+    notes: >-
+      Most US state privacy laws are enforced only by the state AG, with no
+      individual complaint portal - but the AG's consumer-protection division
+      takes complaints. Texas and Oregon also run data-broker registries.
+  - country: Canada
+    code: CA
+    region: North America
+    law: PIPEDA
+    authority: Office of the Privacy Commissioner of Canada
+    acronym: OPC
+    website: https://www.priv.gc.ca/en/report-a-concern/
+    notes: >-
+      Quebec, British Columbia and Alberta have their own provincial
+      commissioners for provincially-regulated businesses.
+
+  # --- Rest of world ---
+  - country: Switzerland
+    code: CH
+    region: Rest of world
+    law: revFADP (Federal Act on Data Protection, 2023)
+    authority: Federal Data Protection and Information Commissioner
+    acronym: FDPIC
+    website: https://www.edoeb.admin.ch/en
+  - country: Australia
+    code: AU
+    region: Rest of world
+    law: Privacy Act 1988
+    authority: Office of the Australian Information Commissioner
+    acronym: OAIC
+    website: https://www.oaic.gov.au/privacy/privacy-complaints
+  - country: New Zealand
+    code: NZ
+    region: Rest of world
+    law: Privacy Act 2020
+    authority: Office of the Privacy Commissioner
+    acronym: OPC
+    website: https://www.privacy.org.nz/your-rights/making-a-complaint/
+  - country: Brazil
+    code: BR
+    region: Rest of world
+    law: LGPD
+    authority: Autoridade Nacional de Proteção de Dados
+    acronym: ANPD
+    website: https://www.gov.br/anpd/pt-br
+  - country: Japan
+    code: JP
+    region: Rest of world
+    law: APPI
+    authority: Personal Information Protection Commission
+    acronym: PPC
+    website: https://www.ppc.go.jp/en/
+  - country: South Korea
+    code: KR
+    region: Rest of world
+    law: PIPA
+    authority: Personal Information Protection Commission
+    acronym: PIPC
+    website: https://www.pipc.go.kr/eng/
+  - country: Singapore
+    code: SG
+    region: Rest of world
+    law: PDPA
+    authority: Personal Data Protection Commission
+    acronym: PDPC
+    website: https://www.pdpc.gov.sg/how-we-can-help/lodge-a-complaint
+  - country: South Africa
+    code: ZA
+    region: Rest of world
+    law: POPIA
+    authority: Information Regulator
+    website: https://inforegulator.org.za
+  - country: Argentina
+    code: AR
+    region: Rest of world
+    law: Personal Data Protection Act 25.326
+    authority: Agencia de Acceso a la Información Pública
+    acronym: AAIP
+    website: https://www.argentina.gob.ar/aaip

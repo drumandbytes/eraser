@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 
 go run ./cmd/eraser guides --format md --output site/content
 mkdir -p site/data
-cp data/eu-dpas.yaml site/data/eu_dpas.yaml
+cp data/authorities.yaml site/data/authorities.yaml
 
 cd site
 if command -v hugo >/dev/null 2>&1; then

@@ -482,7 +482,7 @@ const evidenceHTMLTemplate = `<!DOCTYPE html>
 {{if .Summary.PastDeadline}}
 <p>The following controllers have not substantively responded within the statutory
 period and are candidates for a complaint to a supervisory authority
-{{if .Authority}}(for {{.Authority.Country}}: <strong>{{.Authority.Authority}}</strong>{{if .Authority.Acronym}} ({{.Authority.Acronym}}){{end}} &ndash; <a href="{{.Authority.Website}}">{{.Authority.Website}}</a>){{end}}:</p>
+{{if .Authority}}(for {{.Authority.Country}}: <strong>{{.Authority.Authority}}</strong>{{if .Authority.Acronym}} ({{.Authority.Acronym}}){{end}}{{with .Authority.Law}}, under {{.}}{{end}} &ndash; <a href="{{.Authority.Website}}">{{.Authority.Website}}</a>){{end}}:</p>
 <ul>{{range .Summary.PastDeadline}}<li>{{.}}</li>{{end}}</ul>
 {{if and .Authority .Authority.Notes}}<p class="disclaimer">{{.Authority.Notes}}</p>{{end}}
 {{end}}

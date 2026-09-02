@@ -12,8 +12,8 @@ import _ "embed"
 //go:embed brokers.yaml
 var BrokersYAML []byte
 
-// EUDPAsYAML is data/eu-dpas.yaml, the EU/EEA (+ UK) supervisory-authority
-// reference used by `eraser export` and the docs site.
+// AuthoritiesYAML is data/authorities.yaml, the worldwide privacy /
+// data-protection authority reference used by `eraser export` and the docs site.
 //
-//go:embed eu-dpas.yaml
-var EUDPAsYAML []byte
+//go:embed authorities.yaml
+var AuthoritiesYAML []byte

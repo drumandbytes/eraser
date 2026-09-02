@@ -17,6 +17,9 @@ var (
 	profileFlag string
 )
 
+// version is overridden at release time via -ldflags "-X main.version=...".
+var version = "dev"
+
 // resolveProfile resolves which configured profile a command should operate
 // as, honoring the global --profile flag. With the common single-profile
 // setup, --profile can be omitted entirely - GetProfile falls back to the
@@ -49,8 +52,9 @@ func resolveConfigPath() string {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "eraser",
-		Short: "Eraser - Automated data broker removal requests",
+		Use:     "eraser",
+		Version: version,
+		Short:   "Eraser - Automated data broker removal requests",
 		Long: `Eraser is an open-source tool that automates sending data removal
 requests to data brokers, helping you protect your privacy.
 

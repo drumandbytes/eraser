@@ -33,9 +33,20 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 
 ### Getting Started
 
-**Step 1: Download Eraser**
+**Step 1: Get Eraser**
 
-Open your terminal (on Mac, search for "Terminal"; on Windows, use PowerShell) and run:
+**Prebuilt binary (easiest):** download the archive for your OS from the
+[Releases page](https://github.com/drumandbytes/eraser/releases), unpack it, and
+you're done — the broker list is baked in.
+
+- **macOS:** the binary is unsigned, so Gatekeeper will block it on first run.
+  Either right-click it → *Open* → *Open*, or run
+  `xattr -dr com.apple.quarantine ./eraser` once.
+- **Windows:** the archive contains `eraser.exe`.
+- `eraser fill` and `eraser confirm` (browser automation for opt-out forms) need
+  Chrome or Chromium installed; nothing else does.
+
+**Build from source** (needs [Go](https://go.dev/dl/)):
 
 ```bash
 git clone https://github.com/drumandbytes/eraser.git
@@ -43,13 +54,8 @@ cd eraser
 go build -o eraser ./cmd/eraser
 ```
 
-**Windows users:** name the output `eraser.exe` instead of `eraser` -
-Windows won't run (or let a browser open) a downloaded file with no
-extension, and will offer to "Save" it instead:
-
-```powershell
-go build -o eraser.exe ./cmd/eraser
-```
+On Windows, build it as `eraser.exe` (`go build -o eraser.exe ./cmd/eraser`) —
+Windows won't run a downloaded file with no extension.
 
 **Step 2: Start the Web Interface**
 

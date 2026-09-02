@@ -52,7 +52,7 @@ eraser/
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
 
-CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR.
+CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR. `.github/workflows/release.yml` runs GoReleaser (`.goreleaser.yaml`) on a `v*` tag, cross-compiling `linux/darwin/windows × amd64/arm64` (`CGO_ENABLED=0`, pure-Go SQLite) and publishing archives + checksums to GitHub Releases. `main.version` is set via `-ldflags` at that point; it's `"dev"` otherwise.
 
 ## Key Concepts
 

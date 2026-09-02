@@ -31,6 +31,9 @@ Thumbs.db
 # Go
 vendor/
 
+# GoReleaser
+dist/
+
 # Logs
 *.log
 

@@ -35,6 +35,38 @@ new, in `brokers.yaml` shape) and `review.md` (fuzzy matches to eyeball). Fill i
 them into `data/brokers.yaml`, then run `eraser audit-brokers` to drop any that
 are already dead. Both output files are gitignored.
 
+### The EU/EEA side
+
+There is no EU equivalent of the state registries - GDPR replaced the old
+national notification registers with internal Article 30 records, which aren't
+public. So EU expansion is per-country research. The sources worth mining:
+
+- **IAB TCF Global Vendor List** - `https://vendor-list.consensu.org/v3/vendor-list.json`,
+  ~1000 ad-tech vendors active in the EU market, versioned and current. The
+  importer reads it directly:
+
+  ```bash
+  go run ./scripts/import-registries -gvl https://vendor-list.consensu.org/v3/vendor-list.json
+  ```
+
+  Caveat: these are mostly cookie/RTB-based, so a name-based erasure email
+  often matches nothing ("we don't hold identifiable data on you" - the same
+  point EU-NOTES.md makes). Even filtered to vendors that self-declare holding
+  profiles / user-provided data, it produces ~380 candidates with no opt-out
+  email, each needing DSR-portal research. Treat it as a **cross-check for
+  missing big names** (LiveRamp, Epsilon, Adform, Audience Solutions, ...), not
+  a bulk import. `-gvl-all` drops the data-category filter.
+- **Credit reference & B2B-intelligence bureaus** - the EU entities that
+  actually hold name-linked profiles and must action Article 17: SCHUFA,
+  Creditreform, Regis24, CRIF, Dun & Bradstreet / Bisnode, Creditsafe,
+  arvato/Infoscore, Acxiom, Experian and Equifax EU arms, Schober, Deutsche
+  Post Direkt, AZ Direct. Most take requests only through a form or DSR portal
+  (so they're tracked outside `brokers.yaml` per EU-NOTES.md), but the ones
+  with a direct privacy address belong in the list.
+- **YourOnlineChoices / EDAA** (youronlinechoices.eu) - the European ad
+  preference programme; participating companies have a defined opt-out.
+- **noyb** and **GDPRhub** case pages - name specific controllers.
+
 ## Security/Correctness Sweep (2026-08)
 
 A focused review of `internal/browser`, `internal/web`, `internal/history`, and `internal/inbox` (the packages that had zero test coverage and handle either real user PII, untrusted email content, or concurrent web-server state) turned up and fixed 15 findings - see the corresponding commits for detail:

@@ -1,11 +1,12 @@
-// Command import-registries helps grow data/brokers.yaml from the public US
-// state data-broker registries (California CPPA, Vermont, Oregon, Texas).
+// Command import-registries helps grow data/brokers.yaml from public
+// data-broker lists: the US state registries (California CPPA, Vermont, Oregon,
+// Texas) and the IAB TCF Global Vendor List.
 //
-// The registries are one-click CSV/XLSX downloads behind state websites, not
-// stable APIs, so fetching is a manual step - see docs/auditing.md for the
-// URLs. This tool does the tedious half: given a registry CSV, it normalises
-// the rows, diffs them against the list already embedded in eraser, and writes
-// two files:
+// The US state registries are one-click CSV/XLSX downloads behind state
+// websites, not stable APIs, so fetching those is a manual step - see
+// docs/auditing.md for the URLs. The IAB GVL is a public JSON the tool fetches
+// itself. Either way this tool does the tedious half: it normalises the rows,
+// diffs them against the list already embedded in eraser, and writes two files:
 //
 //	candidates.yaml - rows with no obvious match in the current list, in
 //	                  brokers.yaml shape, ready for you to add email/opt_out_url
@@ -17,40 +18,75 @@
 //
 //	go run ./scripts/import-registries -csv registry.csv -name-col "Data Broker Name" \
 //	    [-url-col "Website"] [-email-col "Email Address"] [-out .]
+//
+//	go run ./scripts/import-registries -gvl https://vendor-list.consensu.org/v3/vendor-list.json
+//
+// Note: the GVL is ad-tech vendors, most of them cookie/RTB-based. It yields
+// hundreds of candidates with no opt-out email and is best used as a periodic
+// cross-check for missing big names, not a bulk import - see docs/auditing.md.
 package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/eraser-privacy/eraser/internal/broker"
 	"gopkg.in/yaml.v3"
 )
 
 func main() {
-	csvPath := flag.String("csv", "", "path to a registry CSV export (required)")
-	nameCol := flag.String("name-col", "", "header of the broker-name column (required)")
+	csvPath := flag.String("csv", "", "path to a registry CSV export")
+	nameCol := flag.String("name-col", "", "header of the broker-name column (required with -csv)")
 	urlCol := flag.String("url-col", "", "header of the website/URL column (optional)")
 	emailCol := flag.String("email-col", "", "header of the email column (optional)")
-	region := flag.String("region", "us", "region to stamp on new entries")
+	gvl := flag.String("gvl", "", "path or URL to the IAB TCF Global Vendor List JSON (e.g. https://vendor-list.consensu.org/v3/vendor-list.json)")
+	gvlAll := flag.Bool("gvl-all", false, "with -gvl, include every active vendor, not just those declaring identifiable data (profiles, user-provided data, auth identifiers)")
+	region := flag.String("region", "", "region to stamp on new entries (default: us for -csv, global for -gvl)")
+	note := flag.String("note", "", "override the Notes string on new entries")
 	outDir := flag.String("out", ".", "directory for candidates.yaml + review.md")
 	flag.Parse()
 
-	if *csvPath == "" || *nameCol == "" {
+	var (
+		rows        []row
+		err         error
+		defRegion   = "us"
+		defNote     = "From a state data-broker registry; verify opt-out email/URL before use."
+		sourceLabel = "registry"
+	)
+
+	switch {
+	case *gvl != "":
+		rows, err = readGVL(*gvl, *gvlAll)
+		defRegion = "global"
+		defNote = "IAB TCF ad-tech vendor; cookie/device-ID based, so a name-based erasure request may not match anything - check the vendor's DSR/privacy portal for the right route."
+		sourceLabel = "IAB TCF Global Vendor List"
+	case *csvPath != "":
+		if *nameCol == "" {
+			fatal(fmt.Errorf("-name-col is required with -csv"))
+		}
+		rows, err = readCSV(*csvPath, *nameCol, *urlCol, *emailCol)
+	default:
 		flag.Usage()
 		os.Exit(2)
 	}
-
-	rows, err := readCSV(*csvPath, *nameCol, *urlCol, *emailCol)
 	if err != nil {
 		fatal(err)
+	}
+	if *region != "" {
+		defRegion = *region
+	}
+	if *note != "" {
+		defNote = *note
 	}
 
 	existing, err := broker.Load("")
@@ -91,14 +127,18 @@ func main() {
 			}
 		}
 
+		notes := defNote
+		if row.note != "" {
+			notes = row.note + " " + defNote
+		}
 		candidates = append(candidates, broker.Broker{
 			ID:       slug(row.name),
 			Name:     row.name,
 			Email:    row.email,
 			Website:  row.url,
-			Region:   *region,
+			Region:   defRegion,
 			Category: "", // fill in: people-search / marketing / background-check / ...
-			Notes:    "From state data-broker registry; verify opt-out email/URL before use.",
+			Notes:    notes,
 		})
 	}
 
@@ -108,11 +148,11 @@ func main() {
 	writeCandidates(filepath.Join(*outDir, "candidates.yaml"), candidates)
 	writeReview(filepath.Join(*outDir, "review.md"), review, len(rows), len(candidates))
 
-	fmt.Printf("%d registry rows -> %d candidates, %d near-matches to review\n", len(rows), len(candidates), len(review))
+	fmt.Printf("%d rows from %s -> %d candidates, %d near-matches to review\n", len(rows), sourceLabel, len(candidates), len(review))
 	fmt.Printf("wrote %s and %s\n", filepath.Join(*outDir, "candidates.yaml"), filepath.Join(*outDir, "review.md"))
 }
 
-type row struct{ name, url, email string }
+type row struct{ name, url, email, note string }
 
 func readCSV(path, nameCol, urlCol, emailCol string) ([]row, error) {
 	f, err := os.Open(path)
@@ -162,6 +202,103 @@ func readCSV(path, nameCol, urlCol, emailCol string) ([]row, error) {
 		out = append(out, row{name: name, url: normURL(get(ui)), email: strings.ToLower(get(ei))})
 	}
 	return out, nil
+}
+
+// gvl is the subset of the IAB TCF Global Vendor List JSON we care about.
+type gvl struct {
+	VendorListVersion int `json:"vendorListVersion"`
+	Vendors           map[string]struct {
+		ID              int    `json:"id"`
+		Name            string `json:"name"`
+		Purposes        []int  `json:"purposes"`
+		LegIntPurposes  []int  `json:"legIntPurposes"`
+		DataDeclaration []int  `json:"dataDeclaration"`
+		DeletedDate     string `json:"deletedDate"`
+		URLs            []struct {
+			LangID  string `json:"langId"`
+			Privacy string `json:"privacy"`
+		} `json:"urls"`
+	} `json:"vendors"`
+}
+
+// TCF data categories that mean the vendor can plausibly tie data to an
+// identifiable person (so a GDPR erasure request has something to act on):
+// 5 auth-derived identifiers, 7 user-provided data, 10 users' profiles.
+var identifiableDataCats = map[int]bool{5: true, 7: true, 10: true}
+
+func readGVL(src string, includeAll bool) ([]row, error) {
+	var raw []byte
+	var err error
+	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+		client := &http.Client{Timeout: 30 * time.Second}
+		req, _ := http.NewRequest(http.MethodGet, src, nil)
+		req.Header.Set("User-Agent", "eraser-import-registries")
+		resp, e := client.Do(req)
+		if e != nil {
+			return nil, fmt.Errorf("fetching GVL: %w", e)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("fetching GVL: %s", resp.Status)
+		}
+		raw, err = io.ReadAll(io.LimitReader(resp.Body, 16<<20))
+	} else {
+		raw, err = os.ReadFile(src)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var g gvl
+	if err := json.Unmarshal(raw, &g); err != nil {
+		return nil, fmt.Errorf("parsing GVL JSON: %w", err)
+	}
+
+	var out []row
+	for _, v := range g.Vendors {
+		if v.DeletedDate != "" || v.Name == "" {
+			continue
+		}
+		// Only vendors that build or use advertising profiles.
+		if !containsAny(v.Purposes, 3, 4) && !containsAny(v.LegIntPurposes, 3, 4) {
+			continue
+		}
+		if !includeAll {
+			ident := false
+			for _, c := range v.DataDeclaration {
+				if identifiableDataCats[c] {
+					ident = true
+					break
+				}
+			}
+			if !ident {
+				continue
+			}
+		}
+		privacy := ""
+		for _, u := range v.URLs {
+			if u.LangID == "en" || privacy == "" {
+				privacy = u.Privacy
+			}
+		}
+		out = append(out, row{
+			name: v.Name,
+			url:  normURL(privacy),
+			note: fmt.Sprintf("IAB TCF vendor #%d (GVL v%d).", v.ID, g.VendorListVersion),
+		})
+	}
+	return out, nil
+}
+
+func containsAny(haystack []int, needles ...int) bool {
+	for _, h := range haystack {
+		for _, n := range needles {
+			if h == n {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 var nonAlnum = regexp.MustCompile(`[^a-z0-9]+`)

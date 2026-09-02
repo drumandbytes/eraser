@@ -41,6 +41,7 @@ dist/
 /site/content/brokers/*.md
 !/site/content/brokers/_index.md
 /site/static/brokers.json
+/site/data/
 
 # Logs
 *.log

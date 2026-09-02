@@ -332,3 +332,5 @@ MIT — do whatever you want with it.
 ## Disclaimer
 
 This tool sends legitimate data removal requests based on privacy laws. It's not legal advice. Not all brokers are required to comply with all requests, and response times vary. But it works, and it's free.
+
+**Your responsibility.** Eraser acts on your instructions and sends requests from your own email account. You are responsible for the accuracy of the personal data you enter, for complying with your email provider's terms and sending limits, and for anything you choose to submit to a data protection authority or other body. The templates and the `export` report are starting points, not a substitute for advice on your specific situation.

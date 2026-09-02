@@ -11,6 +11,7 @@ import (
 
 	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/eraser-privacy/eraser/internal/dpa"
 	"github.com/eraser-privacy/eraser/internal/history"
 	emailtmpl "github.com/eraser-privacy/eraser/internal/template"
 	"github.com/spf13/cobra"
@@ -142,6 +143,9 @@ func runExport(opts exportOptions) error {
 		for _, name := range report.Summary.PastDeadline {
 			fmt.Printf("        - %s\n", name)
 		}
+		if report.Authority != nil {
+			fmt.Printf("   Complain to: %s\n", report.Authority.Describe())
+		}
 	}
 	return nil
 }
@@ -154,6 +158,9 @@ type EvidenceReport struct {
 	Subject     DataSubject      `json:"data_subject"`
 	Brokers     []BrokerEvidence `json:"brokers"`
 	Summary     EvidenceSummary  `json:"summary"`
+	// Authority is the supervisory authority for the data subject's country,
+	// when it could be resolved - the place to lodge an Art. 77 complaint.
+	Authority *dpa.Authority `json:"supervisory_authority,omitempty"`
 }
 
 type DataSubject struct {
@@ -260,6 +267,7 @@ func buildEvidenceReport(
 ) EvidenceReport {
 	report := EvidenceReport{
 		GeneratedAt: now,
+		Authority:   dpa.ForCountry(profile.Country),
 		Subject: DataSubject{
 			FullName:          profile.FullName(),
 			Email:             profile.Email,
@@ -473,8 +481,10 @@ const evidenceHTMLTemplate = `<!DOCTYPE html>
 </table>
 {{if .Summary.PastDeadline}}
 <p>The following controllers have not substantively responded within the statutory
-period and are candidates for a complaint to a supervisory authority:</p>
+period and are candidates for a complaint to a supervisory authority
+{{if .Authority}}(for {{.Authority.Country}}: <strong>{{.Authority.Authority}}</strong>{{if .Authority.Acronym}} ({{.Authority.Acronym}}){{end}} &ndash; <a href="{{.Authority.Link}}">{{.Authority.Link}}</a>){{end}}:</p>
 <ul>{{range .Summary.PastDeadline}}<li>{{.}}</li>{{end}}</ul>
+{{if and .Authority .Authority.Notes}}<p class="disclaimer">{{.Authority.Notes}}</p>{{end}}
 {{end}}
 
 <h2>Per broker</h2>
@@ -529,7 +539,8 @@ period and are candidates for a complaint to a supervisory authority:</p>
 (<code>~/.eraser/history.db</code>). "Reply received" entries are Eraser's automatic
 classification of inbound email and may not capture every message. Reconstructed
 emails are regenerated from the request template, not retrieved from a sent-mail
-archive.</p>
+archive. You are responsible for what you submit to any authority, and this report
+is not legal advice.</p>
 </body>
 </html>
 `

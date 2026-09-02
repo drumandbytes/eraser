@@ -1,6 +1,6 @@
-# EU customization notes
+# GDPR (EU / EEA) notes
 
-This copy of [eraser](https://github.com/digisamroc/eraser) has been adjusted for an EU (Latvia) citizen exercising GDPR rights, not a US CCPA use case.
+This fork of [eraser](https://github.com/digisamroc/eraser) is set up for an EU/EEA resident exercising GDPR rights (right to erasure, Article 17), not the original US/CCPA use case. It defaults to the `gdpr` template and this file covers the EU-specific details.
 
 ## What changed
 
@@ -32,9 +32,19 @@ Separately, a category of EU Data Governance Act-registered "data intermediation
 
 ## If a company ignores or refuses a GDPR request
 
-Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, Latvia's DPA is Datu valsts inspekcija (DVI): https://www.dvi.gov.lv/en. Worth knowing going in: DVI, like most EU DPAs, can be slow — noyb.eu shows some of its own complaints against Latvian companies pending multiple years. In practice the GDPR request itself, and the liability it puts on the company, is usually what gets compliance — not a fast DPA turnaround. noyb.eu also has complaint templates and occasionally takes cases directly: https://noyb.eu
+Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, you can lodge a complaint (GDPR Art. 77) with the supervisory authority of the EU/EEA country where you live, work, or where the infringement happened. The full list of authorities and their websites is in [data/eu-dpas.yaml](data/eu-dpas.yaml); `./eraser export` also names the one for your profile's `country`.
 
-Run `./eraser export` to generate the evidence to attach to a complaint: per broker, what was sent and when, the reconstructed request, every reply and its date, and an explicit list of controllers that are past the 1-month deadline with no substantive response. `--format html` opens in a browser and prints to PDF.
+Set expectations: most EU DPAs are slow — noyb.eu shows some of its own complaints pending multiple years. In practice the GDPR request itself, and the liability it puts on the company, is usually what gets compliance, not a fast DPA turnaround. [noyb.eu](https://noyb.eu) has complaint templates and occasionally takes cases directly.
+
+Run `./eraser export` to generate the evidence to attach to a complaint: per broker, what was sent and when, the reconstructed request, every reply and its date, and an explicit list of controllers past the 1-month deadline with no substantive response. `--format html` opens in a browser and prints to PDF.
+
+### Germany
+
+For a complaint against a private company (a data broker), a German resident normally goes to the supervisory authority of their own federal state (Land), not the federal BfDI. The [BfDI site](https://www.bfdi.bund.de) links the list of the 16 state authorities.
+
+### UK
+
+Post-Brexit the UK is outside GDPR/the EDPB but enforces the UK GDPR, which mirrors the right to erasure. UK residents complain to the ICO: https://ico.org.uk/make-a-complaint/
 
 ## Sending the requests by hand
 

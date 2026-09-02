@@ -10,9 +10,9 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
-	emailtmpl "github.com/eraser-privacy/eraser/internal/template"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	emailtmpl "github.com/drumandbytes/eraser/internal/template"
 	"github.com/spf13/cobra"
 )
 

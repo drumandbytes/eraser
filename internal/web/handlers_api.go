@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/config"
-	"github.com/eraser-privacy/eraser/internal/history"
-	"github.com/eraser-privacy/eraser/internal/inbox"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/inbox"
 	"github.com/go-chi/chi/v5"
 )
 

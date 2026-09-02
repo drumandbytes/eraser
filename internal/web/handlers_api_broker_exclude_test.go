@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/go-chi/chi/v5"
 )
 

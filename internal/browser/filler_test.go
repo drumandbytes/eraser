@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 // isContextErr distinguishes a real browser/context failure (deadline

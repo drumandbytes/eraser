@@ -9,9 +9,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
-	emaTemplate "github.com/eraser-privacy/eraser/internal/template"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	emaTemplate "github.com/drumandbytes/eraser/internal/template"
 )
 
 // newTestServer builds a minimal *Server suitable for unit tests that don't

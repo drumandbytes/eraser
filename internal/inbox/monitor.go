@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message/mail"
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
 )
 
 // maxMIMEPartBytes caps how much of a single MIME part body we read into

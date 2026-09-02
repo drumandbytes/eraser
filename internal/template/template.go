@@ -8,8 +8,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 //go:embed templates/*.tmpl

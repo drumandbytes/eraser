@@ -9,7 +9,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 func testProfile() *config.Profile {

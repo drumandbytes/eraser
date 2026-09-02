@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {

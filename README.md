@@ -72,6 +72,12 @@ cd eraser
 go build -o eraser ./cmd/eraser
 ```
 
+Or install straight from the module path (the broker list is baked in):
+
+```bash
+go install github.com/drumandbytes/eraser/cmd/eraser@latest
+```
+
 On Windows, build it as `eraser.exe` (`go build -o eraser.exe ./cmd/eraser`) —
 Windows won't run a downloaded file with no extension.
 

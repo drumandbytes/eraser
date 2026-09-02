@@ -1,4 +1,4 @@
-module github.com/eraser-privacy/eraser
+module github.com/drumandbytes/eraser
 
 go 1.26
 

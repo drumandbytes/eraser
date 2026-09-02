@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 // SessionStore manages secure server-side sessions

@@ -54,3 +54,23 @@ release:
     name: eraser
   draft: false
   prerelease: auto
+
+# macOS: brew install drumandbytes/homebrew-tap/eraser
+# (Homebrew strips the Gatekeeper quarantine on cask install, so no xattr dance.)
+homebrew_casks:
+  - name: eraser
+    repository:
+      owner: drumandbytes
+      name: homebrew-tap
+      branch: main
+    directory: Casks
+    homepage: "https://eraser.drumandbytes.dev"
+    description: "Send data removal requests to data brokers"
+    license: "MIT"
+    commit_author:
+      name: dnb-robot[bot]
+      email: 4773076+dnb-robot[bot]@users.noreply.github.com
+    caveats: |
+      Config lives at ~/.eraser/config.yaml. Start with:
+        eraser serve      # web UI at http://localhost:8080
+      `eraser fill` / `eraser confirm` also need Chrome installed.

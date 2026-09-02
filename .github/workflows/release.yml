@@ -55,9 +55,20 @@ jobs:
         with:
           go-version: "1.26"
 
+      # Short-lived token for the dnb-robot GitHub App, scoped to this repo (to
+      # publish the release) and homebrew-tap (for GoReleaser to push the
+      # updated Formula). The default GITHUB_TOKEN can't write to another repo.
+      - uses: actions/create-github-app-token@v2
+        id: app_token
+        with:
+          app-id: 4773076
+          private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
+          owner: drumandbytes
+          repositories: eraser,homebrew-tap
+
       - uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}

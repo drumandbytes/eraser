@@ -42,6 +42,7 @@ The server runs locally on your machine - no data is sent to external servers.`,
 }
 
 func runServe(port int) error {
+	web.Version = version
 	configPath := resolveConfigPath()
 	var cfg *config.Config
 	if _, err := os.Stat(configPath); err == nil {

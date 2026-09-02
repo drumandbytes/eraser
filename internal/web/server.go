@@ -100,6 +100,10 @@ func (rl *RateLimiter) cleanupLoop() {
 	}
 }
 
+// Version is the build version shown in the web UI footer. main sets it from
+// its own -ldflags-injected version at startup; it stays "dev" otherwise.
+var Version = "dev"
+
 type Server struct {
 	config         atomic.Pointer[config.Config]
 	configPath     string
@@ -730,6 +734,7 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	data["Profiles"] = []config.NamedProfile{}
 	data["ActiveProfile"] = config.NamedProfile{}
 	data["CurrentPath"] = r.URL.Path
+	data["Version"] = Version
 	if cfg := s.getConfig(); cfg != nil {
 		data["Profiles"] = cfg.GetProfiles()
 		data["ActiveProfile"] = s.activeProfile(r)

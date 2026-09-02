@@ -41,28 +41,24 @@ func newWizardClient(t *testing.T) (*wizardClient, *Server) {
 	}}, s
 }
 
-// csrfToken fetches a page and extracts the hidden gorilla.csrf.Token input.
-func (c *wizardClient) csrfToken(path string) string {
+// get fetches a page and returns its body (used to prime cookies / confirm a
+// step renders before posting to it).
+func (c *wizardClient) get(path string) string {
 	c.t.Helper()
 	resp, err := c.http.Get(c.srv.URL + path)
 	if err != nil {
 		c.t.Fatalf("GET %s: %v", path, err)
 	}
-	body := readBody(c.t, resp)
-	const marker = `name="gorilla.csrf.Token" value="`
-	i := strings.Index(body, marker)
-	if i < 0 {
-		c.t.Fatalf("no CSRF token field on %s\n%s", path, body)
-	}
-	rest := body[i+len(marker):]
-	return rest[:strings.IndexByte(rest, '"')]
+	return readBody(c.t, resp)
 }
 
+// post submits a form the way a same-origin browser navigation would. The CSRF
+// layer (filippo.io/csrf/gorilla) keys off Sec-Fetch-Site, so set it.
 func (c *wizardClient) post(path string, form url.Values) *http.Response {
 	c.t.Helper()
 	req, _ := http.NewRequest(http.MethodPost, c.srv.URL+path, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Referer", c.srv.URL+path) // gorilla/csrf requires a same-origin referer
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
 	resp, err := c.http.Do(req)
 	if err != nil {
 		c.t.Fatalf("POST %s: %v", path, err)
@@ -78,12 +74,12 @@ func TestSetupWizardManualPath(t *testing.T) {
 	c, s := newWizardClient(t)
 
 	// Step 1: profile.
+	c.get("/setup/profile")
 	form := url.Values{
-		"gorilla.csrf.Token": {c.csrfToken("/setup/profile")},
-		"first_name":         {"Ada"},
-		"last_name":          {"Lovelace"},
-		"email":              {"ada@example.com"},
-		"country":            {"United Kingdom"},
+		"first_name": {"Ada"},
+		"last_name":  {"Lovelace"},
+		"email":      {"ada@example.com"},
+		"country":    {"United Kingdom"},
 	}
 	resp := c.post("/setup/profile", form)
 	body := readBody(t, resp)
@@ -95,10 +91,8 @@ func TestSetupWizardManualPath(t *testing.T) {
 	}
 
 	// Step 2: choose manual.
-	form = url.Values{
-		"gorilla.csrf.Token": {c.csrfToken("/setup/email")},
-		"manual":             {"1"},
-	}
+	c.get("/setup/email")
+	form = url.Values{"manual": {"1"}}
 	resp = c.post("/setup/email", form)
 	if resp.StatusCode != http.StatusFound || resp.Header.Get("Location") != "/setup/complete" {
 		t.Fatalf("email POST (manual): got %d -> %q, want 302 -> /setup/complete", resp.StatusCode, resp.Header.Get("Location"))
@@ -137,9 +131,9 @@ func TestSetupWizardManualPath(t *testing.T) {
 func TestSetupWizardProfileValidation(t *testing.T) {
 	c, _ := newWizardClient(t)
 
+	c.get("/setup/profile")
 	form := url.Values{
-		"gorilla.csrf.Token": {c.csrfToken("/setup/profile")},
-		"first_name":         {"Ada"},
+		"first_name": {"Ada"},
 		// no last_name, no email
 	}
 	resp := c.post("/setup/profile", form)
@@ -149,6 +143,48 @@ func TestSetupWizardProfileValidation(t *testing.T) {
 	}
 	if !strings.Contains(body, "Last name is required") || !strings.Contains(body, "Email is required") {
 		t.Errorf("expected validation errors in body\n%s", body)
+	}
+}
+
+// TestCSRFBlocksCrossOrigin confirms the CSRF layer is actually doing its job:
+// a browser POST tagged cross-site is rejected, a same-origin one is allowed,
+// and a non-browser request (no Sec-Fetch-Site, no Origin) is allowed.
+func TestCSRFBlocksCrossOrigin(t *testing.T) {
+	c, _ := newWizardClient(t)
+	c.get("/setup/profile") // prime the session cookie
+
+	valid := url.Values{"first_name": {"A"}, "last_name": {"B"}, "email": {"a@b.com"}}
+
+	newReq := func(secFetchSite string) *http.Request {
+		req, _ := http.NewRequest(http.MethodPost, c.srv.URL+"/setup/profile", strings.NewReader(valid.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		if secFetchSite != "" {
+			req.Header.Set("Sec-Fetch-Site", secFetchSite)
+		}
+		return req
+	}
+
+	cases := []struct {
+		name          string
+		secFetchSite  string
+		wantForbidden bool
+	}{
+		{"cross-site browser POST", "cross-site", true},
+		{"same-origin browser POST", "same-origin", false},
+		{"non-browser POST (no fetch metadata)", "", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := c.http.Do(newReq(tc.secFetchSite))
+			if err != nil {
+				t.Fatal(err)
+			}
+			_ = resp.Body.Close()
+			forbidden := resp.StatusCode == http.StatusForbidden
+			if forbidden != tc.wantForbidden {
+				t.Fatalf("got status %d (forbidden=%v), want forbidden=%v", resp.StatusCode, forbidden, tc.wantForbidden)
+			}
+		})
 	}
 }
 

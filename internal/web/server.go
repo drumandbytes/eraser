@@ -17,13 +17,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	csrf "filippo.io/csrf/gorilla"
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	emaTemplate "github.com/drumandbytes/eraser/internal/template"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/csrf"
 )
 
 //go:embed static/*
@@ -361,29 +361,15 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(middleware.Compress(5))
 	r.Use(securityHeaders)
 
-	// The server only ever binds loopback over plaintext HTTP (see NewServer /
-	// Start). Tell gorilla/csrf that, so it applies its plaintext-HTTP rules
-	// instead of the HTTPS-strict Origin/Referer checks it assumes by default -
-	// otherwise a request is only accepted when its Origin host happens to be
-	// in TrustedOrigins verbatim, which breaks as soon as the user reaches the
-	// UI on a host:port combination we didn't predict.
-	r.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			next.ServeHTTP(w, csrf.PlaintextHTTPRequest(req))
-		})
-	})
-
-	// CSRF protection - secure for localhost only
-	csrfMiddleware := csrf.Protect(
-		s.csrfKey,
-		csrf.Secure(false), // Allow HTTP for localhost
-		csrf.Path("/"),
-		csrf.HttpOnly(true),
-		csrf.SameSite(csrf.SameSiteLaxMode), // Lax mode for form submissions
-		csrf.RequestHeader("X-CSRF-Token"),  // For HTMX AJAX requests
-		csrf.TrustedOrigins([]string{"localhost", "127.0.0.1", fmt.Sprintf("localhost:%d", s.port), fmt.Sprintf("127.0.0.1:%d", s.port)}),
-	)
-	r.Use(csrfMiddleware)
+	// CSRF protection. filippo.io/csrf/gorilla enforces same-origin requests
+	// via the browser's Sec-Fetch-Site / Origin headers rather than tokens or
+	// cookies (see https://go.dev/issue/73626). It "just works" for a
+	// loopback plaintext server - no TrustedOrigins / PlaintextHTTPRequest
+	// needed - and, being a different module, isn't affected by
+	// CVE-2025-47909 in the unmaintained github.com/gorilla/csrf. The
+	// per-form {{.CSRFField}} still renders (a stub value, ignored) so no
+	// template changes were needed.
+	r.Use(csrf.Protect(s.csrfKey))
 
 	// Static files
 	staticSub, _ := fs.Sub(staticFS, "static")
@@ -735,9 +721,13 @@ func (s *Server) renderPartial(w http.ResponseWriter, name string, data interfac
 }
 
 func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name string, data map[string]interface{}) {
-	// Add CSRF token to data
-	data["CSRFToken"] = csrf.Token(r)
-	data["CSRFField"] = template.HTML(fmt.Sprintf(`<input type="hidden" name="gorilla.csrf.Token" value="%s">`, csrf.Token(r)))
+	// filippo.io/csrf/gorilla enforces same-origin via Sec-Fetch-Site and
+	// ignores tokens entirely, so there is nothing meaningful to put here.
+	// Keep the keys populated (empty) so the form templates' {{.CSRFField}} /
+	// {{.CSRFToken}} keep rendering without a change, and any HTMX code that
+	// reads the meta tag still finds it.
+	data["CSRFToken"] = ""
+	data["CSRFField"] = template.HTML("")
 
 	// Every page gets the profile switcher's data, regardless of whether the
 	// handler itself needed the active profile - Profiles has length 1 for a

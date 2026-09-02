@@ -43,7 +43,7 @@ func addBrokerCmd() *cobra.Command {
 }
 
 func runListBrokers(region, category, search string, missingEmail bool) error {
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
@@ -115,11 +115,8 @@ func runAddBroker() error {
 	b.Region = prompt(reader, "Region (us/eu/global): ")
 	b.Category = prompt(reader, "Category (people-search/marketing/background-check): ")
 
-	// Load existing brokers
-	brokerPath := brokerFile
-	if brokerPath == "" {
-		brokerPath = "data/brokers.yaml"
-	}
+	// Load existing brokers (add-broker writes back, so it needs a real path).
+	brokerPath := resolveBrokerWritePath()
 
 	var brokerDB *broker.BrokerDatabase
 	if _, err := os.Stat(brokerPath); os.IsNotExist(err) {

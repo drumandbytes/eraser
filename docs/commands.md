@@ -21,6 +21,7 @@ go test ./...
 ./eraser mark-bounced <broker-id>...   # correct the record when an email actually bounced
 ./eraser cleanup-bounces               # find + clear bounced broker emails
 ./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15]  # MX/website liveness check
+./eraser update-brokers [--check]      # fetch the latest broker list (conditional; writes ~/.eraser/brokers.yaml)
 ./eraser monitor                       # IMAP inbox monitoring for broker replies
 ./eraser pipeline                      # which brokers need manual follow-up
 ./eraser export [-o file] [--format html|json] [--since 2026-01-01]  # evidence report for a DPA/noyb complaint
@@ -30,6 +31,8 @@ go test ./...
 ./eraser profile list                  # list configured profiles
 ./eraser profile add                   # add a second/third named profile
 ```
+
+The broker list is embedded in the binary. `--brokers <path>` overrides it; otherwise `~/.eraser/brokers.yaml` is used when present (written by `update-brokers`), else the embedded copy. `add-broker` and `cleanup-bounces` write to `./data/brokers.yaml` in a source checkout, or `~/.eraser/brokers.yaml` otherwise.
 
 Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a global `--profile <id>` flag. It can be omitted entirely for the common single-profile setup; it's required once more than one profile is configured. See [multi-profile.md](multi-profile.md) for the full model.
 

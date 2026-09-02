@@ -69,7 +69,7 @@ func runMonitor(days int, once bool, watch bool) error {
 	}
 
 	// Load brokers for domain matching
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

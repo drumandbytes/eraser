@@ -56,7 +56,7 @@ func runMarkSent(args []string, region, category string, dryRun bool) error {
 		return err
 	}
 
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

@@ -62,7 +62,7 @@ func runCleanupBounces(remove bool, days int) error {
 	}
 
 	// Load broker database
-	brokerPath := resolveBrokerPath()
+	brokerPath := resolveBrokerWritePath()
 	brokerDB, err := broker.LoadFromFile(brokerPath)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)

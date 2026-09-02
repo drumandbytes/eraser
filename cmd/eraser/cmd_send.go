@@ -77,7 +77,7 @@ func runSend() error {
 		cfg.Options.DryRun = true
 	}
 
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -26,15 +26,18 @@ func resolveProfile(cfg *config.Config) (config.NamedProfile, error) {
 	return cfg.GetProfile(profileFlag)
 }
 
-func resolveBrokerPath() string {
+// resolveBrokerWritePath returns a filesystem path for the few commands that
+// modify the broker database (add-broker, cleanup-bounces). Read-only commands
+// use broker.Load(brokerFile), which also has an embedded fallback. Order:
+// --brokers, then a local ./data/brokers.yaml checkout, then the per-user copy.
+func resolveBrokerWritePath() string {
 	if brokerFile != "" {
 		return brokerFile
 	}
 	if _, err := os.Stat("data/brokers.yaml"); err == nil {
 		return "data/brokers.yaml"
 	}
-	exe, _ := os.Executable()
-	return filepath.Join(filepath.Dir(exe), "data", "brokers.yaml")
+	return broker.UserBrokersPath()
 }
 
 func resolveConfigPath() string {
@@ -78,6 +81,7 @@ send via Gmail SMTP.`,
 	rootCmd.AddCommand(exportCmd())
 	rootCmd.AddCommand(draftCmd())
 	rootCmd.AddCommand(markSentCmd())
+	rootCmd.AddCommand(updateBrokersCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

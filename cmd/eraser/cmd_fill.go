@@ -84,7 +84,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 	// autofills PII into whatever page it's given, and form URLs can
 	// originate from email-parsed content (untrusted), so we only want to
 	// navigate to known broker domains.
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

@@ -46,7 +46,8 @@ eraser/
 │       │                        # (setup wizard), handlers_profile.go (profile switching)
 │       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
 │       └── session.go           # Setup-wizard session store
-├── data/brokers.yaml            # 700+ data broker database
+├── data/brokers.yaml            # 700+ data broker database (embedded via data/embed.go)
+├── scripts/import-registries/   # helper: grow brokers.yaml from state registry CSVs
 ├── docs/                        # Granular reference docs (this directory)
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
@@ -56,6 +57,12 @@ CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `go
 ## Key Concepts
 
 ### Broker
+`data/brokers.yaml` is compiled into the binary (`data/embed.go`, `//go:embed`).
+`broker.Load(override)` resolves it from `--brokers`, then `~/.eraser/brokers.yaml`
+(written by `eraser update-brokers`, a conditional download), then the embedded
+copy - no implicit `./data` scanning. `add-broker`/`cleanup-bounces` write to a
+real path via `resolveBrokerWritePath()`.
+
 Each broker in `data/brokers.yaml` (top-level key `brokers:`) has:
 - `id`: Unique lowercase hyphenated identifier (e.g., `spokeo`, `been-verified`)
 - `name`: Display name

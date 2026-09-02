@@ -70,7 +70,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 	}
 
 	// Load brokers for domain validation
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

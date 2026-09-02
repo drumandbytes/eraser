@@ -1,0 +1,60 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/brokers.yaml"
+      - "data/eu-dpas.yaml"
+      - "site/**"
+      - "cmd/eraser/cmd_guides.go"
+      - "internal/template/templates/**"
+      - "internal/broker/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "0.165.0"
+
+      - name: Generate content
+        run: |
+          go run ./cmd/eraser guides --format md --output site/content
+          mkdir -p site/data
+          cp data/eu-dpas.yaml site/data/eu_dpas.yaml
+
+      - name: Build
+        run: hugo --minify --source site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

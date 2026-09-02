@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/eraser-privacy/eraser/data"
 	"gopkg.in/yaml.v3"
 )
 
@@ -46,21 +48,52 @@ type BrokerDatabase struct {
 	Brokers []Broker `yaml:"brokers"`
 }
 
-func LoadFromFile(path string) (*BrokerDatabase, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read broker file: %w", err)
-	}
-
+// Parse unmarshals and sanitizes a broker YAML document. Used to validate a
+// freshly downloaded list before it replaces the local copy.
+func Parse(raw []byte) (*BrokerDatabase, error) {
 	var db BrokerDatabase
-	if err := yaml.Unmarshal(data, &db); err != nil {
-		return nil, fmt.Errorf("failed to parse broker file: %w", err)
+	if err := yaml.Unmarshal(raw, &db); err != nil {
+		return nil, fmt.Errorf("failed to parse broker data: %w", err)
 	}
-
 	for i := range db.Brokers {
 		sanitizeBroker(&db.Brokers[i])
 	}
 	return &db, nil
+}
+
+// LoadFromFile parses a broker YAML file from an explicit path.
+func LoadFromFile(path string) (*BrokerDatabase, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read broker file: %w", err)
+	}
+	return Parse(raw)
+}
+
+// UserBrokersPath is where `eraser update-brokers` writes a refreshed copy of
+// the list; Load() prefers it over the embedded default when it exists.
+func UserBrokersPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".eraser", "brokers.yaml")
+}
+
+// Load resolves the broker database from, in order: overridePath (the
+// --brokers flag) when set, then ~/.eraser/brokers.yaml when it exists, then
+// the copy embedded in the binary. There is no implicit ./data or
+// <exe-dir>/data scanning any more.
+func Load(overridePath string) (*BrokerDatabase, error) {
+	if overridePath != "" {
+		return LoadFromFile(overridePath)
+	}
+	if p := UserBrokersPath(); p != "" {
+		if _, err := os.Stat(p); err == nil {
+			return LoadFromFile(p)
+		}
+	}
+	return Parse(data.BrokersYAML)
 }
 
 func toSet(items []string) map[string]bool {

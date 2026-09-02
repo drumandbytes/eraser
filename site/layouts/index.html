@@ -1,0 +1,36 @@
+{{ define "main" }}
+<section class="hero">
+  <h1>Take back your privacy</h1>
+  <p>Eraser sends data removal requests to 700+ data brokers on your behalf — the
+  companies like Spokeo, BeenVerified and Whitepages that publish your address,
+  phone number and relatives. Open source, free, and it runs on your own machine:
+  requests go out from <em>your</em> mailbox, so no company ever holds your data.</p>
+  <p class="cta">
+    <a class="btn" href="https://github.com/drumandbytes/eraser/releases">Download</a>
+    <a class="btn ghost" href="{{ "/brokers" | relURL }}">Broker directory</a>
+  </p>
+</section>
+
+<section class="cols">
+  <div>
+    <h2>How it works</h2>
+    <ol>
+      <li>Enter your details once (locally).</li>
+      <li>Eraser emails every broker a GDPR / CCPA removal request.</li>
+      <li>It watches your inbox for replies and shows what still needs a click.</li>
+      <li>Re-run every 60–90 days — brokers re-list you.</li>
+    </ol>
+    <p>Won't hand any tool your email password? Manual mode renders the emails
+    for you to send by hand and still tracks them.</p>
+  </div>
+  <div>
+    <h2>Guides</h2>
+    <ul>
+      {{ range (where .Site.RegularPages "Section" "guides") }}
+      <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+      {{ end }}
+      <li><a href="{{ "/authorities" | relURL }}">EU/EEA data protection authorities</a></li>
+    </ul>
+  </div>
+</section>
+{{ end }}

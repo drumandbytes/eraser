@@ -1,0 +1,56 @@
+# GoReleaser config - https://goreleaser.com
+# Cut a release by pushing a tag: git tag v0.1.0 && git push origin v0.1.0
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: eraser
+    main: ./cmd/eraser
+    binary: eraser
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: eraser
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README.md
+      - EU-NOTES.md
+      - LICENSE
+      - config.example.yaml
+
+checksum:
+  name_template: checksums.txt
+
+source:
+  enabled: true
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+
+release:
+  github:
+    owner: drumandbytes
+    name: eraser
+  draft: false
+  prerelease: auto

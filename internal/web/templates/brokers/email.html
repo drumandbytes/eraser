@@ -1,0 +1,54 @@
+{{define "content"}}
+<div class="max-w-4xl mx-auto py-8">
+    <a href="/brokers" class="btn btn-ghost text-sm mb-4">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Back to brokers
+    </a>
+
+    <h1 class="font-display text-2xl font-bold text-primary mb-1">{{.Broker.Name}}</h1>
+    <p class="text-secondary mb-6">Send this removal request from your own mail client, then mark it sent.</p>
+
+    <div class="card p-6 mb-4">
+        <div class="flex flex-wrap gap-2 mb-4">
+            <a href="{{.MailtoURL}}" class="btn btn-primary">Open in mail app</a>
+            <button type="button" class="btn btn-secondary" onclick="copyEmail(this)">Copy email text</button>
+            <button
+                class="btn btn-ghost"
+                hx-post="/api/brokers/{{.Broker.ID}}/mark-sent"
+                hx-target="#marksent-result"
+                hx-swap="innerHTML"
+            >Mark sent</button>
+            <span id="marksent-result" class="text-sm text-success self-center"></span>
+        </div>
+
+        <dl class="text-sm mb-4">
+            <div class="flex gap-2"><dt class="text-muted w-16">To</dt><dd class="text-primary">{{.Broker.Email}}</dd></div>
+            <div class="flex gap-2"><dt class="text-muted w-16">From</dt><dd class="text-primary">{{.From}}</dd></div>
+            <div class="flex gap-2"><dt class="text-muted w-16">Subject</dt><dd class="text-primary">{{.Subject}}</dd></div>
+        </dl>
+
+        <pre id="email-body" class="whitespace-pre-wrap text-sm p-4 rounded-lg" style="background: var(--bg-elevated); border: 1px solid var(--border);">{{.Body}}</pre>
+    </div>
+
+    {{if .Broker.OptOutURL}}
+    <p class="text-sm text-muted">This broker also has an opt-out form:
+        <a href="{{.Broker.OptOutURL}}" target="_blank" rel="noopener noreferrer" class="text-accent hover:underline">{{.Broker.OptOutURL}}</a>
+    </p>
+    {{end}}
+</div>
+
+<script>
+function copyEmail(btn) {
+    var text = "To: {{.Broker.Email}}\nSubject: {{.Subject}}\n\n" + document.getElementById('email-body').textContent;
+    navigator.clipboard.writeText(text).then(function () {
+        var orig = btn.textContent;
+        btn.textContent = 'Copied';
+        setTimeout(function () { btn.textContent = orig; }, 1500);
+    });
+}
+</script>
+{{end}}
+
+{{template "layout" .}}

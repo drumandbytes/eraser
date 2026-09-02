@@ -9,67 +9,18 @@
 
     <script src="/static/js/htmx.min.js"></script>
 
+    <!-- Design tokens (colour / elevation / type custom properties, both
+         themes). Loaded first; it only declares custom properties, so cascade
+         order against the rules below does not matter. -->
+    <link rel="stylesheet" href="/static/css/tokens.css">
+
     <style>
         /* ============================================
            ERASER DESIGN SYSTEM - "Ops Console"
            Dense, dark-first, monospace accents for data.
+           Colour / elevation / type tokens: static/css/tokens.css
+           Layout / spacing / sizing utilities: static/css/utilities.css
            ============================================ */
-
-        /* CSS Custom Properties - Dark Theme (Default) */
-        :root {
-            --bg-base: #0a0a0b;
-            --bg-surface: #131315;
-            --bg-elevated: #1a1a1d;
-            --bg-glass: rgba(19, 19, 21, 0.9);
-
-            --accent: #6366f1;
-            --accent-hover: #818cf8;
-            --accent-muted: rgba(99, 102, 241, 0.12);
-            --accent-glow: rgba(99, 102, 241, 0.3);
-
-            --success: #22c55e;
-            --warning: #eab308;
-            --error: #ef4444;
-
-            --text-primary: #e4e4e7;
-            --text-secondary: #a1a1aa;
-            --text-muted: #6b6b71;
-
-            --border: #232326;
-            --border-subtle: #1a1a1d;
-
-            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 4px 10px -2px rgba(0, 0, 0, 0.5);
-
-            --font-mono: "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
-        }
-
-        /* Light Theme */
-        .light {
-            --bg-base: #fafafa;
-            --bg-surface: #ffffff;
-            --bg-elevated: #f4f4f5;
-            --bg-glass: rgba(255, 255, 255, 0.9);
-
-            --accent: #4f46e5;
-            --accent-hover: #6366f1;
-            --accent-muted: rgba(79, 70, 229, 0.08);
-            --accent-glow: rgba(79, 70, 229, 0.25);
-
-            --success: #16a34a;
-            --warning: #b45309;
-            --error: #dc2626;
-
-            --text-primary: #18181b;
-            --text-secondary: #52525b;
-            --text-muted: #a1a1aa;
-
-            --border: #e4e4e7;
-            --border-subtle: #f4f4f5;
-
-            --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 4px 10px -2px rgba(0, 0, 0, 0.08);
-        }
 
         /* ============================================
            BASE STYLES
@@ -604,27 +555,13 @@
         }
     </style>
 
-    <!-- Precompiled with the Tailwind standalone CLI (v3.4.17, no Node
-         needed) against internal/web/templates/**/*.html - replaces the
-         413KB runtime JIT compiler this used to ship (which compiled CSS in
-         the browser on every page load, and needed 'unsafe-eval' in the CSP
-         below just to run). Same visual output, generated ahead of time
-         instead. Deliberately loaded AFTER the hand-authored <style> block
-         above: the old JIT compiler injected its generated stylesheet at
-         runtime, which landed after this static block in the DOM, so a
-         Tailwind utility like .w-auto already won the cascade over a
-         same-specificity component class like .input{width:100%} - loading
-         this file first instead (as a <link> in <head>, before <style>)
-         silently inverted that and broke every element combining a
-         component class with a sizing utility. If a template adds a *new*
-         Tailwind utility class that isn't in this file yet, it won't render
-         until regenerated:
-             tailwindcss -i internal/web/static/css/tailwind.input.css \
-               -o internal/web/static/css/tailwind.css \
-               -c <config with content: ["./internal/web/templates/**/*.html"],
-                    theme.extend.colors.accent = '#6366f1'> --minify
-         See docs/architecture.md for the full command. -->
-    <link rel="stylesheet" href="/static/css/tailwind.css">
+    <!-- Utility stylesheet: preflight reset + the layout/spacing/sizing/flex
+         utilities the templates use. Hand-maintained (no Tailwind toolchain);
+         add a rule by hand if a template needs a class that isn't there yet.
+         Deliberately loaded AFTER the <style> block above so a utility like
+         .w-auto wins the cascade over a same-specificity component class like
+         .input{width:100%}. Do not move this <link> earlier. -->
+    <link rel="stylesheet" href="/static/css/utilities.css">
 
     <script>
         // Theme management
@@ -755,8 +692,8 @@
                     <span class="text-sm text-muted">Eraser - Open Source Privacy Protection</span>
                 </div>
                 <div class="flex items-center gap-4 text-sm text-muted">
-                    <a href="https://github.com/eraser-privacy/eraser" target="_blank" class="hover:text-primary transition-colors">GitHub</a>
-                    <span>v1.0.0</span>
+                    <a href="https://github.com/drumandbytes/eraser" target="_blank" class="hover:text-primary transition-colors">GitHub</a>
+                    <span>{{.Version}}</span>
                 </div>
             </div>
         </div>

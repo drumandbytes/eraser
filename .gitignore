@@ -31,6 +31,17 @@ Thumbs.db
 # Go
 vendor/
 
+# GoReleaser
+dist/
+
+# Hugo site: generated content + build output
+/site/public/
+/site/resources/
+/site/.hugo_build.lock
+/site/content/brokers/*.md
+!/site/content/brokers/_index.md
+/site/static/brokers.json
+
 # Logs
 *.log
 
@@ -57,3 +68,11 @@ browser-data/
 pending_job.json
 manual_review_*.xlsx
 _to_delete/
+eraser-evidence-*.html
+eraser-evidence-*.json
+
+# import-registries working output
+/scripts/import-registries/candidates.yaml
+/scripts/import-registries/review.md
+/candidates.yaml
+/review.md

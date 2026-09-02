@@ -59,6 +59,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 		"Total":        len(s.brokerDB.Brokers),
 		"Filtered":     len(brokers),
 		"DailyLimit":   dailyLimit,
+		"ManualMode":   s.getConfig() != nil && s.getConfig().IsManualSend(),
 	}
 	s.renderWithCSRF(w, r, "brokers.html", data)
 }
@@ -176,7 +177,7 @@ func (s *Server) handlePipeline(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"Title":           "Pipeline Status",
 		"PipelineStats":   pipelineStats,
-		"RecentResponses": recentResponses,
+		"Responses":       recentResponses,
 		"PendingTasks":    pendingTasks,
 		"InboxConfigured": cfg.Inbox.Enabled,
 	}

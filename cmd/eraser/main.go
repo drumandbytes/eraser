@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/eraser-privacy/eraser/internal/broker"
 	"github.com/eraser-privacy/eraser/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -17,6 +17,9 @@ var (
 	profileFlag string
 )
 
+// version is overridden at release time via -ldflags "-X main.version=...".
+var version = "dev"
+
 // resolveProfile resolves which configured profile a command should operate
 // as, honoring the global --profile flag. With the common single-profile
 // setup, --profile can be omitted entirely - GetProfile falls back to the
@@ -26,15 +29,18 @@ func resolveProfile(cfg *config.Config) (config.NamedProfile, error) {
 	return cfg.GetProfile(profileFlag)
 }
 
-func resolveBrokerPath() string {
+// resolveBrokerWritePath returns a filesystem path for the few commands that
+// modify the broker database (add-broker, cleanup-bounces). Read-only commands
+// use broker.Load(brokerFile), which also has an embedded fallback. Order:
+// --brokers, then a local ./data/brokers.yaml checkout, then the per-user copy.
+func resolveBrokerWritePath() string {
 	if brokerFile != "" {
 		return brokerFile
 	}
 	if _, err := os.Stat("data/brokers.yaml"); err == nil {
 		return "data/brokers.yaml"
 	}
-	exe, _ := os.Executable()
-	return filepath.Join(filepath.Dir(exe), "data", "brokers.yaml")
+	return broker.UserBrokersPath()
 }
 
 func resolveConfigPath() string {
@@ -46,8 +52,9 @@ func resolveConfigPath() string {
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "eraser",
-		Short: "Eraser - Automated data broker removal requests",
+		Use:     "eraser",
+		Version: version,
+		Short:   "Eraser - Automated data broker removal requests",
 		Long: `Eraser is an open-source tool that automates sending data removal
 requests to data brokers, helping you protect your privacy.
 
@@ -75,6 +82,11 @@ send via Gmail SMTP.`,
 	rootCmd.AddCommand(markBouncedCmd())
 	rootCmd.AddCommand(auditBrokersCmd())
 	rootCmd.AddCommand(profileCmd())
+	rootCmd.AddCommand(exportCmd())
+	rootCmd.AddCommand(draftCmd())
+	rootCmd.AddCommand(markSentCmd())
+	rootCmd.AddCommand(updateBrokersCmd())
+	rootCmd.AddCommand(guidesCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

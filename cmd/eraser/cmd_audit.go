@@ -93,7 +93,7 @@ type auditResult struct {
 }
 
 func runAuditBrokers(region, category string, timeout time.Duration) error {
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

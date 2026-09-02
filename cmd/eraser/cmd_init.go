@@ -85,21 +85,37 @@ func runInit() error {
 	cfg.Profile.AdditionalPhones = splitAndTrim(otherPhones)
 
 	fmt.Println()
-	fmt.Println("📧 Email Settings")
+	fmt.Println("📧 Sending")
+	fmt.Println()
+	fmt.Println("  1. Eraser sends the removal emails for you (needs a Gmail app password)")
+	fmt.Println("  2. Manual - Eraser renders the emails, you send them from your own")
+	fmt.Println("     mail client and record them with 'eraser mark-sent' (no credentials)")
 	fmt.Println()
 
-	cfg.Email.Provider = "smtp"
-	cfg.Email.From = cfg.Profile.Email
+	defaultChoice := "1"
+	if existing.IsManualSend() {
+		defaultChoice = "2"
+	}
+	choice := promptWithDefault(reader, "Choose", defaultChoice)
+	manual := strings.HasPrefix(strings.TrimSpace(choice), "2")
 
-	fmt.Println()
-	fmt.Println("Gmail SMTP Configuration:")
-	fmt.Println("  (See https://support.google.com/accounts/answer/185833 for app password setup)")
-	fmt.Println()
-	cfg.Email.SMTP.Host = "smtp.gmail.com"
-	cfg.Email.SMTP.Port = 465
-	cfg.Email.SMTP.UseTLS = true
-	cfg.Email.SMTP.Username = promptWithDefault(reader, "  Gmail address", existing.Email.SMTP.Username)
-	cfg.Email.SMTP.Password = promptSecretWithDefault(reader, "  App password (16-character code)", existing.Email.SMTP.Password)
+	if manual {
+		cfg.Options.SendMode = "manual"
+		cfg.Email = config.EmailConfig{}
+	} else {
+		cfg.Email.Provider = "smtp"
+		cfg.Email.From = cfg.Profile.Email
+
+		fmt.Println()
+		fmt.Println("Gmail SMTP Configuration:")
+		fmt.Println("  (See https://support.google.com/accounts/answer/185833 for app password setup)")
+		fmt.Println()
+		cfg.Email.SMTP.Host = "smtp.gmail.com"
+		cfg.Email.SMTP.Port = 465
+		cfg.Email.SMTP.UseTLS = true
+		cfg.Email.SMTP.Username = promptWithDefault(reader, "  Gmail address", existing.Email.SMTP.Username)
+		cfg.Email.SMTP.Password = promptSecretWithDefault(reader, "  App password (16-character code)", existing.Email.SMTP.Password)
+	}
 
 	fmt.Println()
 	fmt.Println("⚙️  Options")
@@ -158,8 +174,13 @@ func runInit() error {
 	fmt.Println("Next steps:")
 	fmt.Println("  1. Review and edit the config file if needed")
 	fmt.Println("  2. Run 'eraser list-brokers' to see available brokers")
-	fmt.Println("  3. Run 'eraser send --dry-run' to preview emails")
-	fmt.Println("  4. Run 'eraser send' to send removal requests")
+	if cfg.IsManualSend() {
+		fmt.Println("  3. Run 'eraser send --manual' to walk the list, or 'eraser draft <id>'")
+		fmt.Println("     to render one email; record what you send with 'eraser mark-sent'")
+	} else {
+		fmt.Println("  3. Run 'eraser send --dry-run' to preview emails")
+		fmt.Println("  4. Run 'eraser send' to send removal requests")
+	}
 
 	return nil
 }

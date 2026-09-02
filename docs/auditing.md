@@ -12,6 +12,29 @@ go run golang.org/x/vuln/cmd/govulncheck@latest ./...    # known CVEs in reachab
 
 `golangci-lint` (config: `.golangci.yml` - errcheck, govet, staticcheck, unused) also runs in CI on every push/PR via `.github/workflows/ci.yml`, so a plain `go build`/`go vet`/`go test` pass locally isn't the whole picture - run the lint command above too before assuming a change is clean. The default `max-same-issues`/`max-issues-per-linter` caps hide duplicates past the first few, which reads as "mostly clean" when it isn't - always pass `--max-issues-per-linter=0 --max-same-issues=0` when actually auditing, not just spot-checking.
 
+## Growing the broker list from state registries
+
+The US state data-broker registries are public and worth mining for entries the
+list is missing. Each is a one-click download, not an API:
+
+- **California** (CPPA, DELETE Act) - https://cppa.ca.gov/data_broker_registry/ - the largest, ~500+ brokers, CSV export
+- **Vermont** - https://sos.vermont.gov/data-brokers/ (Secretary of State) - ~120, CSV/searchable
+- **Oregon** - https://sos.oregon.gov/business/pages/data-brokers.aspx - 2024 registry
+- **Texas** - https://comptroller.texas.gov/programs/data-broker/ - 2024 registry
+
+Download a registry as CSV, then:
+
+```bash
+go run ./scripts/import-registries -csv registry.csv \
+    -name-col "Data Broker Name" -url-col "Website" -email-col "Email Address"
+```
+
+It diffs the rows against the embedded list and writes `candidates.yaml` (likely
+new, in `brokers.yaml` shape) and `review.md` (fuzzy matches to eyeball). Fill in
+`category` and a working `email`/`opt_out_url` for the candidates you keep, move
+them into `data/brokers.yaml`, then run `eraser audit-brokers` to drop any that
+are already dead. Both output files are gitignored.
+
 ## Security/Correctness Sweep (2026-08)
 
 A focused review of `internal/browser`, `internal/web`, `internal/history`, and `internal/inbox` (the packages that had zero test coverage and handle either real user PII, untrusted email content, or concurrent web-server state) turned up and fixed 15 findings - see the corresponding commits for detail:

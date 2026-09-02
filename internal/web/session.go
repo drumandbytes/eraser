@@ -19,12 +19,13 @@ type SessionStore struct {
 
 // Session holds wizard state securely on the server
 type Session struct {
-	ID        string
-	Step      string
-	Profile   config.Profile
-	Email     config.Email
-	CreatedAt time.Time
-	ExpiresAt time.Time
+	ID         string
+	Step       string
+	Profile    config.Profile
+	Email      config.Email
+	ManualSend bool // user chose to send removal emails by hand - no SMTP
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
 }
 
 // NewSessionStore creates a new session store with automatic cleanup

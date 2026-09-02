@@ -2,6 +2,8 @@
 
 Take back your privacy. Eraser sends data removal requests to 700+ data brokers on your behalf—for free.
 
+📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
+
 You know those sites like Spokeo, BeenVerified, and Whitepages that have your home address, phone number, and family members' names? They're called data brokers, and there are hundreds of them. Services like Incogni and DeleteMe charge $100+/year to send opt-out requests to these companies. Eraser does the same thing, but it's open source and completely free.
 
 ### What to Expect
@@ -33,9 +35,20 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 
 ### Getting Started
 
-**Step 1: Download Eraser**
+**Step 1: Get Eraser**
 
-Open your terminal (on Mac, search for "Terminal"; on Windows, use PowerShell) and run:
+**Prebuilt binary (easiest):** download the archive for your OS from the
+[Releases page](https://github.com/drumandbytes/eraser/releases), unpack it, and
+you're done — the broker list is baked in.
+
+- **macOS:** the binary is unsigned, so Gatekeeper will block it on first run.
+  Either right-click it → *Open* → *Open*, or run
+  `xattr -dr com.apple.quarantine ./eraser` once.
+- **Windows:** the archive contains `eraser.exe`.
+- `eraser fill` and `eraser confirm` (browser automation for opt-out forms) need
+  Chrome or Chromium installed; nothing else does.
+
+**Build from source** (needs [Go](https://go.dev/dl/)):
 
 ```bash
 git clone https://github.com/drumandbytes/eraser.git
@@ -43,13 +56,8 @@ cd eraser
 go build -o eraser ./cmd/eraser
 ```
 
-**Windows users:** name the output `eraser.exe` instead of `eraser` -
-Windows won't run (or let a browser open) a downloaded file with no
-extension, and will offer to "Save" it instead:
-
-```powershell
-go build -o eraser.exe ./cmd/eraser
-```
+On Windows, build it as `eraser.exe` (`go build -o eraser.exe ./cmd/eraser`) —
+Windows won't run a downloaded file with no extension.
 
 **Step 2: Start the Web Interface**
 
@@ -90,6 +98,14 @@ Eraser uses your Gmail account to send removal requests. You'll need to create a
 That's the password you'll use in Eraser's setup wizard. Your regular Gmail password won't work.
 
 **Daily sending limits:** Gmail allows ~500 emails per day. Eraser caps itself at 450/day by default (`options.daily_send_limit`) and automatically resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
+
+### Prefer not to give any tool your email password?
+
+Choose **"Skip — I'll send the emails myself"** in the setup wizard (or `options.send_mode: manual` in the config, or pick option 2 in `eraser init`). Then Eraser never sends anything and needs no credentials:
+
+- The **Brokers** page shows an **Email** link per broker (the ready-to-send removal request, with an "Open in mail app" button) and a **Mark sent** button.
+- On the CLI: `eraser draft <broker-id>` prints one email, `eraser draft -o ./out` writes one `.eml` per broker (open them in your mail client), and `eraser send --manual` walks the whole list one at a time.
+- After you send one, `eraser mark-sent <broker-id>` (or the web button) records it so `status`, `pipeline` and `export` still account for it.
 
 ---
 
@@ -139,8 +155,10 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser mark-bounced <broker-id>...` | Correct the record for brokers whose email actually bounced |
 | `eraser cleanup-bounces` | Find and clear bounced broker email addresses (keeps the broker entry) |
 | `eraser audit-brokers` | Check broker websites/email domains for signs of life |
+| `eraser update-brokers` | Fetch the latest broker list (the list ships inside the binary; this refreshes it) |
 | `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
 | `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
+| `eraser export` | Write an evidence report (HTML/JSON) of every request and reply — for a DPA/noyb complaint |
 | `eraser confirm` | Click confirmation links found in broker emails |
 | `eraser fill` | Fill opt-out forms via browser automation |
 | `eraser serve` | Start web interface |
@@ -221,7 +239,7 @@ The generic template is a good default if you're not sure. EU residents should p
 
 ### Adding Brokers
 
-The broker database is at `data/brokers.yaml`. To add one:
+The broker database is at `data/brokers.yaml` and is compiled into the binary, so a downloaded `eraser` is self-contained. `eraser update-brokers` pulls a fresh copy from this repo into `~/.eraser/brokers.yaml` (a small conditional download — the app itself isn't touched). To add one by hand:
 
 ```yaml
 - id: example-broker
@@ -322,3 +340,5 @@ MIT — do whatever you want with it.
 ## Disclaimer
 
 This tool sends legitimate data removal requests based on privacy laws. It's not legal advice. Not all brokers are required to comply with all requests, and response times vary. But it works, and it's free.
+
+**Your responsibility.** Eraser acts on your instructions and sends requests from your own email account. You are responsible for the accuracy of the personal data you enter, for complying with your email provider's terms and sending limits, and for anything you choose to submit to a data protection authority or other body. The templates and the `export` report are starting points, not a substitute for advice on your specific situation.

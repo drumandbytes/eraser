@@ -1,0 +1,24 @@
+{{ define "main" }}
+<article class="prose">
+  <h1>Broker directory</h1>
+  <p>Every data broker Eraser knows about. The ones with a full opt-out guide are
+  marked <strong>guide</strong>; the rest are advertising / data-append brokers
+  you remove with the same GDPR or CCPA email — see
+  <a href="{{ "/guides/opting-out-of-advertising-data-brokers" | relURL }}">the adtech guide</a>.</p>
+
+  <div class="filters">
+    <input type="search" id="q" placeholder="Filter by name…" autocomplete="off">
+    <select id="region"><option value="">All regions</option><option>us</option><option>eu</option><option>global</option></select>
+    <select id="cat"><option value="">All categories</option></select>
+    <label><input type="checkbox" id="curatedonly"> Guides only</label>
+  </div>
+  <p class="meta"><span id="count">Loading…</span></p>
+
+  <table class="dir">
+    <thead><tr><th>Broker</th><th>Region</th><th>Category</th><th>Opt out</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+</article>
+
+<script src="{{ "js/directory.js" | relURL }}" data-src="{{ "brokers.json" | relURL }}"></script>
+{{ end }}

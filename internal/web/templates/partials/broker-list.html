@@ -42,87 +42,14 @@
                     <span class="text-muted">—</span>
                     {{end}}
                 </td>
-                <td id="status-{{.ID}}">
-                    {{if eq .Status "sent"}}
-                    <span class="badge badge-success">
-                        <span class="status-dot status-dot-success"></span>
-                        Sent
-                    </span>
-                    {{else if eq .Status "failed"}}
-                    <span class="badge badge-error">
-                        <span class="status-dot status-dot-error"></span>
-                        Failed
-                    </span>
-                    {{else}}
-                    <span class="badge badge-neutral">
-                        <span class="status-dot" style="background: var(--text-muted);"></span>
-                        Never sent
-                    </span>
-                    {{end}}
-                </td>
+                <td id="status-{{.ID}}">{{template "partials/broker-status.html" .}}</td>
                 <td class="text-right">
-                    <div id="actions-{{.ID}}" class="flex items-center justify-end gap-2">
-                        {{if .Excluded}}
-                        <span class="badge badge-neutral">Excluded</span>
-                        <button
-                            class="btn btn-ghost text-sm py-1 px-3"
-                            hx-post="/api/brokers/{{.ID}}/include"
-                            hx-target="#actions-{{.ID}}"
-                            hx-swap="innerHTML"
-                        >
-                            Include
-                        </button>
-                        {{else}}
-                        {{if .Email}}
-                        <button
-                            class="btn btn-ghost text-sm py-1 px-3"
-                            hx-post="/api/send/{{.ID}}"
-                            hx-target="#status-{{.ID}}"
-                            hx-swap="innerHTML"
-                            hx-indicator="#spinner-{{.ID}}"
-                        >
-                            Send
-                            <span id="spinner-{{.ID}}" class="htmx-indicator ml-1">
-                                <span class="spinner"></span>
-                            </span>
-                        </button>
-                        {{else}}
-                        <button class="btn btn-ghost text-sm py-1 px-3" disabled title="No email on file">
-                            Send
-                        </button>
-                        {{end}}
-                        {{if .OptOutURL}}
-                        <a href="{{.OptOutURL}}" target="_blank" class="btn btn-ghost text-sm py-1 px-3">
-                            Opt-out
-                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                            </svg>
-                        </a>
-                        {{end}}
-                        <button
-                            class="btn btn-ghost text-sm py-1 px-3 text-error"
-                            hx-post="/api/brokers/{{.ID}}/exclude"
-                            hx-target="#actions-{{.ID}}"
-                            hx-swap="innerHTML"
-                            title="Exclude this broker from sends"
-                        >
-                            Exclude
-                        </button>
-                        {{end}}
-                    </div>
+                    <div id="actions-{{.ID}}" class="flex items-center justify-end gap-2">{{template "partials/broker-actions-desktop.html" .}}</div>
                 </td>
             </tr>
             {{else}}
             <tr>
-                <td colspan="5" class="py-12 text-center">
-                    <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style="background: var(--bg-elevated);">
-                        <svg class="w-8 h-8 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
-                    <p class="text-secondary mb-1">No brokers found</p>
-                    <p class="text-sm text-muted">Try adjusting your search or filters</p>
-                </td>
+                <td colspan="5" class="py-12 text-center">{{template "partials/broker-empty.html" .}}</td>
             </tr>
             {{end}}
         </tbody>
@@ -142,15 +69,7 @@
                 <p class="text-sm text-warning">No email on file</p>
                 {{end}}
             </div>
-            <div id="status-mobile-{{.ID}}">
-                {{if eq .Status "sent"}}
-                <span class="badge badge-success">Sent</span>
-                {{else if eq .Status "failed"}}
-                <span class="badge badge-error">Failed</span>
-                {{else}}
-                <span class="badge badge-neutral">Pending</span>
-                {{end}}
-            </div>
+            <div id="status-mobile-{{.ID}}">{{template "partials/broker-status.html" .}}</div>
         </div>
         <div class="flex items-center gap-2 mb-3 text-sm">
             {{if .Category}}
@@ -160,60 +79,9 @@
             <span class="text-muted uppercase">{{.Region}}</span>
             {{end}}
         </div>
-        <div id="actions-mobile-{{.ID}}" class="flex gap-2">
-            {{if .Excluded}}
-            <button class="btn btn-secondary flex-1 py-2" disabled>Excluded</button>
-            <button
-                class="btn btn-primary py-2"
-                hx-post="/api/brokers/{{.ID}}/include"
-                hx-target="#actions-mobile-{{.ID}}"
-                hx-swap="innerHTML"
-            >
-                Include
-            </button>
-            {{else}}
-            {{if .Email}}
-            <button
-                class="btn btn-primary flex-1 py-2"
-                hx-post="/api/send/{{.ID}}"
-                hx-target="#status-mobile-{{.ID}}"
-                hx-swap="innerHTML"
-            >
-                Send Request
-            </button>
-            {{else}}
-            <button class="btn btn-primary flex-1 py-2" disabled title="No email on file">
-                No Email on File
-            </button>
-            {{end}}
-            {{if .OptOutURL}}
-            <a href="{{.OptOutURL}}" target="_blank" class="btn btn-secondary py-2">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                </svg>
-            </a>
-            {{end}}
-            <button
-                class="btn btn-ghost py-2 text-error"
-                hx-post="/api/brokers/{{.ID}}/exclude"
-                hx-target="#actions-mobile-{{.ID}}"
-                hx-swap="innerHTML"
-                title="Exclude this broker from sends"
-            >
-                Exclude
-            </button>
-            {{end}}
-        </div>
+        <div id="actions-mobile-{{.ID}}" class="flex gap-2">{{template "partials/broker-actions-mobile.html" .}}</div>
     </div>
     {{else}}
-    <div class="p-8 text-center">
-        <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style="background: var(--bg-elevated);">
-            <svg class="w-8 h-8 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-        </div>
-        <p class="text-secondary mb-1">No brokers found</p>
-        <p class="text-sm text-muted">Try adjusting your search or filters</p>
-    </div>
+    <div class="p-8 text-center">{{template "partials/broker-empty.html" .}}</div>
     {{end}}
 </div>

@@ -1,0 +1,19 @@
+{{ define "main" }}
+<article class="prose">
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+  <table class="dir">
+    <thead><tr><th>Country</th><th>Authority</th><th>Website</th></tr></thead>
+    <tbody>
+    {{ range hugo.Data.eu_dpas.authorities }}
+      <tr>
+        <td>{{ .country }}{{ if not .eea }} <span class="meta">(non-EEA)</span>{{ end }}</td>
+        <td>{{ .authority }}{{ with .acronym }} ({{ . }}){{ end }}{{ with .notes }}<br><span class="meta">{{ . }}</span>{{ end }}</td>
+        <td><a href="{{ .website }}" rel="noopener">{{ .website }}</a></td>
+      </tr>
+    {{ end }}
+    </tbody>
+  </table>
+  <p class="meta">Also: <a href="https://noyb.eu">noyb.eu</a> — complaint templates and strategic litigation.</p>
+</article>
+{{ end }}

@@ -100,6 +100,10 @@ func (rl *RateLimiter) cleanupLoop() {
 	}
 }
 
+// Version is the build version shown in the web UI footer. main sets it from
+// its own -ldflags-injected version at startup; it stays "dev" otherwise.
+var Version = "dev"
+
 type Server struct {
 	config         atomic.Pointer[config.Config]
 	configPath     string
@@ -190,6 +194,23 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		"add": func(a, b int) int {
 			return a + b
 		},
+		// dict builds a map from alternating key/value args so a partial can be
+		// invoked with more than one parameter, e.g.
+		// {{template "partials/broker-row.html" (dict "Broker" . "IDPrefix" "mobile-")}}
+		"dict": func(values ...interface{}) (map[string]interface{}, error) {
+			if len(values)%2 != 0 {
+				return nil, fmt.Errorf("dict: got %d args, want an even number of key/value pairs", len(values))
+			}
+			m := make(map[string]interface{}, len(values)/2)
+			for i := 0; i < len(values); i += 2 {
+				key, ok := values[i].(string)
+				if !ok {
+					return nil, fmt.Errorf("dict: key at position %d is %T, want string", i, values[i])
+				}
+				m[key] = values[i+1]
+			}
+			return m, nil
+		},
 	}
 
 	// Read layout template
@@ -198,8 +219,8 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		return nil, fmt.Errorf("failed to read layout template: %w", err)
 	}
 
-	// Read all partial templates
-	var partials []string
+	// Read all partial templates, keyed by their name relative to templates/
+	// (e.g. "partials/broker-list.html").
 	partialTemplates := make(map[string]string)
 	err = fs.WalkDir(templatesFS, "templates/partials", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".html") {
@@ -209,10 +230,7 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		if err != nil {
 			return err
 		}
-		partials = append(partials, string(content))
-		// Also save for standalone partial templates
-		name := path[len("templates/"):]
-		partialTemplates[name] = string(content)
+		partialTemplates[path[len("templates/"):]] = string(content)
 		return nil
 	})
 	if err != nil && !strings.Contains(err.Error(), "file does not exist") {
@@ -250,11 +268,12 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return fmt.Errorf("failed to parse layout for %s: %w", name, err)
 		}
 
-		// Parse partials
-		for _, partial := range partials {
-			_, err = pageTmpl.Parse(partial)
-			if err != nil {
-				return fmt.Errorf("failed to parse partial for %s: %w", name, err)
+		// Parse each partial as a named associated template, so a page can invoke
+		// it as {{template "partials/x.html" .}} (or with (dict ...) for multiple
+		// args). See docs/code-patterns.md.
+		for pName, pContent := range partialTemplates {
+			if _, err = pageTmpl.New(pName).Parse(pContent); err != nil {
+				return fmt.Errorf("failed to parse partial %s for %s: %w", pName, name, err)
 			}
 		}
 
@@ -274,14 +293,18 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		return nil, err
 	}
 
-	// Add partial templates as standalone templates (for HTMX responses)
-	for name, content := range partialTemplates {
-		partialTmpl := template.New(name).Funcs(funcs)
-		_, err = partialTmpl.Parse(content)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse partial %s: %w", name, err)
+	// Add each partial as a standalone template for HTMX fragment responses.
+	// Every partial is associated into the set so one partial can invoke another
+	// with {{template "partials/x.html" .}} (e.g. broker-actions.html reuses the
+	// desktop/mobile action clusters).
+	for entry := range partialTemplates {
+		set := template.New("").Funcs(funcs)
+		for pName, pContent := range partialTemplates {
+			if _, err = set.New(pName).Parse(pContent); err != nil {
+				return nil, fmt.Errorf("failed to parse partial %s: %w", pName, err)
+			}
 		}
-		templates[name] = partialTmpl
+		templates[entry] = set.Lookup(entry)
 	}
 
 	return templates, nil
@@ -353,6 +376,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	// Routes
 	r.Get("/", s.handleDashboard)
 	r.Get("/brokers", s.handleBrokers)
+	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
@@ -389,6 +413,7 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Get("/brokers/{brokerID}/status", s.handleAPIBrokerStatus)
 		r.Post("/brokers/{brokerID}/exclude", s.handleAPIExcludeBroker)
 		r.Post("/brokers/{brokerID}/include", s.handleAPIIncludeBroker)
+		r.Post("/brokers/{brokerID}/mark-sent", s.handleAPIMarkSent)
 		r.Delete("/history/failed", s.handleAPIDeleteFailed)
 		r.Delete("/history", s.handleAPIDeleteAllHistory)
 		r.Post("/send/{brokerID}", s.handleAPISendOne)
@@ -418,12 +443,11 @@ func securityHeaders(next http.Handler) http.Handler {
 		// Control referrer information
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
-		// Content Security Policy - restrict resource loading
-		// 'unsafe-inline' needed for Tailwind CSS and inline scripts (HTMX attributes)
-		// No 'unsafe-eval' - the Tailwind CDN's runtime JIT compiler (which
-		// needed it) was replaced with a precompiled stylesheet; see the
-		// comment in layout.html. Google Fonts is the one remaining external
-		// origin; Tailwind and HTMX are self-hosted under /static/.
+		// Content Security Policy - restrict resource loading.
+		// 'unsafe-inline' (style-src) covers layout.html's <style> block and
+		// inline style attributes; 'unsafe-inline' (script-src) covers HTMX's
+		// inline attributes and the small inline scripts in the templates.
+		// No 'unsafe-eval'. All CSS and JS is self-hosted under /static/.
 		csp := "default-src 'self'; " +
 			"script-src 'self' 'unsafe-inline'; " +
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
@@ -515,10 +539,11 @@ type Stats struct {
 // BrokerWithStatus combines broker info with history status
 type BrokerWithStatus struct {
 	broker.Broker
-	Status    string // "never", "sent", "failed"
-	LastSent  string // formatted date or empty
-	TotalSent int
-	Excluded  bool // true if excluded via config.Options.ExcludedBrokers/ExcludedCategories
+	Status     string // "never", "sent", "failed"
+	LastSent   string // formatted date or empty
+	TotalSent  int
+	Excluded   bool // true if excluded via config.Options.ExcludedBrokers/ExcludedCategories
+	ManualMode bool // config.Options.send_mode == "manual" - row shows "Email" + "Mark sent" instead of "Send"
 }
 
 // getBrokersWithStatus returns brokers with their history status. When
@@ -562,6 +587,11 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 	region = strings.ToLower(strings.TrimSpace(region))
 	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
 
+	manualMode := false
+	if cfg := s.getConfig(); cfg != nil {
+		manualMode = cfg.IsManualSend()
+	}
+
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
 		excluded := excludedIDs[strings.ToLower(b.ID)] || excludedNames[strings.ToLower(b.Name)] || excludedCats[strings.ToLower(b.Category)]
@@ -595,9 +625,10 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 
 		bws := BrokerWithStatus{
-			Broker:   b,
-			Status:   "never",
-			Excluded: excluded,
+			Broker:     b,
+			Status:     "never",
+			Excluded:   excluded,
+			ManualMode: manualMode,
 		}
 
 		if status, ok := brokerStatuses[b.ID]; ok {
@@ -703,6 +734,7 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	data["Profiles"] = []config.NamedProfile{}
 	data["ActiveProfile"] = config.NamedProfile{}
 	data["CurrentPath"] = r.URL.Path
+	data["Version"] = Version
 	if cfg := s.getConfig(); cfg != nil {
 		data["Profiles"] = cfg.GetProfiles()
 		data["ActiveProfile"] = s.activeProfile(r)

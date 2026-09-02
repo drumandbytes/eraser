@@ -66,6 +66,7 @@ type Record struct {
 	SentAt         time.Time
 	CreatedAt      time.Time
 	PipelineStatus PipelineStatus // Current stage in pipeline
+	SentMethod     string         // "smtp" (Eraser sent it) or "manual" (user did)
 }
 
 // BrokerResponse stores a classified response from a broker
@@ -112,10 +113,10 @@ type Store struct {
 func scanRecord(scanner interface{ Scan(...any) error }) (*Record, error) {
 	var r Record
 	var sentAt, createdAt sql.NullTime
-	var messageID, errStr sql.NullString
+	var messageID, errStr, sentMethod sql.NullString
 
 	err := scanner.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.Email, &r.Template,
-		&r.Status, &messageID, &errStr, &sentAt, &createdAt)
+		&r.Status, &messageID, &errStr, &sentAt, &createdAt, &sentMethod)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +125,7 @@ func scanRecord(scanner interface{ Scan(...any) error }) (*Record, error) {
 	r.Error = errStr.String
 	r.SentAt = sentAt.Time
 	r.CreatedAt = createdAt.Time
+	r.SentMethod = sentMethod.String
 	return &r, nil
 }
 
@@ -181,6 +183,12 @@ func (s *Store) migrate() error {
 	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN pipeline_status TEXT DEFAULT 'email_sent'`); err != nil {
 		return err
 	}
+	// sent_method: "smtp" (Eraser sent it) or "manual" (the user sent it by
+	// hand and recorded it with `eraser mark-sent`). Existing rows predate
+	// manual mode, so they default to "smtp".
+	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN sent_method TEXT DEFAULT 'smtp'`); err != nil {
+		return err
+	}
 	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN opened_at DATETIME`); err != nil {
 		return err
 	}
@@ -221,7 +229,8 @@ func (s *Store) migrate() error {
 		error TEXT,
 		sent_at DATETIME,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		pipeline_status TEXT DEFAULT 'email_sent'
+		pipeline_status TEXT DEFAULT 'email_sent',
+		sent_method TEXT DEFAULT 'smtp'
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_broker_id ON removal_requests(broker_id);
@@ -304,10 +313,13 @@ func normalizeProfileID(id string) string {
 
 func (s *Store) Add(record *Record) error {
 	record.ProfileID = normalizeProfileID(record.ProfileID)
+	if record.SentMethod == "" {
+		record.SentMethod = "smtp"
+	}
 
 	query := `
-	INSERT INTO removal_requests (profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO removal_requests (profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at, sent_method)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := s.db.Exec(query,
@@ -321,6 +333,7 @@ func (s *Store) Add(record *Record) error {
 		record.Error,
 		record.SentAt,
 		time.Now(),
+		record.SentMethod,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert record: %w", err)
@@ -337,7 +350,7 @@ func (s *Store) Add(record *Record) error {
 
 func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error) {
 	query := `
-	SELECT id, profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at
+	SELECT id, profile_id, broker_id, broker_name, email, template, status, message_id, error, sent_at, created_at, sent_method
 	FROM removal_requests WHERE profile_id = ? ORDER BY sent_at DESC LIMIT ?`
 
 	rows, err := s.db.Query(query, normalizeProfileID(profileID), limit)
@@ -353,6 +366,41 @@ func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error)
 			return nil, fmt.Errorf("failed to scan record: %w", err)
 		}
 		records = append(records, *record)
+	}
+	return records, rows.Err()
+}
+
+// GetAllRequests returns every removal request for one profile, oldest first,
+// with pipeline_status included (unlike GetRecentRequests, which caps at a limit
+// and omits it). Used by `eraser export` to build the evidence report.
+func (s *Store) GetAllRequests(profileID string) ([]Record, error) {
+	query := `
+	SELECT id, profile_id, broker_id, broker_name, email, template, status,
+	       message_id, error, sent_at, created_at, pipeline_status, sent_method
+	FROM removal_requests WHERE profile_id = ? ORDER BY sent_at ASC, id ASC`
+
+	rows, err := s.db.Query(query, normalizeProfileID(profileID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query requests: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var records []Record
+	for rows.Next() {
+		var r Record
+		var sentAt, createdAt sql.NullTime
+		var messageID, errStr, pipelineStatus, sentMethod sql.NullString
+		if err := rows.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.Email,
+			&r.Template, &r.Status, &messageID, &errStr, &sentAt, &createdAt, &pipelineStatus, &sentMethod); err != nil {
+			return nil, fmt.Errorf("failed to scan request: %w", err)
+		}
+		r.MessageID = messageID.String
+		r.Error = errStr.String
+		r.SentAt = sentAt.Time
+		r.CreatedAt = createdAt.Time
+		r.PipelineStatus = PipelineStatus(pipelineStatus.String)
+		r.SentMethod = sentMethod.String
+		records = append(records, r)
 	}
 	return records, rows.Err()
 }
@@ -795,6 +843,46 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 		responses = append(responses, r)
 	}
 
+	return responses, rows.Err()
+}
+
+// GetBrokerResponsesForExport returns every classified response for one profile,
+// oldest first, with the raw email_body included (GetBrokerResponses omits it;
+// GetAllBrokerResponses includes it but is not profile-scoped). Used by
+// `eraser export`.
+func (s *Store) GetBrokerResponsesForExport(profileID string) ([]BrokerResponse, error) {
+	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from,
+		email_subject, email_body, form_url, confirm_url, confidence, needs_review,
+		received_at, processed_at, created_at
+		FROM broker_responses WHERE profile_id = ? ORDER BY received_at ASC, id ASC`
+
+	rows, err := s.db.Query(query, normalizeProfileID(profileID))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query broker responses: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var responses []BrokerResponse
+	for rows.Next() {
+		var r BrokerResponse
+		var needsReviewInt int
+		var receivedAtStr, processedAtStr, createdAtStr sql.NullString
+		var formURL, confirmURL, emailBody sql.NullString
+
+		if err := rows.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.ResponseType,
+			&r.EmailFrom, &r.EmailSubject, &emailBody, &formURL, &confirmURL, &r.Confidence,
+			&needsReviewInt, &receivedAtStr, &processedAtStr, &createdAtStr); err != nil {
+			return nil, fmt.Errorf("failed to scan broker response: %w", err)
+		}
+		r.EmailBody = emailBody.String
+		r.FormURL = formURL.String
+		r.ConfirmURL = confirmURL.String
+		r.NeedsReview = needsReviewInt == 1
+		r.ReceivedAt = parseFlexibleTimeString(receivedAtStr)
+		r.ProcessedAt = parseFlexibleTimeString(processedAtStr)
+		r.CreatedAt = parseFlexibleTimeString(createdAtStr)
+		responses = append(responses, r)
+	}
 	return responses, rows.Err()
 }
 

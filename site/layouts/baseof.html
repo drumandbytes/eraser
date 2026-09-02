@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ if .IsHome }}Eraser — data broker removal{{ else }}{{ .Title }} · Eraser{{ end }}</title>
+<meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
+<link rel="canonical" href="{{ .Permalink }}">
+<link rel="stylesheet" href="{{ "css/site.css" | relURL }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ "/" | relURL }}">eraser</a>
+  <nav>
+    {{ range .Site.Menus.main }}<a href="{{ .URL | relLangURL }}"{{ if $.IsMenuCurrent "main" . }} class="active"{{ end }}>{{ .Name }}</a>{{ end }}
+  </nav>
+</header>
+<main class="wrap">
+{{ block "main" . }}{{ end }}
+</main>
+<footer class="foot">
+  <a href="https://github.com/drumandbytes/eraser">Source</a> ·
+  MIT licensed ·
+  Not legal advice. You're responsible for what you send.
+</footer>
+</body>
+</html>

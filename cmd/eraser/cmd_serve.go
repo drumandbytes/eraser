@@ -42,6 +42,7 @@ The server runs locally on your machine - no data is sent to external servers.`,
 }
 
 func runServe(port int) error {
+	web.Version = version
 	configPath := resolveConfigPath()
 	var cfg *config.Config
 	if _, err := os.Stat(configPath); err == nil {
@@ -53,7 +54,7 @@ func runServe(port int) error {
 		}
 	}
 
-	brokerDB, err := broker.LoadFromFile(resolveBrokerPath())
+	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

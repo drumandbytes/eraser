@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Eraser is a CLI + web tool that sends data removal requests to data brokers. This is a maintained fork of [digisamroc/eraser](https://github.com/digisamroc/eraser) (inactive since early 2026), hosted at `drumandbytes/eraser`, customized for a single EU (Latvia) user exercising GDPR Article 17 rights rather than the original US-only CCPA use case, with optional support for a second household profile. See [EU-NOTES.md](EU-NOTES.md) for the GDPR-specific setup and broker notes, and [README.md](README.md) for user-facing docs.
+Eraser is a CLI + web tool that sends data removal requests to data brokers. This is a maintained fork of [digisamroc/eraser](https://github.com/digisamroc/eraser) (inactive since early 2026), hosted at `drumandbytes/eraser`, oriented toward an EU/EEA user exercising GDPR Article 17 rights rather than the original US-only CCPA use case, with optional support for a second household profile. See [EU-NOTES.md](EU-NOTES.md) for the GDPR-specific setup and broker notes, and [README.md](README.md) for user-facing docs.
 
 ## Docs Map
 

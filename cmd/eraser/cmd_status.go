@@ -85,11 +85,16 @@ func runStatus(limit int) error {
 			if r.Status == history.StatusFailed {
 				status = "❌"
 			}
-			fmt.Printf("%s %s - %s (%s)\n",
+			method := ""
+			if r.SentMethod == "manual" {
+				method = ", manual"
+			}
+			fmt.Printf("%s %s - %s (%s%s)\n",
 				status,
 				r.SentAt.Format("2006-01-02 15:04"),
 				r.BrokerName,
 				r.Template,
+				method,
 			)
 			if r.Error != "" {
 				fmt.Printf("   Error: %s\n", r.Error)

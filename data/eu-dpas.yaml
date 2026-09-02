@@ -1,0 +1,204 @@
+# EU/EEA (+ UK) data protection supervisory authorities.
+#
+# Where to complain if a data broker ignores or refuses your GDPR Article 17
+# request. Under GDPR Art. 77 you may lodge a complaint with the authority in
+# the member state of your habitual residence, place of work, or the place of
+# the alleged infringement.
+#
+# `authority` names and `website` hosts are from the EDPB members list
+# (edpb.europa.eu/about-edpb/about-edpb/members_en). `website` is the
+# authority's own site, in its own language - a resident complaining to their
+# national authority reads it. Re-check the links before relying on them.
+
+authorities:
+  - country: Austria
+    code: AT
+    eea: true
+    authority: Österreichische Datenschutzbehörde (Austrian Data Protection Authority)
+    acronym: DSB
+    website: https://www.dsb.gv.at
+  - country: Belgium
+    code: BE
+    eea: true
+    authority: Gegevensbeschermingsautoriteit / Autorité de la protection des données
+    acronym: GBA/APD
+    website: https://www.gegevensbeschermingsautoriteit.be
+  - country: Bulgaria
+    code: BG
+    eea: true
+    authority: Commission for Personal Data Protection
+    acronym: CPDP
+    website: https://www.cpdp.bg
+  - country: Croatia
+    code: HR
+    eea: true
+    authority: Agencija za zaštitu osobnih podataka
+    acronym: AZOP
+    website: https://azop.hr
+  - country: Cyprus
+    code: CY
+    eea: true
+    authority: Office of the Commissioner for Personal Data Protection
+    website: https://www.dataprotection.gov.cy
+  - country: Czech Republic
+    code: CZ
+    eea: true
+    authority: Úřad pro ochranu osobních údajů (Office for Personal Data Protection)
+    acronym: ÚOOÚ
+    website: https://www.uoou.gov.cz
+  - country: Denmark
+    code: DK
+    eea: true
+    authority: Datatilsynet
+    website: https://www.datatilsynet.dk
+  - country: Estonia
+    code: EE
+    eea: true
+    authority: Andmekaitse Inspektsioon (Data Protection Inspectorate)
+    acronym: AKI
+    website: https://www.aki.ee
+  - country: Finland
+    code: FI
+    eea: true
+    authority: Office of the Data Protection Ombudsman (Tietosuojavaltuutetun toimisto)
+    website: https://tietosuoja.fi
+  - country: France
+    code: FR
+    eea: true
+    authority: Commission Nationale de l'Informatique et des Libertés
+    acronym: CNIL
+    website: https://www.cnil.fr
+  - country: Germany
+    code: DE
+    eea: true
+    authority: Die Bundesbeauftragte für den Datenschutz und die Informationsfreiheit
+    acronym: BfDI
+    website: https://www.bfdi.bund.de
+    notes: >-
+      For a complaint against a private company (a data broker), a resident
+      normally goes to the supervisory authority of their own federal state
+      (Land), not the federal BfDI. The BfDI site links the list of the 16
+      Landesdatenschutzbehörden.
+  - country: Greece
+    code: GR
+    eea: true
+    authority: Hellenic Data Protection Authority
+    acronym: HDPA
+    website: https://www.dpa.gr
+  - country: Hungary
+    code: HU
+    eea: true
+    authority: Nemzeti Adatvédelmi és Információszabadság Hatóság
+    acronym: NAIH
+    website: https://www.naih.hu
+  - country: Ireland
+    code: IE
+    eea: true
+    authority: Data Protection Commission
+    acronym: DPC
+    website: https://www.dataprotection.ie
+  - country: Italy
+    code: IT
+    eea: true
+    authority: Garante per la protezione dei dati personali
+    website: https://www.garanteprivacy.it
+  - country: Latvia
+    code: LV
+    eea: true
+    authority: Datu valsts inspekcija (Data State Inspectorate)
+    acronym: DVI
+    website: https://www.dvi.gov.lv
+  - country: Lithuania
+    code: LT
+    eea: true
+    authority: Valstybinė duomenų apsaugos inspekcija (State Data Protection Inspectorate)
+    acronym: VDAI
+    website: https://vdai.lrv.lt
+  - country: Luxembourg
+    code: LU
+    eea: true
+    authority: Commission Nationale pour la Protection des Données
+    acronym: CNPD
+    website: https://cnpd.public.lu
+  - country: Malta
+    code: MT
+    eea: true
+    authority: Office of the Information and Data Protection Commissioner
+    acronym: IDPC
+    website: https://idpc.org.mt
+  - country: Netherlands
+    code: NL
+    eea: true
+    authority: Autoriteit Persoonsgegevens
+    acronym: AP
+    website: https://www.autoriteitpersoonsgegevens.nl
+  - country: Poland
+    code: PL
+    eea: true
+    authority: Urząd Ochrony Danych Osobowych
+    acronym: UODO
+    website: https://uodo.gov.pl
+  - country: Portugal
+    code: PT
+    eea: true
+    authority: Comissão Nacional de Proteção de Dados
+    acronym: CNPD
+    website: https://www.cnpd.pt
+  - country: Romania
+    code: RO
+    eea: true
+    authority: Autoritatea Naţională de Supraveghere a Prelucrării Datelor cu Caracter Personal
+    acronym: ANSPDCP
+    website: https://www.dataprotection.ro
+  - country: Slovakia
+    code: SK
+    eea: true
+    authority: Úrad na ochranu osobných údajov Slovenskej republiky
+    acronym: ÚOOÚ
+    website: https://dataprotection.gov.sk
+  - country: Slovenia
+    code: SI
+    eea: true
+    authority: Informacijski pooblaščenec (Information Commissioner)
+    acronym: IP-RS
+    website: https://www.ip-rs.si
+  - country: Spain
+    code: ES
+    eea: true
+    authority: Agencia Española de Protección de Datos
+    acronym: AEPD
+    website: https://www.aepd.es
+  - country: Sweden
+    code: SE
+    eea: true
+    authority: Integritetsskyddsmyndigheten (Authority for Privacy Protection)
+    acronym: IMY
+    website: https://www.imy.se
+  - country: Iceland
+    code: IS
+    eea: true
+    authority: Persónuvernd (Data Protection Authority)
+    website: https://island.is/s/personuvernd
+    notes: >-
+      The authority's site moved onto Iceland's national portal island.is;
+      www.personuvernd.is redirects there.
+  - country: Liechtenstein
+    code: LI
+    eea: true
+    authority: Datenschutzstelle (Data Protection Authority)
+    acronym: DSS
+    website: https://www.datenschutzstelle.li
+  - country: Norway
+    code: "NO"
+    eea: true
+    authority: Datatilsynet (Norwegian Data Protection Authority)
+    website: https://www.datatilsynet.no
+  - country: United Kingdom
+    code: GB
+    eea: false
+    authority: Information Commissioner's Office
+    acronym: ICO
+    website: https://ico.org.uk
+    notes: >-
+      Not an EDPB member since Brexit; enforces the UK GDPR, which mirrors the
+      EU GDPR's right to erasure. Relevant if you are a UK resident.

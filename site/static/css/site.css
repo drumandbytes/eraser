@@ -1,5 +1,6 @@
-/* Eraser docs site. Light, calm, evidentiary. Palette mirrors the app's
-   light-theme tokens (internal/web/static/css/tokens.css). */
+/* Eraser docs site. Calm, evidentiary. Palette mirrors the app's theme
+   tokens (internal/web/static/css/tokens.css). Follows the OS light/dark
+   setting - every colour goes through a token so only :root is redefined. */
 :root {
   --bg: #fafafa;
   --surface: #ffffff;
@@ -10,8 +11,27 @@
   --border: #e4e4e7;
   --accent: #4f46e5;
   --accent-hover: #4338ca;
+  --on-accent: #ffffff;
   --warn: #b45309;
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #18181b;
+    --surface: #1f1f23;
+    --elevated: #27272a;
+    --ink: #f4f4f5;
+    --ink-2: #a1a1aa;
+    --ink-3: #8b8b93;
+    --border: #3f3f46;
+    --accent: #a5b4fc;
+    --accent-hover: #c7d2fe;
+    --on-accent: #1e1b4b;
+    --warn: #fbbf24;
+  }
+}
+
+html { color-scheme: light dark; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -43,9 +63,9 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
 .cta { margin-top: 1.5rem; display: flex; gap: .75rem; flex-wrap: wrap; }
 .btn {
   display: inline-block; padding: .6rem 1.1rem; border-radius: 8px;
-  background: var(--accent); color: #fff; font-weight: 600;
+  background: var(--accent); color: var(--on-accent); font-weight: 600;
 }
-.btn:hover { background: var(--accent-hover); color: #fff; text-decoration: none; }
+.btn:hover { background: var(--accent-hover); color: var(--on-accent); text-decoration: none; }
 .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); }
 
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 3.5rem; }
@@ -85,7 +105,7 @@ table.dir th { color: var(--ink-3); font-weight: 600; }
 table.dir a { word-break: break-word; }
 .tag {
   display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .03em;
-  padding: .05rem .4rem; border-radius: 3px; background: var(--accent); color: #fff;
+  padding: .05rem .4rem; border-radius: 3px; background: var(--accent); color: var(--on-accent);
   text-transform: uppercase; vertical-align: 1px;
 }
 

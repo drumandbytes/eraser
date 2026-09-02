@@ -37,9 +37,22 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 
 **Step 1: Get Eraser**
 
-**Prebuilt binary (easiest):** download the archive for your OS from the
-[Releases page](https://github.com/drumandbytes/eraser/releases), unpack it, and
-you're done — the broker list is baked in.
+**Homebrew (macOS, and Linux where cask support is available):**
+
+```bash
+brew install drumandbytes/homebrew-tap/eraser
+```
+
+On macOS this also clears the Gatekeeper quarantine for you. If `brew` on your
+Linux setup doesn't do casks, use the tarball below.
+
+**Prebuilt binary:** grab your OS's file from the
+[Releases page](https://github.com/drumandbytes/eraser/releases) — the broker
+list is baked in, nothing to install:
+
+- **Windows** — `..._windows_amd64.exe` (run it directly) or the `.zip` (also has
+  the README and `config.example.yaml`).
+- **macOS / Linux** — `..._<os>_<arch>.tar.gz`; `tar xzf` it and run `./eraser`.
 
 - **macOS:** the binary is unsigned, so Gatekeeper will block it on first run.
   Either right-click it → *Open* → *Open*, or run

@@ -119,11 +119,16 @@ func (s *Server) setBrokerExcluded(w http.ResponseWriter, r *http.Request, exclu
 	}
 	s.config.Store(&newCfg)
 
+	manualMode := false
+	if c := s.getConfig(); c != nil {
+		manualMode = c.IsManualSend()
+	}
 	s.renderPartial(w, "partials/broker-actions.html", map[string]interface{}{
-		"ID":        b.ID,
-		"Email":     b.Email,
-		"OptOutURL": b.OptOutURL,
-		"Excluded":  exclude,
+		"ID":         b.ID,
+		"Email":      b.Email,
+		"OptOutURL":  b.OptOutURL,
+		"Excluded":   exclude,
+		"ManualMode": manualMode,
 	})
 }
 

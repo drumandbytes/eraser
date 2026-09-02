@@ -6,6 +6,7 @@
             <h1 class="font-display text-3xl font-bold text-primary">Data Brokers</h1>
             <p class="text-secondary mt-1">{{.Total}} brokers in database</p>
         </div>
+        {{if not .ManualMode}}
         <div class="flex flex-wrap gap-2">
             <button
                 id="retry-failed-btn"
@@ -35,10 +36,26 @@
                 </span>
             </button>
         </div>
+        {{end}}
     </div>
 
+    {{if .ManualMode}}
+    <div class="alert alert-info mb-6">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm">
+                <strong>Manual mode.</strong> Eraser won't send anything. For each broker,
+                open <em>Email</em>, send it from your own mail client, then click
+                <em>Mark sent</em>.
+            </p>
+        </div>
+    </div>
+    {{end}}
+
     <!-- Daily limit info banner -->
-    {{if gt .Filtered .DailyLimit}}
+    {{if and (not .ManualMode) (gt .Filtered .DailyLimit)}}
     <div class="alert alert-info mb-6">
         <div class="flex items-start gap-3">
             <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -42,7 +42,7 @@ A shared mailbox carries replies for every profile's sent requests together. Whe
 ## CLI (`cmd/eraser/`)
 
 - Global persistent `--profile <id>` flag, resolved via `resolveProfile(cfg)` → `cfg.GetProfile(profileFlag)`
-- Threaded through: `send`, `status`, `monitor`, `pipeline`, `fill`, `confirm`, `mark-bounced`, `export`
+- Threaded through: `send`, `status`, `monitor`, `pipeline`, `fill`, `confirm`, `mark-bounced`, `export`, `draft`, `mark-sent`
 - `eraser profile list` - prints configured profiles
 - `eraser profile add` - interactively appends a new `NamedProfile` to `config.Profiles`
 - `eraser init`, when re-run on an existing config, preserves `existing.Profiles` (previously it silently dropped anything added via `profile add`); if a `"default"` entry exists among them, it's kept in sync with whatever `profile:` fields were just re-entered

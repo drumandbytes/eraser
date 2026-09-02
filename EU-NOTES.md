@@ -36,6 +36,10 @@ Controllers have 1 month to respond (extendable to 3 for complex requests). If t
 
 Run `./eraser export` to generate the evidence to attach to a complaint: per broker, what was sent and when, the reconstructed request, every reply and its date, and an explicit list of controllers that are past the 1-month deadline with no substantive response. `--format html` opens in a browser and prints to PDF.
 
+## Sending the requests by hand
+
+A GDPR Article 17 request is exactly as valid sent from your own mail client as it is sent by Eraser. If you'd rather not configure an app password, set `options.send_mode: manual` (or choose "Skip" in the web setup): `eraser draft` / `eraser send --manual` render the emails, you send them, and `eraser mark-sent` records them so `export` and `pipeline` still work.
+
 ## Sending 770+ emails safely
 
 The README originally claimed eraser auto-chunks large sends across multiple days - that wasn't actually implemented in the code, just documented. It is now: `send` caps itself at `options.daily_send_limit` (450 by default, safely under Gmail's ~500/day) per rolling 24h window, and automatically skips any broker it already successfully emailed in the last 25 days. That means it's safe to just run:

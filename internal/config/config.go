@@ -244,7 +244,15 @@ type SMTPConfig struct {
 }
 
 type Options struct {
-	Template    string `yaml:"template"`
+	Template string `yaml:"template"`
+	// SendMode selects how removal emails leave the machine:
+	//   "" / "smtp" - Eraser sends them itself over the configured SMTP account.
+	//   "manual"    - Eraser never sends. It renders the emails for you to send
+	//                 by hand from your own mail client, and you record each one
+	//                 with `eraser mark-sent` / the web UI's "Mark sent" button.
+	//                 No `email:` block is required in this mode.
+	// For users who won't give any tool their mailbox credentials.
+	SendMode    string `yaml:"send_mode,omitempty"`
 	DryRun      bool   `yaml:"dry_run"`
 	RateLimitMs int    `yaml:"rate_limit_ms"`
 	// DailySendLimit caps how many emails `send` will dispatch per rolling
@@ -357,8 +365,13 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// Manual mode sends nothing itself, so it needs no email configuration.
+	if c.IsManualSend() {
+		return nil
+	}
+
 	if c.Email.Provider == "" {
-		return fmt.Errorf("email: provider is required")
+		return fmt.Errorf("email: provider is required (or set options.send_mode: manual)")
 	}
 	if c.Email.From == "" {
 		return fmt.Errorf("email: from address is required")
@@ -375,6 +388,12 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// IsManualSend reports whether the user opted out of automated sending -
+// Eraser renders the emails but never transmits them.
+func (c *Config) IsManualSend() bool {
+	return strings.EqualFold(c.Options.SendMode, "manual")
 }
 
 // ValidateInbox validates inbox configuration (only called when inbox monitoring is used)

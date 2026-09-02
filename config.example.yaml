@@ -55,6 +55,14 @@ options:
   # Set to gdpr by default here since this copy is configured for an EU resident.
   template: gdpr
 
+  # How removal emails leave your machine:
+  #   smtp (default) - Eraser sends them over the `email:` account above.
+  #   manual         - Eraser never sends. It renders the emails for you to
+  #                    send by hand ('eraser draft', 'eraser send --manual',
+  #                    or the web UI's per-broker "Email" page), and you record
+  #                    each with 'eraser mark-sent'. No `email:` block needed.
+  # send_mode: manual
+
   # Delay between emails in milliseconds (avoid spam filters)
   rate_limit_ms: 2000
 

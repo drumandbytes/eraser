@@ -76,6 +76,18 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == "POST" {
 		limitFormBody(w, r)
+
+		// "Skip - I'll send these myself" - no SMTP, jump straight to finish.
+		if r.FormValue("manual") == "1" {
+			s.updateSession(r, func(sess *Session) {
+				sess.ManualSend = true
+				sess.Email = config.Email{Provider: "manual"} // sentinel so the complete step's guard passes
+				sess.Step = "complete"
+			})
+			http.Redirect(w, r, "/setup/complete", http.StatusFound)
+			return
+		}
+
 		emailCfg := config.Email{
 			Provider: "smtp",
 			From:     session.Profile.Email,
@@ -247,16 +259,23 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	opts := config.Options{
+		// This fork is customized for GDPR Article 17 use (see EU-NOTES.md) -
+		// default fresh setups to gdpr, not upstream's US/CCPA-oriented
+		// "generic". Matches the CLI's `init` default.
+		Template:    "gdpr",
+		RateLimitMs: 2000,
+	}
+	emailCfg := session.Email
+	if session.ManualSend {
+		opts.SendMode = "manual"
+		emailCfg = config.Email{}
+	}
+
 	cfg := &config.Config{
 		Profile: session.Profile,
-		Email:   session.Email,
-		Options: config.Options{
-			// This fork is customized for GDPR Article 17 use (see
-			// EU-NOTES.md) - default fresh setups to gdpr, not upstream's
-			// US/CCPA-oriented "generic". Matches the CLI's `init` default.
-			Template:    "gdpr",
-			RateLimitMs: 2000,
-		},
+		Email:   emailCfg,
+		Options: opts,
 	}
 
 	if err := config.Save(s.configPath, cfg); err != nil {

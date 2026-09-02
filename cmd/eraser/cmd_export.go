@@ -187,6 +187,7 @@ type RequestEvidence struct {
 	LegalBasis      string    `json:"legal_basis"`
 	MessageID       string    `json:"message_id,omitempty"`
 	Status          string    `json:"status"`
+	Manual          bool      `json:"sent_manually"`
 	Error           string    `json:"error,omitempty"`
 	RenderedSubject string    `json:"reconstructed_subject,omitempty"`
 	RenderedBody    string    `json:"reconstructed_body,omitempty"`
@@ -314,6 +315,7 @@ func buildEvidenceReport(
 				LegalBasis: legalBasisFor(req.Template),
 				MessageID:  req.MessageID,
 				Status:     string(req.Status),
+				Manual:     req.SentMethod == "manual",
 				Error:      req.Error,
 			}
 			if b := brokerDB.FindByID(brokerID); b != nil {
@@ -488,8 +490,8 @@ period and are candidates for a complaint to a supervisory authority:</p>
 
   {{range .Requests}}
   <div class="event {{.Status}}">
-    <strong>Request sent</strong> {{if nonzero .SentAt}}on {{datetime .SentAt}}{{end}} to {{.Recipient}}
-    ({{.Status}}{{if .Error}}: {{.Error}}{{end}})<br>
+    <strong>Request sent{{if .Manual}} by hand{{end}}</strong> {{if nonzero .SentAt}}on {{datetime .SentAt}}{{end}} to {{.Recipient}}
+    ({{.Status}}{{if .Manual}}, recorded manually{{end}}{{if .Error}}: {{.Error}}{{end}})<br>
     <span class="muted">Legal basis:</span> {{.LegalBasis}}<br>
     {{if .MessageID}}<span class="muted">Message-ID:</span> <code>{{.MessageID}}</code><br>{{end}}
     {{if .RenderedBody}}

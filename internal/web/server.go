@@ -372,6 +372,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	// Routes
 	r.Get("/", s.handleDashboard)
 	r.Get("/brokers", s.handleBrokers)
+	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
@@ -408,6 +409,7 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Get("/brokers/{brokerID}/status", s.handleAPIBrokerStatus)
 		r.Post("/brokers/{brokerID}/exclude", s.handleAPIExcludeBroker)
 		r.Post("/brokers/{brokerID}/include", s.handleAPIIncludeBroker)
+		r.Post("/brokers/{brokerID}/mark-sent", s.handleAPIMarkSent)
 		r.Delete("/history/failed", s.handleAPIDeleteFailed)
 		r.Delete("/history", s.handleAPIDeleteAllHistory)
 		r.Post("/send/{brokerID}", s.handleAPISendOne)
@@ -533,10 +535,11 @@ type Stats struct {
 // BrokerWithStatus combines broker info with history status
 type BrokerWithStatus struct {
 	broker.Broker
-	Status    string // "never", "sent", "failed"
-	LastSent  string // formatted date or empty
-	TotalSent int
-	Excluded  bool // true if excluded via config.Options.ExcludedBrokers/ExcludedCategories
+	Status     string // "never", "sent", "failed"
+	LastSent   string // formatted date or empty
+	TotalSent  int
+	Excluded   bool // true if excluded via config.Options.ExcludedBrokers/ExcludedCategories
+	ManualMode bool // config.Options.send_mode == "manual" - row shows "Email" + "Mark sent" instead of "Send"
 }
 
 // getBrokersWithStatus returns brokers with their history status. When
@@ -580,6 +583,11 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 	region = strings.ToLower(strings.TrimSpace(region))
 	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
 
+	manualMode := false
+	if cfg := s.getConfig(); cfg != nil {
+		manualMode = cfg.IsManualSend()
+	}
+
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
 		excluded := excludedIDs[strings.ToLower(b.ID)] || excludedNames[strings.ToLower(b.Name)] || excludedCats[strings.ToLower(b.Category)]
@@ -613,9 +621,10 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 
 		bws := BrokerWithStatus{
-			Broker:   b,
-			Status:   "never",
-			Excluded: excluded,
+			Broker:     b,
+			Status:     "never",
+			Excluded:   excluded,
+			ManualMode: manualMode,
 		}
 
 		if status, ok := brokerStatuses[b.ID]; ok {

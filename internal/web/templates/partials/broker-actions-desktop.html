@@ -11,6 +11,22 @@
     Include
 </button>
 {{else}}
+{{if .ManualMode}}
+{{if .Email}}
+<a href="/brokers/{{.ID}}/email" class="btn btn-ghost text-sm py-1 px-3">Email</a>
+<button
+    class="btn btn-ghost text-sm py-1 px-3"
+    hx-post="/api/brokers/{{.ID}}/mark-sent"
+    hx-target="#status-{{.ID}}"
+    hx-swap="innerHTML"
+    title="Record that you've sent this by hand"
+>
+    Mark sent
+</button>
+{{else}}
+<button class="btn btn-ghost text-sm py-1 px-3" disabled title="No email on file">Email</button>
+{{end}}
+{{else}}
 {{if .Email}}
 <button
     class="btn btn-ghost text-sm py-1 px-3"
@@ -28,6 +44,7 @@
 <button class="btn btn-ghost text-sm py-1 px-3" disabled title="No email on file">
     Send
 </button>
+{{end}}
 {{end}}
 {{if .OptOutURL}}
 <a href="{{.OptOutURL}}" target="_blank" class="btn btn-ghost text-sm py-1 px-3">

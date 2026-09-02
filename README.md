@@ -91,6 +91,14 @@ That's the password you'll use in Eraser's setup wizard. Your regular Gmail pass
 
 **Daily sending limits:** Gmail allows ~500 emails per day. Eraser caps itself at 450/day by default (`options.daily_send_limit`) and automatically resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
 
+### Prefer not to give any tool your email password?
+
+Choose **"Skip — I'll send the emails myself"** in the setup wizard (or `options.send_mode: manual` in the config, or pick option 2 in `eraser init`). Then Eraser never sends anything and needs no credentials:
+
+- The **Brokers** page shows an **Email** link per broker (the ready-to-send removal request, with an "Open in mail app" button) and a **Mark sent** button.
+- On the CLI: `eraser draft <broker-id>` prints one email, `eraser draft -o ./out` writes one `.eml` per broker (open them in your mail client), and `eraser send --manual` walks the whole list one at a time.
+- After you send one, `eraser mark-sent <broker-id>` (or the web button) records it so `status`, `pipeline` and `export` still account for it.
+
 ---
 
 ## For Developers: CLI Usage

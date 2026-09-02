@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -18,6 +20,7 @@ var (
 	dryRun           bool
 	ignoreDailyLimit bool
 	resend           bool
+	manualSend       bool
 )
 
 // resendCooldown is how long after a successful send a broker is skipped by
@@ -47,6 +50,7 @@ safe to just re-run 'eraser send' until it reports nothing left to do.`,
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
 	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
+	cmd.Flags().BoolVar(&manualSend, "manual", false, "Don't send: show each email and let you mark it sent after you send it by hand (implied by options.send_mode: manual)")
 
 	return cmd
 }
@@ -57,7 +61,9 @@ func runSend() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if err := cfg.Validate(); err != nil {
+	manualMode := manualSend || cfg.IsManualSend()
+
+	if err := cfg.Validate(); err != nil && !manualMode {
 		return fmt.Errorf("invalid config: %w", err)
 	}
 
@@ -119,6 +125,12 @@ func runSend() error {
 	if len(brokers) == 0 {
 		fmt.Println("Nothing to send - every broker has been emailed recently. Run with --resend to force, or check back after the cooldown window.")
 		return nil
+	}
+
+	// Manual mode: never touch SMTP. Walk the list, show each email, and
+	// record the ones the user confirms they've sent by hand.
+	if manualMode && !cfg.Options.DryRun {
+		return runSendManual(cfg, activeProfile, brokers, store)
 	}
 
 	// Enforce the rolling daily send cap so a large broker list can't blow
@@ -253,5 +265,82 @@ func runSend() error {
 		fmt.Printf("📊 Complete: %d sent, %d failed\n", successCount, failCount)
 	}
 
+	return nil
+}
+
+// runSendManual walks the broker list, prints each rendered email, and records
+// the ones the user says they've sent. No SMTP.
+func runSendManual(cfg *config.Config, activeProfile config.NamedProfile, brokers []broker.Broker, store *history.Store) error {
+	tmplEngine, err := template.NewEngine()
+	if err != nil {
+		return fmt.Errorf("failed to initialize templates: %w", err)
+	}
+	tmplName := cfg.Options.Template
+	if tmplName == "" {
+		tmplName = "gdpr"
+	}
+	from := cfg.Email.From
+	if from == "" {
+		from = activeProfile.Email
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("✋ Manual mode - Eraser will not send anything.")
+	fmt.Println("   For each broker: copy the email into your mail client, send it, then answer.")
+	fmt.Printf("   %d broker(s) to review.\n\n", len(brokers))
+
+	recorded, skipped := 0, 0
+	for i, b := range brokers {
+		fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+		fmt.Printf("[%d/%d] %s (%s)\n\n", i+1, len(brokers), b.Name, b.ID)
+
+		if strings.TrimSpace(b.Email) == "" {
+			if b.OptOutURL != "" {
+				fmt.Printf("No email on file - use the opt-out form instead:\n  %s\n\n", b.OptOutURL)
+			} else {
+				fmt.Print("No email on file and no opt-out URL - see notes in brokers.yaml.\n\n")
+			}
+			ans := strings.ToLower(prompt(reader, "Mark handled? [y]es / [n]ext / [q]uit: "))
+			switch {
+			case strings.HasPrefix(ans, "q"):
+				return finishManual(recorded, skipped)
+			case strings.HasPrefix(ans, "y"):
+				if err := store.Add(manualSentRecord(activeProfile.ID, b, tmplName)); err != nil {
+					return fmt.Errorf("failed to record %s: %w", b.ID, err)
+				}
+				recorded++
+			default:
+				skipped++
+			}
+			continue
+		}
+
+		email, err := tmplEngine.Render(tmplName, activeProfile.Profile, b)
+		if err != nil {
+			fmt.Printf("  ❌ Failed to render: %v\n", err)
+			skipped++
+			continue
+		}
+		fmt.Printf("To: %s\nSubject: %s\n\n%s\n", b.Email, email.Subject, email.Body)
+
+		ans := strings.ToLower(prompt(reader, "Sent it? [s]ent / [n]ext / [q]uit: "))
+		switch {
+		case strings.HasPrefix(ans, "q"):
+			return finishManual(recorded, skipped)
+		case strings.HasPrefix(ans, "s"):
+			if err := store.Add(manualSentRecord(activeProfile.ID, b, tmplName)); err != nil {
+				return fmt.Errorf("failed to record %s: %w", b.ID, err)
+			}
+			recorded++
+		default:
+			skipped++
+		}
+	}
+	return finishManual(recorded, skipped)
+}
+
+func finishManual(recorded, skipped int) error {
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Printf("📊 Recorded %d as sent, %d left for later.\n", recorded, skipped)
 	return nil
 }

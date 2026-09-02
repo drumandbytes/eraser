@@ -37,14 +37,14 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 
 **Step 1: Get Eraser**
 
-**macOS (Homebrew):**
+**Homebrew (macOS, and Linux where cask support is available):**
 
 ```bash
 brew install drumandbytes/homebrew-tap/eraser
 ```
 
-Homebrew clears the Gatekeeper quarantine for you. (Homebrew also runs on
-Linux, but cask support there is limited — Linux users, use the tarball below.)
+On macOS this also clears the Gatekeeper quarantine for you. If `brew` on your
+Linux setup doesn't do casks, use the tarball below.
 
 **Prebuilt binary:** grab your OS's file from the
 [Releases page](https://github.com/drumandbytes/eraser/releases) — the broker

@@ -177,6 +177,7 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser mark-bounced <broker-id>...` | Correct the record for brokers whose email actually bounced |
 | `eraser cleanup-bounces` | Find and clear bounced broker email addresses (keeps the broker entry) |
 | `eraser audit-brokers` | Check broker websites/email domains for signs of life |
+| `eraser validate-brokers` | Structural check of a broker list (ids, names, regions, emails, URLs) |
 | `eraser update-brokers` | Fetch the latest broker list (the list ships inside the binary; this refreshes it) |
 | `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
 | `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |

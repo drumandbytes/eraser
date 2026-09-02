@@ -67,6 +67,20 @@ public. So EU expansion is per-country research. The sources worth mining:
   preference programme; participating companies have a defined opt-out.
 - **noyb** and **GDPRhub** case pages - name specific controllers.
 
+## Keeping `data/brokers.yaml` honest
+
+Two checks, both also wired into CI:
+
+- **Structure** - `eraser validate-brokers` (or `go test ./internal/broker/...`,
+  which runs `Validate` against the embedded copy on every PR): a sane entry
+  count, required `id`/`name`, unique ids, known `region` values, plausible
+  emails, well-formed URLs. Run `eraser validate-brokers candidates.yaml` before
+  merging a batch from the importer.
+- **Liveness** - `.github/workflows/broker-audit.yml` runs `eraser audit-brokers
+  --fail-on-dead` every Monday. A red run means one or more brokers look
+  defunct; open the log, investigate, and prune by hand (the audit never edits
+  the file). Also runnable from the Actions tab on demand.
+
 ## Security/Correctness Sweep (2026-08)
 
 A focused review of `internal/browser`, `internal/web`, `internal/history`, and `internal/inbox` (the packages that had zero test coverage and handle either real user PII, untrusted email content, or concurrent web-server state) turned up and fixed 15 findings - see the corresponding commits for detail:

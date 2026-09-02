@@ -5,12 +5,28 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/drumandbytes/eraser/data"
 	"gopkg.in/yaml.v3"
 )
+
+// MinSaneBrokerCount is the floor below which a broker database is assumed to
+// be truncated or corrupt rather than legitimately small. Used both by
+// `update-brokers` (before replacing the local copy) and by Validate.
+const MinSaneBrokerCount = 200
+
+// knownRegions is the closed set of region values the rest of the code
+// branches on (see Filter). A typo like "usa" would silently drop a broker
+// from every region-filtered send.
+var knownRegions = map[string]bool{"us": true, "eu": true, "global": true}
+
+// looseEmailRe is a deliberately permissive check - it only catches obvious
+// breakage (missing @, no dot in the domain, whitespace), not RFC compliance.
+var looseEmailRe = regexp.MustCompile(`^[^\s@]+@[^\s@]+\.[^\s@]+$`)
 
 func isValidURL(rawURL string) bool {
 	if rawURL == "" {
@@ -59,6 +75,62 @@ func Parse(raw []byte) (*BrokerDatabase, error) {
 		sanitizeBroker(&db.Brokers[i])
 	}
 	return &db, nil
+}
+
+// Validate checks structural invariants of a raw broker YAML document: a sane
+// entry count, required id/name, unique ids, known region values, plausible
+// emails, and well-formed http(s) URLs. It parses the bytes itself (without
+// the sanitizing Parse applies) so a malformed URL is reported rather than
+// silently blanked. Returns a single error listing every problem found, or
+// nil. This is what CI runs against data/brokers.yaml.
+func Validate(raw []byte) error {
+	var db BrokerDatabase
+	if err := yaml.Unmarshal(raw, &db); err != nil {
+		return fmt.Errorf("failed to parse broker data: %w", err)
+	}
+
+	var problems []string
+	if len(db.Brokers) < MinSaneBrokerCount {
+		problems = append(problems, fmt.Sprintf("only %d brokers (expected at least %d) - looks truncated", len(db.Brokers), MinSaneBrokerCount))
+	}
+
+	seen := make(map[string]int, len(db.Brokers))
+	for i, b := range db.Brokers {
+		id := strings.TrimSpace(b.ID)
+		label := fmt.Sprintf("entry %d", i)
+		if id != "" {
+			label = fmt.Sprintf("entry %d (%s)", i, id)
+		}
+
+		if id == "" {
+			problems = append(problems, label+": missing id")
+		} else if prev, dup := seen[strings.ToLower(id)]; dup {
+			problems = append(problems, fmt.Sprintf("%s: duplicate id, also at entry %d", label, prev))
+		} else {
+			seen[strings.ToLower(id)] = i
+		}
+
+		if strings.TrimSpace(b.Name) == "" {
+			problems = append(problems, label+": missing name")
+		}
+		if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
+			problems = append(problems, label+": unknown region "+strconv.Quote(b.Region))
+		}
+		if b.Email != "" && !looseEmailRe.MatchString(strings.TrimSpace(b.Email)) {
+			problems = append(problems, label+": implausible email "+strconv.Quote(b.Email))
+		}
+		if b.OptOutURL != "" && !isValidURL(b.OptOutURL) {
+			problems = append(problems, label+": opt_out_url is not a valid http(s) URL: "+strconv.Quote(b.OptOutURL))
+		}
+		if b.Website != "" && !isValidURL(b.Website) {
+			problems = append(problems, label+": website is not a valid http(s) URL: "+strconv.Quote(b.Website))
+		}
+	}
+
+	if len(problems) > 0 {
+		return fmt.Errorf("broker database has %d problem(s):\n  - %s", len(problems), strings.Join(problems, "\n  - "))
+	}
+	return nil
 }
 
 // LoadFromFile parses a broker YAML file from an explicit path.

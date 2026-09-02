@@ -1,0 +1,34 @@
+name: Broker audit
+
+# Weekly liveness check of the broker list: every entry's email domain
+# (MX/host lookup) and website (HTTP HEAD). A failing run means one or more
+# brokers look defunct - open the run log, then investigate and prune by hand
+# (the audit never edits data/brokers.yaml). Also runnable on demand.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: broker-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Validate structure
+        run: go run ./cmd/eraser validate-brokers
+
+      - name: Audit liveness
+        run: go run ./cmd/eraser audit-brokers --timeout 20 --fail-on-dead

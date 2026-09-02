@@ -20,7 +20,8 @@ go test ./...
 ./eraser add-broker
 ./eraser mark-bounced <broker-id>...   # correct the record when an email actually bounced
 ./eraser cleanup-bounces               # find + clear bounced broker emails
-./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15]  # MX/website liveness check
+./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15] [--fail-on-dead]  # MX/website liveness check
+./eraser validate-brokers [file]      # structural check: ids, names, regions, emails, URLs (exit non-zero on any problem)
 ./eraser update-brokers [--check]      # fetch the latest broker list (conditional; writes ~/.eraser/brokers.yaml)
 ./eraser guides [-o site/content] [--format md|html]  # generate opt-out guide pages + a JSON broker directory
 ./eraser monitor                       # IMAP inbox monitoring for broker replies

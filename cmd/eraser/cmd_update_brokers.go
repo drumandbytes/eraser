@@ -15,10 +15,6 @@ import (
 
 const defaultBrokersURL = "https://raw.githubusercontent.com/drumandbytes/eraser/main/data/brokers.yaml"
 
-// minSaneBrokerCount guards against replacing the local list with a truncated
-// or empty download (a proxy error page, a bad commit, ...).
-const minSaneBrokerCount = 200
-
 func updateBrokersCmd() *cobra.Command {
 	var (
 		url   string
@@ -97,12 +93,12 @@ func runUpdateBrokers(url string, check bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to read response: %w", err)
 	}
+	if err := broker.Validate(body); err != nil {
+		return fmt.Errorf("refusing to replace the local copy - %w", err)
+	}
 	db, err := broker.Parse(body)
 	if err != nil {
 		return fmt.Errorf("downloaded file is not valid broker YAML: %w", err)
-	}
-	if len(db.Brokers) < minSaneBrokerCount {
-		return fmt.Errorf("downloaded list has only %d entries (expected at least %d) - refusing to replace the local copy", len(db.Brokers), minSaneBrokerCount)
 	}
 
 	before := currentBrokerCount()

@@ -54,6 +54,7 @@ func newAuditChecker(timeout time.Duration) *auditChecker {
 func auditBrokersCmd() *cobra.Command {
 	var region, category string
 	var timeoutSec int
+	var failOnDead bool
 
 	cmd := &cobra.Command{
 		Use:   "audit-brokers",
@@ -76,13 +77,14 @@ Examples:
   eraser audit-brokers --region eu
   eraser audit-brokers --category people-search --timeout 15`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAuditBrokers(region, category, time.Duration(timeoutSec)*time.Second)
+			return runAuditBrokers(region, category, time.Duration(timeoutSec)*time.Second, failOnDead)
 		},
 	}
 
 	cmd.Flags().StringVar(&region, "region", "", "Only audit brokers in this region")
 	cmd.Flags().StringVar(&category, "category", "", "Only audit brokers in this category")
 	cmd.Flags().IntVar(&timeoutSec, "timeout", 10, "Per-check timeout in seconds")
+	cmd.Flags().BoolVar(&failOnDead, "fail-on-dead", false, "Exit non-zero if any broker has a dead email domain or unreachable website (for scheduled CI)")
 
 	return cmd
 }
@@ -92,7 +94,7 @@ type auditResult struct {
 	verdict auditVerdict
 }
 
-func runAuditBrokers(region, category string, timeout time.Duration) error {
+func runAuditBrokers(region, category string, timeout time.Duration, failOnDead bool) error {
 	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
@@ -117,6 +119,18 @@ func runAuditBrokers(region, category string, timeout time.Duration) error {
 
 	results := auditConcurrently(targets, newAuditChecker(timeout), 20)
 	printAuditResults(results)
+
+	if failOnDead {
+		dead := 0
+		for _, r := range results {
+			if r.verdict == verdictEmailDead || r.verdict == verdictWebsiteDead {
+				dead++
+			}
+		}
+		if dead > 0 {
+			return fmt.Errorf("%d broker(s) have a dead email domain or unreachable website - see the list above", dead)
+		}
+	}
 
 	return nil
 }

@@ -6,17 +6,17 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/broker"
 )
 
 func TestRunUpdateBrokers(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 
-	const body = `brokers:
-` + // 3 lines per broker, need >= minSaneBrokerCount entries to pass the guard
-		""
-	yaml := body
-	for i := 0; i < minSaneBrokerCount+5; i++ {
+	// need >= broker.MinSaneBrokerCount entries to pass the guard
+	yaml := "brokers:\n"
+	for i := 0; i < broker.MinSaneBrokerCount+5; i++ {
 		yaml += "  - {id: b" + itoa(i) + ", name: B" + itoa(i) + ", email: b@x.y, region: us}\n"
 	}
 

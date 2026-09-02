@@ -75,35 +75,25 @@ Three email templates (`internal/template/templates/`):
 - **Generic**: General privacy request referencing multiple laws
 
 ### Web UI static assets
-`internal/web/static/` (embedded via `//go:embed static/*`) holds two things worth
-knowing about:
+`internal/web/static/` (embedded via `//go:embed static/*`) holds:
 - `js/htmx.min.js` - vendored as-is.
-- `css/tailwind.css` - a **precompiled** stylesheet, generated ahead of time with the
-  [Tailwind standalone CLI](https://github.com/tailwindlabs/tailwindcss/releases) (no
-  Node/npm needed - this is a pure Go module) from `css/tailwind.input.css` and the
-  classes actually used in `internal/web/templates/**/*.html`. This replaced an earlier
-  runtime JIT compiler (`tailwind-jit.js`, self-hosted CDN bundle) that compiled CSS in
-  the browser on every page load and needed `'unsafe-eval'` in the CSP for it. If you
-  add a template with a **new** Tailwind utility class, it won't render until you
-  regenerate the file:
-  ```
-  ./tailwindcss -i internal/web/static/css/tailwind.input.css \
-    -o internal/web/static/css/tailwind.css \
-    -c tailwind.config.js --minify
-  ```
-  where `tailwind.config.js` is:
-  ```js
-  module.exports = {
-    content: ["./internal/web/templates/**/*.html"],
-    theme: { extend: { colors: { accent: '#6366f1' } } }
-  }
-  ```
-  The `<link>` for it in `layout.html` is deliberately placed *after* the
-  hand-authored `<style>` block, not in `<head>` before it - same-specificity rules
-  are decided by source order, and a Tailwind utility like `.w-auto` needs to win over
-  a same-specificity component class like `.input{width:100%}`. Moving it earlier
-  silently breaks every element that combines a component class with a sizing utility
-  (this happened once already - see the comment above the `<link>` in `layout.html`).
+- `css/tokens.css` - design tokens (colour / elevation / type custom properties for
+  both themes). The only place raw hex values are named. Linked first in `layout.html`.
+- `css/utilities.css` - a hand-maintained stylesheet: a preflight reset plus the
+  layout / spacing / sizing / flex / grid utilities the templates use. It began as
+  Tailwind v3.4.17 output, but there is **no Tailwind toolchain** any more - no config,
+  no CLI, no build step. If a template needs a utility class that isn't in the file,
+  add the rule by hand (the spacing scale is 0.25rem steps: `.p-2` = 0.5rem, `.p-4` =
+  1rem, ...).
+- Component classes (`.btn`, `.card`, `.badge`, `.nav-link`, ...) live in the `<style>`
+  block at the top of `layout.html`, not in `utilities.css`.
+
+The `<link>` for `utilities.css` in `layout.html` is deliberately placed *after* the
+hand-authored `<style>` block - same-specificity rules are decided by source order, and
+a utility like `.w-auto` needs to win over a same-specificity component class like
+`.input{width:100%}`. Moving it earlier silently breaks every element that combines a
+component class with a sizing utility (this happened once already - see the comment
+above the `<link>` in `layout.html`).
 
 ### Flow
 1. Load user config from `~/.eraser/config.yaml`, resolve the active profile (see [multi-profile.md](multi-profile.md))

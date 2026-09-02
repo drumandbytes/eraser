@@ -1,0 +1,64 @@
+/* ============================================
+   ERASER DESIGN TOKENS
+   The single source of truth for colour, elevation and type.
+   Nothing else in the codebase should name a raw hex value.
+   Both themes redefine the same custom-property names; the
+   `.light` class on <html> (set by the theme script in layout.html)
+   selects the light values.
+   ============================================ */
+
+/* Dark theme (default) */
+:root {
+    --bg-base: #0a0a0b;
+    --bg-surface: #131315;
+    --bg-elevated: #1a1a1d;
+    --bg-glass: rgba(19, 19, 21, 0.9);
+
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --accent-muted: rgba(99, 102, 241, 0.12);
+    --accent-glow: rgba(99, 102, 241, 0.3);
+
+    --success: #22c55e;
+    --warning: #eab308;
+    --error: #ef4444;
+
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --text-muted: #6b6b71;
+
+    --border: #232326;
+    --border-subtle: #1a1a1d;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 4px 10px -2px rgba(0, 0, 0, 0.5);
+
+    --font-mono: "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+}
+
+/* Light theme */
+.light {
+    --bg-base: #fafafa;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f4f4f5;
+    --bg-glass: rgba(255, 255, 255, 0.9);
+
+    --accent: #4f46e5;
+    --accent-hover: #6366f1;
+    --accent-muted: rgba(79, 70, 229, 0.08);
+    --accent-glow: rgba(79, 70, 229, 0.25);
+
+    --success: #16a34a;
+    --warning: #b45309;
+    --error: #dc2626;
+
+    --text-primary: #18181b;
+    --text-secondary: #52525b;
+    --text-muted: #a1a1aa;
+
+    --border: #e4e4e7;
+    --border-subtle: #f4f4f5;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 4px 10px -2px rgba(0, 0, 0, 0.08);
+}

@@ -361,6 +361,18 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(middleware.Compress(5))
 	r.Use(securityHeaders)
 
+	// The server only ever binds loopback over plaintext HTTP (see NewServer /
+	// Start). Tell gorilla/csrf that, so it applies its plaintext-HTTP rules
+	// instead of the HTTPS-strict Origin/Referer checks it assumes by default -
+	// otherwise a request is only accepted when its Origin host happens to be
+	// in TrustedOrigins verbatim, which breaks as soon as the user reaches the
+	// UI on a host:port combination we didn't predict.
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			next.ServeHTTP(w, csrf.PlaintextHTTPRequest(req))
+		})
+	})
+
 	// CSRF protection - secure for localhost only
 	csrfMiddleware := csrf.Protect(
 		s.csrfKey,

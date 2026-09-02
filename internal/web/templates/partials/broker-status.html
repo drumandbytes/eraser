@@ -1,0 +1,19 @@
+{{- /* Status badge for one broker. Rendered identically in the desktop table
+       cell (#status-<id>) and the mobile card (#status-mobile-<id>), and by the
+       broker-status-badge.html HTMX response after a send. */ -}}
+{{if eq .Status "sent"}}
+<span class="badge badge-success">
+    <span class="status-dot status-dot-success"></span>
+    Sent
+</span>
+{{else if eq .Status "failed"}}
+<span class="badge badge-error">
+    <span class="status-dot status-dot-error"></span>
+    Failed
+</span>
+{{else}}
+<span class="badge badge-neutral">
+    <span class="status-dot" style="background: var(--text-muted);"></span>
+    Never sent
+</span>
+{{end}}

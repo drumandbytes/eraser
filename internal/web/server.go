@@ -289,14 +289,18 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		return nil, err
 	}
 
-	// Add partial templates as standalone templates (for HTMX responses)
-	for name, content := range partialTemplates {
-		partialTmpl := template.New(name).Funcs(funcs)
-		_, err = partialTmpl.Parse(content)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse partial %s: %w", name, err)
+	// Add each partial as a standalone template for HTMX fragment responses.
+	// Every partial is associated into the set so one partial can invoke another
+	// with {{template "partials/x.html" .}} (e.g. broker-actions.html reuses the
+	// desktop/mobile action clusters).
+	for entry := range partialTemplates {
+		set := template.New("").Funcs(funcs)
+		for pName, pContent := range partialTemplates {
+			if _, err = set.New(pName).Parse(pContent); err != nil {
+				return nil, fmt.Errorf("failed to parse partial %s: %w", pName, err)
+			}
 		}
-		templates[name] = partialTmpl
+		templates[entry] = set.Lookup(entry)
 	}
 
 	return templates, nil

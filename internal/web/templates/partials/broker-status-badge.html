@@ -1,17 +1,5 @@
-{{if eq .Status "sent"}}
-<span class="badge badge-success">
-    <span class="status-dot status-dot-success"></span>
-    Sent
-</span>
-{{else if eq .Status "failed"}}
-<span class="badge badge-error">
-    <span class="status-dot status-dot-error"></span>
-    Failed
-</span>
-{{else}}
-<span class="badge badge-neutral">
-    <span class="status-dot" style="background: var(--text-muted);"></span>
-    Never sent
-</span>
-{{end}}
-<span id="status-mobile-{{.ID}}" hx-swap-oob="innerHTML">{{if eq .Status "sent"}}<span class="badge badge-success">Sent</span>{{else if eq .Status "failed"}}<span class="badge badge-error">Failed</span>{{else}}<span class="badge badge-neutral">Pending</span>{{end}}</span>
+{{- /* HTMX response after a send: refreshes the desktop status cell and, out of
+       band, the mobile one. The badge itself is defined once in
+       broker-status.html and shared with broker-list.html. */ -}}
+{{template "partials/broker-status.html" .}}
+<span id="status-mobile-{{.ID}}" hx-swap-oob="innerHTML">{{template "partials/broker-status.html" .}}</span>

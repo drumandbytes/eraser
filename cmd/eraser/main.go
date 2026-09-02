@@ -61,6 +61,9 @@ requests to data brokers, helping you protect your privacy.
 It supports GDPR, CCPA, and generic removal request templates, and can
 send via Gmail SMTP.`,
 	}
+	// So a standalone binary (no LICENSE file alongside it) still points at
+	// the MIT terms it ships under.
+	rootCmd.SetVersionTemplate("eraser {{.Version}}\nMIT licensed - https://github.com/drumandbytes/eraser/blob/main/LICENSE\n")
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eraser/config.yaml)")

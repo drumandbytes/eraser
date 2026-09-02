@@ -4,7 +4,9 @@ version: 2
 
 before:
   hooks:
-    - go mod tidy
+    # Just prime the module cache. `go mod tidy` here would rewrite go.mod
+    # mid-release; CI already verifies it on the merge that precedes a tag.
+    - go mod download
 
 builds:
   - id: eraser

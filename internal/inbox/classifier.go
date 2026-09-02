@@ -401,9 +401,14 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 	// Set reason based on classification
 	result.Reason = getClassificationReason(result.Type, maxScore)
 
-	// Flag for manual review only if unknown or very low confidence
-	// Classified items with any confidence don't need review since patterns matched
-	result.NeedsReview = result.Type == ResponseUnknown || (result.Confidence < 0.4 && result.Type != ResponseUnknown)
+	// Flag for manual review if unknown, low confidence, or an ambiguous
+	// terminal verdict. `rejected` and `success` are the states that remove a
+	// broker from the overdue list feeding an `eraser export` / DPA complaint,
+	// so a wrong one is costly - hold those to a higher confidence bar.
+	terminalVerdict := result.Type == ResponseRejected || result.Type == ResponseSuccess
+	result.NeedsReview = result.Type == ResponseUnknown ||
+		(result.Confidence < 0.4 && result.Type != ResponseUnknown) ||
+		(terminalVerdict && result.Confidence < 0.7)
 
 	return result
 }

@@ -75,6 +75,7 @@ send via Gmail SMTP.`,
 	rootCmd.AddCommand(markBouncedCmd())
 	rootCmd.AddCommand(auditBrokersCmd())
 	rootCmd.AddCommand(profileCmd())
+	rootCmd.AddCommand(exportCmd())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

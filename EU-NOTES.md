@@ -34,6 +34,8 @@ Separately, a category of EU Data Governance Act-registered "data intermediation
 
 Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, Latvia's DPA is Datu valsts inspekcija (DVI): https://www.dvi.gov.lv/en. Worth knowing going in: DVI, like most EU DPAs, can be slow — noyb.eu shows some of its own complaints against Latvian companies pending multiple years. In practice the GDPR request itself, and the liability it puts on the company, is usually what gets compliance — not a fast DPA turnaround. noyb.eu also has complaint templates and occasionally takes cases directly: https://noyb.eu
 
+Run `./eraser export` to generate the evidence to attach to a complaint: per broker, what was sent and when, the reconstructed request, every reply and its date, and an explicit list of controllers that are past the 1-month deadline with no substantive response. `--format html` opens in a browser and prints to PDF.
+
 ## Sending 770+ emails safely
 
 The README originally claimed eraser auto-chunks large sends across multiple days - that wasn't actually implemented in the code, just documented. It is now: `send` caps itself at `options.daily_send_limit` (450 by default, safely under Gmail's ~500/day) per rolling 24h window, and automatically skips any broker it already successfully emailed in the last 25 days. That means it's safe to just run:

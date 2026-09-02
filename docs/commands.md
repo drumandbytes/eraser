@@ -20,6 +20,7 @@ go test ./...
 ./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15]  # MX/website liveness check
 ./eraser monitor                       # IMAP inbox monitoring for broker replies
 ./eraser pipeline                      # which brokers need manual follow-up
+./eraser export [-o file] [--format html|json] [--since 2026-01-01]  # evidence report for a DPA/noyb complaint
 ./eraser confirm                       # click confirmation links from broker emails
 ./eraser fill                          # browser-automate opt-out forms
 ./eraser serve [-p 3000]               # web UI

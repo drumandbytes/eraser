@@ -141,6 +141,7 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser audit-brokers` | Check broker websites/email domains for signs of life |
 | `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
 | `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
+| `eraser export` | Write an evidence report (HTML/JSON) of every request and reply — for a DPA/noyb complaint |
 | `eraser confirm` | Click confirmation links found in broker emails |
 | `eraser fill` | Fill opt-out forms via browser automation |
 | `eraser serve` | Start web interface |

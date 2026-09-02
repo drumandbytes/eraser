@@ -34,6 +34,14 @@ vendor/
 # GoReleaser
 dist/
 
+# Hugo site: generated content + build output
+/site/public/
+/site/resources/
+/site/.hugo_build.lock
+/site/content/brokers/*.md
+!/site/content/brokers/_index.md
+/site/static/brokers.json
+
 # Logs
 *.log
 

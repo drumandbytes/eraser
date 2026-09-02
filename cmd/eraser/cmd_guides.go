@@ -141,8 +141,10 @@ func runGuides(outDir, format string) error {
 	}
 
 	// JSON directory of the entire list (curated + long tail) for the site's
-	// filterable directory page.
-	dataDir := filepath.Join(filepath.Dir(strings.TrimRight(outDir, "/")), "data")
+	// filterable directory page - written into the site's static/ dir so the
+	// browser can fetch it directly (a top-level JSON array isn't a valid Hugo
+	// data file).
+	dataDir := filepath.Join(filepath.Dir(strings.TrimRight(outDir, "/")), "static")
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return err
 	}

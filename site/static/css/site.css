@@ -1,0 +1,95 @@
+/* Eraser docs site. Light, calm, evidentiary. Palette mirrors the app's
+   light-theme tokens (internal/web/static/css/tokens.css). */
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --elevated: #f4f4f5;
+  --ink: #18181b;
+  --ink-2: #52525b;
+  --ink-3: #71717a;
+  --border: #e4e4e7;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --warn: #b45309;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.65 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+.topbar {
+  display: flex; align-items: baseline; gap: 1.5rem;
+  padding: 1rem clamp(1rem, 4vw, 2.5rem);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+.brand { font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.topbar nav { display: flex; gap: 1.1rem; flex-wrap: wrap; }
+.topbar nav a { color: var(--ink-2); font-size: .95rem; }
+.topbar nav a.active { color: var(--ink); font-weight: 600; }
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 2.5rem clamp(1rem, 4vw, 2rem) 4rem; }
+
+.hero h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); letter-spacing: -0.02em; margin: 0 0 .5rem; }
+.hero p { font-size: 1.08rem; color: var(--ink-2); max-width: 60ch; }
+.cta { margin-top: 1.5rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+.btn {
+  display: inline-block; padding: .6rem 1.1rem; border-radius: 8px;
+  background: var(--accent); color: #fff; font-weight: 600;
+}
+.btn:hover { background: var(--accent-hover); color: #fff; text-decoration: none; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); }
+
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 3.5rem; }
+.cols h2 { font-size: 1.15rem; margin: 0 0 .6rem; }
+@media (max-width: 640px) { .cols { grid-template-columns: 1fr; } }
+
+.prose h1 { font-size: clamp(1.5rem, 4vw, 2rem); letter-spacing: -0.01em; }
+.prose h2 { font-size: 1.25rem; margin-top: 2.2rem; }
+.prose h3 { font-size: 1.05rem; margin-top: 1.6rem; }
+.prose pre {
+  background: var(--elevated); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1rem; overflow-x: auto;
+  font-size: .85rem; line-height: 1.5;
+}
+.prose blockquote {
+  margin: 1.2rem 0; padding: .2rem 0 .2rem 1rem;
+  border-left: 3px solid var(--border); color: var(--ink-2);
+}
+.prose code { background: var(--elevated); padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+.prose pre code { background: none; padding: 0; }
+.crumb, .meta { color: var(--ink-3); font-size: .9rem; }
+.linklist { padding-left: 1.1rem; }
+.linklist li { margin: .35rem 0; }
+
+.filters { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin: 1.5rem 0 .5rem; }
+.filters input[type=search], .filters select {
+  padding: .45rem .6rem; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); font: inherit; font-size: .9rem;
+}
+.filters input[type=search] { min-width: 220px; }
+.filters label { font-size: .9rem; color: var(--ink-2); display: flex; gap: .35rem; align-items: center; }
+
+table.dir { width: 100%; border-collapse: collapse; font-size: .9rem; margin-top: .5rem; }
+table.dir th, table.dir td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.dir th { color: var(--ink-3); font-weight: 600; }
+#rows td:nth-child(2), #rows td:nth-child(3) { color: var(--ink-2); text-transform: uppercase; font-size: .8rem; letter-spacing: .03em; }
+table.dir a { word-break: break-word; }
+.tag {
+  display: inline-block; font-size: .7rem; font-weight: 600; letter-spacing: .03em;
+  padding: .05rem .4rem; border-radius: 3px; background: var(--accent); color: #fff;
+  text-transform: uppercase; vertical-align: 1px;
+}
+
+.foot {
+  max-width: 860px; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 2rem) 3rem;
+  border-top: 1px solid var(--border); color: var(--ink-3); font-size: .85rem;
+}

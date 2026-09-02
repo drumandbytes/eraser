@@ -1,0 +1,29 @@
+baseURL = "https://eraser.drumandbytes.dev/"
+# locale is derived from the default language; no explicit setting needed
+title = "Eraser"
+enableRobotsTXT = true
+disableKinds = ["taxonomy", "term", "RSS"]
+
+[params]
+  description = "Send data removal requests to data brokers. Open source, local-first, free."
+  repo = "https://github.com/drumandbytes/eraser"
+
+[markup.goldmark.renderer]
+  unsafe = true
+
+[[menu.main]]
+  name = "Broker directory"
+  pageRef = "/brokers"
+  weight = 10
+[[menu.main]]
+  name = "Guides"
+  pageRef = "/guides"
+  weight = 20
+[[menu.main]]
+  name = "Authorities"
+  pageRef = "/authorities"
+  weight = 30
+[[menu.main]]
+  name = "GitHub"
+  url = "https://github.com/drumandbytes/eraser"
+  weight = 40

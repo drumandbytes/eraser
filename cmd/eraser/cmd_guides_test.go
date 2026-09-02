@@ -72,7 +72,7 @@ func TestRunGuidesMarkdown(t *testing.T) {
 	}
 
 	// Directory JSON has every broker, curated flag set correctly.
-	jb, err := os.ReadFile(filepath.Join(dir, "site", "data", "brokers.json"))
+	jb, err := os.ReadFile(filepath.Join(dir, "site", "static", "brokers.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "data/brokers.yaml"
-      - "data/eu-dpas.yaml"
+      - "data/authorities.yaml"
       - "site/**"
       - "cmd/eraser/cmd_guides.go"
       - "internal/template/templates/**"
@@ -40,7 +40,7 @@ jobs:
         run: |
           go run ./cmd/eraser guides --format md --output site/content
           mkdir -p site/data
-          cp data/eu-dpas.yaml site/data/eu_dpas.yaml
+          cp data/authorities.yaml site/data/authorities.yaml
 
       - name: Build
         run: hugo --minify --source site

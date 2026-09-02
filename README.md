@@ -298,7 +298,8 @@ Yes, with caveats:
 
 Contributions are welcome. The most helpful things:
 
-- **Adding brokers** — The database at `data/brokers.yaml` can always use more entries
+- **Adding brokers** — The database at `data/brokers.yaml` can always use more entries; broker contact details also go stale
+- **Privacy authorities** — `data/authorities.yaml` isn't exhaustive and links move; corrections and additions welcome
 - **Template improvements** — Better wording for removal requests
 - **Bug fixes** — Found something broken? PRs welcome
 - **Documentation** — Typos, clarifications, better examples

@@ -32,7 +32,7 @@ Separately, a category of EU Data Governance Act-registered "data intermediation
 
 ## If a company ignores or refuses a GDPR request
 
-Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, you can lodge a complaint (GDPR Art. 77) with the supervisory authority of the EU/EEA country where you live, work, or where the infringement happened. The full list of authorities and their websites is in [data/eu-dpas.yaml](data/eu-dpas.yaml); `./eraser export` also names the one for your profile's `country`.
+Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, you can lodge a complaint (GDPR Art. 77) with the supervisory authority of the EU/EEA country where you live, work, or where the infringement happened. The full list of authorities and their websites is in [data/authorities.yaml](data/authorities.yaml); `./eraser export` also names the one for your profile's `country`.
 
 Set expectations: most EU DPAs are slow — noyb.eu shows some of its own complaints pending multiple years. In practice the GDPR request itself, and the liability it puts on the company, is usually what gets compliance, not a fast DPA turnaround. [noyb.eu](https://noyb.eu) has complaint templates and occasionally takes cases directly.
 

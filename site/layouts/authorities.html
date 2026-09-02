@@ -2,18 +2,28 @@
 <article class="prose">
   <h1>{{ .Title }}</h1>
   {{ .Content }}
+
+  {{ $auth := hugo.Data.authorities.authorities }}
+  {{ $regions := slice }}
+  {{ range $auth }}{{ $regions = $regions | append .region }}{{ end }}
+
+  {{ range $r := ($regions | uniq) }}
+  <h2>{{ $r }}</h2>
   <table class="dir">
-    <thead><tr><th>Country</th><th>Authority</th><th>Website</th></tr></thead>
+    <thead><tr><th>Country</th><th>Authority</th>{{ if ne $r "European Union / EEA" }}<th>Law</th>{{ end }}<th>Website</th></tr></thead>
     <tbody>
-    {{ range hugo.Data.eu_dpas.authorities }}
+    {{ range where $auth "region" $r }}
       <tr>
-        <td>{{ .country }}{{ if not .eea }} <span class="meta">(non-EEA)</span>{{ end }}</td>
+        <td>{{ .country }}</td>
         <td>{{ .authority }}{{ with .acronym }} ({{ . }}){{ end }}{{ with .notes }}<br><span class="meta">{{ . }}</span>{{ end }}</td>
+        {{ if ne $r "European Union / EEA" }}<td class="meta">{{ .law }}</td>{{ end }}
         <td><a href="{{ .website }}" rel="noopener">{{ .website }}</a></td>
       </tr>
     {{ end }}
     </tbody>
   </table>
-  <p class="meta">Also: <a href="https://noyb.eu">noyb.eu</a> — complaint templates and strategic litigation.</p>
+  {{ end }}
+
+  <p class="meta">Also: <a href="https://noyb.eu">noyb.eu</a> — GDPR complaint templates and strategic litigation.</p>
 </article>
 {{ end }}

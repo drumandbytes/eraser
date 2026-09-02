@@ -4,11 +4,11 @@ import "testing"
 
 func TestAll(t *testing.T) {
 	all := All()
-	if len(all) < 30 {
-		t.Fatalf("expected 30+ authorities, got %d", len(all))
+	if len(all) < 40 {
+		t.Fatalf("expected 40+ authorities, got %d", len(all))
 	}
 	for _, a := range all {
-		if a.Country == "" || a.Authority == "" || a.Website == "" || a.Code == "" {
+		if a.Country == "" || a.Authority == "" || a.Website == "" || a.Code == "" || a.Region == "" {
 			t.Errorf("incomplete entry: %+v", a)
 		}
 	}
@@ -16,14 +16,20 @@ func TestAll(t *testing.T) {
 
 func TestForCountry(t *testing.T) {
 	cases := map[string]string{
-		"Latvia":          "LV",
-		"latvia":          "LV",
-		"LV":              "LV",
-		"Germany":         "DE",
-		"UK":              "GB",
-		"United Kingdom":  "GB",
-		"Czechia":         "CZ",
-		"The Netherlands": "NL",
+		"Latvia":                   "LV",
+		"latvia":                   "LV",
+		"LV":                       "LV",
+		"Germany":                  "DE",
+		"UK":                       "GB",
+		"United Kingdom":           "GB",
+		"Czechia":                  "CZ",
+		"The Netherlands":          "NL",
+		"USA":                      "US",
+		"United States":            "US",
+		"United States of America": "US",
+		"California":               "US-CA",
+		"Canada":                   "CA",
+		"Australia":                "AU",
 	}
 	for in, wantCode := range cases {
 		got := ForCountry(in)
@@ -40,6 +46,23 @@ func TestForCountry(t *testing.T) {
 	}
 	if ForCountry("") != nil {
 		t.Error("ForCountry(empty) should be nil")
+	}
+}
+
+func TestByRegion(t *testing.T) {
+	order, groups := ByRegion()
+	if len(order) < 3 {
+		t.Fatalf("expected several regions, got %v", order)
+	}
+	if order[0] != "European Union / EEA" {
+		t.Errorf("first region = %q, want European Union / EEA", order[0])
+	}
+	total := 0
+	for _, r := range order {
+		total += len(groups[r])
+	}
+	if total != len(All()) {
+		t.Errorf("grouped %d != All() %d", total, len(All()))
 	}
 }
 

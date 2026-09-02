@@ -22,6 +22,7 @@ go test ./...
 ./eraser cleanup-bounces               # find + clear bounced broker emails
 ./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15]  # MX/website liveness check
 ./eraser update-brokers [--check]      # fetch the latest broker list (conditional; writes ~/.eraser/brokers.yaml)
+./eraser guides [-o site/content] [--format md|html]  # generate opt-out guide pages + a JSON broker directory
 ./eraser monitor                       # IMAP inbox monitoring for broker replies
 ./eraser pipeline                      # which brokers need manual follow-up
 ./eraser export [-o file] [--format html|json] [--since 2026-01-01]  # evidence report for a DPA/noyb complaint

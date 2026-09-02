@@ -331,6 +331,14 @@ func (s *Server) getOrCreateSession(w http.ResponseWriter, r *http.Request) *Ses
 		// Note: Secure flag omitted for localhost HTTP; add for production HTTPS
 	})
 
+	// Also attach the cookie to the *incoming* request so a later
+	// getSession/updateSession(r) call within this same request sees the
+	// brand-new session. Without this, the first POST /setup/profile creates
+	// the session but the immediately-following updateSession(r) can't find
+	// it, so the profile is never stored and the wizard bounces back to step
+	// one on a fresh install.
+	r.AddCookie(&http.Cookie{Name: "eraser_session", Value: sessionID})
+
 	return s.sessions.Get(sessionID)
 }
 

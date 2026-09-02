@@ -8,7 +8,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 // isContextErr reports whether err is (or wraps) a context cancellation or

@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
-	"github.com/eraser-privacy/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/spf13/cobra"
 )
 

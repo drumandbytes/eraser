@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eraser-privacy/eraser/data"
+	"github.com/drumandbytes/eraser/data"
 	"gopkg.in/yaml.v3"
 )
 

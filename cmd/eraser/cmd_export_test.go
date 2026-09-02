@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
-	"github.com/eraser-privacy/eraser/internal/history"
-	emailtmpl "github.com/eraser-privacy/eraser/internal/template"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/history"
+	emailtmpl "github.com/drumandbytes/eraser/internal/template"
 )
 
 func testProfile() config.Profile {

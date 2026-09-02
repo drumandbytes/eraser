@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/eraser-privacy/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/go-chi/chi/v5"
 )
 

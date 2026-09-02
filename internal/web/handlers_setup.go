@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/config"
-	"github.com/eraser-privacy/eraser/internal/email"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/email"
 )
 
 // Setup wizard handlers

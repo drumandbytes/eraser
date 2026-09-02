@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/spf13/cobra"
 )
 

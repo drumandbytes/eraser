@@ -30,7 +30,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/broker"
 	"gopkg.in/yaml.v3"
 )
 

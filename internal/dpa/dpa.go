@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/eraser-privacy/eraser/data"
+	"github.com/drumandbytes/eraser/data"
 	"gopkg.in/yaml.v3"
 )
 

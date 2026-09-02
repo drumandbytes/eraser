@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
-	"github.com/eraser-privacy/eraser/internal/history"
-	"github.com/eraser-privacy/eraser/internal/inbox"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/inbox"
 	"github.com/spf13/cobra"
 )
 

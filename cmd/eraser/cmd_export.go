@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
-	"github.com/eraser-privacy/eraser/internal/config"
-	"github.com/eraser-privacy/eraser/internal/dpa"
-	"github.com/eraser-privacy/eraser/internal/history"
-	emailtmpl "github.com/eraser-privacy/eraser/internal/template"
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/dpa"
+	"github.com/drumandbytes/eraser/internal/history"
+	emailtmpl "github.com/drumandbytes/eraser/internal/template"
 	"github.com/spf13/cobra"
 )
 

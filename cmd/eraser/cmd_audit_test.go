@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/eraser-privacy/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/broker"
 )
 
 func stubChecker(mxOK, hostOK, headStatus int, headErr error) *auditChecker {

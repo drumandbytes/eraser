@@ -7,7 +7,7 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/eraser-privacy/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
 type SMTPSender struct {

@@ -3205,6 +3205,7 @@ brokers:
       opt_out_url: https://www.internetbrands.com/privacy/privacy-contact-form.php
       region: us
       category: marketing
+      notes: 'Reply (2026-09-02) will not proceed until you specify which Internet Brands website the erasure request concerns - MH Sub I, LLC runs many separate consumer sites (WebMD, Nolo, Martindale-Hubbell, CarsDirect, Fodor''s, etc.). Excluded from bulk send; needs a manual reply that either names the specific site(s) used or asserts the Art. 17 request covers all personal data MH Sub I, LLC holds as controller.'
     - id: mightyrep
       name: Mightyrep
       email: privacy@mightyrep.com

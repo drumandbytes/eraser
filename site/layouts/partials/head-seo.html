@@ -1,0 +1,51 @@
+{{- /* Open Graph, Twitter card and JSON-LD. Kept in one partial so baseof.html
+       stays readable and the publisher Organization is defined once. */ -}}
+{{- $isHome := .IsHome -}}
+{{- $title := cond $isHome "Eraser — data broker removal" (printf "%s · Eraser" .Title) -}}
+{{- $desc := or .Description .Site.Params.description -}}
+{{- $org := dict "@type" "Organization" "name" "Drum and Bytes" "url" "https://drumandbytes.com" -}}
+<meta property="og:type" content="{{ cond .IsPage "article" "website" }}">
+<meta property="og:site_name" content="Eraser">
+<meta property="og:title" content="{{ $title }}">
+<meta property="og:description" content="{{ $desc }}">
+<meta property="og:url" content="{{ .Permalink }}">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ $title }}">
+<meta name="twitter:description" content="{{ $desc }}">
+{{- $ld := dict -}}
+{{- if $isHome -}}
+  {{- $ld = dict
+      "@context" "https://schema.org"
+      "@graph" (slice
+        (dict "@type" "WebSite" "name" "Eraser" "url" .Site.BaseURL "description" $desc "publisher" $org)
+        (dict "@type" "SoftwareApplication" "name" "Eraser"
+              "applicationCategory" "SecurityApplication"
+              "operatingSystem" "macOS, Linux, Windows"
+              "url" .Site.BaseURL
+              "description" $desc
+              "isAccessibleForFree" true
+              "offers" (dict "@type" "Offer" "price" "0" "priceCurrency" "USD")
+              "author" $org))
+  -}}
+{{- else if and .IsPage (eq .Section "guides") -}}
+  {{- $ld = dict
+      "@context" "https://schema.org"
+      "@type" "TechArticle"
+      "headline" .Title
+      "description" $desc
+      "url" .Permalink
+      "inLanguage" "en"
+      "author" $org
+      "publisher" $org
+  -}}
+{{- else -}}
+  {{- $ld = dict
+      "@context" "https://schema.org"
+      "@type" "WebPage"
+      "name" .Title
+      "description" $desc
+      "url" .Permalink
+      "isPartOf" (dict "@type" "WebSite" "name" "Eraser" "url" .Site.BaseURL)
+  -}}
+{{- end -}}
+<script type="application/ld+json">{{ $ld | jsonify | safeJS }}</script>

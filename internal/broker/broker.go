@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -77,16 +76,16 @@ func Parse(raw []byte) (*BrokerDatabase, error) {
 	return &db, nil
 }
 
-// Validate checks structural invariants of a raw broker YAML document: a sane
-// entry count, required id/name, unique ids, known region values, plausible
-// emails, and well-formed http(s) URLs. It parses the bytes itself (without
-// the sanitizing Parse applies) so a malformed URL is reported rather than
-// silently blanked. Returns a single error listing every problem found, or
-// nil. This is what CI runs against data/brokers.yaml.
-func Validate(raw []byte) error {
+// Validate parses raw broker YAML and checks structural invariants: sane entry
+// count, required id/name, unique ids, known regions, plausible emails,
+// well-formed http(s) URLs. Unlike Parse it doesn't sanitize, so a malformed
+// URL is reported rather than silently blanked. One error lists every problem
+// (CI runs this against data/brokers.yaml); the parsed db is returned so
+// callers skip a second unmarshal.
+func Validate(raw []byte) (*BrokerDatabase, error) {
 	var db BrokerDatabase
 	if err := yaml.Unmarshal(raw, &db); err != nil {
-		return fmt.Errorf("failed to parse broker data: %w", err)
+		return nil, fmt.Errorf("failed to parse broker data: %w", err)
 	}
 
 	var problems []string
@@ -99,7 +98,7 @@ func Validate(raw []byte) error {
 		id := strings.TrimSpace(b.ID)
 		label := fmt.Sprintf("entry %d", i)
 		if id != "" {
-			label = fmt.Sprintf("entry %d (%s)", i, id)
+			label += " (" + id + ")"
 		}
 
 		if id == "" {
@@ -114,23 +113,23 @@ func Validate(raw []byte) error {
 			problems = append(problems, label+": missing name")
 		}
 		if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
-			problems = append(problems, label+": unknown region "+strconv.Quote(b.Region))
+			problems = append(problems, fmt.Sprintf("%s: unknown region %q", label, b.Region))
 		}
 		if b.Email != "" && !looseEmailRe.MatchString(strings.TrimSpace(b.Email)) {
-			problems = append(problems, label+": implausible email "+strconv.Quote(b.Email))
+			problems = append(problems, fmt.Sprintf("%s: implausible email %q", label, b.Email))
 		}
 		if b.OptOutURL != "" && !isValidURL(b.OptOutURL) {
-			problems = append(problems, label+": opt_out_url is not a valid http(s) URL: "+strconv.Quote(b.OptOutURL))
+			problems = append(problems, fmt.Sprintf("%s: opt_out_url is not a valid http(s) URL: %q", label, b.OptOutURL))
 		}
 		if b.Website != "" && !isValidURL(b.Website) {
-			problems = append(problems, label+": website is not a valid http(s) URL: "+strconv.Quote(b.Website))
+			problems = append(problems, fmt.Sprintf("%s: website is not a valid http(s) URL: %q", label, b.Website))
 		}
 	}
 
 	if len(problems) > 0 {
-		return fmt.Errorf("broker database has %d problem(s):\n  - %s", len(problems), strings.Join(problems, "\n  - "))
+		return &db, fmt.Errorf("broker database has %d problem(s):\n  - %s", len(problems), strings.Join(problems, "\n  - "))
 	}
-	return nil
+	return &db, nil
 }
 
 // LoadFromFile parses a broker YAML file from an explicit path.

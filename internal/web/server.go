@@ -361,14 +361,9 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(middleware.Compress(5))
 	r.Use(securityHeaders)
 
-	// CSRF protection. filippo.io/csrf/gorilla enforces same-origin requests
-	// via the browser's Sec-Fetch-Site / Origin headers rather than tokens or
-	// cookies (see https://go.dev/issue/73626). It "just works" for a
-	// loopback plaintext server - no TrustedOrigins / PlaintextHTTPRequest
-	// needed - and, being a different module, isn't affected by
-	// CVE-2025-47909 in the unmaintained github.com/gorilla/csrf. The
-	// per-form {{.CSRFField}} still renders (a stub value, ignored) so no
-	// template changes were needed.
+	// filippo.io/csrf enforces same-origin via Sec-Fetch-Site, not tokens, so
+	// it needs no TrustedOrigins tuning for a loopback plaintext server - and
+	// isn't the unmaintained gorilla/csrf carrying CVE-2025-47909.
 	r.Use(csrf.Protect(s.csrfKey))
 
 	// Static files
@@ -721,11 +716,8 @@ func (s *Server) renderPartial(w http.ResponseWriter, name string, data interfac
 }
 
 func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name string, data map[string]interface{}) {
-	// filippo.io/csrf/gorilla enforces same-origin via Sec-Fetch-Site and
-	// ignores tokens entirely, so there is nothing meaningful to put here.
-	// Keep the keys populated (empty) so the form templates' {{.CSRFField}} /
-	// {{.CSRFToken}} keep rendering without a change, and any HTMX code that
-	// reads the meta tag still finds it.
+	// filippo.io/csrf ignores tokens; keep the keys empty so templates
+	// rendering {{.CSRFField}} / {{.CSRFToken}} don't break.
 	data["CSRFToken"] = ""
 	data["CSRFField"] = template.HTML("")
 

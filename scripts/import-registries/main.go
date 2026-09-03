@@ -36,6 +36,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -52,7 +53,6 @@ func main() {
 	gvl := flag.String("gvl", "", "path or URL to the IAB TCF Global Vendor List JSON (e.g. https://vendor-list.consensu.org/v3/vendor-list.json)")
 	gvlAll := flag.Bool("gvl-all", false, "with -gvl, include every active vendor, not just those declaring identifiable data (profiles, user-provided data, auth identifiers)")
 	region := flag.String("region", "", "region to stamp on new entries (default: us for -csv, global for -gvl)")
-	note := flag.String("note", "", "override the Notes string on new entries")
 	outDir := flag.String("out", ".", "directory for candidates.yaml + review.md")
 	flag.Parse()
 
@@ -84,9 +84,6 @@ func main() {
 	}
 	if *region != "" {
 		defRegion = *region
-	}
-	if *note != "" {
-		defNote = *note
 	}
 
 	existing, err := broker.Load("")
@@ -221,10 +218,18 @@ type gvl struct {
 	} `json:"vendors"`
 }
 
-// TCF data categories that mean the vendor can plausibly tie data to an
+// TCF data categories where the vendor can plausibly tie data to an
 // identifiable person (so a GDPR erasure request has something to act on):
 // 5 auth-derived identifiers, 7 user-provided data, 10 users' profiles.
-var identifiableDataCats = map[int]bool{5: true, 7: true, 10: true}
+func declaresIdentifiableData(cats []int) bool {
+	return slices.ContainsFunc(cats, func(c int) bool { return c == 5 || c == 7 || c == 10 })
+}
+
+// builds ad profiles under consent or legitimate interest (TCF purpose 3 or 4).
+func buildsAdProfiles(purposes, legInt []int) bool {
+	has := func(p []int) bool { return slices.Contains(p, 3) || slices.Contains(p, 4) }
+	return has(purposes) || has(legInt)
+}
 
 func readGVL(src string, includeAll bool) ([]row, error) {
 	var raw []byte
@@ -259,21 +264,11 @@ func readGVL(src string, includeAll bool) ([]row, error) {
 		if v.DeletedDate != "" || v.Name == "" {
 			continue
 		}
-		// Only vendors that build or use advertising profiles.
-		if !containsAny(v.Purposes, 3, 4) && !containsAny(v.LegIntPurposes, 3, 4) {
+		if !buildsAdProfiles(v.Purposes, v.LegIntPurposes) {
 			continue
 		}
-		if !includeAll {
-			ident := false
-			for _, c := range v.DataDeclaration {
-				if identifiableDataCats[c] {
-					ident = true
-					break
-				}
-			}
-			if !ident {
-				continue
-			}
+		if !includeAll && !declaresIdentifiableData(v.DataDeclaration) {
+			continue
 		}
 		privacy := ""
 		for _, u := range v.URLs {
@@ -288,17 +283,6 @@ func readGVL(src string, includeAll bool) ([]row, error) {
 		})
 	}
 	return out, nil
-}
-
-func containsAny(haystack []int, needles ...int) bool {
-	for _, h := range haystack {
-		for _, n := range needles {
-			if h == n {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 var nonAlnum = regexp.MustCompile(`[^a-z0-9]+`)

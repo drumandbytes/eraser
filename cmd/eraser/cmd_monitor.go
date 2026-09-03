@@ -49,7 +49,6 @@ func runMonitor(days int, once bool, watch bool) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Validate inbox config
 	if err := cfg.ValidateInbox(); err != nil {
 		fmt.Println("📧 Inbox monitoring is not configured.")
 		fmt.Println()
@@ -68,27 +67,22 @@ func runMonitor(days int, once bool, watch bool) error {
 		return err
 	}
 
-	// Load brokers for domain matching
 	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	// Initialize history store
 	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}
 	defer func() { _ = store.Close() }()
 
-	// Create inbox monitor
 	monitor := inbox.NewMonitor(cfg.Inbox, brokerDB.Brokers)
 
-	// Connect to IMAP
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Handle signals for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -105,7 +99,6 @@ func runMonitor(days int, once bool, watch bool) error {
 	fmt.Printf("📬 Monitoring inbox for broker responses (last %d days)...\n", days)
 	fmt.Println()
 
-	// Fetch emails from known broker domains
 	emails, err := monitor.FetchBrokerEmails(ctx, days)
 	if err != nil {
 		return fmt.Errorf("failed to fetch emails: %w", err)
@@ -136,7 +129,6 @@ func runMonitor(days int, once bool, watch bool) error {
 			profileID = history.DefaultProfileID
 		}
 
-		// Store in database
 		brokerResp := &history.BrokerResponse{
 			ProfileID:    profileID,
 			BrokerID:     email.BrokerID,
@@ -175,7 +167,6 @@ func runMonitor(days int, once bool, watch bool) error {
 		// Ignore error if no matching record
 		_ = store.UpdatePipelineStatus(profileID, email.BrokerID, pipelineStatus)
 
-		// Print summary
 		printClassifiedResponse(classified)
 	}
 
@@ -205,7 +196,6 @@ func runMonitor(days int, once bool, watch bool) error {
 		}
 	}
 
-	// Print summary
 	summary := inbox.SummarizeResponses(responses)
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -223,7 +213,6 @@ func runMonitor(days int, once bool, watch bool) error {
 		return nil
 	}
 
-	// Watch for new emails if requested
 	if watch {
 		fmt.Println()
 		fmt.Println("👀 Watching for new emails... (Ctrl+C to stop)")
@@ -240,7 +229,6 @@ func runMonitor(days int, once bool, watch bool) error {
 				profileID = history.DefaultProfileID
 			}
 
-			// Store response
 			brokerResp := &history.BrokerResponse{
 				ProfileID:    profileID,
 				BrokerID:     email.BrokerID,

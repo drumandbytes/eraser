@@ -20,7 +20,6 @@ func matchesAllowedDomain(rawURL string, allowedDomains []string) (bool, string,
 
 	host := strings.ToLower(parsed.Host)
 
-	// Remove port if present
 	if idx := strings.Index(host, ":"); idx != -1 {
 		host = host[:idx]
 	}
@@ -35,7 +34,6 @@ func matchesAllowedDomain(rawURL string, allowedDomains []string) (bool, string,
 		return true, host, nil
 	}
 
-	// Check if it's a subdomain of a known domain
 	for domain := range domainSet {
 		if strings.HasSuffix(host, "."+domain) {
 			return true, domain, nil

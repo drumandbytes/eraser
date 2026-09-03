@@ -217,7 +217,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		},
 	}
 
-	// Read layout template
 	layoutContent, err := templatesFS.ReadFile("templates/layout.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read layout template: %w", err)
@@ -249,7 +248,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		if err != nil {
 			return err
 		}
-		// Skip directories, partials, and layout
 		if d.IsDir() || strings.Contains(path, "/partials/") || path == "templates/layout.html" {
 			return nil
 		}
@@ -262,11 +260,9 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return fmt.Errorf("failed to read template %s: %w", path, err)
 		}
 
-		// Create a new template for this page
 		name := path[len("templates/"):]
 		pageTmpl := template.New(name).Funcs(funcs)
 
-		// Parse layout first
 		_, err = pageTmpl.Parse(string(layoutContent))
 		if err != nil {
 			return fmt.Errorf("failed to parse layout for %s: %w", name, err)
@@ -287,7 +283,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return fmt.Errorf("failed to parse template %s: %w", name, err)
 		}
 
-		// Store in map
 		templates[name] = pageTmpl
 
 		return nil
@@ -329,7 +324,6 @@ func (s *Server) Start() error {
 	// Check for pending job and offer to resume
 	s.checkPendingJob()
 
-	// Open browser after a short delay
 	go func() {
 		time.Sleep(500 * time.Millisecond)
 		url := fmt.Sprintf("http://localhost:%d", s.port)
@@ -361,14 +355,9 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(middleware.Compress(5))
 	r.Use(securityHeaders)
 
-	// CSRF protection. filippo.io/csrf/gorilla enforces same-origin requests
-	// via the browser's Sec-Fetch-Site / Origin headers rather than tokens or
-	// cookies (see https://go.dev/issue/73626). It "just works" for a
-	// loopback plaintext server - no TrustedOrigins / PlaintextHTTPRequest
-	// needed - and, being a different module, isn't affected by
-	// CVE-2025-47909 in the unmaintained github.com/gorilla/csrf. The
-	// per-form {{.CSRFField}} still renders (a stub value, ignored) so no
-	// template changes were needed.
+	// filippo.io/csrf enforces same-origin via Sec-Fetch-Site, not tokens, so
+	// it needs no TrustedOrigins tuning for a loopback plaintext server - and
+	// isn't the unmaintained gorilla/csrf carrying CVE-2025-47909.
 	r.Use(csrf.Protect(s.csrfKey))
 
 	// Static files
@@ -397,7 +386,6 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Post("/forms/{brokerID}/complete", s.handleFormComplete)
 	r.Post("/forms/{brokerID}/skip", s.handleFormSkip)
 
-	// Setup wizard routes
 	r.Route("/setup", func(r chi.Router) {
 		r.Get("/", s.handleSetupWelcome)
 		r.Get("/profile", s.handleSetupProfile)
@@ -470,7 +458,6 @@ func securityHeaders(next http.Handler) http.Handler {
 			w.Header().Set("Expires", "0")
 		}
 
-		// Disable unnecessary browser features
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
 
 		next.ServeHTTP(w, r)
@@ -713,7 +700,6 @@ func (s *Server) renderPartial(w http.ResponseWriter, name string, data interfac
 		http.Error(w, "Template not found: "+name, http.StatusInternalServerError)
 		return
 	}
-	// Execute the template directly without layout wrapper
 	err := tmpl.Execute(w, data)
 	if err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
@@ -721,11 +707,8 @@ func (s *Server) renderPartial(w http.ResponseWriter, name string, data interfac
 }
 
 func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name string, data map[string]interface{}) {
-	// filippo.io/csrf/gorilla enforces same-origin via Sec-Fetch-Site and
-	// ignores tokens entirely, so there is nothing meaningful to put here.
-	// Keep the keys populated (empty) so the form templates' {{.CSRFField}} /
-	// {{.CSRFToken}} keep rendering without a change, and any HTMX code that
-	// reads the meta tag still finds it.
+	// filippo.io/csrf ignores tokens; keep the keys empty so templates
+	// rendering {{.CSRFField}} / {{.CSRFToken}} don't break.
 	data["CSRFToken"] = ""
 	data["CSRFField"] = template.HTML("")
 

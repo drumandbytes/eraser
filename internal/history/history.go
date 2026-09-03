@@ -1028,7 +1028,6 @@ func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 			return nil, fmt.Errorf("failed to scan form: %w", err)
 		}
 
-		// Skip duplicates (keep first/most recent)
 		if seen[f.BrokerID] {
 			continue
 		}
@@ -1036,7 +1035,6 @@ func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 
 		f.PipelineStatus = PipelineStatus(pipelineStatus)
 
-		// Determine status based on task and pipeline status
 		if taskStatus == "completed" {
 			f.Status = "filled"
 		} else if taskStatus == "skipped" {

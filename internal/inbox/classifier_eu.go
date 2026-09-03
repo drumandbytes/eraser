@@ -2,16 +2,12 @@ package inbox
 
 import "regexp"
 
-// This file extends the keyword classifier for the EU/GDPR use this fork is
-// built around. The upstream patterns in classifier.go are English and
-// CCPA-flavoured, so replies that talk about "erasure" / "Article 17" / a
-// "data protection officer", and replies in German or French (the two largest
-// EU markets, and where brokers reply in the local language), were all landing
-// as `unknown`.
-//
-// init() appends to the package-level pattern slices, so both ClassifyResponse
-// and ClassifyBySubjectOnly pick these up. Non-English patterns are kept
-// high-signal to avoid false positives against English text.
+// GDPR-vocabulary and German/French patterns for the classifier. classifier.go
+// is English/CCPA-flavoured, so "erasure" / "Article 17" replies and anything
+// in DE or FR (the biggest EU markets, where brokers reply in-language) landed
+// as unknown. init() appends to the package slices so both ClassifyResponse and
+// ClassifyBySubjectOnly use them; non-English patterns stay narrow to avoid
+// matching English text.
 
 func init() {
 	successPatterns = append(successPatterns,

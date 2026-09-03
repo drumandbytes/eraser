@@ -42,13 +42,11 @@ func runStatus(limit int) error {
 	}
 	defer func() { _ = store.Close() }()
 
-	// Get overall stats
 	total, sent, failed, err := store.GetStats(activeProfile.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get stats: %w", err)
 	}
 
-	// Get monthly stats
 	monthlySent, monthlyFailed, err := store.GetMonthlyStats(activeProfile.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get monthly stats: %w", err)
@@ -69,7 +67,6 @@ func runStatus(limit int) error {
 	fmt.Printf("  Sent: %d\n", monthlySent)
 	fmt.Printf("  Failed: %d\n", monthlyFailed)
 
-	// Get recent requests
 	records, err := store.GetRecentRequests(activeProfile.ID, limit)
 	if err != nil {
 		return fmt.Errorf("failed to get recent requests: %w", err)

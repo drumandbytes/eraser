@@ -80,20 +80,6 @@ func ForCountry(name string) *Authority {
 	return nil
 }
 
-// ByRegion groups the authorities by their Region, preserving first-seen order
-// of both regions and entries.
-func ByRegion() ([]string, map[string][]Authority) {
-	var order []string
-	groups := map[string][]Authority{}
-	for _, a := range All() {
-		if _, seen := groups[a.Region]; !seen {
-			order = append(order, a.Region)
-		}
-		groups[a.Region] = append(groups[a.Region], a)
-	}
-	return order, groups
-}
-
 // Describe is a one-line "Authority (ACRONYM) - website" for CLI/report output.
 func (a Authority) Describe() string {
 	if a.Acronym != "" {

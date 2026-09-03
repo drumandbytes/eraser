@@ -24,7 +24,6 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("inbox_email")
 	password := r.FormValue("inbox_password")
 
-	// Validate required fields
 	if email == "" || password == "" {
 		s.renderSettingsWithMessage(w, r, "Email and password are required", false)
 		return
@@ -71,7 +70,6 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	}
 	newCfg.Inbox = inbox
 
-	// Save config
 	if err := config.Save(s.configPath, &newCfg); err != nil {
 		s.renderSettingsWithMessage(w, r, "Failed to save configuration: "+err.Error(), false)
 		return

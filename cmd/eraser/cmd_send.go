@@ -82,7 +82,6 @@ func runSend() error {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	// Filter brokers
 	brokers := brokerDB.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories)
 	if len(brokers) == 0 {
 		fmt.Println("No brokers to process.")
@@ -154,14 +153,13 @@ func runSend() error {
 		}
 	}
 
-	// Initialize template engine
 	tmplEngine, err := template.NewEngine()
 	if err != nil {
 		return fmt.Errorf("failed to initialize templates: %w", err)
 	}
 
 	// Initialize email sender (unless dry-run)
-	var sender email.Sender
+	var sender *email.SMTPSender
 	if !cfg.Options.DryRun {
 		sender, err = email.NewSender(cfg.Email)
 		if err != nil {
@@ -169,7 +167,6 @@ func runSend() error {
 		}
 	}
 
-	// Process brokers
 	if cfg.Options.DryRun {
 		fmt.Println("🔍 DRY RUN MODE - No emails will be sent")
 		fmt.Println()
@@ -200,7 +197,6 @@ func runSend() error {
 			continue
 		}
 
-		// Render email
 		emailMsg, err := tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b)
 		if err != nil {
 			fmt.Printf("  ❌ Failed to render template: %v\n", err)
@@ -213,7 +209,6 @@ func runSend() error {
 			fmt.Printf("  📍 To: %s\n", b.Email)
 			successCount++
 		} else {
-			// Send email
 			msg := email.Message{
 				To:      b.Email,
 				From:    cfg.Email.From,

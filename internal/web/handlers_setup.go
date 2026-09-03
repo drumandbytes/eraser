@@ -95,14 +95,12 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 
 		errors := make(map[string]string)
 
-		// Parse SMTP configuration (Gmail SMTP)
 		emailCfg.SMTP.Host = strings.TrimSpace(r.FormValue("smtp_host"))
 		_, _ = fmt.Sscanf(r.FormValue("smtp_port"), "%d", &emailCfg.SMTP.Port)
 		emailCfg.SMTP.Username = strings.TrimSpace(r.FormValue("smtp_username"))
 		emailCfg.SMTP.Password = strings.TrimSpace(r.FormValue("smtp_password"))
 		emailCfg.SMTP.UseTLS = r.FormValue("smtp_tls") == "on"
 
-		// Validate required fields
 		if emailCfg.SMTP.Host == "" {
 			errors["smtp_host"] = "SMTP host is required"
 		}
@@ -141,7 +139,6 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set Gmail defaults for new setups
 	emailCfg := session.Email
 	if emailCfg.SMTP.Host == "" {
 		emailCfg.SMTP.Host = "smtp.gmail.com"
@@ -188,7 +185,6 @@ func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create email sender with the session config
 	sender, err := email.NewSender(session.Email)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `
@@ -200,7 +196,6 @@ func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send test email
 	testMsg := email.Message{
 		To:      session.Profile.Email,
 		From:    session.Email.From,
@@ -287,7 +282,6 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update server's config reference
 	s.config.Store(cfg)
 
 	// Clear session - credentials are now saved to config file
@@ -314,7 +308,6 @@ func (s *Server) getOrCreateSession(w http.ResponseWriter, r *http.Request) *Ses
 		}
 	}
 
-	// Create new session
 	sessionID, err := s.sessions.Create()
 	if err != nil {
 		return nil
@@ -331,12 +324,10 @@ func (s *Server) getOrCreateSession(w http.ResponseWriter, r *http.Request) *Ses
 		// Note: Secure flag omitted for localhost HTTP; add for production HTTPS
 	})
 
-	// Also attach the cookie to the *incoming* request so a later
-	// getSession/updateSession(r) call within this same request sees the
-	// brand-new session. Without this, the first POST /setup/profile creates
-	// the session but the immediately-following updateSession(r) can't find
-	// it, so the profile is never stored and the wizard bounces back to step
-	// one on a fresh install.
+	// Attach to the incoming request too: handleSetupProfile calls
+	// updateSession(r) right after this, and on a fresh install r has no
+	// session cookie yet - without this the profile never persists and the
+	// wizard loops back to step one.
 	r.AddCookie(&http.Cookie{Name: "eraser_session", Value: sessionID})
 
 	return s.sessions.Get(sessionID)

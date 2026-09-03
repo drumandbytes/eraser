@@ -11,7 +11,7 @@ import (
 // TestEmbeddedBrokerDataValid is the CI guard: the broker list shipped in the
 // binary must always pass structural validation.
 func TestEmbeddedBrokerDataValid(t *testing.T) {
-	if err := Validate(data.BrokersYAML); err != nil {
+	if _, err := Validate(data.BrokersYAML); err != nil {
 		t.Fatalf("embedded data/brokers.yaml is invalid:\n%v", err)
 	}
 }
@@ -33,7 +33,7 @@ func TestValidateCatchesProblems(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := Validate([]byte(tc.yaml))
+			_, err := Validate([]byte(tc.yaml))
 			if err == nil {
 				t.Fatalf("expected an error mentioning %q, got nil", tc.want)
 			}
@@ -45,7 +45,7 @@ func TestValidateCatchesProblems(t *testing.T) {
 }
 
 func TestValidateAcceptsGoodData(t *testing.T) {
-	if err := Validate([]byte(fillerYAML(""))); err != nil {
+	if _, err := Validate([]byte(fillerYAML(""))); err != nil {
 		t.Fatalf("expected valid, got: %v", err)
 	}
 }

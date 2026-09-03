@@ -69,7 +69,6 @@ Examples:
 }
 
 func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit bool, screenshotDir string, pending bool, waitForCaptcha bool) error {
-	// Load config for profile data
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
@@ -93,7 +92,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 	var brokerDomains []string
 	for _, b := range brokerDB.Brokers {
 		if b.Website != "" {
-			// Extract domain from website
 			domain := strings.TrimPrefix(b.Website, "https://")
 			domain = strings.TrimPrefix(domain, "http://")
 			domain = strings.TrimSuffix(domain, "/")
@@ -102,7 +100,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 			}
 			brokerDomains = append(brokerDomains, domain)
 
-			// Also add the bare domain without www prefix
 			if strings.HasPrefix(domain, "www.") {
 				brokerDomains = append(brokerDomains, strings.TrimPrefix(domain, "www."))
 			}
@@ -115,20 +112,17 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		headless = cfg.Pipeline.Headless()
 	}
 
-	// Set default screenshot directory
 	if screenshotDir == "" {
 		home, _ := os.UserHomeDir()
 		screenshotDir = filepath.Join(home, ".eraser", "screenshots")
 	}
 
-	// Initialize history store
 	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}
 	defer func() { _ = store.Close() }()
 
-	// Create browser config
 	browserCfg := browser.DefaultConfig()
 	browserCfg.Headless = headless
 	browserCfg.ScreenshotDir = screenshotDir
@@ -136,7 +130,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		browserCfg.Timeout = time.Duration(cfg.Pipeline.BrowserTimeoutSec) * time.Second
 	}
 
-	// Set up wait for CAPTCHA if requested
 	if waitForCaptcha {
 		if headless {
 			fmt.Println("⚠️  Warning: --wait requires --headless=false to be useful")
@@ -154,7 +147,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		}
 	}
 
-	// Create browser instance
 	b, err := browser.New(browserCfg, &activeProfile.Profile, brokerDomains)
 	if err != nil {
 		return fmt.Errorf("failed to create browser: %w", err)
@@ -178,7 +170,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 			URL      string
 		}{BrokerID: brokerID, URL: formURL})
 	} else if brokerID != "" {
-		// Get URL for specific broker from pipeline
 		responses, err := store.GetBrokerResponses(activeProfile.ID, "form_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
@@ -200,7 +191,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 			return fmt.Errorf("no form URL found for broker: %s", brokerID)
 		}
 	} else if pending {
-		// Get all pending forms
 		responses, err := store.GetBrokerResponses(activeProfile.ID, "form_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
@@ -226,7 +216,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 	fmt.Printf("📋 Forms to process: %d\n", len(formsToFill))
 	fmt.Println()
 
-	// Process each form
 	for i, form := range formsToFill {
 		fmt.Printf("[%d/%d] Processing %s\n", i+1, len(formsToFill), form.URL)
 
@@ -240,7 +229,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 			continue
 		}
 
-		// Print result
 		if len(result.FieldsFilled) > 0 {
 			fmt.Printf("       ✅ Filled fields: %s\n", strings.Join(result.FieldsFilled, ", "))
 		}
@@ -251,7 +239,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		if result.CaptchaFound {
 			fmt.Printf("       🤖 CAPTCHA detected: %s\n", result.CaptchaType)
 
-			// Store profile data as JSON for the helper page
 			profileData := map[string]string{
 				"email":     activeProfile.Email,
 				"firstName": activeProfile.FirstName,
@@ -265,7 +252,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 			}
 			profileJSON, _ := json.Marshal(profileData)
 
-			// Create pending task for CAPTCHA
 			task := &history.PendingTask{
 				ProfileID:    activeProfile.ID,
 				BrokerID:     form.BrokerID,
@@ -285,7 +271,6 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 				fmt.Printf("       📝 Created CAPTCHA task for manual solving\n")
 			}
 
-			// Update pipeline status
 			_ = store.UpdatePipelineStatus(activeProfile.ID, form.BrokerID, history.PipelineAwaitingCaptcha)
 		} else if result.SubmitAttempted {
 			fmt.Printf("       📨 Form submitted!\n")

@@ -50,7 +50,6 @@ func NewMonitor(cfg config.InboxConfig, brokerList []broker.Broker) *Monitor {
 	// Build a map of email domains to brokers for quick lookup
 	brokerMap := make(map[string]broker.Broker)
 	for _, b := range brokerList {
-		// Extract domain from broker email
 		if b.Email != "" {
 			parts := strings.Split(b.Email, "@")
 			if len(parts) == 2 {
@@ -211,11 +210,9 @@ func (m *Monitor) FetchRecentEmails(ctx context.Context, days int) ([]Email, err
 		return nil, nil
 	}
 
-	// Fetch the messages using UIDs
 	seqSet := new(imap.SeqSet)
 	seqSet.AddNum(uids...)
 
-	// Fetch envelope, body, and UID
 	section := &imap.BodySectionName{}
 	items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags, imap.FetchUid, section.FetchItem()}
 
@@ -239,12 +236,10 @@ func (m *Monitor) parseMessage(msg *imap.Message, section *imap.BodySectionName)
 		ReceivedAt: msg.Envelope.Date,
 	}
 
-	// Get message ID
 	if msg.Envelope.MessageId != "" {
 		email.MessageID = msg.Envelope.MessageId
 	}
 
-	// Get sender
 	if len(msg.Envelope.From) > 0 {
 		from := msg.Envelope.From[0]
 		email.From = from.Address()
@@ -262,7 +257,6 @@ func (m *Monitor) parseMessage(msg *imap.Message, section *imap.BodySectionName)
 		}
 	}
 
-	// Parse body
 	r := msg.GetBody(section)
 	if r == nil {
 		return email, nil
@@ -273,7 +267,6 @@ func (m *Monitor) parseMessage(msg *imap.Message, section *imap.BodySectionName)
 		return email, nil // Return without body on parse error
 	}
 
-	// Process each part
 	for {
 		p, err := mr.NextPart()
 		if err == io.EOF {
@@ -360,7 +353,6 @@ func (m *Monitor) FetchBrokerEmailsFromFolder(ctx context.Context, folder string
 			seqSet.AddNum(uid)
 		}
 
-		// Fetch message details
 		section := &imap.BodySectionName{Peek: true}
 		items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid, section.FetchItem()}
 
@@ -458,7 +450,6 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 		return fmt.Errorf("failed to select mailbox: %w", err)
 	}
 
-	// Start IDLE
 	updates := make(chan client.Update)
 	m.client.Updates = updates
 
@@ -483,7 +474,6 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 			switch u := update.(type) {
 			case *client.MailboxUpdate:
 				log.Printf("New mail detected: %d messages", u.Mailbox.Messages)
-				// Fetch the latest message
 				close(stop)
 				<-idleDone
 
@@ -491,7 +481,6 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 				if err != nil {
 					log.Printf("Error fetching new email: %v", err)
 				} else if len(emails) > 0 {
-					// Process the newest email
 					for _, email := range emails {
 						if email.BrokerID != "" {
 							callback(email)
@@ -542,7 +531,6 @@ func (m *Monitor) EnsureFolderExists(name string) error {
 		return nil
 	}
 
-	// Create the folder
 	if err := m.client.Create(name); err != nil {
 		return fmt.Errorf("failed to create folder '%s': %w", name, err)
 	}
@@ -604,7 +592,6 @@ func (m *Monitor) ArchiveEmails(uids []uint32, folder string) error {
 			return fmt.Errorf("failed to copy emails to '%s': %w", folder, err)
 		}
 
-		// Mark as deleted
 		item := imap.FormatFlagsOp(imap.AddFlags, true)
 		flags := []interface{}{imap.DeletedFlag}
 		if err := m.client.UidStore(seqSet, item, flags, nil); err != nil {

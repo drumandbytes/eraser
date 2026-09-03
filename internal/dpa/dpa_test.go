@@ -49,23 +49,6 @@ func TestForCountry(t *testing.T) {
 	}
 }
 
-func TestByRegion(t *testing.T) {
-	order, groups := ByRegion()
-	if len(order) < 3 {
-		t.Fatalf("expected several regions, got %v", order)
-	}
-	if order[0] != "European Union / EEA" {
-		t.Errorf("first region = %q, want European Union / EEA", order[0])
-	}
-	total := 0
-	for _, r := range order {
-		total += len(groups[r])
-	}
-	if total != len(All()) {
-		t.Errorf("grouped %d != All() %d", total, len(All()))
-	}
-}
-
 func TestDescribe(t *testing.T) {
 	lv := ForCountry("Latvia")
 	if got := lv.Describe(); got != "Datu valsts inspekcija (Data State Inspectorate) (DVI) - https://www.dvi.gov.lv" {

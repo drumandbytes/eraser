@@ -1,16 +1,40 @@
 package web
 
 import (
+	"encoding/json"
 	"sync"
 	"testing"
 )
 
+// jobSnap is the subset of a job's JSON a status poll checks.
+type jobSnap struct {
+	Sent            int    `json:"sent"`
+	Failed          int    `json:"failed"`
+	Progress        int    `json:"progress"`
+	Total           int    `json:"total"`
+	DailyLimit      int    `json:"daily_limit"`
+	CurrentBroker   string `json:"current_broker"`
+	CurrentBrokerID string `json:"current_broker_id"`
+}
+
+func readJob(t *testing.T, j *Job) jobSnap {
+	t.Helper()
+	b, err := json.Marshal(j) // locks via Job.MarshalJSON
+	if err != nil {
+		t.Fatalf("marshal job: %v", err)
+	}
+	var s jobSnap
+	if err := json.Unmarshal(b, &s); err != nil {
+		t.Fatalf("unmarshal job: %v", err)
+	}
+	return s
+}
+
 // TestJobConcurrentUpdateAndReadIsConsistent hammers Job.Update,
-// Job.SetDailyLimit, and Job.ToJSON (what a status-polling request reads)
-// from many goroutines at once and checks that every snapshot ToJSON
-// produces is internally consistent: Progress always matches the formula
-// applied to that same snapshot's Sent/Failed/Total, never a value carried
-// over from a different, interleaved call. This is the invariant that
+// Job.SetDailyLimit, and a status-poll marshal from many goroutines at once
+// and checks every snapshot is internally consistent: Progress always matches
+// the formula applied to that same snapshot's Sent/Failed/Total, never a value
+// carried over from a different, interleaved call. This is the invariant that
 // resumePendingJob/processSendJob used to violate by assigning
 // job.Sent/job.Failed/job.Progress directly instead of going through the
 // mutex-protected Update method. Run with `go test -race`.
@@ -63,19 +87,15 @@ func TestJobConcurrentUpdateAndReadIsConsistent(t *testing.T) {
 			default:
 			}
 
-			snap := job.ToJSON()
-			sent := snap["sent"].(int)
-			failed := snap["failed"].(int)
-			progress := snap["progress"].(int)
-			total := snap["total"].(int)
+			snap := readJob(t, job)
 
 			wantProgress := 0
-			if total > 0 {
-				wantProgress = ((sent + failed) * 100) / total
+			if snap.Total > 0 {
+				wantProgress = ((snap.Sent + snap.Failed) * 100) / snap.Total
 			}
-			if progress != wantProgress {
+			if snap.Progress != wantProgress {
 				t.Errorf("torn snapshot: sent=%d failed=%d total=%d progress=%d, want progress=%d",
-					sent, failed, total, progress, wantProgress)
+					snap.Sent, snap.Failed, snap.Total, snap.Progress, wantProgress)
 				return
 			}
 		}
@@ -95,34 +115,22 @@ func TestJobUpdateSetsAllFieldsUnderOneLock(t *testing.T) {
 	job := jm.Create(10, "profile-a")
 
 	job.Update(3, 2, "broker-y", "broker-y-id")
-	snap := job.ToJSON()
-	if got, want := snap["sent"].(int), 3; got != want {
-		t.Errorf("sent = %d, want %d", got, want)
+	snap := readJob(t, job)
+	if snap.Sent != 3 || snap.Failed != 2 || snap.Progress != 50 { // (3+2)*100/10
+		t.Errorf("after Update: %+v", snap)
 	}
-	if got, want := snap["failed"].(int), 2; got != want {
-		t.Errorf("failed = %d, want %d", got, want)
-	}
-	if got, want := snap["progress"].(int), 50; got != want { // (3+2)*100/10
-		t.Errorf("progress = %d, want %d", got, want)
-	}
-	if got, want := snap["current_broker"].(string), "broker-y"; got != want {
-		t.Errorf("current_broker = %q, want %q", got, want)
-	}
-	if got, want := snap["current_broker_id"].(string), "broker-y-id"; got != want {
-		t.Errorf("current_broker_id = %q, want %q", got, want)
+	if snap.CurrentBroker != "broker-y" || snap.CurrentBrokerID != "broker-y-id" {
+		t.Errorf("after Update: %+v", snap)
 	}
 
 	job.SetDailyLimit(42)
-	snap = job.ToJSON()
-	if got, want := snap["daily_limit"].(int), 42; got != want {
-		t.Errorf("daily_limit = %d, want %d", got, want)
+	snap = readJob(t, job)
+	if snap.DailyLimit != 42 {
+		t.Errorf("daily_limit = %d, want 42", snap.DailyLimit)
 	}
 	// SetDailyLimit must not have disturbed Sent/Failed/Progress.
-	if got, want := snap["sent"].(int), 3; got != want {
-		t.Errorf("sent after SetDailyLimit = %d, want %d", got, want)
-	}
-	if got, want := snap["progress"].(int), 50; got != want {
-		t.Errorf("progress after SetDailyLimit = %d, want %d", got, want)
+	if snap.Sent != 3 || snap.Progress != 50 {
+		t.Errorf("SetDailyLimit disturbed progress fields: %+v", snap)
 	}
 }
 

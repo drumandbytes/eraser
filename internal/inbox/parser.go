@@ -126,7 +126,6 @@ func ParseEmailURLs(email *Email) ExtractedURLs {
 		}
 		seen[cleanURL] = true
 
-		// Skip tracking pixels
 		if isTrackingURL(cleanURL) {
 			continue
 		}
@@ -175,7 +174,6 @@ func extractURLsFromHTML(html string) []string {
 		return extractURLsFromText(html)
 	}
 
-	// Find all links
 	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
 		if href, exists := s.Attr("href"); exists {
 			urls = append(urls, href)
@@ -193,7 +191,6 @@ func cleanURL(rawURL string) string {
 	// Remove trailing punctuation that might have been captured
 	rawURL = strings.TrimRight(rawURL, ".,;:!?)")
 
-	// Parse to validate
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
 		return ""
@@ -397,7 +394,6 @@ func GetPrimaryFormURL(urls ExtractedURLs, brokerDomain string) string {
 		lowerURL := strings.ToLower(u)
 		score := scoreFormURL(lowerURL)
 
-		// Skip negative scores (disqualified)
 		if score < 0 {
 			continue
 		}
@@ -434,7 +430,6 @@ func GetPrimaryConfirmationURL(urls ExtractedURLs, brokerDomain string) string {
 		}
 	}
 
-	// Return first confirmation URL if any
 	if len(urls.ConfirmationURLs) > 0 {
 		return urls.ConfirmationURLs[0]
 	}

@@ -50,18 +50,15 @@ Examples:
 }
 
 func runCleanupBounces(remove bool, days int) error {
-	// Load config
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Check if inbox is configured
 	if !cfg.Inbox.Enabled {
 		return fmt.Errorf("inbox monitoring not configured. Run 'eraser init' to set up")
 	}
 
-	// Load broker database
 	brokerPath := resolveBrokerWritePath()
 	brokerDB, err := broker.LoadFromFile(brokerPath)
 	if err != nil {
@@ -72,17 +69,14 @@ func runCleanupBounces(remove bool, days int) error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
 
-	// Create inbox monitor
 	monitor := inbox.NewMonitor(cfg.Inbox, brokerDB.Brokers)
 
-	// Connect
 	ctx := context.Background()
 	if err := monitor.Connect(ctx); err != nil {
 		return fmt.Errorf("failed to connect to inbox: %w", err)
 	}
 	defer func() { _ = monitor.Disconnect() }()
 
-	// Fetch bounce emails
 	bounceEmails, err := monitor.FetchBounceEmails(ctx, days)
 	if err != nil {
 		return fmt.Errorf("failed to fetch bounce emails: %w", err)
@@ -105,14 +99,12 @@ func runCleanupBounces(remove bool, days int) error {
 	var bouncedBrokers []bouncedBroker
 
 	for _, email := range bounceEmails {
-		// Extract the bounced recipient
 		bouncedRecipient := inbox.ExtractBouncedRecipient(&email)
 		if bouncedRecipient == "" {
 			fmt.Printf("⚠️  Could not extract bounced address from: %s\n", email.Subject)
 			continue
 		}
 
-		// Find the broker
 		b := brokerDB.FindByEmail(bouncedRecipient)
 		if b == nil {
 			fmt.Printf("⚠️  %s - not found in broker database\n", bouncedRecipient)
@@ -157,7 +149,6 @@ func runCleanupBounces(remove bool, days int) error {
 		}
 	}
 
-	// Save with backup
 	if err := brokerDB.SaveWithBackup(brokerPath); err != nil {
 		return fmt.Errorf("failed to save broker database: %w", err)
 	}

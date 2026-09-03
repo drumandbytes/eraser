@@ -39,11 +39,11 @@ so it doubles as a CI check.`,
 				raw = data.BrokersYAML
 			}
 
-			if err := broker.Validate(raw); err != nil {
+			db, err := broker.Validate(raw)
+			if err != nil {
 				return err
 			}
 
-			db, _ := broker.Parse(raw)
 			where := path
 			if where == "" {
 				where = "embedded broker list"

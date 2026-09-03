@@ -19,8 +19,6 @@ func NewSMTPSender(cfg config.SMTPConfig, from string) *SMTPSender {
 	return &SMTPSender{config: cfg, from: from}
 }
 
-func (s *SMTPSender) Name() string { return "smtp" }
-
 func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 	if err := validateMessage(msg); err != nil {
 		return Result{Success: false, Error: err}

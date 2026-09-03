@@ -93,12 +93,9 @@ func runUpdateBrokers(url string, check bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to read response: %w", err)
 	}
-	if err := broker.Validate(body); err != nil {
-		return fmt.Errorf("refusing to replace the local copy - %w", err)
-	}
-	db, err := broker.Parse(body)
+	db, err := broker.Validate(body)
 	if err != nil {
-		return fmt.Errorf("downloaded file is not valid broker YAML: %w", err)
+		return fmt.Errorf("refusing to replace the local copy - %w", err)
 	}
 
 	before := currentBrokerCount()

@@ -41,9 +41,8 @@ func smokeServer(t *testing.T) *Server {
 	return s
 }
 
-// bodyLooksLikeTemplateError reports whether the response body carries a
-// signature of a broken html/template render (a missing key, an unclosed
-// action, a failed method call) rather than a real page.
+// bodyLooksLikeTemplateError catches a broken html/template render leaking into
+// the response instead of a real page.
 func bodyLooksLikeTemplateError(body string) (string, bool) {
 	for _, sig := range []string{
 		"Template error",

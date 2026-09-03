@@ -90,8 +90,8 @@ func (j *Job) StopWithError(errorType, errorMsg string) {
 
 // Pause marks the job paused (daily send limit reached) with the given
 // day-sent count and message, all under one lock - processSendJob used to
-// set these three fields directly, racing with any concurrent read (e.g.
-// ToJSON on a status-polling request).
+// set these three fields directly, racing with any concurrent read (e.g. a
+// status poll marshalling the job).
 func (j *Job) Pause(daySent int, errorMsg string) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
@@ -167,28 +167,14 @@ func (j *Job) Context() context.Context {
 	return j.ctx
 }
 
-// ToJSON returns the job data for JSON serialization
-func (j *Job) ToJSON() map[string]interface{} {
+// MarshalJSON snapshots the job under the lock, so a status poll can't read a
+// half-updated Job while processSendJob is mid-Update. The exported fields'
+// json tags do the rest.
+func (j *Job) MarshalJSON() ([]byte, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
-
-	return map[string]interface{}{
-		"id":                j.ID,
-		"profile_id":        j.ProfileID,
-		"status":            j.Status,
-		"progress":          j.Progress,
-		"sent":              j.Sent,
-		"failed":            j.Failed,
-		"total":             j.Total,
-		"current_broker":    j.CurrentBroker,
-		"current_broker_id": j.CurrentBrokerID,
-		"started_at":        j.StartedAt,
-		"completed_at":      j.CompletedAt,
-		"error":             j.Error,
-		"error_type":        j.ErrorType,
-		"daily_limit":       j.DailyLimit,
-		"day_sent":          j.DaySent,
-	}
+	type alias Job // no MarshalJSON method -> plain struct marshal, no recursion
+	return json.Marshal((*alias)(j))
 }
 
 // JobManager manages background jobs

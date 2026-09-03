@@ -48,7 +48,6 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 		return
 	}
 
-	// Create email sender
 	sender, err := email.NewSender(cfg.Email)
 	if err != nil {
 		log.Printf("Cannot resume job: failed to create email sender: %v", err)
@@ -56,7 +55,6 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 		return
 	}
 
-	// Build broker list from remaining IDs
 	brokerMap := make(map[string]broker.Broker)
 	for _, b := range s.brokerDB.Brokers {
 		brokerMap[b.ID] = b
@@ -88,7 +86,6 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 
 	fmt.Printf("Resuming send job: %d brokers remaining...\n", len(toSend))
 
-	// Process remaining brokers
 	s.processSendJob(job, toSend, sender)
 }
 
@@ -122,7 +119,6 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create email sender
 	sender, err := email.NewSender(cfg.Email)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
@@ -201,7 +197,6 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 
 	activeProfile := s.activeProfile(r)
 
-	// Check if a job is already running for this profile
 	if activeJob := s.jobManager.GetActive(activeProfile.ID); activeJob != nil {
 		w.WriteHeader(http.StatusConflict)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -218,7 +213,6 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get filter parameters from form
 	limitFormBody(w, r)
 	search := r.FormValue("search")
 	category := r.FormValue("category")
@@ -254,16 +248,13 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create a new job
 	job := s.jobManager.Create(len(toSend), activeProfile.ID)
 
-	// Extract broker IDs for persistence
 	brokerIDs := make([]string, len(toSend))
 	for i, b := range toSend {
 		brokerIDs[i] = b.ID
 	}
 
-	// Save initial job state
 	jobState := &PersistentJobState{
 		ID:               job.ID,
 		ProfileID:        activeProfile.ID,
@@ -282,10 +273,8 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Warning: failed to save job state: %v", err)
 	}
 
-	// Start background goroutine to process emails
 	go s.processSendJob(job, toSend, sender)
 
-	// Return job ID immediately
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
 		"job_id": job.ID,
 		"total":  len(toSend),
@@ -312,7 +301,7 @@ func effectiveDailyLimit(cfg *config.Config) int {
 }
 
 // processSendJob runs in a background goroutine to send emails
-func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender email.Sender) {
+func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *email.SMTPSender) {
 	sent := 0
 	failed := 0
 
@@ -349,7 +338,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 	}
 
 	for i, b := range toSend {
-		// Check if job was cancelled
 		if job.IsCancelled() {
 			break
 		}
@@ -362,7 +350,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 			return
 		}
 
-		// Update current broker
 		job.Update(sent, failed, b.Name, b.ID)
 
 		// Generate email using the user's configured template (see the
@@ -371,7 +358,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 		if err != nil {
 			failed++
 			job.Update(sent, failed, b.Name, b.ID)
-			// Remove from remaining even on failure
 			remaining = remaining[1:]
 			s.saveJobProgress(job, sent, failed, remaining)
 			continue
@@ -416,7 +402,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 			// Check for auth failures and stop if too many consecutive
 			if strings.Contains(strings.ToLower(errMsg), "auth") {
 				if job.RecordAuthFailure() {
-					// Stop job due to auth errors
 					if s.historyStore != nil {
 						_ = s.historyStore.Add(record)
 					}
@@ -433,7 +418,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 			_ = s.historyStore.Add(record)
 		}
 
-		// Update job progress
 		job.Update(sent, failed, b.Name, b.ID)
 
 		// Remove processed broker from remaining and save state
@@ -446,7 +430,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender emai
 		}
 	}
 
-	// Mark job as complete and clear persisted state
 	job.Complete()
 	if err := s.jobPersistence.Clear(); err != nil {
 		log.Printf("Warning: failed to clear job state: %v", err)
@@ -480,7 +463,7 @@ func (s *Server) handleAPIJobActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{"job": job.ToJSON()})
+	_ = json.NewEncoder(w).Encode(map[string]any{"job": job})
 }
 
 // handleAPIJobStatus returns the status of a specific job
@@ -499,7 +482,7 @@ func (s *Server) handleAPIJobStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(job.ToJSON())
+	_ = json.NewEncoder(w).Encode(job)
 }
 
 // handleAPIJobCancel cancels a running job

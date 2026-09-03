@@ -1,7 +1,6 @@
 package email
 
 import (
-	"context"
 	"fmt"
 	"net/mail"
 	"strings"
@@ -32,11 +31,10 @@ type Result struct {
 	Error     error
 }
 
-type Sender interface {
-	Send(ctx context.Context, msg Message) Result
-}
-
-func NewSender(cfg config.EmailConfig) (Sender, error) {
+// NewSender builds the sender for cfg. SMTP is the only provider; the check
+// exists so a stale provider: line in config.yaml fails loudly instead of
+// silently sending over SMTP anyway.
+func NewSender(cfg config.EmailConfig) (*SMTPSender, error) {
 	if cfg.Provider == "" || cfg.Provider == "smtp" {
 		return NewSMTPSender(cfg.SMTP, cfg.From), nil
 	}

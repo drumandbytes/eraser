@@ -161,7 +161,7 @@ func runSend() error {
 	}
 
 	// Initialize email sender (unless dry-run)
-	var sender email.Sender
+	var sender *email.SMTPSender
 	if !cfg.Options.DryRun {
 		sender, err = email.NewSender(cfg.Email)
 		if err != nil {

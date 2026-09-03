@@ -312,7 +312,7 @@ func effectiveDailyLimit(cfg *config.Config) int {
 }
 
 // processSendJob runs in a background goroutine to send emails
-func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender email.Sender) {
+func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *email.SMTPSender) {
 	sent := 0
 	failed := 0
 
@@ -480,7 +480,7 @@ func (s *Server) handleAPIJobActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(map[string]interface{}{"job": job.ToJSON()})
+	_ = json.NewEncoder(w).Encode(map[string]any{"job": job})
 }
 
 // handleAPIJobStatus returns the status of a specific job
@@ -499,7 +499,7 @@ func (s *Server) handleAPIJobStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = json.NewEncoder(w).Encode(job.ToJSON())
+	_ = json.NewEncoder(w).Encode(job)
 }
 
 // handleAPIJobCancel cancels a running job

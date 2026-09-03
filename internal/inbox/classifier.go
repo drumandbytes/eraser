@@ -239,10 +239,8 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 		Confidence: 0.0,
 	}
 
-	// Extract URLs from the email
 	result.URLs = ParseEmailURLs(email)
 
-	// Get the text content to analyze
 	content := email.Body
 	if content == "" {
 		content = stripHTML(email.HTMLBody)
@@ -252,7 +250,6 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 	// Also check subject
 	subject := strings.ToLower(email.Subject)
 
-	// Check if this is a test email (from Eraser itself)
 	if isTestEmail(subject, content) {
 		result.Type = ResponseSuccess
 		result.Confidence = 1.0
@@ -345,7 +342,6 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 		scores[ResponseConfirmationRequired] += 2
 	}
 
-	// Find the highest scoring type and second highest
 	maxScore := 0
 	secondScore := 0
 	for responseType, score := range scores {
@@ -393,12 +389,10 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 		}
 	}
 
-	// Set primary URLs
 	brokerDomain := email.FromDomain
 	result.FormURL = GetPrimaryFormURL(result.URLs, brokerDomain)
 	result.ConfirmURL = GetPrimaryConfirmationURL(result.URLs, brokerDomain)
 
-	// Set reason based on classification
 	result.Reason = getClassificationReason(result.Type, maxScore)
 
 	// Flag for manual review if unknown, low confidence, or an ambiguous
@@ -450,10 +444,8 @@ func stripHTML(html string) string {
 	html = htmlScriptTagRe.ReplaceAllString(html, "")
 	html = htmlStyleTagRe.ReplaceAllString(html, "")
 
-	// Remove HTML tags
 	html = htmlAnyTagRe.ReplaceAllString(html, " ")
 
-	// Decode common HTML entities
 	html = strings.ReplaceAll(html, "&nbsp;", " ")
 	html = strings.ReplaceAll(html, "&amp;", "&")
 	html = strings.ReplaceAll(html, "&lt;", "<")
@@ -519,7 +511,6 @@ func ClassifyBySubjectOnly(subject string) (ResponseType, float64, bool) {
 		}
 	}
 
-	// Find highest scoring type
 	maxScore := 0
 	bestType := ResponseUnknown
 	for responseType, score := range scores {
@@ -602,7 +593,6 @@ func isTestEmail(subject, content string) bool {
 
 // isBounceEmail checks if an email is a bounce/undeliverable notification
 func isBounceEmail(email *Email, subject, content string) bool {
-	// Check if sender looks like a mail system
 	fromLower := strings.ToLower(email.From)
 	fromNameLower := strings.ToLower(email.FromName)
 

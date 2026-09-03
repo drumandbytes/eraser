@@ -35,7 +35,6 @@ func NewSessionStore(ttl time.Duration) *SessionStore {
 		ttl:      ttl,
 	}
 
-	// Start background cleanup goroutine
 	go store.cleanupLoop()
 
 	return store
@@ -85,7 +84,6 @@ func (s *SessionStore) Get(id string) *Session {
 		return nil
 	}
 
-	// Check if expired
 	if time.Now().After(session.ExpiresAt) {
 		s.Delete(id)
 		return nil
@@ -104,13 +102,11 @@ func (s *SessionStore) Update(id string, updateFn func(*Session)) bool {
 		return false
 	}
 
-	// Check if expired
 	if time.Now().After(session.ExpiresAt) {
 		delete(s.sessions, id)
 		return false
 	}
 
-	// Apply updates
 	updateFn(session)
 
 	// Extend expiry

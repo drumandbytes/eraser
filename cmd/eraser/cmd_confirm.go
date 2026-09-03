@@ -69,13 +69,11 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 		return err
 	}
 
-	// Load brokers for domain validation
 	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	// Initialize history store
 	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
@@ -86,7 +84,6 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 	var brokerDomains []string
 	for _, b := range brokerDB.Brokers {
 		if b.Website != "" {
-			// Extract domain from website
 			domain := strings.TrimPrefix(b.Website, "https://")
 			domain = strings.TrimPrefix(domain, "http://")
 			domain = strings.TrimSuffix(domain, "/")
@@ -95,14 +92,12 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 			}
 			brokerDomains = append(brokerDomains, domain)
 
-			// Also add the bare domain without www prefix
 			if strings.HasPrefix(domain, "www.") {
 				brokerDomains = append(brokerDomains, strings.TrimPrefix(domain, "www."))
 			}
 		}
 	}
 
-	// Create confirmation handler
 	handler := browser.NewConfirmationHandler(brokerDomains)
 
 	fmt.Println("🔗 Confirmation Link Handler")
@@ -122,7 +117,6 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 			URL      string
 		}{BrokerID: brokerID, URL: confirmURL})
 	} else if brokerID != "" {
-		// Get URL for specific broker from pipeline
 		responses, err := store.GetBrokerResponses(activeProfile.ID, "confirmation_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
@@ -144,7 +138,6 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 			return fmt.Errorf("no confirmation URL found for broker: %s", brokerID)
 		}
 	} else if pending {
-		// Get all pending confirmation links
 		responses, err := store.GetBrokerResponses(activeProfile.ID, "confirmation_required", false, 100)
 		if err != nil {
 			return fmt.Errorf("failed to get broker responses: %w", err)
@@ -173,7 +166,6 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 	}
 	fmt.Println()
 
-	// Process each link
 	successCount := 0
 	failCount := 0
 
@@ -184,7 +176,6 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 		}
 		fmt.Printf("       URL: %s\n", truncateURL(link.URL, 60))
 
-		// Validate domain if requested
 		if validateDomain {
 			valid, domain, err := handler.ValidateDomain(link.URL)
 			if err != nil {
@@ -216,7 +207,6 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 			continue
 		}
 
-		// Show result
 		fmt.Printf("       HTTP Status: %d\n", result.StatusCode)
 		if len(result.RedirectPath) > 1 {
 			fmt.Printf("       Redirects: %d hops\n", len(result.RedirectPath)-1)
@@ -225,13 +215,11 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 			fmt.Printf("       Final URL: %s\n", truncateURL(result.FinalURL, 60))
 		}
 
-		// Extract and show status
 		status := handler.ExtractConfirmationStatus(result)
 		if result.Success {
 			fmt.Printf("       ✅ %s\n", status)
 			successCount++
 
-			// Update pipeline status
 			if link.BrokerID != "" {
 				_ = store.UpdatePipelineStatus(activeProfile.ID, link.BrokerID, history.PipelineConfirmed)
 			}

@@ -28,7 +28,6 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 
 	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail, showExcluded)
 
-	// Returns broker list as HTML fragment for HTMX
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{
 		"Brokers":      brokers,
 		"Filtered":     len(brokers),
@@ -194,7 +193,6 @@ func (s *Server) handleAPIResponses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
-	// Check if inbox is configured
 	cfg := s.getConfig()
 	if cfg == nil || !cfg.Inbox.Enabled {
 		_, _ = w.Write([]byte(`
@@ -206,10 +204,8 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create inbox monitor
 	monitor := inbox.NewMonitor(cfg.Inbox, s.brokerDB.Brokers)
 
-	// Connect to IMAP
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 
@@ -278,7 +274,6 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Store in database
 		brokerResp := &history.BrokerResponse{
 			ProfileID:    profileID,
 			BrokerID:     email.BrokerID,
@@ -330,7 +325,6 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Return summary HTML
 	_, _ = fmt.Fprintf(w, `
 		<div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
 			<strong>Scan complete!</strong> Found %d broker emails.
@@ -351,7 +345,6 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 
 // handleAPIInboxRescan rescans all emails and reclassifies them with the improved classifier
 func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
-	// Check if inbox is configured
 	cfg := s.getConfig()
 	if cfg == nil || !cfg.Inbox.Enabled {
 		_, _ = w.Write([]byte(`
@@ -363,7 +356,6 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if clear flag is set
 	clearFirst := r.URL.Query().Get("clear") == "true"
 	if clearFirst && s.historyStore != nil {
 		if err := s.historyStore.ClearBrokerResponses(); err != nil {
@@ -376,10 +368,8 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Create inbox monitor
 	monitor := inbox.NewMonitor(cfg.Inbox, s.brokerDB.Brokers)
 
-	// Connect to IMAP with longer timeout for full rescan
 	ctx, cancel := context.WithTimeout(r.Context(), 180*time.Second)
 	defer cancel()
 
@@ -447,11 +437,9 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Check if this response already exists
 		if s.historyStore != nil {
 			existing, _ := s.historyStore.FindBrokerResponseBySubject(profileID, email.BrokerID, email.Subject)
 			if existing != nil {
-				// Update existing response classification
 				err := s.historyStore.UpdateBrokerResponseClassification(
 					existing.ID,
 					existing.ProfileID,
@@ -513,7 +501,6 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Return summary HTML
 	_, _ = fmt.Fprintf(w, `
 		<div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
 			<strong>Rescan complete!</strong> Processed %d broker emails.
@@ -548,7 +535,6 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get all broker responses
 	responses, err := s.historyStore.GetAllBrokerResponses()
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `
@@ -595,7 +581,6 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			// Fetch emails from both INBOX and archive folder
 			var allEmails []inbox.Email
 
-			// Fetch from INBOX
 			emails, err := monitor.FetchRecentEmails(ctx, 30) // 30 days
 			if err != nil {
 				log.Printf("Warning: failed to fetch from INBOX: %v", err)
@@ -631,7 +616,6 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			// Update database records with missing bodies
 			for _, resp := range responses {
 				if resp.EmailBody != "" {
 					continue // Already has body
@@ -720,7 +704,6 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Return summary HTML
 	_, _ = fmt.Fprintf(w, `
 		<div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
 			<strong>Reclassification complete!</strong> Processed %d records.

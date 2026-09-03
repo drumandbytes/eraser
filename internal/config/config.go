@@ -306,7 +306,6 @@ func Load(path string) (*Config, error) {
 		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
-	// Set inbox defaults
 	if cfg.Inbox.Folder == "" {
 		cfg.Inbox.Folder = "INBOX"
 	}
@@ -322,7 +321,6 @@ func Load(path string) (*Config, error) {
 		cfg.Inbox.Port = 993
 	}
 
-	// Set pipeline defaults
 	if cfg.Pipeline.BrowserTimeoutSec == 0 {
 		cfg.Pipeline.BrowserTimeoutSec = 30
 	}

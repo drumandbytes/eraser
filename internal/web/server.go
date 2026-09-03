@@ -217,7 +217,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		},
 	}
 
-	// Read layout template
 	layoutContent, err := templatesFS.ReadFile("templates/layout.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read layout template: %w", err)
@@ -249,7 +248,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		if err != nil {
 			return err
 		}
-		// Skip directories, partials, and layout
 		if d.IsDir() || strings.Contains(path, "/partials/") || path == "templates/layout.html" {
 			return nil
 		}
@@ -262,11 +260,9 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return fmt.Errorf("failed to read template %s: %w", path, err)
 		}
 
-		// Create a new template for this page
 		name := path[len("templates/"):]
 		pageTmpl := template.New(name).Funcs(funcs)
 
-		// Parse layout first
 		_, err = pageTmpl.Parse(string(layoutContent))
 		if err != nil {
 			return fmt.Errorf("failed to parse layout for %s: %w", name, err)
@@ -287,7 +283,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return fmt.Errorf("failed to parse template %s: %w", name, err)
 		}
 
-		// Store in map
 		templates[name] = pageTmpl
 
 		return nil
@@ -329,7 +324,6 @@ func (s *Server) Start() error {
 	// Check for pending job and offer to resume
 	s.checkPendingJob()
 
-	// Open browser after a short delay
 	go func() {
 		time.Sleep(500 * time.Millisecond)
 		url := fmt.Sprintf("http://localhost:%d", s.port)
@@ -392,7 +386,6 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Post("/forms/{brokerID}/complete", s.handleFormComplete)
 	r.Post("/forms/{brokerID}/skip", s.handleFormSkip)
 
-	// Setup wizard routes
 	r.Route("/setup", func(r chi.Router) {
 		r.Get("/", s.handleSetupWelcome)
 		r.Get("/profile", s.handleSetupProfile)
@@ -465,7 +458,6 @@ func securityHeaders(next http.Handler) http.Handler {
 			w.Header().Set("Expires", "0")
 		}
 
-		// Disable unnecessary browser features
 		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
 
 		next.ServeHTTP(w, r)
@@ -708,7 +700,6 @@ func (s *Server) renderPartial(w http.ResponseWriter, name string, data interfac
 		http.Error(w, "Template not found: "+name, http.StatusInternalServerError)
 		return
 	}
-	// Execute the template directly without layout wrapper
 	err := tmpl.Execute(w, data)
 	if err != nil {
 		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)

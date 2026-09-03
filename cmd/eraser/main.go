@@ -70,7 +70,6 @@ send via Gmail SMTP.`,
 	rootCmd.PersistentFlags().StringVar(&brokerFile, "brokers", "", "broker database file (default is ./data/brokers.yaml)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "Profile ID to operate as (default: the only configured profile; required if you've configured more than one via 'eraser profile add')")
 
-	// Add commands
 	rootCmd.AddCommand(initCmd())
 	rootCmd.AddCommand(sendCmd())
 	rootCmd.AddCommand(serveCmd())

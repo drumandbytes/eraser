@@ -51,7 +51,6 @@ func NewFormFiller(profile *config.Profile) *FormFiller {
 func (f *FormFiller) Fill(ctx context.Context) *FillResult {
 	result := &FillResult{}
 
-	// Get all field mappings based on profile
 	mappings := f.getFieldMappings()
 
 	for _, mapping := range mappings {
@@ -308,7 +307,6 @@ func (f *FormFiller) fillSelector(ctx context.Context, selector string, value st
 		return f.fillSelectElement(ctx, selector, value)
 	}
 
-	// Clear existing value and fill
 	err = chromedp.Run(ctx,
 		chromedp.Clear(selector),
 		chromedp.SendKeys(selector, value),
@@ -358,7 +356,6 @@ func (f *FormFiller) fillSelectElement(ctx context.Context, selector string, val
 // fillByPattern searches for fields matching patterns. Returns (filled, err)
 // where err is non-nil only for a real failure (see fillSelector).
 func (f *FormFiller) fillByPattern(ctx context.Context, mapping FieldMapping) (bool, error) {
-	// Build JavaScript to find matching fields
 	patternsJS := "["
 	for i, p := range mapping.Patterns {
 		if i > 0 {

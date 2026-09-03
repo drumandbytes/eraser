@@ -13,7 +13,6 @@ import (
 // Handler implementations
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
-	// Check if config exists, redirect to setup if not
 	cfg := s.getConfig()
 	if cfg == nil || cfg.Profile.FirstName == "" && len(cfg.Profiles) == 0 {
 		http.Redirect(w, r, "/setup", http.StatusFound)
@@ -113,7 +112,6 @@ func (s *Server) getPipelineStats(profileID string) PipelineStats {
 		return stats
 	}
 
-	// Get pipeline stage counts
 	pipelineStats, err := s.historyStore.GetPipelineStats(profileID)
 	if err == nil {
 		stats.EmailSent = pipelineStats[history.PipelineEmailSent]
@@ -128,13 +126,11 @@ func (s *Server) getPipelineStats(profileID string) PipelineStats {
 		stats.Failed = pipelineStats[history.PipelineFailed]
 	}
 
-	// Get pending tasks count (CAPTCHAs, etc.)
 	pendingTaskCount, _, _, err := s.historyStore.GetPendingTaskStats(profileID)
 	if err == nil {
 		stats.PendingTasks = pendingTaskCount
 	}
 
-	// Get needs review count
 	responses, err := s.historyStore.GetBrokerResponses(profileID, "", true, 1000)
 	if err == nil {
 		stats.NeedsReview = len(responses)
@@ -198,7 +194,6 @@ func (s *Server) handleFormComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update pipeline status to confirmed
 	if err := s.historyStore.UpdatePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineConfirmed); err != nil {
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
@@ -222,7 +217,6 @@ func (s *Server) handleFormSkip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update pipeline status to rejected (skipped)
 	if err := s.historyStore.UpdatePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineRejected); err != nil {
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
@@ -260,17 +254,14 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 		tasks, _ = s.historyStore.GetPendingTasks(active.ID, history.TaskType(taskType), "pending")
 		completedTasksList, _ = s.historyStore.GetPendingTasks(active.ID, history.TaskType(taskType), "completed")
 		forms, _ = s.historyStore.GetFormsWithStatus(active.ID)
-		// Get items needing review (parser was unsure)
 		reviewItems, _ = s.historyStore.GetBrokerResponses(active.ID, "", true, 1000)
 	}
 
-	// Get task stats
 	pendingTasks, completedTasksCount, skippedTasks := 0, 0, 0
 	if s.historyStore != nil {
 		pendingTasks, completedTasksCount, skippedTasks, _ = s.historyStore.GetPendingTaskStats(active.ID)
 	}
 
-	// Get form stats
 	pendingForms, filledForms, captchaForms, failedForms, skippedForms := 0, 0, 0, 0, 0
 	if s.historyStore != nil {
 		pendingForms, filledForms, captchaForms, failedForms, skippedForms, _ = s.historyStore.GetFormStats(active.ID)
@@ -283,7 +274,6 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	// This avoids double-counting captcha items
 	totalActionItems := pendingForms + pendingTasks
 
-	// Get items needing review count
 	needsReviewCount := len(reviewItems)
 
 	data := map[string]interface{}{
@@ -406,13 +396,11 @@ func (s *Server) handleTaskHelper(w http.ResponseWriter, r *http.Request) {
 	// Re-fetch task to get updated opened_at
 	task, _ = s.historyStore.GetPendingTaskByID(taskID, activeProfileID)
 
-	// Parse profile data from BrowserState (JSON)
 	profileData := make(map[string]string)
 	if task.BrowserState != "" {
 		_ = json.Unmarshal([]byte(task.BrowserState), &profileData)
 	}
 
-	// Create ordered profile fields for display
 	orderedFields := []struct {
 		Key   string
 		Label string
@@ -428,7 +416,6 @@ func (s *Server) handleTaskHelper(w http.ResponseWriter, r *http.Request) {
 		{"country", "Country"},
 	}
 
-	// Build ordered map for template
 	orderedProfile := make([]map[string]string, 0)
 	for _, field := range orderedFields {
 		if val, ok := profileData[field.Key]; ok && val != "" {

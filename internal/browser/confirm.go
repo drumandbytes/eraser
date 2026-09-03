@@ -29,7 +29,6 @@ type ConfirmationHandler struct {
 func NewConfirmationHandler(brokerDomains []string) *ConfirmationHandler {
 	domains := make(map[string]bool)
 	for _, d := range brokerDomains {
-		// Store both the domain and common variations
 		d = strings.ToLower(d)
 		domains[d] = true
 		// Also allow subdomains
@@ -82,7 +81,6 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 		RedirectPath: []string{confirmURL},
 	}
 
-	// Validate domain if requested
 	if validateDomain {
 		valid, domain, err := h.ValidateDomain(confirmURL)
 		if err != nil {
@@ -102,7 +100,6 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 		return result, err
 	}
 
-	// Set headers to look like a real browser
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
@@ -143,7 +140,6 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 	result.FinalURL = resp.Request.URL.String()
 	result.RedirectPath = append(result.RedirectPath, redirects...)
 
-	// Read response body (limited to 64KB)
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("failed to read response: %v", err)

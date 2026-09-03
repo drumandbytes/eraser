@@ -295,7 +295,6 @@ func (db *BrokerDatabase) RemoveByID(id string) *Broker {
 
 // SaveWithBackup saves the database to file, creating a backup first
 func (db *BrokerDatabase) SaveWithBackup(path string) error {
-	// Create backup
 	if _, err := os.Stat(path); err == nil {
 		data, err := os.ReadFile(path)
 		if err != nil {

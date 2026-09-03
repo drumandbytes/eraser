@@ -45,7 +45,6 @@ func runPipelineStatus() error {
 	}
 	fmt.Println()
 
-	// Get pipeline stats
 	pipelineStats, err := store.GetPipelineStats(activeProfile.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get pipeline stats: %w", err)
@@ -63,7 +62,6 @@ func runPipelineStatus() error {
 	fmt.Printf("  ❌ Rejected:              %d\n", pipelineStats[history.PipelineRejected])
 	fmt.Printf("  💥 Failed:                %d\n", pipelineStats[history.PipelineFailed])
 
-	// Get response stats
 	responseStats, err := store.GetResponseStats(activeProfile.ID)
 	if err != nil {
 		fmt.Printf("\n⚠️  Could not get response stats: %v\n", err)
@@ -75,7 +73,6 @@ func runPipelineStatus() error {
 		}
 	}
 
-	// Get pending tasks
 	pending, completed, skipped, err := store.GetPendingTaskStats(activeProfile.ID)
 	if err != nil {
 		fmt.Printf("\n⚠️  Could not get task stats: %v\n", err)
@@ -87,7 +84,6 @@ func runPipelineStatus() error {
 		fmt.Printf("  ⏭️  Skipped:   %d\n", skipped)
 	}
 
-	// Show actionable items
 	tasks, err := store.GetPendingTasks(activeProfile.ID, "", "pending")
 	if err == nil && len(tasks) > 0 {
 		fmt.Println()

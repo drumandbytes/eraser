@@ -81,10 +81,8 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 		opts = append(opts, chromedp.Headless)
 	}
 
-	// Create allocator context
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 
-	// Create browser context
 	ctx, cancel := chromedp.NewContext(allocCtx)
 
 	return &Browser{
@@ -133,7 +131,6 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		}
 	}
 
-	// Create a context with timeout
 	ctx, cancel := context.WithTimeout(b.ctx, b.config.Timeout)
 	defer cancel()
 
@@ -144,7 +141,6 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		return result, err
 	}
 
-	// Wait for page to load
 	err = chromedp.Run(ctx, chromedp.WaitReady("body"))
 	if err != nil {
 		result.ErrorMessage = fmt.Sprintf("page load failed: %v", err)

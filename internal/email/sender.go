@@ -34,7 +34,6 @@ type Result struct {
 
 type Sender interface {
 	Send(ctx context.Context, msg Message) Result
-	Name() string
 }
 
 func NewSender(cfg config.EmailConfig) (Sender, error) {

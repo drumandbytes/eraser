@@ -56,6 +56,10 @@ release:
     name: eraser
   draft: false
   prerelease: auto
+  # release-please already created the release (with its own changelog) by
+  # the time a tag push gets here; append artifacts to it instead of
+  # overwriting its notes with the changelog config below.
+  mode: keep-existing
 
 # macOS: brew install drumandbytes/homebrew-tap/eraser
 # (Homebrew strips the Gatekeeper quarantine on cask install, so no xattr dance.)

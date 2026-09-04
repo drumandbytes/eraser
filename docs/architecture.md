@@ -52,7 +52,7 @@ eraser/
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
 
-CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR. `.github/workflows/release.yml` runs GoReleaser (`.goreleaser.yaml`) — either on a pushed `v*` tag, or from the Actions tab (**Run workflow → type `vX.Y.Z`**, which creates the tag for you) — cross-compiling `linux/darwin/windows × amd64/arm64` (`CGO_ENABLED=0`, pure-Go SQLite) and publishing archives + checksums to GitHub Releases. `main.version` is set via `-ldflags` at that point; it's `"dev"` otherwise.
+CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR. `.github/workflows/release-please.yml` watches Conventional Commits on `main` and keeps an open release PR with the version bump and `CHANGELOG.md`; merging it tags `vX.Y.Z` and publishes a GitHub Release. That tag push fires `.github/workflows/release.yml`, which runs GoReleaser (`.goreleaser.yaml`) to cross-compile `linux/darwin/windows × amd64/arm64` (`CGO_ENABLED=0`, pure-Go SQLite) and append archives + checksums to the release release-please already created. `main.version` is set via `-ldflags` at that point; it's `"dev"` otherwise.
 
 ## Key Concepts
 

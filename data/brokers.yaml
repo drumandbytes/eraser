@@ -3821,11 +3821,12 @@ brokers:
       category: marketing
     - id: project-applecart
       name: Project Applecart LLC
-      email: matt@applecart.co
+      email: ""
       website: https://www.applecart.co/
-      opt_out_url: https://www.applecart.co/privacyrights
+      opt_out_url: https://www.applecart.co/privacyrights2
       region: us
       category: marketing
+      notes: 'Replied 2026-09-04 that they no longer accept requests by email; use the opt_out_url web form (or phone 1-866-467-8688, service code 722#) instead.'
     - id: propertyradar
       name: Propertyradar Inc
       email: privacy@propertyradar.com

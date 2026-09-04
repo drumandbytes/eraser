@@ -16,14 +16,6 @@ You know those sites like Spokeo, BeenVerified, and Whitepages that have your ho
 
 ---
 
-## About This Fork
-
-This is a maintained fork of [digisamroc/eraser](https://github.com/digisamroc/eraser), which has been inactive since early 2026. It includes bug fixes, performance cleanups, and GDPR/EU-specific customizations on top of the original CCPA-focused tool.
-
-If you're an EU resident exercising GDPR rights rather than a US CCPA use case, read [EU-NOTES.md](EU-NOTES.md) first — it covers which template to pick, safe send-volume behavior, and what to do if a broker ignores your request.
-
----
-
 ## The Easy Way (Web Interface)
 
 If you're not comfortable with command-line tools, Eraser has a visual interface that runs in your web browser.
@@ -314,6 +306,14 @@ Yes, with caveats:
 | Incogni | $77/year | 180+ | No |
 | DeleteMe | $129/year | 750+ | No |
 | Privacy Duck | $500+/year | 500+ | No |
+
+---
+
+## About This Fork
+
+This is a maintained fork of [digisamroc/eraser](https://github.com/digisamroc/eraser), which has been inactive since early 2026. It includes bug fixes, performance cleanups, and GDPR/EU-specific customizations on top of the original CCPA-focused tool.
+
+If you're an EU resident exercising GDPR rights rather than a US CCPA use case, read [EU-NOTES.md](EU-NOTES.md) first — it covers which template to pick, safe send-volume behavior, and what to do if a broker ignores your request.
 
 ---
 

@@ -528,9 +528,10 @@ brokers:
       name: Alphonso Inc.
       email: compliance@lgads.tv
       website: https://www.lgads.tv/
-      opt_out_url: https://alphonso.tv/privacy/ccpa/
+      opt_out_url: https://alphonso.tv/privacy/consumer/
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-09-05) from compliance@lgads.tv: TV-based ACR data only - IP addresses and device identifiers, no name or email, so a profile-based request can''t be matched. Rights are exercised via the form at the opt_out_url, which needs your current IP address to compare against - not reachable via this tool.'
     - id: altair-data-resources
       name: Altair Data Resources, Inc.
       email: privacy@altairdata.com
@@ -2957,8 +2958,10 @@ brokers:
       name: LOOPME LTD
       email: legal@loopme.com
       website: https://www.loopme.com/
+      opt_out_url: https://legal.loopme.com/privacy-center/loopme-opt-out
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-09-03, via the shared Chartboost/LoopMe support desk): interest-based ad tech only - no name/email, so an email request can''t be actioned. Opt out by entering your Device ID on the opt_out_url page - not reachable via this tool''s profile-based request.'
     - id: lotadata
       name: Lotadata, Inc.
       email: ""

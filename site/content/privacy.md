@@ -56,8 +56,8 @@ the database and it's gone.
 
 ## Who is responsible
 
-`[PLACEHOLDER — set to the OÜ once registered; until then, the controller is
-Maris Popens, reachable at maris@popens.lv.]`
+Eraser is run by Maris Popens, in Estonia. Write to <maris@popens.lv> about
+anything on this page, including any of the rights above.
 
 You can also raise anything publicly as a
 [GitHub issue](https://github.com/drumandbytes/eraser/issues/new).

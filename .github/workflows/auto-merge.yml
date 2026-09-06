@@ -22,3 +22,10 @@ jobs:
     with:
       # release-please's own PR; patch bumps auto-merge, minor/major don't.
       patch-only-authors: '["dnb-robot[bot]"]'
+      # GITHUB_TOKEN-authored merges don't trigger further workflow runs, which
+      # left a release-please release stuck (manifest/changelog bumped, no
+      # tag/release/images ever built) — see drumandbytes/reusable-actions#16.
+      # This merges with the dnb-robot app token instead, so the merge properly
+      # cascades into another Release Please run that actually finishes the release.
+      use-app-token-for-merge: true
+    secrets: inherit

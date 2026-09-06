@@ -11,6 +11,10 @@
 <link rel="canonical" href="{{ .Permalink }}">
 {{ partial "head-seo.html" . }}
 <link rel="stylesheet" href="{{ "css/site.css" | relURL }}">
+<!-- Public site only. Don't add this to internal/web/templates: that's the
+     self-hosted UI, and beaconing from a user's own machine to report their use
+     of an erasure tool is the thing this product exists to avoid. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "ec3bf39cd9974827a1fa7060f5c7e785"}'></script>
 </head>
 <body>
 <header class="topbar">
@@ -26,6 +30,7 @@
   <a href="https://github.com/drumandbytes/eraser">Source</a> ·
   MIT licensed ·
   Not legal advice — you're responsible for what you send ·
+  <a href="/privacy/">Privacy</a> ·
   <a href="https://github.com/drumandbytes/eraser/issues/new">Something wrong or missing?</a>
 </footer>
 </body>

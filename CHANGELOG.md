@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/drumandbytes/eraser/compare/v0.4.0...v0.4.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **ci:** opt into app-token merge, so releases actually finish ([#34](https://github.com/drumandbytes/eraser/issues/34)) ([873d0b1](https://github.com/drumandbytes/eraser/commit/873d0b1def2feef9a310acdb46390b773f3da5bb))
+
 ## [0.4.0](https://github.com/drumandbytes/eraser/compare/v0.3.2...v0.4.0) (2026-09-04)
 
 

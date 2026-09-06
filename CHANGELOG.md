@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/drumandbytes/eraser/compare/v0.4.1...v0.5.0) (2026-09-06)
+
+
+### Features
+
+* **site:** add Cloudflare Web Analytics to the public site ([#36](https://github.com/drumandbytes/eraser/issues/36)) ([69b56ce](https://github.com/drumandbytes/eraser/commit/69b56ce396f86d8f8e38b5d1b8c6a1290c787f2b))
+
 ## [0.4.1](https://github.com/drumandbytes/eraser/compare/v0.4.0...v0.4.1) (2026-09-06)
 
 

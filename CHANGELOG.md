@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/drumandbytes/eraser/compare/v0.5.0...v0.5.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **site:** load the beacon as a module, not a deferred script ([#38](https://github.com/drumandbytes/eraser/issues/38)) ([f05dd38](https://github.com/drumandbytes/eraser/commit/f05dd3827dce9d0374883b2ce4704094ffd2e60b))
+
 ## [0.5.0](https://github.com/drumandbytes/eraser/compare/v0.4.1...v0.5.0) (2026-09-06)
 
 

@@ -11,10 +11,12 @@
 <link rel="canonical" href="{{ .Permalink }}">
 {{ partial "head-seo.html" . }}
 <link rel="stylesheet" href="{{ "css/site.css" | relURL }}">
-<!-- Public site only. Don't add this to internal/web/templates: that's the
-     self-hosted UI, and beaconing from a user's own machine to report their use
-     of an erasure tool is the thing this product exists to avoid. -->
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "ec3bf39cd9974827a1fa7060f5c7e785"}'></script>
+<!-- No analytics beacon here on purpose. Cloudflare injects one at the edge for
+     this host, and a hand-embedded tag would sit above it and win -- only the
+     first beacon on a page is used -- which is exactly why this site recorded
+     nothing while it had one. Never add one to internal/web/templates either:
+     that's the self-hosted UI, and beaconing from a user's own machine to
+     report their use of an erasure tool is what this product exists to avoid. -->
 </head>
 <body>
 <header class="topbar">

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/drumandbytes/eraser/compare/v0.5.1...v0.5.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* **site:** drop the manual beacon, let the edge inject it ([#40](https://github.com/drumandbytes/eraser/issues/40)) ([2fa04a6](https://github.com/drumandbytes/eraser/commit/2fa04a6bb06b7c9152ab408192200cc4a56dc417))
+
 ## [0.5.1](https://github.com/drumandbytes/eraser/compare/v0.5.0...v0.5.1) (2026-09-06)
 
 

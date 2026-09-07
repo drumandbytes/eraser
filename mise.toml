@@ -1,0 +1,10 @@
+[tools]
+# Pinned to match CI so a local build can't pass against a different toolchain.
+#
+# go tracks the go directive in go.mod; bump both together or `go build` starts
+# rejecting the module.
+go = "1.26"
+# hugo builds site/. Pinned exactly rather than "latest" because Hugo ships
+# breaking template changes in minor releases, and a local build that silently
+# used a newer one would produce different HTML than .github/workflows/deploy.yaml.
+hugo = "0.165.0"

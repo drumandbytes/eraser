@@ -1,0 +1,60 @@
+name: Deploy to Cloudflare Pages
+
+# Replaces the GitHub Pages deploy. The move is for analytics: Cloudflare Web
+# Analytics only records when the beacon is injected at the edge, which needs
+# proxied traffic, and the GitHub Pages hostname had to stay grey-clouded so
+# GitHub could reach the origin to renew its certificate.
+#
+# Not using reusable-actions' deploy-cloudflare-pages.yml: that one installs
+# Node and runs an npm build, while this site needs Go (to generate the guides)
+# and Hugo. Only the deploy step is shared in spirit -- same wrangler action,
+# same org secrets.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/brokers.yaml"
+      - "data/authorities.yaml"
+      - "site/**"
+      - "cmd/eraser/cmd_guides.go"
+      - "internal/template/templates/**"
+      - "internal/broker/**"
+      - ".github/workflows/deploy.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.26"
+
+      - uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: "0.165.0"
+
+      - name: Generate content
+        run: |
+          go run ./cmd/eraser guides --format md --output site/content
+          mkdir -p site/data
+          cp data/authorities.yaml site/data/authorities.yaml
+
+      - name: Build
+        run: hugo --minify --source site
+
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy site/public --project-name=eraser --branch=main

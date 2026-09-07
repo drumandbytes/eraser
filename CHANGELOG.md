@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/drumandbytes/eraser/compare/v0.5.4...v0.6.0) (2026-09-07)
+
+
+### Features
+
+* **brokers:** restore a verified contact for Cross Pixel Media ([#47](https://github.com/drumandbytes/eraser/issues/47)) ([7d717a4](https://github.com/drumandbytes/eraser/commit/7d717a4a4284b50cd34a8562549b17864fa0437a))
+
 ## [0.5.4](https://github.com/drumandbytes/eraser/compare/v0.5.3...v0.5.4) (2026-09-07)
 
 

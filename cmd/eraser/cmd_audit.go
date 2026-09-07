@@ -217,6 +217,14 @@ func checkEmailAlive(email string, checker *auditChecker) bool {
 	domain := email[at+1:]
 
 	if mxs, err := checker.lookupMX(domain); err == nil && len(mxs) > 0 {
+		// A null MX (RFC 7505) is a single "." record, and it is the domain
+		// explicitly stating that it accepts no mail at all. Counting it as a
+		// live contact is worse than finding no MX: this is a definitive answer,
+		// not a missing one. No broker publishes one today, so this guards a
+		// silent future false positive rather than fixing a current miscount.
+		if len(mxs) == 1 && (mxs[0].Host == "." || mxs[0].Host == "") {
+			return false
+		}
 		return true
 	}
 	// Some domains route mail without a dedicated MX record (implicit MX

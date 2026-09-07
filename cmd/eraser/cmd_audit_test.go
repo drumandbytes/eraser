@@ -71,6 +71,20 @@ func TestAuditOneWebsiteDeadOnConnectionError(t *testing.T) {
 // only evidence of death when the hostname has stopped resolving. If DNS still
 // answers, we are far likelier to have been refused for running in a datacenter.
 // The first scheduled run called 73 brokers dead this way against 1 real one.
+// RFC 7505: a lone "." MX means the domain accepts no mail. Go surfaces it as a
+// normal record, so a naive len(mxs) > 0 reads it as a working contact.
+func TestAuditOneEmailDeadOnNullMX(t *testing.T) {
+	b := broker.Broker{ID: "nomail", Email: "privacy@nomail.example", Website: "https://nomail.example"}
+	checker := stubChecker(1, 0, 200, nil)
+	checker.lookupMX = func(domain string) ([]*net.MX, error) {
+		return []*net.MX{{Host: ".", Pref: 0}}, nil
+	}
+
+	if got := auditOne(b, checker); got != verdictEmailDead {
+		t.Errorf("auditOne() = %q, want %q (a null MX is an explicit refusal of mail)", got, verdictEmailDead)
+	}
+}
+
 func TestAuditOneWebsiteUnknownWhenHostStillResolves(t *testing.T) {
 	b := broker.Broker{ID: "veromi", Email: "privacy@veromi.net", Website: "https://www.veromi.net"}
 	checker := stubChecker(1, 1, 0, errConnRefused)

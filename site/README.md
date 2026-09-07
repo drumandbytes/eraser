@@ -1,8 +1,8 @@
 # site/
 
 The docs site — [eraser.drumandbytes.dev](https://eraser.drumandbytes.dev),
-built with [Hugo](https://gohugo.io) and deployed by
-`.github/workflows/pages.yml` on every push to `main` that touches the broker
+built with [Hugo](https://gohugo.io) and deployed to Cloudflare Pages by
+`.github/workflows/deploy.yaml` on every push to `main` that touches the broker
 data, `site/`, or the guide generator.
 
 ## Build locally

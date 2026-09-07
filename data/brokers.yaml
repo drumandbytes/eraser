@@ -1291,11 +1291,12 @@ brokers:
       category: marketing
     - id: cross-pixel-media
       name: Cross Pixel Media, Inc.
+      email: privacy@crosspixel.net
       website: https://www.crosspixel.net/
       opt_out_url: https://privacy.crsspxl.com/optout
       region: us
       category: marketing
-      notes: 'No email on file: apearlstein@crosspixel.net replied that Alan has left Cross Pixel Media and forwarded us to Stephanie McCabe, President of Knower Tech, the successor company (reply received 2026-08-20). That forwarding address, stephanie.mccabe@knowertech.ca, was removed on 2026-09-07 because knowertech.ca no longer resolves at all (NXDOMAIN, no MX) -- mail to it cannot be delivered, so sending there made a request look sent when it never left. Use the opt-out form instead; it was still answering 200 when this was checked.'
+      notes: 'Use the role address, not a person. apearlstein@crosspixel.net replied that Alan had left and forwarded us to Stephanie McCabe at Knower Tech, the successor company (2026-08-20); that forwarding address was stephanie.mccabe@knowertech.ca, and knowertech.ca is now NXDOMAIN with no MX, so it was dropped on 2026-09-07. privacy@crosspixel.net replaced it: Cross Pixel''s own privacy policy (effective 2025-12-08) names it for exercising data rights -- "You can exercise these rights at any time by visiting our Privacy Portal or by emailing us at privacy@crosspixel.net" -- and crosspixel.net has live Google Workspace MX. A departing employee does not invalidate a published role address. Knower Tech is real (knowertech.com lists McCabe as President and references Cross Pixel) but publishes no contact address at all; its contact and privacy pages still carry unfilled theme placeholders, so there was nothing verifiable to use there.'
     - id: crosswalk-technologies
       name: Crosswalk Technologies Inc
       email: privacy@crosswalknyc.com

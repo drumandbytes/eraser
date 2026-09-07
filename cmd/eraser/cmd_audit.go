@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -32,6 +33,13 @@ type auditChecker struct {
 	httpHead   func(url string) (*http.Response, error)
 }
 
+// A browser User-Agent, because plenty of brokers' WAFs reject Go's default
+// "Go-http-client/2.0" outright. This is about not looking like a broken bot,
+// not about defeating bot protection -- anything that still blocks us is
+// reported as "unknown", never as evidence the broker is gone.
+const auditUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+	"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+
 func newAuditChecker(timeout time.Duration) *auditChecker {
 	client := &http.Client{
 		Timeout: timeout,
@@ -46,7 +54,25 @@ func newAuditChecker(timeout time.Duration) *auditChecker {
 		lookupMX:   net.LookupMX,
 		lookupHost: net.LookupHost,
 		httpHead: func(url string) (*http.Response, error) {
-			return client.Head(url)
+			// HEAD first (cheap), then GET on failure: a fair number of sites
+			// never implement HEAD and drop the connection rather than answering
+			// 405, which is indistinguishable from being dead.
+			for _, method := range []string{http.MethodHead, http.MethodGet} {
+				req, err := http.NewRequest(method, url, nil)
+				if err != nil {
+					return nil, err
+				}
+				req.Header.Set("User-Agent", auditUserAgent)
+				req.Header.Set("Accept", "text/html,application/xhtml+xml,*/*;q=0.8")
+				resp, err := client.Do(req)
+				if err == nil {
+					return resp, nil
+				}
+				if method == http.MethodGet {
+					return nil, err
+				}
+			}
+			return nil, nil // unreachable: the loop always returns
 		},
 	}
 }
@@ -121,14 +147,19 @@ func runAuditBrokers(region, category string, timeout time.Duration, failOnDead 
 	printAuditResults(results)
 
 	if failOnDead {
+		// email-dead only. A dead mail domain is checkable from anywhere and means
+		// the removal request has nowhere to go, which is the thing that actually
+		// breaks the product. website-dead is still printed above, but it cannot
+		// distinguish "gone" from "blocks CI", so failing on it makes a scheduled
+		// job that always fails -- an alarm nobody reads.
 		dead := 0
 		for _, r := range results {
-			if r.verdict == verdictEmailDead || r.verdict == verdictWebsiteDead {
+			if r.verdict == verdictEmailDead {
 				dead++
 			}
 		}
 		if dead > 0 {
-			return fmt.Errorf("%d broker(s) have a dead email domain or unreachable website - see the list above", dead)
+			return fmt.Errorf("%d broker(s) have a dead email domain - see the list above", dead)
 		}
 	}
 
@@ -199,6 +230,16 @@ func checkEmailAlive(email string, checker *auditChecker) bool {
 func checkWebsiteVerdict(website string, checker *auditChecker) auditVerdict {
 	resp, err := checker.httpHead(website)
 	if err != nil {
+		// A transport error only means "gone" if the name no longer resolves.
+		// If DNS still answers, we are far more likely to be blocked than to be
+		// looking at a dead broker -- these checks run from CI, and data brokers
+		// routinely refuse datacenter ranges. Calling that dead produced 73 false
+		// positives against 1 real one on the first scheduled run.
+		if host := hostOf(website); host != "" {
+			if addrs, lookupErr := checker.lookupHost(host); lookupErr == nil && len(addrs) > 0 {
+				return verdictUnknown
+			}
+		}
 		return verdictWebsiteDead
 	}
 	defer func() { _ = resp.Body.Close() }()
@@ -209,6 +250,15 @@ func checkWebsiteVerdict(website string, checker *auditChecker) auditVerdict {
 	// Many privacy/opt-out pages block bot/headless requests (403, etc.) -
 	// that's not evidence the broker is gone, just an inconclusive check.
 	return verdictUnknown
+}
+
+// hostOf extracts the hostname from a broker's website URL, empty if unparseable.
+func hostOf(website string) string {
+	u, err := url.Parse(website)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
 }
 
 func printAuditResults(results []auditResult) {

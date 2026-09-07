@@ -67,6 +67,19 @@ func TestAuditOneWebsiteDeadOnConnectionError(t *testing.T) {
 	}
 }
 
+// The distinction that keeps the scheduled audit honest: a connection failure is
+// only evidence of death when the hostname has stopped resolving. If DNS still
+// answers, we are far likelier to have been refused for running in a datacenter.
+// The first scheduled run called 73 brokers dead this way against 1 real one.
+func TestAuditOneWebsiteUnknownWhenHostStillResolves(t *testing.T) {
+	b := broker.Broker{ID: "veromi", Email: "privacy@veromi.net", Website: "https://www.veromi.net"}
+	checker := stubChecker(1, 1, 0, errConnRefused)
+
+	if got := auditOne(b, checker); got != verdictUnknown {
+		t.Errorf("auditOne() = %q, want %q (a resolving host that refuses us is inconclusive, not dead)", got, verdictUnknown)
+	}
+}
+
 func TestAuditOneWebsiteUnknownOnNon2xxStatus(t *testing.T) {
 	b := broker.Broker{ID: "spokeo", Email: "privacy@spokeo.com", Website: "https://spokeo.com"}
 	checker := stubChecker(1, 0, 403, nil)

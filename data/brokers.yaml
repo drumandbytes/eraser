@@ -1291,12 +1291,11 @@ brokers:
       category: marketing
     - id: cross-pixel-media
       name: Cross Pixel Media, Inc.
-      email: stephanie.mccabe@knowertech.ca
       website: https://www.crosspixel.net/
       opt_out_url: https://privacy.crsspxl.com/optout
       region: us
       category: marketing
-      notes: apearlstein@crosspixel.net replied that Alan has left Cross Pixel Media; forwarded us to Stephanie McCabe, President of Knower Tech (successor company) (reply received 2026-08-20).
+      notes: 'No email on file: apearlstein@crosspixel.net replied that Alan has left Cross Pixel Media and forwarded us to Stephanie McCabe, President of Knower Tech, the successor company (reply received 2026-08-20). That forwarding address, stephanie.mccabe@knowertech.ca, was removed on 2026-09-07 because knowertech.ca no longer resolves at all (NXDOMAIN, no MX) -- mail to it cannot be delivered, so sending there made a request look sent when it never left. Use the opt-out form instead; it was still answering 200 when this was checked.'
     - id: crosswalk-technologies
       name: Crosswalk Technologies Inc
       email: privacy@crosswalknyc.com

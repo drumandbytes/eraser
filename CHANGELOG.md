@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/drumandbytes/eraser/compare/v0.5.3...v0.5.4) (2026-09-07)
+
+
+### Bug Fixes
+
+* **brokers:** drop Cross Pixel Media's undeliverable contact ([#45](https://github.com/drumandbytes/eraser/issues/45)) ([acf5205](https://github.com/drumandbytes/eraser/commit/acf52050bf2d875e58374e8909f5841878dab860))
+
 ## [0.5.3](https://github.com/drumandbytes/eraser/compare/v0.5.2...v0.5.3) (2026-09-07)
 
 

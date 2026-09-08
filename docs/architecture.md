@@ -46,7 +46,7 @@ eraser/
 │       │                        # (setup wizard), handlers_profile.go (profile switching)
 │       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
 │       └── session.go           # Setup-wizard session store
-├── data/brokers.yaml            # 700+ data broker database (embedded via data/embed.go)
+├── data/brokers.yaml            # 750+ data broker database (embedded via data/embed.go)
 ├── scripts/import-registries/   # helper: grow brokers.yaml from state registry CSVs
 ├── docs/                        # Granular reference docs (this directory)
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes

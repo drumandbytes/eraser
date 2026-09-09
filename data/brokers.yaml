@@ -1298,13 +1298,6 @@ brokers:
       region: us
       category: marketing
       notes: 'Use the role address, not a person. apearlstein@crosspixel.net replied that Alan had left and forwarded us to Stephanie McCabe at Knower Tech, the successor company (2026-08-20); that forwarding address was stephanie.mccabe@knowertech.ca, and knowertech.ca is now NXDOMAIN with no MX, so it was dropped on 2026-09-07. privacy@crosspixel.net replaced it: Cross Pixel''s own privacy policy (effective 2025-12-08) names it for exercising data rights -- "You can exercise these rights at any time by visiting our Privacy Portal or by emailing us at privacy@crosspixel.net" -- and crosspixel.net has live Google Workspace MX. A departing employee does not invalidate a published role address. Knower Tech is real (knowertech.com lists McCabe as President and references Cross Pixel) but publishes no contact address at all; its contact and privacy pages still carry unfilled theme placeholders, so there was nothing verifiable to use there.'
-    - id: crosswalk-technologies
-      name: Crosswalk Technologies Inc
-      email: privacy@crosswalknyc.com
-      website: https://www.crosswalknyc.com/
-      opt_out_url: https://www.crosswalknyc.com/optout
-      region: us
-      category: marketing
     - id: crunchbase
       name: Crunchbase Inc
       email: privacy@crunchbase.com
@@ -5044,9 +5037,9 @@ brokers:
     - id: videoamp
       name: Videoamp, Inc.
       email: ""
-      notes: 'Consumer rights page requires a device/advertising identifier to locate and act on a request; no name/email-only path offered.'
+      notes: 'privacy@videoamp.com replied (2026-09-08) that they will not process any request not submitted via their web form (opt_out_url) or their toll-free number (844) 954-1754. Earlier finding still holds: the consumer-rights flow also wants a device/advertising identifier, with no name/email-only path.'
       website: https://www.videoamp.com/
-      opt_out_url: https://www.videoamp.com/consumer-rights-under-ccpa
+      opt_out_url: https://videoamp.com/your-privacy-choices/
       region: us
       category: device-id-only
     - id: virtual-marketing

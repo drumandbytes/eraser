@@ -24,3 +24,15 @@ go test ./...
 ```
 
 See [docs/commands.md](docs/commands.md) for the full CLI reference.
+
+## Conventions
+
+- **Commits**: Conventional Commits with a scope - `feat(brokers):`, `fix(site):`, `fix(audit):`, `chore(ci):`, `docs:`. [release-please](.release-please-manifest.json) reads them to bump the version and write `CHANGELOG.md`; an unscoped or non-conventional message just won't appear in the changelog. No `Co-Authored-By` / attribution trailers.
+- **Branches & PRs**: work on a branch, open a PR, squash-merge. `main` stays releasable; patch-level release PRs auto-merge.
+- **Go code**: idioms, package layout, and known quirks are in [docs/code-patterns.md](docs/code-patterns.md) - read the "Known quirks" section before touching `send`, the reply classifier, history scoping, or the web UI's CSS.
+
+## Recurring work
+
+- **Acting on broker email replies** - the frequent one: classify the reply, make the matching `data/brokers.yaml` edit. [docs/broker-replies.md](docs/broker-replies.md).
+- **Keeping `data/brokers.yaml` honest** - liveness audit, dedup, growing the list from registries, and the "750+" count floor: [docs/auditing.md](docs/auditing.md).
+- **Re-sending** - brokers re-list you continuously. `./eraser send` is safe to re-run: it resumes where it left off (25-day per-broker cooldown, `daily_send_limit` cap). EU cadence and hand-sending are in [EU-NOTES.md](EU-NOTES.md).

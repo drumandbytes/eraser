@@ -138,6 +138,8 @@ func runInit() error {
 		cfg.Options.RateLimitMs = 2000
 	}
 	cfg.Options.DailySendLimit = existing.Options.DailySendLimit
+	cfg.Options.BrokerList = existing.Options.BrokerList
+	cfg.Options.BrokerFile = existing.Options.BrokerFile
 	cfg.Options.Regions = existing.Options.Regions
 	cfg.Options.ExcludedBrokers = existing.Options.ExcludedBrokers
 	cfg.Options.ExcludedCategories = existing.Options.ExcludedCategories

@@ -13,10 +13,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// MinSaneBrokerCount is the floor below which a broker database is assumed to
-// be truncated or corrupt rather than legitimately small. Used both by
-// `update-brokers` (before replacing the local copy) and by Validate.
+// MinSaneBrokerCount is the floor below which the main broker database is
+// assumed to be truncated or corrupt rather than legitimately small. Used
+// both by `update-brokers` (before replacing the local copy) and by Validate.
 const MinSaneBrokerCount = 200
+
+// MinVerifiedBrokerCount is the equivalent floor for the hand-built,
+// registry-sourced verified list (data/brokers-verified.yaml), which is
+// deliberately a fraction of the size of the main list.
+const MinVerifiedBrokerCount = 20
 
 // knownRegions is the closed set of region values the rest of the code
 // branches on (see Filter). A typo like "usa" would silently drop a broker
@@ -77,20 +82,20 @@ func Parse(raw []byte) (*BrokerDatabase, error) {
 }
 
 // Validate parses raw broker YAML and checks structural invariants: sane entry
-// count, required id/name, unique ids, known regions, plausible emails,
-// well-formed http(s) URLs. Unlike Parse it doesn't sanitize, so a malformed
-// URL is reported rather than silently blanked. One error lists every problem
-// (CI runs this against data/brokers.yaml); the parsed db is returned so
-// callers skip a second unmarshal.
-func Validate(raw []byte) (*BrokerDatabase, error) {
+// count (at least minCount), required id/name, unique ids, known regions,
+// plausible emails, well-formed http(s) URLs. Unlike Parse it doesn't
+// sanitize, so a malformed URL is reported rather than silently blanked. One
+// error lists every problem (CI runs this against data/brokers.yaml); the
+// parsed db is returned so callers skip a second unmarshal.
+func Validate(raw []byte, minCount int) (*BrokerDatabase, error) {
 	var db BrokerDatabase
 	if err := yaml.Unmarshal(raw, &db); err != nil {
 		return nil, fmt.Errorf("failed to parse broker data: %w", err)
 	}
 
 	var problems []string
-	if len(db.Brokers) < MinSaneBrokerCount {
-		problems = append(problems, fmt.Sprintf("only %d brokers (expected at least %d) - looks truncated", len(db.Brokers), MinSaneBrokerCount))
+	if len(db.Brokers) < minCount {
+		problems = append(problems, fmt.Sprintf("only %d brokers (expected at least %d) - looks truncated", len(db.Brokers), minCount))
 	}
 
 	seen := make(map[string]int, len(db.Brokers))
@@ -165,6 +170,30 @@ func Load(overridePath string) (*BrokerDatabase, error) {
 		}
 	}
 	return Parse(data.BrokersYAML)
+}
+
+// LoadList resolves the broker database for the send-family commands, which
+// can point at a custom file or switch to the smaller verified list. Order:
+//
+//  1. overridePath (--brokers flag), when set
+//  2. configPath (options.broker_file), when set
+//  3. the embedded verified list, when listName == "verified"
+//  4. otherwise the normal Load() resolution (~/.eraser/brokers.yaml, then
+//     the embedded main list)
+//
+// Commands that should always act on the full list (audit, guides,
+// update-brokers, reply processing) keep calling Load directly.
+func LoadList(overridePath, configPath, listName string) (*BrokerDatabase, error) {
+	if overridePath != "" {
+		return LoadFromFile(overridePath)
+	}
+	if configPath != "" {
+		return LoadFromFile(configPath)
+	}
+	if strings.EqualFold(listName, "verified") {
+		return Parse(data.BrokersVerifiedYAML)
+	}
+	return Load("")
 }
 
 func toSet(items []string) map[string]bool {

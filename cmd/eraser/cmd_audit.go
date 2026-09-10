@@ -80,7 +80,7 @@ func newAuditChecker(timeout time.Duration) *auditChecker {
 func auditBrokersCmd() *cobra.Command {
 	var region, category string
 	var timeoutSec int
-	var failOnDead bool
+	var failOnDead, fix bool
 
 	cmd := &cobra.Command{
 		Use:   "audit-brokers",
@@ -89,10 +89,16 @@ func auditBrokersCmd() *cobra.Command {
 (HTTP HEAD) to find entries that may have gone defunct - useful for
 maintaining a large, hand-curated broker database over time.
 
-This is read-only: it never modifies data/brokers.yaml. Use the reported
-IDs to investigate and update the database manually - e.g. feed
-email-dead ones into 'cleanup-bounces' (once bounce mail confirms it),
-or look into a website-dead one before assuming it's actually gone.
+By default this is read-only. Use the reported IDs to investigate and
+update the database manually - e.g. feed email-dead ones into
+'cleanup-bounces' (once bounce mail confirms it), or look into a
+website-dead one before assuming it's actually gone.
+
+--fix clears the email address of every broker whose mail domain is dead
+(MX and host lookup both fail - the reliable signal; website checks are
+never acted on) and appends a dated note, keeping the row. It writes the
+resolved broker file (see --brokers) and is what the weekly CI audit runs
+to open a prune PR.
 
 A non-2xx/3xx website response is reported as "unknown" rather than dead -
 many privacy-request pages block headless/bot requests, so an inconclusive
@@ -103,7 +109,7 @@ Examples:
   eraser audit-brokers --region eu
   eraser audit-brokers --category people-search --timeout 15`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAuditBrokers(region, category, time.Duration(timeoutSec)*time.Second, failOnDead)
+			return runAuditBrokers(region, category, time.Duration(timeoutSec)*time.Second, failOnDead, fix)
 		},
 	}
 
@@ -111,6 +117,7 @@ Examples:
 	cmd.Flags().StringVar(&category, "category", "", "Only audit brokers in this category")
 	cmd.Flags().IntVar(&timeoutSec, "timeout", 10, "Per-check timeout in seconds")
 	cmd.Flags().BoolVar(&failOnDead, "fail-on-dead", false, "Exit non-zero if any broker has a dead email domain or unreachable website (for scheduled CI)")
+	cmd.Flags().BoolVar(&fix, "fix", false, "Clear the email of every broker with a dead mail domain (keeps the row, adds a dated note) and save the broker file")
 
 	return cmd
 }
@@ -120,8 +127,21 @@ type auditResult struct {
 	verdict auditVerdict
 }
 
-func runAuditBrokers(region, category string, timeout time.Duration, failOnDead bool) error {
-	brokerDB, err := broker.Load(brokerFile)
+func runAuditBrokers(region, category string, timeout time.Duration, failOnDead, fix bool) error {
+	var brokerDB *broker.BrokerDatabase
+	var writePath string
+	var err error
+	if fix {
+		// --fix mutates and saves, so it needs a real file, never the
+		// embedded copy that broker.Load can fall back to.
+		writePath = resolveBrokerWritePath()
+		brokerDB, err = broker.LoadFromFile(writePath)
+		if err != nil {
+			return fmt.Errorf("--fix needs a writable broker file (%s): %w", writePath, err)
+		}
+	} else {
+		brokerDB, err = broker.Load(brokerFile)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
@@ -146,6 +166,18 @@ func runAuditBrokers(region, category string, timeout time.Duration, failOnDead 
 	results := auditConcurrently(targets, newAuditChecker(timeout), 20)
 	printAuditResults(results)
 
+	if fix {
+		cleared := applyAuditFix(brokerDB, results)
+		if cleared > 0 {
+			if err := brokerDB.SaveWithBackup(writePath); err != nil {
+				return fmt.Errorf("failed to save %s: %w", writePath, err)
+			}
+			fmt.Printf("\n🧹 Cleared %d dead email address(es) in %s (entries kept, backup at %s.bak)\n", cleared, writePath, writePath)
+		} else {
+			fmt.Println("\n✓ Nothing to fix - no dead email domains.")
+		}
+	}
+
 	if failOnDead {
 		// email-dead only. A dead mail domain is checkable from anywhere and means
 		// the removal request has nowhere to go, which is the thing that actually
@@ -164,6 +196,22 @@ func runAuditBrokers(region, category string, timeout time.Duration, failOnDead 
 	}
 
 	return nil
+}
+
+// applyAuditFix blanks the email of every broker the audit found to have a
+// dead mail domain (email-dead only - website verdicts are never acted on),
+// keeping the row and recording a dated note. Returns how many were cleared.
+func applyAuditFix(db *broker.BrokerDatabase, results []auditResult) int {
+	cleared := 0
+	for _, r := range results {
+		if r.verdict != verdictEmailDead || r.broker.Email == "" {
+			continue
+		}
+		if db.MarkEmailUnreachable(r.broker.Email, "audit-brokers: MX and host lookup both failed") != nil {
+			cleared++
+		}
+	}
+	return cleared
 }
 
 // auditConcurrently runs auditOne for each broker with a bounded worker

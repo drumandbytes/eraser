@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/drumandbytes/eraser/internal/broker"
@@ -129,6 +130,32 @@ func TestAuditOneMalformedEmailIsDead(t *testing.T) {
 
 	if got := auditOne(b, checker); got != verdictEmailDead {
 		t.Errorf("auditOne() = %q, want %q for an email with no @", got, verdictEmailDead)
+	}
+}
+
+func TestApplyAuditFixOnlyClearsEmailDead(t *testing.T) {
+	db := &broker.BrokerDatabase{Brokers: []broker.Broker{
+		{ID: "dead", Email: "privacy@dead.example", Notes: "old"},
+		{ID: "alive", Email: "privacy@alive.example"},
+		{ID: "site-dead", Email: "privacy@sitedead.example", Website: "https://sitedead.example"},
+	}}
+	results := []auditResult{
+		{broker: db.Brokers[0], verdict: verdictEmailDead},
+		{broker: db.Brokers[1], verdict: verdictAlive},
+		{broker: db.Brokers[2], verdict: verdictWebsiteDead},
+	}
+
+	if n := applyAuditFix(db, results); n != 1 {
+		t.Fatalf("applyAuditFix cleared %d, want 1", n)
+	}
+	if db.FindByID("dead").Email != "" {
+		t.Error("email-dead broker should have its email cleared")
+	}
+	if !strings.Contains(db.FindByID("dead").Notes, "old") || !strings.Contains(db.FindByID("dead").Notes, "undeliverable") {
+		t.Errorf("expected a dated note appended to the existing one, got %q", db.FindByID("dead").Notes)
+	}
+	if db.FindByID("alive").Email == "" || db.FindByID("site-dead").Email == "" {
+		t.Error("only email-dead entries should be touched")
 	}
 }
 

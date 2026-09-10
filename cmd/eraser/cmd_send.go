@@ -21,6 +21,7 @@ var (
 	ignoreDailyLimit bool
 	resend           bool
 	manualSend       bool
+	listFlag         string
 )
 
 // resendCooldown is how long after a successful send a broker is skipped by
@@ -51,6 +52,7 @@ safe to just re-run 'eraser send' until it reports nothing left to do.`,
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
 	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
 	cmd.Flags().BoolVar(&manualSend, "manual", false, "Don't send: show each email and let you mark it sent after you send it by hand (implied by options.send_mode: manual)")
+	cmd.Flags().StringVar(&listFlag, "list", "", "Which broker list to use: full (default) or verified (smaller, registry-sourced). Overrides options.broker_list")
 
 	return cmd
 }
@@ -77,7 +79,10 @@ func runSend() error {
 		cfg.Options.DryRun = true
 	}
 
-	brokerDB, err := broker.Load(brokerFile)
+	if listFlag != "" {
+		cfg.Options.BrokerList = listFlag
+	}
+	brokerDB, err := broker.LoadList(brokerFile, cfg.Options.BrokerFile, cfg.Options.BrokerList)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

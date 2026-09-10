@@ -11,7 +11,7 @@ go test ./...
 
 # CLI
 ./eraser init                          # Interactive config setup
-./eraser send [--dry-run] [--resend] [--ignore-daily-limit]
+./eraser send [--dry-run] [--resend] [--ignore-daily-limit] [--list full|verified]
 ./eraser list-brokers [--region eu] [--category financial-b2b] [--search kargo] [--missing-email]
 ./eraser status [--limit 50]
 ./eraser draft [<broker-id>...] [--region eu] [--category people-search] [-o ./out]  # render emails to send by hand
@@ -20,8 +20,8 @@ go test ./...
 ./eraser add-broker
 ./eraser mark-bounced <broker-id>...   # correct the record when an email actually bounced
 ./eraser cleanup-bounces               # find + clear bounced broker emails
-./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15] [--fail-on-dead]  # MX/website liveness check
-./eraser validate-brokers [file]      # structural check: ids, names, regions, emails, URLs (exit non-zero on any problem)
+./eraser audit-brokers [--region eu] [--category financial-b2b] [--timeout 15] [--fail-on-dead] [--fix]  # MX/website liveness check; --fix clears dead email domains
+./eraser validate-brokers [file]      # structural check: ids, names, regions, emails, URLs (exit non-zero on any problem); no arg checks both built-in lists
 ./eraser update-brokers [--check]      # fetch the latest broker list (conditional; writes ~/.eraser/brokers.yaml)
 ./eraser guides [-o site/content] [--format md|html]  # generate opt-out guide pages + a JSON broker directory
 ./eraser monitor                       # IMAP inbox monitoring for broker replies
@@ -34,7 +34,7 @@ go test ./...
 ./eraser profile add                   # add a second/third named profile
 ```
 
-The broker list is embedded in the binary. `--brokers <path>` overrides it; otherwise `~/.eraser/brokers.yaml` is used when present (written by `update-brokers`), else the embedded copy. `add-broker` and `cleanup-bounces` write to `./data/brokers.yaml` in a source checkout, or `~/.eraser/brokers.yaml` otherwise.
+The broker list is embedded in the binary. For the send-family commands (`send`, `draft`, `mark-sent`, `serve`) the resolution order is: `--brokers <path>` flag → `options.broker_file` → `options.broker_list: verified` (the smaller registry-sourced list, `data/brokers-verified.yaml`) → `~/.eraser/brokers.yaml` (written by `update-brokers`) → the embedded full list. `send --list full|verified` overrides `options.broker_list` per run. Other commands (`audit-brokers`, `guides`, `list-brokers`, reply processing) always act on the full list. `add-broker` and `cleanup-bounces` write to `./data/brokers.yaml` in a source checkout, or `~/.eraser/brokers.yaml` otherwise.
 
 Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a global `--profile <id>` flag. It can be omitted entirely for the common single-profile setup; it's required once more than one profile is configured. See [multi-profile.md](multi-profile.md) for the full model.
 
@@ -45,6 +45,6 @@ User config is stored at `~/.eraser/config.yaml` (see `config.example.yaml` for 
 - `profile` - the legacy/primary profile: name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities
 - `profiles` - optional list of additional named profiles (see [multi-profile.md](multi-profile.md)); when present, this list is authoritative and `profile` above becomes vestigial unless one entry has `id: default`
 - `email` - SMTP only
-- `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`), `send_mode` (`manual` = Eraser never sends; render with `draft` / `send --manual`, record with `mark-sent`; no `email:` block needed)
+- `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `broker_list` (`full`/`verified`), `broker_file` (path to your own list), `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`), `send_mode` (`manual` = Eraser never sends; render with `draft` / `send --manual`, record with `mark-sent`; no `email:` block needed)
 - `inbox` - IMAP settings, for `monitor`/`pipeline`/the web UI's inbox scan (shared across all profiles - see [multi-profile.md](multi-profile.md#shared-inbox))
 - `pipeline` - browser automation settings for `fill`

@@ -28,29 +28,31 @@ so it doubles as a CI check.`,
 				path = args[0]
 			}
 
-			var raw []byte
-			var err error
-			if path != "" {
-				raw, err = os.ReadFile(path)
-				if err != nil {
-					return fmt.Errorf("failed to read %s: %w", path, err)
+			// No path: check both lists this binary ships. A given file:
+			// use the lower floor, since it's often a partial candidate
+			// batch or the deliberately small verified list.
+			if path == "" {
+				if err := validateOne("embedded broker list", data.BrokersYAML, broker.MinSaneBrokerCount); err != nil {
+					return err
 				}
-			} else {
-				raw = data.BrokersYAML
+				return validateOne("embedded verified list", data.BrokersVerifiedYAML, broker.MinVerifiedBrokerCount)
 			}
 
-			db, err := broker.Validate(raw)
+			raw, err := os.ReadFile(path)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to read %s: %w", path, err)
 			}
-
-			where := path
-			if where == "" {
-				where = "embedded broker list"
-			}
-			fmt.Printf("✓ %s is valid (%d brokers)\n", where, len(db.Brokers))
-			return nil
+			return validateOne(path, raw, broker.MinVerifiedBrokerCount)
 		},
 	}
 	return cmd
+}
+
+func validateOne(where string, raw []byte, minCount int) error {
+	db, err := broker.Validate(raw, minCount)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("✓ %s is valid (%d brokers)\n", where, len(db.Brokers))
+	return nil
 }

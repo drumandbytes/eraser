@@ -62,3 +62,46 @@ func TestLoadPrecedence(t *testing.T) {
 		t.Errorf("sanity: embedded count %d too low", embeddedN)
 	}
 }
+
+func TestLoadList(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp) // isolate from any real ~/.eraser/brokers.yaml
+
+	full, err := LoadList("", "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	verified, err := LoadList("", "", "verified")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(verified.Brokers) == 0 || len(verified.Brokers) >= len(full.Brokers) {
+		t.Fatalf("verified list should be non-empty and smaller than full: verified=%d full=%d", len(verified.Brokers), len(full.Brokers))
+	}
+
+	// configPath (options.broker_file) beats the verified list.
+	cfgList := filepath.Join(tmp, "cfg.yaml")
+	if err := os.WriteFile(cfgList, []byte("brokers:\n  - {id: c1, name: C1, email: a@b.c, region: us}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadList("", cfgList, "verified")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Brokers) != 1 || got.Brokers[0].ID != "c1" {
+		t.Errorf("broker_file did not win over verified: %+v", got.Brokers)
+	}
+
+	// overridePath (--brokers) beats everything.
+	flagList := filepath.Join(tmp, "flag.yaml")
+	if err := os.WriteFile(flagList, []byte("brokers:\n  - {id: f1, name: F1, email: a@b.c, region: us}\n  - {id: f2, name: F2, email: d@e.f, region: us}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err = LoadList(flagList, cfgList, "verified")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Brokers) != 2 {
+		t.Errorf("--brokers did not win: got %d entries", len(got.Brokers))
+	}
+}

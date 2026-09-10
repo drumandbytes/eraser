@@ -12,6 +12,13 @@ import _ "embed"
 //go:embed brokers.yaml
 var BrokersYAML []byte
 
+// BrokersVerifiedYAML is data/brokers-verified.yaml, the smaller list built
+// from public data-broker registries (US state registries + EU sources). Used
+// when options.broker_list is "verified" or `send --list verified` is passed.
+//
+//go:embed brokers-verified.yaml
+var BrokersVerifiedYAML []byte
+
 // AuthoritiesYAML is data/authorities.yaml, the worldwide privacy /
 // data-protection authority reference used by `eraser export` and the docs site.
 //

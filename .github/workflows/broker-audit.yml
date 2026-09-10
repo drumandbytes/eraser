@@ -1,9 +1,10 @@
 name: Broker audit
 
 # Weekly liveness check of the broker list: every entry's email domain
-# (MX/host lookup) and website (HTTP HEAD). A failing run means one or more
-# brokers look defunct - open the run log, then investigate and prune by hand
-# (the audit never edits data/brokers.yaml). Also runnable on demand.
+# (MX/host lookup) and website (HTTP HEAD). `audit-brokers --fix` clears the
+# email of any broker whose mail domain is dead (keeping the row + a dated
+# note); if that changed data/brokers.yaml, a PR is opened for review. A quiet
+# week opens no PR. Also runnable on demand.
 
 on:
   schedule:
@@ -11,7 +12,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: broker-audit
@@ -30,5 +32,19 @@ jobs:
       - name: Validate structure
         run: go run ./cmd/eraser validate-brokers
 
-      - name: Audit liveness
-        run: go run ./cmd/eraser audit-brokers --timeout 20 --fail-on-dead
+      - name: Audit liveness and clear dead email domains
+        run: go run ./cmd/eraser audit-brokers --timeout 20 --fix | tee audit-summary.txt
+
+      - name: Re-validate after fix
+        run: go run ./cmd/eraser validate-brokers data/brokers.yaml
+
+      - name: Open prune PR if anything changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: broker-audit/prune
+          base: main
+          title: "fix(brokers): clear dead email domains (weekly audit)"
+          commit-message: "fix(brokers): clear dead email domains (weekly audit)"
+          body-path: audit-summary.txt
+          add-paths: data/brokers.yaml
+          delete-branch: true

@@ -272,6 +272,28 @@ Or use the interactive command:
 ./eraser add-broker
 ```
 
+### Choosing a broker list
+
+The full list is broad and inherited from upstream, so it carries some noise (dead
+addresses, companies that turn out not to be brokers). If you'd rather email only
+companies that are confirmed data brokers with a working removal contact — built
+from public registries (US state registries + EU credit bureaus) — use the
+smaller verified list:
+
+```bash
+./eraser send --list verified          # one run
+```
+
+Or set it permanently in `config.yaml`:
+
+```yaml
+options:
+  broker_list: verified                # or: broker_file: /path/to/your-own-list.yaml
+```
+
+The weekly CI audit keeps the full list from rotting — it clears dead email
+domains automatically and opens a PR for review.
+
 ---
 
 ## Security Notes

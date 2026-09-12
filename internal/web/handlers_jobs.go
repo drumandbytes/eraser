@@ -113,6 +113,11 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if cfg.Options.DryRun {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`<span class="text-amber-600">Web sending is disabled while options.dry_run is true.</span>`))
+		return
+	}
 	if br.Email == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`<span class="text-amber-600">No email on file - needs manual follow-up (check for an opt-out form/portal)</span>`))
@@ -185,6 +190,12 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func splitBrokerIDs(value string) []string {
+	return strings.FieldsFunc(value, func(r rune) bool {
+		return r == ',' || r == '\n' || r == ' ' || r == '\t'
+	})
+}
+
 func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -212,21 +223,43 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Email not configured. Please configure email settings first."})
 		return
 	}
+	if cfg.Options.DryRun {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Web sending is disabled while options.dry_run is true."})
+		return
+	}
 
 	limitFormBody(w, r)
 	search := r.FormValue("search")
 	category := r.FormValue("category")
 	region := r.FormValue("region")
-	status := r.FormValue("status")
-
-	// If no status filter specified, default to pending (never sent)
+	status := strings.ToLower(strings.TrimSpace(r.FormValue("status")))
+	includeIDs := splitBrokerIDs(r.FormValue("broker_ids"))
+	excludeIDs := splitBrokerIDs(r.FormValue("exclude_ids"))
 	if status == "" {
-		status = "pending"
+		status = "eligible"
+	}
+	if status != "eligible" && status != "never" && status != "failed" && status != "all" {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Status must be eligible, never, failed, or all."})
+		return
+	}
+	if unknown := s.brokerDB.UnknownIDs(includeIDs); len(unknown) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown broker IDs: " + strings.Join(unknown, ", ")})
+		return
 	}
 
 	// Bulk send never targets missing-email or excluded brokers - there's
 	// nowhere to send, and exclusion means "don't send to this one".
-	toSend := s.getBrokersWithStatus(activeProfile.ID, search, category, region, status, false, false)
+	toSend := s.getBrokersWithStatus(activeProfile.ID, search, category, region, status, includeIDs, excludeIDs, false, false)
+	filtered := toSend[:0:0]
+	for _, b := range toSend {
+		if strings.TrimSpace(b.Email) != "" {
+			filtered = append(filtered, b)
+		}
+	}
+	toSend = filtered
 
 	if len(toSend) == 0 {
 		noneMsg := "No pending brokers to send to."

@@ -51,7 +51,7 @@ func TestHandleAPIExcludeThenIncludeBrokerRoundTrips(t *testing.T) {
 	if containsFold(cfg2.Options.ExcludedBrokers, "spokeo") != 1 {
 		t.Fatalf("expected spokeo in ExcludedBrokers after exclude, got %+v", cfg2.Options.ExcludedBrokers)
 	}
-	if got := s.getBrokersWithStatus("default", "", "", "", "", false, false); len(got) != 0 {
+	if got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, false); len(got) != 0 {
 		t.Errorf("expected spokeo hidden from default view after exclude, got %+v", got)
 	}
 
@@ -76,7 +76,7 @@ func TestHandleAPIExcludeThenIncludeBrokerRoundTrips(t *testing.T) {
 	if containsFold(cfg4.Options.ExcludedBrokers, "spokeo") != 0 {
 		t.Errorf("expected spokeo removed from ExcludedBrokers after include, got %+v", cfg4.Options.ExcludedBrokers)
 	}
-	if got := s.getBrokersWithStatus("default", "", "", "", "", false, false); len(got) != 1 {
+	if got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, false); len(got) != 1 {
 		t.Errorf("expected spokeo back in default view after include, got %+v", got)
 	}
 }

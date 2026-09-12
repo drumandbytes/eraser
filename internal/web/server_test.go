@@ -161,7 +161,7 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
 	}
 
-	got := s.getBrokersWithStatus("default", "", "", "", "", false, false)
+	got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, false)
 
 	if len(got) != 1 || got[0].ID != "beenverified" {
 		t.Errorf("expected only beenverified to survive exclusion, got %+v", got)
@@ -184,7 +184,7 @@ func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
 	}
 
-	got := s.getBrokersWithStatus("default", "", "", "", "", false, true)
+	got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, true)
 
 	if len(got) != 3 {
 		t.Fatalf("expected all 3 brokers with showExcluded=true, got %d: %+v", len(got), got)

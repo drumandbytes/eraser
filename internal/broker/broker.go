@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -199,7 +200,9 @@ func LoadList(overridePath, configPath, listName string) (*BrokerDatabase, error
 func toSet(items []string) map[string]bool {
 	m := make(map[string]bool, len(items))
 	for _, s := range items {
-		m[strings.ToLower(s)] = true
+		if key := strings.ToLower(strings.TrimSpace(s)); key != "" {
+			m[key] = true
+		}
 	}
 	return m
 }
@@ -209,25 +212,55 @@ func toSet(items []string) map[string]bool {
 // (case-insensitive) is in excludedCategories - e.g. "requires-id" to skip
 // brokers that demand a government ID document before acting on a request.
 func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCategories []string) []Broker {
-	regionSet, excludedSet, excludedCatSet := toSet(regions), toSet(excluded), toSet(excludedCategories)
+	regionSet := toSet(regions)
+	if len(regionSet) == 0 || regionSet["global"] {
+		return db.Select(nil, nil, nil, excluded, excludedCategories)
+	}
+	selected := db.Select(nil, nil, nil, excluded, excludedCategories)
+	result := selected[:0]
+	for _, b := range selected {
+		if regionSet[strings.ToLower(b.Region)] || strings.EqualFold(b.Region, "global") {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+func (db *BrokerDatabase) Select(ids, regions, categories, excluded, excludedCategories []string) []Broker {
+	idSet, regionSet, categorySet := toSet(ids), toSet(regions), toSet(categories)
+	excludedSet, excludedCatSet := toSet(excluded), toSet(excludedCategories)
 
 	var result []Broker
 	for _, b := range db.Brokers {
-		if excludedSet[strings.ToLower(b.ID)] || excludedSet[strings.ToLower(b.Name)] {
+		id := strings.ToLower(b.ID)
+		name := strings.ToLower(b.Name)
+		category := strings.ToLower(b.Category)
+		if len(idSet) > 0 && !idSet[id] {
 			continue
 		}
-		if excludedCatSet[strings.ToLower(b.Category)] {
+		if excludedSet[id] || excludedSet[name] || excludedCatSet[category] {
 			continue
 		}
-		if len(regionSet) > 0 {
-			r := strings.ToLower(b.Region)
-			if !regionSet[r] && !regionSet["global"] && r != "global" {
-				continue
-			}
+		if len(categorySet) > 0 && !categorySet[category] {
+			continue
+		}
+		if len(regionSet) > 0 && !regionSet[strings.ToLower(b.Region)] {
+			continue
 		}
 		result = append(result, b)
 	}
 	return result
+}
+
+func (db *BrokerDatabase) UnknownIDs(ids []string) []string {
+	var unknown []string
+	for id := range toSet(ids) {
+		if db.FindByID(id) == nil {
+			unknown = append(unknown, id)
+		}
+	}
+	slices.Sort(unknown)
+	return unknown
 }
 
 func (db *BrokerDatabase) FindByID(id string) *Broker {

@@ -541,7 +541,17 @@ type BrokerWithStatus struct {
 // dropped entirely, same as broker.Filter. When true (the brokers page's
 // "Show excluded" checkbox), they're included instead, with Excluded set,
 // so the UI can render an Include button instead of Send.
-func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, missingEmail, showExcluded bool) []BrokerWithStatus {
+func stringSet(items []string) map[string]bool {
+	set := make(map[string]bool, len(items))
+	for _, item := range items {
+		if value := strings.ToLower(strings.TrimSpace(item)); value != "" {
+			set[value] = true
+		}
+	}
+	return set
+}
+
+func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, includeIDs, excludeIDs []string, missingEmail, showExcluded bool) []BrokerWithStatus {
 	// Get all broker statuses from history, scoped to the active profile
 	var brokerStatuses map[string]history.BrokerStatus
 	if s.historyStore != nil {
@@ -556,7 +566,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 	// list and bulk-send both went through this function instead, which
 	// never looked at either option, so a configured exclusion silently had
 	// no effect here. Apply the same two checks broker.Filter does.
-	var excludedIDs, excludedNames, excludedCats map[string]bool
+	var excludedIDs, excludedNames, excludedCats, configuredRegions map[string]bool
 	if cfg := s.getConfig(); cfg != nil {
 		excludedIDs = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
 		excludedNames = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
@@ -567,14 +577,16 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 		excludedCats = make(map[string]bool, len(cfg.Options.ExcludedCategories))
 		for _, c := range cfg.Options.ExcludedCategories {
-			excludedCats[strings.ToLower(c)] = true
+			excludedCats[strings.ToLower(strings.TrimSpace(c))] = true
 		}
+		configuredRegions = stringSet(cfg.Options.Regions)
 	}
 
 	search = strings.ToLower(strings.TrimSpace(search))
 	category = strings.ToLower(strings.TrimSpace(category))
 	region = strings.ToLower(strings.TrimSpace(region))
 	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
+	includeSet, runExcludeSet := stringSet(includeIDs), stringSet(excludeIDs)
 
 	manualMode := false
 	if cfg := s.getConfig(); cfg != nil {
@@ -583,7 +595,11 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 
 	var result []BrokerWithStatus
 	for _, b := range s.brokerDB.Brokers {
-		excluded := excludedIDs[strings.ToLower(b.ID)] || excludedNames[strings.ToLower(b.Name)] || excludedCats[strings.ToLower(b.Category)]
+		id := strings.ToLower(b.ID)
+		if len(includeSet) > 0 && !includeSet[id] {
+			continue
+		}
+		excluded := excludedIDs[id] || excludedNames[strings.ToLower(b.Name)] || excludedCats[strings.ToLower(b.Category)] || runExcludeSet[id]
 		if excluded && !showExcluded {
 			continue
 		}
@@ -592,7 +608,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		if search != "" {
 			name := strings.ToLower(b.Name)
 			email := strings.ToLower(b.Email)
-			if !strings.Contains(name, search) && !strings.Contains(email, search) {
+			if !strings.Contains(id, search) && !strings.Contains(name, search) && !strings.Contains(email, search) {
 				continue
 			}
 		}
@@ -602,8 +618,11 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 			continue
 		}
 
-		// Region filter
-		if region != "" && strings.ToLower(b.Region) != region {
+		brokerRegion := strings.ToLower(b.Region)
+		if len(configuredRegions) > 0 && !configuredRegions["global"] && !configuredRegions[brokerRegion] && brokerRegion != "global" {
+			continue
+		}
+		if region != "" && brokerRegion != region {
 			continue
 		}
 
@@ -628,13 +647,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 			}
 		}
 
-		// Status filter - "pending" means never sent
-		if statusFilter != "" {
-			if statusFilter == "pending" && bws.Status != "never" {
+		if statusFilter != "" && statusFilter != "all" {
+			if (statusFilter == "pending" || statusFilter == "never") && bws.Status != "never" {
 				continue
 			} else if statusFilter == "sent" && bws.Status != "sent" {
 				continue
 			} else if statusFilter == "failed" && bws.Status != "failed" {
+				continue
+			} else if statusFilter == "eligible" && bws.Status == "sent" && time.Since(brokerStatuses[b.ID].LastSent) < 25*24*time.Hour {
 				continue
 			}
 		}

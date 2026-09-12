@@ -297,6 +297,13 @@ options:
   broker_list: verified                # or: broker_file: /path/to/your-own-list.yaml
 ```
 
+"Verified" means each entry is confirmed to be a real data broker with a
+current, working contact we found by hand — most of the US ones are also
+cross-checked against California's data-broker registry. It doesn't mean
+any of them have been sent a request and confirmed to actually act on it;
+no list can promise that in advance. `eraser status`/`pipeline` is how you
+find out what a broker actually does once you've emailed it.
+
 The weekly CI audit keeps the full list from rotting — it clears dead email
 domains automatically and opens a PR for review.
 

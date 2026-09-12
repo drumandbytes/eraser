@@ -181,6 +181,27 @@ func (s *Server) handlePipeline(w http.ResponseWriter, r *http.Request) {
 	s.renderWithCSRF(w, r, "pipeline.html", data)
 }
 
+func (s *Server) handleResponseReview(w http.ResponseWriter, r *http.Request) {
+	var responseID int64
+	if _, err := fmt.Sscanf(chi.URLParam(r, "responseID"), "%d", &responseID); err != nil {
+		http.Error(w, "Response not found", http.StatusNotFound)
+		return
+	}
+	if s.historyStore == nil {
+		http.Error(w, "Database not available", http.StatusInternalServerError)
+		return
+	}
+	response, err := s.historyStore.GetBrokerResponseByID(responseID, s.activeProfile(r).ID)
+	if err != nil || response == nil {
+		http.Error(w, "Response not found", http.StatusNotFound)
+		return
+	}
+	s.renderWithCSRF(w, r, "response-review.html", map[string]interface{}{
+		"Title":    "Review Response",
+		"Response": response,
+	})
+}
+
 func (s *Server) handleForms(w http.ResponseWriter, r *http.Request) {
 	// Redirect to unified action needed page
 	http.Redirect(w, r, "/tasks", http.StatusFound)

@@ -284,13 +284,6 @@ brokers:
       opt_out_url: https://www.towerdata.com/company/privacy_policy
       region: us
       category: marketing
-    - id: veromi
-      name: Veromi
-      email: ""
-      notes: 'Email privacy@veromi.net hard-bounced (2026-08-23) - recipient server rejected all delivery attempts. SWEEP 2026-09-12 [LOOKS DEFUNCT?]: Notes already record a hard email bounce, and independent lookup now shows veromi.net as a GoDaddy-parked domain (registered but not serving the people-search site), consistent with the service being wound down. (source: https://www.scamadviser.com/check-website/veromi.net)'
-      website: https://www.veromi.net
-      region: us
-      category: people-search
     - id: 01advertising
       name: 01Advertising Inc.
       email: privacy@01advertising.com
@@ -357,14 +350,6 @@ brokers:
       region: us
       category: marketing
       notes: 'SWEEP 2026-09-12: AI-driven consumer-data classification/marketing platform (fits the marketing data-broker category). On-file email is an individual''s personal address; the company''s published privacy policy lists privacy@abovedata.io as the dedicated privacy contact. (source: https://www.abovedata.io/privacy-policy/)'
-    - id: accenture-llp
-      name: Accenture LLP
-      email: regulatory.licenses@accenture.com
-      website: https://www.accenture.com/
-      opt_out_url: https://www.accenture.com/us-en/support/form-do-not-sell-my-personal-information
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Accenture is a global IT/management consulting firm; its ''do not sell'' page is boilerplate CCPA compliance, not evidence of a data-broker business line. No indication it collects/sells consumer data as a product.'
     - id: accurate-append
       name: Accurate Append Inc.
       email: support@accurateappend.com
@@ -822,11 +807,11 @@ brokers:
       category: marketing
     - id: birchwood-credit-services
       name: Birchwood Credit Services Inc
-      email: billing@birchwoodcreditservices.com
+      email: ''
       website: https://www.birchwoodcreditservices.com/
       region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Mortgage credit-reporting reseller (FCRA-covered consumer reporting agency for mortgage lenders); its own privacy policy states data is not shared or sold to third parties, similar to the prior Checkr/GoodHire FCRA-exemption precedent in this project''s list. (source: https://www.birchwoodcreditservices.com/privacy-policy/)'
+      category: background-check
+      notes: 'Birchwood Credit Services is a mortgage credit-reporting reseller - a consumer reporting agency under the FCRA. Its own privacy policy states it does not share or sell personal data to third parties, so an erasure request is a dead end regardless of address (same FCRA-exemption pattern as goodhire/saferent-solutions/background-information-services in this list). Was miscategorized as marketing.'
     - id: biscred
       name: Biscred
       email: rob@biscred.com
@@ -1103,14 +1088,6 @@ brokers:
       opt_out_url: https://docs.google.com/forms/d/e/1FAIpQLSeAsU1U-AJfhqzDx6-6eVcyQ_kBD1J9cw1y0huQiS-HCkRf0Q/viewform?usp=send_form
       region: us
       category: marketing
-    - id: clearcompany
-      name: Clearcompany, LLC
-      email: privacy@clearcompany.com
-      website: https://www.clearcompany.com/
-      opt_out_url: https://optout.networkadvertising.org/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: ATS/HR recruiting software vendor; uses candidate/employee data for its customers'' internal hiring workflows rather than brokering/selling consumer data. Opt-out on file points to NAI (generic ad-tech opt-out), not a broker-specific mechanism, which is a weak signal for actual data sales. (source: https://www.clearcompany.com/)'
     - id: clearview-ai
       name: Clearview Ai, Inc.
       email: legal@clearview.ai
@@ -1479,14 +1456,6 @@ brokers:
       website: https://www.delivr.ai/
       region: us
       category: marketing
-    - id: deloitte-consulting-llp
-      name: Deloitte Consulting LLP
-      email: usprivacyquestions@deloitte.com
-      website: https://www.deloitte.com/
-      opt_out_url: https://www.deloitte.com/us/en/footerlinks1/do-not-sell-my-personal-information.html
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Deloitte Consulting LLP is fundamentally a professional-services/consulting firm, which the project excludes by definition, even though it is formally CA-registered as a data broker and maintains a do-not-sell page - flagging for human review given the conflicting signals. (source: https://oag.ca.gov/data-broker/registration/186510)'
     - id: demandbase
       name: Demandbase
       email: privacy@demandbase.com
@@ -1714,13 +1683,6 @@ brokers:
       region: us
       category: marketing
       notes: 'Reply 2026-08-20: eMerges ceased operating as a list broker as of 2025-07-01 - no longer acquires, publishes, processes, or sells any lists, and their opt-out resource has been disabled. Email and opt_out_url cleared; nothing to send here. Flagged upstream for removal from the broker source list.'
-    - id: endgame-labs
-      name: Endgame Labs, Inc
-      email: privacy@endgame.io
-      website: https://www.endgame.io/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Endgame Labs (endgame.io) is a B2B "context graph for GTM agents" SaaS product that structures a company''s own sales calls/deals/playbooks for internal use - no evidence found of selling consumer personal information to third parties. (source: https://www.endgame.io/privacy)'
     - id: enformion
       name: Enformion LLC
       email: databroker@enformion.com
@@ -1827,13 +1789,6 @@ brokers:
       region: us
       category: marketing
       notes: 'info@famousbirthdays.com replied that they can no longer evaluate requests sent to this address - use their contact form instead (reply received 2026-08-20).'
-    - id: fanspoko
-      name: Fanspoko, LLC
-      email: info@fanspoko.com
-      website: https://www.fantasysportsknockout.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Fanspoko LLC (dba Fantasy Sports Knockout/FanSpoKO) is a consumer fantasy-sports app publisher; no evidence found of a data-broker/data-sale business, CCPA registration, or do-not-sell mechanism. (source: https://www.fantasysportsknockout.com/info/terms-conditions/)'
     - id: faraday
       name: Faraday, Inc.
       email: privacy@faraday.ai
@@ -2086,13 +2041,6 @@ brokers:
       region: us
       category: marketing
       notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
-    - id: greenhouse-software
-      name: Greenhouse Software, Inc.
-      email: privacy@greenhouse.io
-      website: https://www.greenhouse.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Greenhouse is an applicant-tracking-system/HR SaaS vendor; its privacy policy explicitly states it does not sell or share personal data and is not subject to data broker laws. (source: https://www.greenhouse.com/privacy-policy)'
     - id: grin-technologies
       name: Grin Technologies Inc.
       email: ""
@@ -2239,13 +2187,6 @@ brokers:
       opt_out_url: https://homeownersmarketingservices.com/list-removal-request-new/
       region: us
       category: marketing
-    - id: hubspot
-      name: Hubspot, Inc.
-      email: privacy@hubspot.com
-      website: https://www.hubspot.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: HubSpot is a CRM/marketing-software vendor whose privacy policy explicitly states it never shares data across customers and never sells it - it processes customers'' own data rather than brokering third-party consumer data. (source: https://legal.hubspot.com/privacy-policy)'
     - id: hunt-club
       name: Hunt Club Inc
       email: scott@huntclub.com
@@ -2520,13 +2461,6 @@ brokers:
       region: us
       category: marketing
       notes: 'SWEEP 2026-09-12: IHS Markit no longer exists as a standalone company - it completed its merger into S&P Global in March 2022 - so the legacy bruce.noll@ihsmarkit.com/ipreo.com contact is likely stale; S&P Global now centrally handles CCPA opt-out and DSAR requests. (source: https://www.spglobal.com/en/privacy/california-consumer-privacy-act)'
-    - id: ipsos
-      name: Ipsos
-      email: dpo.usa@ipsos.com
-      website: https://www.ipsos.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Ipsos''s privacy policies across its panels explicitly state it will never sell or rent panelist data to third parties and only shares anonymized/pseudonymized results with research clients, which is inconsistent with the data-broker definition. (source: https://www.ipsos.com/en-us/privacy-data-protection)'
     - id: iq-data-systems
       name: IQ Data Systems, Inc.
       email: nate.waymire@backgroundsonline.com
@@ -3018,14 +2952,6 @@ brokers:
       region: us
       category: marketing
       notes: 'SWEEP 2026-09-12: Registered CA data broker; their published privacy policy lists privacy@marketops.com as the privacy contact, not the personal address (james@marketops.com) currently on file. (source: https://marketops.com/privacy-policy/)'
-    - id: marriott-international
-      name: Marriott International, Inc.
-      email: privacy@marriott.com
-      website: https://www.marriott.com/
-      opt_out_url: https://privacyportal.onetrust.com/webform/0894cd2c-85ba-4d0b-8ec1-e18f3735e0e0/b03c7f1f-4aca-4502-b5eb-d8d883be4c8c
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Marriott is a hotel/hospitality company; its CCPA "sale" disclosures relate to ad-partner sharing of loyalty-program data incidental to running hotels, not a core data-brokering business - flagged for human review rather than deleted. (source: https://www.marriott.com/about/ccpa-cpa.mi)'
     - id: martin-data
       name: Martin Data LLC
       email: aj@usinfosearch.com
@@ -3262,14 +3188,6 @@ brokers:
       opt_out_url: https://privacyportal.privacypillar.com/dsar/form?orgid=3b24c635-e1a9-4e8c-8e61-9f5fa0024f9c&propid=d3da91fd-2750-4534-9436-f29b3e513fe5&formid=4106bc86-1ddf-461b-b7f6-a5f53b0977b3&status=publish
       region: us
       category: marketing
-    - id: narvar
-      name: Narvar, Inc.
-      email: legal@narvar.com
-      website: https://www.corp.narvar.com/
-      opt_out_url: https://narvar.my.onetrust.com/webform/04b3731f-2a9a-42ce-bd6b-106d4b4ec3bf/a7c944bf-3cec-4f00-9dc5-dea5bf2b6f4f
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Narvar is a post-purchase/order-tracking SaaS platform that processes retailers'' customer data as a service provider; no CA/state data-broker registration found, and its ''sale'' language in the privacy policy reads as standard CCPA boilerplate rather than an independent data-brokering business. (source: https://corp.narvar.com/legal/privacy-policy)'
     - id: national-consumer-telecom-utilities-exchange
       name: National Consumer Telecom & Utilities Exchange, Inc.
       email: abby@nacmsw.com
@@ -3316,13 +3234,6 @@ brokers:
       email: ncs.privacy@ncsolutions.com
       website: https://www.ncsolutions.com/
       opt_out_url: https://ncsolutions.com/do-not-sell-my-information/
-      region: us
-      category: marketing
-    - id: near-north-america
-      name: Near North America
-      email: ""
-      notes: 'Email privacy@near.co hard-bounced (2026-08-21) - address/domain invalid. SWEEP 2026-09-12 [LOOKS DEFUNCT?]: Near Intelligence (near.co), a well-documented location-data broker, filed for bankruptcy in December 2023; combined with the already-documented hard bounce of privacy@near.co, this suggests the US entity may no longer be operating as before. (source: https://themarkup.org/privacy/2024/02/23/what-happens-to-your-sensitive-data-when-a-data-broker-goes-bankrupt)'
-      website: https://www.near.co/
       region: us
       category: marketing
     - id: dun-bradstreet
@@ -3418,13 +3329,6 @@ brokers:
       opt_out_url: https://www.onaudience.com/opt-out
       region: us
       category: marketing
-    - id: one-model
-      name: One Model, Inc.
-      email: privacy@onemodel.co
-      website: https://www.onemodel.co/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: One Model is a B2B HR/people-analytics SaaS platform that processes each client''s own internal workforce data for that client''s use — it doesn''t collect or sell consumer data to third parties, so it falls outside the data-broker definition. (source: https://www.onemodel.co/)'
     - id: on-hold-america
       name: On Hold-America, Inc.
       email: consumers@kycdata.com
@@ -3466,14 +3370,6 @@ brokers:
       opt_out_url: https://www.optimalfusion.com/adpreferences/
       region: us
       category: marketing
-    - id: oracle-america
-      name: Oracle America, Inc.
-      email: privacy_ww@oracle.com
-      website: https://www.oracle.com/
-      opt_out_url: https://datacloudoptout.oracle.com/optout.#maincontent
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [LOOKS DEFUNCT?]: Oracle exited the advertising/data-selling business and shut down BlueKai/Oracle Data Cloud by September 2024; the on-file datacloudoptout.oracle.com opt-out relates to that now-discontinued business line, even though Oracle America the corporation is very much alive - flagging the broker-relevant business as gone. (source: https://www.theregister.com/2024/06/13/oracle_online_ads/)'
     - id: orgio
       name: Orgio, Inc.
       email: privacy@theorg.com
@@ -3684,13 +3580,6 @@ brokers:
       opt_out_url: https://www.pmg.com/dsr-form
       region: us
       category: marketing
-    - id: polity
-      name: Polity
-      email: info@polityinc.com
-      website: https://www.polityinc.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Polity Inc. (Hopstick LLC d/b/a Polity) is a government-sector data-migration/analytics consulting firm for municipalities - it processes clients'' own government records rather than brokering consumer data to third parties. (source: https://www.polityinc.com/)'
     - id: pop-acta-media
       name: Pop Acta Media, LLC
       email: ""
@@ -3755,13 +3644,6 @@ brokers:
       opt_out_url: https://www.privco.com/privacy-policy#opt-out
       region: us
       category: marketing
-    - id: prodpro
-      name: Prodpro Inc
-      email: contact@prodpro.com
-      website: https://www.prodpro.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: ProdPro is a B2B production-intelligence platform tracking film/TV industry budgets and projects - industry business data, not a broker of personal consumer data. (source: https://prodpro.com/)'
     - id: project-applecart
       name: Project Applecart LLC
       email: ""
@@ -3823,14 +3705,6 @@ brokers:
       website: https://www.purecars.com/
       region: us
       category: marketing
-    - id: pwc-product-sales
-      name: Pwc Product Sales LLC
-      email: us_privacy_office@pwc.com
-      website: https://www.pwc.com/
-      opt_out_url: https://www.pwc.com/us/en/site/notice-of-right-to-opt-out.html
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: PwC Product Sales LLC is the PricewaterhouseCoopers entity behind products like Viewpoint/Origin Compliance; PwC''s own privacy statement says it does not sell personal information and only uses third-party data for internal aggregate insights - not a data broker by this project''s definition. (source: https://www.pwc.com/us/en/site/notice-of-right-to-opt-out.html)'
     - id: quad-graphics
       name: Quad/Graphics, Inc
       email: databroker@quad.com
@@ -3853,13 +3727,6 @@ brokers:
       opt_out_url: https://www.qualfon.com/privacy-policy/consumer-privacy-choices/
       region: us
       category: marketing
-    - id: qwoted
-      name: Qwoted, Inc.
-      email: hello@qwoted.com
-      website: https://www.qwoted.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Qwoted is a PR/source-matching platform connecting journalists and expert sources; its privacy policy states it does not sell personal data - no data-broker/list-sale business. (source: https://www.qwoted.com/privacy-policy/)'
     - id: rampedup
       name: Rampedup, LLC.
       email: ""
@@ -3974,13 +3841,6 @@ brokers:
       opt_out_url: https://survey.alchemer.com/s3/8249180/Do-Not-Sell-Request
       region: us
       category: marketing
-    - id: reis
-      name: Reis Inc.
-      email: info@reis.com
-      website: https://www.cre.moodysanalytics.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: Reis Inc. was acquired by Moody''s in 2018 and folded into Moody''s Analytics CRE (website already reflects the successor); it deals in aggregate commercial-real-estate market data on properties, not personal consumer data, so it doesn''t fit the broker definition. (source: https://ir.moodys.com/press-releases/news-details/2018/Moodys-to-Acquire-Reis-a-Leader-in-Commercial-Real-Estate-Data/default.aspx)'
     - id: reklaim
       name: REKLAIM LTD
       email: info@reklaimyours.com
@@ -4575,14 +4435,6 @@ brokers:
       opt_out_url: https://privacyportal-cdn.onetrust.com/dsarwebform/555c3377-7eb2-4e7a-bf30-c408de4ab483/70df6685-8289-4d72-a9d7-9a736b3b837f.html
       region: us
       category: marketing
-    - id: swarm-holdings
-      name: Swarm Holdings, Inc.
-      email: hello@theswarm.com
-      website: https://www.theswarm.com/
-      opt_out_url: https://www.theswarm.com/company/do-not-sell
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: The Swarm''s own privacy policy states it "will never rent or sell data to third parties for advertising or promotional use" - a B2B relationship-intelligence SaaS platform, not a consumer data seller, despite carrying a boilerplate Do-Not-Sell page. (source: https://www.theswarm.com/privacy)'
     - id: swoopcom
       name: Swoop.Com, Inc.
       email: ""
@@ -4851,14 +4703,6 @@ brokers:
       opt_out_url: https://www.uplead.com/opt-out/
       region: us
       category: marketing
-    - id: ups-capital
-      name: UPS Capital Corporation
-      email: upscapitalitprivacy@ups.com
-      website: https://www.upscapital.com/
-      opt_out_url: https://www.upscapital.com/opt-out/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [NOT A BROKER?]: UPS Capital is a B2B cargo/trade-credit insurance subsidiary of UPS; found no evidence it sells consumer personal information itself (distinct from parent UPS''s general shipping-data sharing practices). (source: https://www.ups.com/us/en/support/shipping-support/legal-terms-conditions/privacy-notice)'
     - id: usadata
       name: Usadata, Inc.
       email: support@usadata.com
@@ -5205,14 +5049,6 @@ brokers:
       region: eu
       category: financial-b2b
       notes: Email privacy@seawavemedia.com hard-bounced (2026-08-21) - address/domain invalid.
-    - id: datajoy-eu
-      name: Datajoy
-      email: privacy@datajoy.eu
-      website: ""
-      opt_out_url: ""
-      region: eu
-      category: financial-b2b
-      notes: 'Replied "We don''t have any data on you. We''re not even a data broker" (2026-08-21) - worth revisiting whether this entry belongs in the database at all. SWEEP 2026-09-12 [NOT A BROKER?]: Past reply already said ''we''re not even a data broker'' (2026-08-21); independent check shows datajoy.eu is run by Datajoy.eu BV (Brussels), a small firm whose own site describes itself as a data-transfer/vendor-selection privacy service, not a people-search, credit, or marketing data seller - doesn''t fit financial-b2b broker category it''s filed under. (source: https://www.datajoy.eu/)'
     - id: adikteev
       name: Adikteev
       email: dpo@adikteev.com
@@ -5220,13 +5056,6 @@ brokers:
       region: eu
       category: marketing
       notes: 'Replied that they act as a data processor, not controller, for the ads in question (2026-08-21) - can''t action an erasure request directly; would need to identify which app/publisher served the ad, which this tool doesn''t track.'
-    - id: scope3
-      name: Scope3
-      email: privacy@scope3.com
-      website: https://scope3.com/
-      region: us
-      category: marketing
-      notes: 'Added 2026-08-20 from their privacy policy contact section. Postal alternative: 228 Park Ave S, PMB 24984, New York, NY 10003. Not previously in the campaign. SWEEP 2026-09-12 [NOT A BROKER?]: Scope3''s core business is carbon-emissions/supply-chain measurement for ad tech, not personal-data brokering; its own privacy policy states it generally does not sell or share personal information or process it for targeted advertising under US state privacy laws. (source: https://scope3.com/legal/privacy)'
     - id: smartclip
       name: Smartclip
       email: privacy@smartclip.tv

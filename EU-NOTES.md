@@ -10,13 +10,15 @@ This fork of [eraser](https://github.com/digisamroc/eraser) is set up for an EU/
 - `creditreform-de` (Creditreform, Germany)
 - `regis24` (Regis24, Germany)
 - `seawave-media` (Seawave Media, UK)
-- `datajoy-eu` (Datajoy, Belgium)
 - `adikteev` (Adikteev, ad-tech)
-- `scope3` (Scope3, ad-tech)
 - `smartclip` (Smartclip, ad-tech)
 - `genius-sports` (Genius Sports Group)
 - `etarget-sk` (eTarget s.r.o., Slovakia)
 - `creditsafe` (Creditsafe, financial/B2B credit reporting)
+
+`datajoy-eu` and `scope3` were removed on 2026-09-12: Datajoy's own reply said "we're not even a
+data broker," and Scope3's privacy policy explicitly states it doesn't sell or share personal
+data - neither belongs in a data-broker list regardless of region.
 
 ## What's NOT in brokers.yaml
 

@@ -91,12 +91,6 @@ brokers:
       region: us
       category: marketing
       notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: datajoy-eu
-      name: Datajoy
-      email: privacy@datajoy.eu
-      region: eu
-      category: financial-b2b
-      notes: Replied "We don't have any data on you. We're not even a data broker" (2026-08-21) - worth revisiting whether this entry belongs in the database at all. EU credit-reference / data-intelligence bureau with a direct privacy contact.
     - id: epsilon
       name: Epsilon Data Management
       email: privacy@epsilon.com
@@ -248,14 +242,6 @@ brokers:
       region: us
       category: people-search
       notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: oracle-america
-      name: Oracle America, Inc.
-      email: privacy_ww@oracle.com
-      website: https://www.oracle.com/
-      opt_out_url: https://datacloudoptout.oracle.com/optout.#maincontent
-      region: us
-      category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
     - id: peoplefindersdaas
       name: Peoplefindersdaas
       email: privacy@peoplefindersdaas.com
@@ -360,6 +346,7 @@ brokers:
       name: USSearch
       email: privacy@ussearch.com
       website: https://www.ussearch.com
+      opt_out_url: https://suppression.peopleconnect.us/?brand=USSearch
       region: us
       category: people-search
       notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.

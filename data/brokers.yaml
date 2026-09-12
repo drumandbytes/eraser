@@ -882,12 +882,6 @@ brokers:
       website: https://www.bookyourdata.com/
       region: us
       category: marketing
-    - id: business-resource-center
-      name: Business Resource Center LLC
-      email: busiresourcecenter@gmail.com
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: No website on file, only a personal gmail contact address, and no search results confirming this entity''s identity, category, or operating status — insufficient signal either way.'
     - id: bridge
       name: Bridge
       email: joshua.hirsch@thebridgecorp.com
@@ -901,19 +895,13 @@ brokers:
       website: https://www.bridgevine.com/
       region: us
       category: marketing
-    - id: brightcheck
-      name: Brightcheck Inc.
-      email: admin@brightcheck.com
-      website: https://www.brightcheck.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [POSSIBLE DUPLICATE]: BrightCheck is the consumer-facing app/brand; its Google Play package is com.brightswipe.app and a PRNewswire release attributes the ''BrightCheck'' product launch to BrightSwipe Inc. — appears to be the same company as the brigthswipe entry, product name vs. registered corporate name. Possible duplicate of: brigthswipe. (source: https://www.prnewswire.com/news-releases/brightswipe-inc-launches-next-gen-public-safety-solution-for-person-verification-and-criminal-history-checks-301896410.html)'
     - id: brigthswipe
       name: Brigthswipe Inc
       email: admin@brightswipe.com
       website: https://www.brightswipe.com/
       region: us
       category: marketing
+      notes: 'Brigthswipe Inc is BrightCheck''s registered corporate name (product/consumer brand vs legal entity, confirmed via a PRNewswire release announcing the BrightCheck launch) - the separate brightcheck entry was merged into this one.'
     - id: brooks-integrated-marketing
       name: Brooks Integrated Marketing, LLC
       email: privacy@brooksim.com
@@ -1458,14 +1446,6 @@ brokers:
       opt_out_url: https://privacyportal.onetrust.com/webform/1d20b685-0942-4b4d-a0af-b799c97f5cf6/2e4928b6-d77a-4f76-9518-1bfb9721669d
       region: us
       category: marketing
-    - id: dealersocket
-      name: Dealersocket, LLC
-      email: privacy@solera.com
-      website: https://www.dealersocket.com/
-      opt_out_url: https://globaldsar.solera.com/webform/20bbc57b-6134-4535-8062-a1745b771851/1eafe8e0-f69b-4d39-af7c-6dbf764046fa
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: DealerSocket''s own privacy policy states it does not sell personal data as defined by applicable law, sharing only with customers, vendors, and other Solera group companies - ambiguous whether this qualifies as broker-grade selling despite the marketing category and DSAR portal on file. (source: https://dealersocket.com/privacy-policy-apps/)'
     - id: decide-technologies
       name: Decide Technologies Inc.
       email: privacy@decide.co
@@ -1576,14 +1556,6 @@ brokers:
       website: https://www.digitalvikingmedia.com/
       region: us
       category: marketing
-    - id: diligent
-      name: Diligent Corporation
-      email: privacy@diligent.com
-      website: https://www.diligent.com/
-      opt_out_url: https://diligentlegal.results.highbond.com/survey_responses/9Wrc_yiuertX-uLJ4bJA/edit
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Diligent Corporation is fundamentally board-governance/GRC SaaS software; it is CA-registered as a data broker and uses public-source professional data for market insights, but explicitly states it does not sell or share candidate personal information - mixed signal, flagging for review. (source: https://oag.ca.gov/data-broker/registration/193166)'
     - id: direct-marketing-solutions
       name: DIRECT MARKETING SOLUTIONS Inc
       email: dataanalytics@teamdms.com
@@ -2043,14 +2015,6 @@ brokers:
       opt_out_url: https://g2risksolutions.com/consumer-center/
       region: us
       category: marketing
-    - id: cengage-learning
-      name: CENGAGE LEARNING Inc
-      email: privacy@cengage.com
-      website: https://www.cengage.com/
-      opt_out_url: https://info.cengage.com/LP=5633
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Cengage is primarily a textbook/ed-tech publisher; its CCPA page does provide a do-not-sell opt-out (redirects to the on-file info.cengage.com/LP=5633 form), suggesting some third-party sale/share of site visitor data, but no clear evidence it operates a broker-style data-sale business or people-search/marketing-list product. (source: https://www.cengage.com/privacy/important-information-for-california-residents/)'
     - id: getemails
       name: GETEMAILS LLC
       email: support@getemails.com
@@ -2172,26 +2136,12 @@ brokers:
       opt_out_url: https://www.h1.co/legal/privacy-preferences
       region: us
       category: marketing
-    - id: hamza-online-services
-      name: Hamza Online Services, LLC
-      email: zohandurani@hotmail.com
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: No website on file and only a personal Hotmail contact address; found no corroborating business registration, data-broker registry entry, or web presence for ''Hamza Online Services, LLC'' - can''t confirm as a real operating broker or as defunct.'
     - id: harmon-research-group
       name: Harmon Research Group, LLC
       email: info@harmonresearch.com
       website: https://www.harmonresearch.com/
       region: us
       category: marketing
-    - id: hd-information
-      name: HD INFORMATION LLC
-      email: hdi_support@hygenicsdata.com
-      website: https://www.hygenicsdata.com/
-      opt_out_url: https://myprivacy.equifax.com/opt-in-opt-out/personal-info
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: HD Information LLC (Hygenics Data) provides B2B debt-collection/skip-trace data-enhancement services, plausibly a financial data aggregator, but the on-file opt_out_url points to Equifax''s unrelated consumer portal rather than a HygenicsData-owned page - could not confirm HD Information''s own DSR contact. (source: https://www.dnb.com/business-directory/company-profiles.hygenicsdata_llc.0ed0d6bd597477efc8a08035b695f3b2.html)'
     - id: healthcare
       name: Healthcare, Inc.
       email: info@healthcare.com
@@ -2647,13 +2597,6 @@ brokers:
       opt_out_url: https://www.jdpower.com/privacy/dsar
       region: us
       category: marketing
-    - id: jigyasa-analytics
-      name: Jigyasa Analytics LLC
-      email: info@jigyasaanalytics.com
-      website: https://www.jigyasaanalytics.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Appears to be a small B2B analytics/consulting firm (credit risk modeling, segmentation, database marketing services performed for clients) rather than a company that itself collects and sells consumer data; no evidence found of a sold data product or broker registration. (source: https://jigyasaanalytics.com/)'
     - id: jmr-media-consulting
       name: JMR Media Consulting, Inc.
       email: ""
@@ -2706,13 +2649,6 @@ brokers:
       opt_out_url: https://www.keymarketingadvantage.com/do_not_use_my_personal_information
       region: us
       category: marketing
-    - id: killi
-      name: Killi Ltd.
-      email: privacy@killi.io
-      website: https://www.killi.io/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Killi Ltd. rebranded to Reklaim in September 2021 and pivoted from a pay-for-your-data marketplace toward a consumer privacy-protection subscription product; unclear whether killi.io/privacy@killi.io is still an active channel for the current business or whether it still sells consumer data to third parties. (source: https://www.newsfilecorp.com/release/95899/Killi-Rebrands-as-Reklaim)'
     - id: klarifi
       name: Klarifi
       email: soren@klarifi.io
@@ -2768,13 +2704,6 @@ brokers:
       opt_out_url: https://komodohealth-privacy.my.onetrust.com/webform/5c3cf8b1-3cf1-422d-84d5-618844b7316f/580adaab-6481-479f-9643-50464eea9863
       region: us
       category: marketing
-    - id: kontext
-      name: Kontext
-      email: info@kontextdata.com
-      website: https://www.kontextdata.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Kontext is a GenAI contextual-advertising platform; contextual ad targeting typically avoids using personal data (unlike behavioral targeting), so it''s unclear whether it collects/sells consumer PI in the way a broker would.'
     - id: kyber-health-data
       name: Kyber Health Data LLC
       email: kyberccpa@cowen.com
@@ -3228,13 +3157,6 @@ brokers:
       opt_out_url: https://www.messagedigital.com/my-data
       region: us
       category: marketing
-    - id: mfi-credit-solutions
-      name: MFI Credit Solutions
-      email: mfitzpatrick@mfidata.com
-      website: https://www.mfidata.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Real credit/verification data provider (tri-merge credit reports, fraud/valuation services fits financial data aggregator), but reporting indicates MFI Data was acquired by Unisource National Lender Services in March 2024, and the on-file website (mfidata.com) now appears to resolve to an unrelated microfinance analytics product, suggesting the original entity''s web presence may be gone. (source: https://www.cbinsights.com/company/mfi-credit-solutions)'
     - id: mh-sub-i
       name: MH Sub I, LLC
       email: privacy@internetbrands.com
@@ -3332,13 +3254,6 @@ brokers:
       region: us
       category: marketing
       notes: 'SWEEP 2026-09-12: Confirmed data broker (donor/political data compiled and compared across clients, treated as a ''sale'' under some state laws); on-file opt-out is a generic Google Form while M+R''s own site now hosts a dedicated privacy opt-out page. (source: https://www.mrss.com/my-personal-information/)'
-    - id: msim
-      name: Msim, LLC
-      email: dl-msim@move.com
-      website: https://www.none/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Email domain (move.com) ties it to Move, Inc./realtor.com, but no independent evidence found for ''Msim, LLC'' specifically as a data broker, and the on-file website field is a placeholder (''https://www.none/'').'
     - id: multimedia-lists
       name: MULTIMEDIA Lists, Inc.
       email: daniel@multimedialists.com
@@ -3347,13 +3262,6 @@ brokers:
       opt_out_url: https://privacyportal.privacypillar.com/dsar/form?orgid=3b24c635-e1a9-4e8c-8e61-9f5fa0024f9c&propid=d3da91fd-2750-4534-9436-f29b3e513fe5&formid=4106bc86-1ddf-461b-b7f6-a5f53b0977b3&status=publish
       region: us
       category: marketing
-    - id: my-renter-checker
-      name: MY RENTER CHECKER LLC
-      email: myrenterchecker@gmail.com
-      website: https://www.myrenterchecker.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: A renter-review/rental-history aggregation site (people-search-adjacent, collects and shares data about individual renters with landlords), but a Gmail contact address and no clear privacy/CCPA program found makes it hard to confirm typical broker practices. (source: https://myrenterchecker.com/)'
     - id: narvar
       name: Narvar, Inc.
       email: legal@narvar.com
@@ -3437,13 +3345,6 @@ brokers:
       opt_out_url: https://www.thinkdatagroup.com/opt-out-option
       region: us
       category: marketing
-    - id: new-strata
-      name: New Strata Inc.
-      email: info@fivestrata.com
-      website: https://www.fivestrata.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: No independent evidence found confirming ''New Strata Inc.'' or fivestrata.com as a distinct data-broker entity; couldn''t verify beyond the on-file record within reasonable search effort.'
     - id: nexsales-solutions
       name: Nexsales Solutions Inc.
       email: privacy@nexsales.com
@@ -3515,13 +3416,6 @@ brokers:
       email: privacy@onaudience.com
       website: https://www.onaudience.com/
       opt_out_url: https://www.onaudience.com/opt-out
-      region: us
-      category: marketing
-    - id: onemata
-      name: Onemata Corporation
-      email: ""
-      notes: 'Email privacy@onemata.com hard-bounced (2026-08-21) - address/domain invalid. SWEEP 2026-09-12 [UNCERTAIN]: Confirmed real mobile-location data broker with privacy@onemata.com listed as its own contact, yet notes already record that same address hard-bounced, and Crunchbase separately lists the company as ''permanently closed'' though its CA broker registration still appears active — conflicting signals on whether it''s still operating. (source: https://www.optery.com/data-brokers/onemata/)'
-      website: https://www.onemata.com/
       region: us
       category: marketing
     - id: one-model
@@ -4387,13 +4281,6 @@ brokers:
       opt_out_url: https://www.semcasting.com/privacy-choice?hsLang=en
       region: us
       category: marketing
-    - id: sentilink
-      name: Sentilink Corp
-      email: privacy@sentilink.com
-      website: https://www.sentilink.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: SentiLink explicitly disputes being a ''data broker,'' framing itself as a GLBA-covered fraud/identity-verification service that does not sell data - yet it is listed on the CA DOJ data broker registry (reg 187215), so the two signals conflict. (source: https://oag.ca.gov/data-broker/registration/187215)'
     - id: service-1st-information-solutions
       name: Service 1St Information Solutions LLC
       email: info@srv1st.com
@@ -4658,13 +4545,6 @@ brokers:
       website: https://www.strategicinfo.com/
       region: us
       category: marketing
-    - id: stratmish
-      name: Stratmish, LLC
-      email: phil@spoker.com
-      website: https://www.spoker.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Stratmish LLC operates spoker.com, a fantasy-sports/poker platform; no CA data-broker registration or evidence of selling consumer data to third parties was found - may be miscategorized as marketing/broker.'
     - id: structure
       name: Structure
       email: ""
@@ -4695,13 +4575,6 @@ brokers:
       opt_out_url: https://privacyportal-cdn.onetrust.com/dsarwebform/555c3377-7eb2-4e7a-bf30-c408de4ab483/70df6685-8289-4d72-a9d7-9a736b3b837f.html
       region: us
       category: marketing
-    - id: suus
-      name: Suus, LLC
-      email: lcrocker@onboardpartners.com
-      website: https://www.suus.inc/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: SuuS is a data/analytics platform for lenders (personalization, loan origination fulfillment); unclear from available sources whether it sells consumer data to third parties or only provides internal analytics tooling to financial-services clients.'
     - id: swarm-holdings
       name: Swarm Holdings, Inc.
       email: hello@theswarm.com
@@ -4793,13 +4666,6 @@ brokers:
       website: https://www.thedatagroup.com/
       region: us
       category: marketing
-    - id: the-lead-company
-      name: The Lead Company, Inc.
-      email: dave@lead.co
-      website: https://www.lead.co/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: No CA data-broker registration or independent privacy-practice evidence found specifically for lead.co; "The Lead Company" is a generic name that made search results noisy.'
     - id: the-open-data-people
       name: The Open Data People, Inc.
       email: ""
@@ -5069,13 +4935,6 @@ brokers:
       opt_out_url: https://www.veraset.com/do-not-sell-my-personal-information
       region: us
       category: marketing
-    - id: verse-gaming
-      name: Verse Gaming
-      email: dan@versegaming.com
-      website: https://www.versefantasysports.com/
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: A social daily-fantasy-sports startup; found no evidence it sells/brokers personal data to third parties beyond typical app analytics/ad partners (SportsDataIO, Sportradar are sports-data feeds it consumes, not evidence it resells consumer data). (source: https://www.versegaming.com/privacy-policy)'
     - id: versium-analytics
       name: Versium Analytics, Inc
       email: optout@versium.com
@@ -5134,12 +4993,6 @@ brokers:
       opt_out_url: https://www.visualvisitor.com/opt-out/
       region: us
       category: marketing
-    - id: vror
-      name: Vror LLC
-      email: kiran2868@gmail.com
-      region: us
-      category: marketing
-      notes: 'SWEEP 2026-09-12 [UNCERTAIN]: Appears referenced alongside data-broker registry material (Texas), but no working corporate website and only a personal Gmail contact on file, making legitimacy/current operation hard to confirm.'
     - id: vrtcal-markets
       name: VRTCAL Markets Inc
       email: privacy@vrtcal.com
@@ -5297,7 +5150,7 @@ brokers:
       opt_out_url: https://www.apollo.io/privacy-policy/remove
       region: us
       category: marketing
-      notes: 'SWEEP 2026-09-12 [POSSIBLE DUPLICATE]: Contact email (privacy@apollo.io) and opt-out URL both point to Apollo.io''s own privacy-removal page, indicating Zenleads has been folded into/rebranded as Apollo.io rather than operating as a separate broker. Possible duplicate of: Apollo.io. (source: https://www.apollo.io/privacy-policy/remove)'
+      notes: 'Zenleads was folded into/rebranded as Apollo.io - its own contact and opt-out URL already route there directly (confirmed via Apollo.io''s privacy-removal page).'
     - id: zeotap-gmbh
       name: Zeotap GmbH
       email: team.legal@zeotap.com

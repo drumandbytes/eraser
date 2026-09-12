@@ -44,4 +44,4 @@ remembering.
 - **Dated notes**: `notes: '<summary> (YYYY-MM-DD): <detail, quoting the reply where useful>'`. Append to an existing note rather than replacing its history.
 - **Commits**: one entry's worth of change per commit where practical, scoped `fix(brokers):` or `chore(brokers):`. Conventional Commits - release-please reads them.
 - **Generated files**: `site/content/brokers/**` and `site/static/brokers.json` are produced by `eraser guides` and git-ignored. Don't regenerate them for a data edit.
-- **Count floor**: after any add/remove, run `grep -c '^    - id:' data/brokers.yaml`. `README.md`, `docs/architecture.md`, and `EU-NOTES.md` all claim "750+" - keep the true count at or above 750 or fix those docs. `internal/broker` CI also fails below `MinSaneBrokerCount` (200).
+- **Count floor**: after any add/remove, run `grep -c '^    - id:' data/brokers.yaml`. `README.md`, `docs/architecture.md`, and `EU-NOTES.md` all claim "700+" - keep the true count at or above 700 or fix those docs. `internal/broker` CI also fails below `MinSaneBrokerCount` (200).

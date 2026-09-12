@@ -29,7 +29,7 @@ brokers:
       opt_out_url: https://www.advancedbackgroundchecks.com/removal
       region: us
       category: background-check
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name in a targeted search - kept on the strength of its own current, working privacy contact, not registry provenance.'
     - id: alliant-cooperative-data-solutions
       name: Alliant Cooperative Data Solutions LLC
       email: compliance@alliantdata.com
@@ -37,7 +37,7 @@ brokers:
       opt_out_url: https://alliantinsight.com/data-services-and-website-privacy-policy/
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/565949.'
     - id: beenverified
       name: BeenVerified
       email: privacy@beenverified.com
@@ -45,21 +45,21 @@ brokers:
       opt_out_url: https://www.beenverified.com/app/optout/search
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186586.'
     - id: checkr
       name: Checkr
       email: hello@checkr.com
       website: https://checkr.com
       region: us
       category: background-check
-      notes: privacy@checkr.com bounced; hello@checkr.com is the address Checkr's own privacy policy recommends. Updated 2026-08-20. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'privacy@checkr.com bounced; hello@checkr.com is the address Checkr''s own privacy policy recommends. Updated 2026-08-20. SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name - plausibly FCRA-exempt (a consumer reporting agency''s FCRA-covered background-check data is excluded from the CCPA''s data-broker definition), which would explain the absence rather than indicate anything wrong with the entry.'
     - id: corelogic
       name: CoreLogic
       email: privacy@corelogic.com
       website: https://www.corelogic.com
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name - CoreLogic has many registered subsidiary entities (e.g. CoreLogic Credco) that may cover this activity under a different registered name.'
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de
@@ -82,7 +82,7 @@ brokers:
       opt_out_url: https://www.cuebiq.com/privacypolicy/
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: approved 08/26/2021 on the CA AG''s historical data-broker registry (oag.ca.gov).'
     - id: data-axle
       name: Data Axle, Inc.
       email: doba_privacy@donorbase.com
@@ -122,7 +122,7 @@ brokers:
       opt_out_url: https://www.fastpeoplesearch.com/removal
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name in a targeted search - kept on the strength of its own current, working privacy contact, not registry provenance.'
     - id: foursquare-labs
       name: Foursquare Labs, Inc.
       email: legal@foursquare.com
@@ -130,7 +130,7 @@ brokers:
       opt_out_url: https://foursquare.com/data-requests
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186737.'
     - id: unacast
       name: Unacast, Inc.
       email: privacy@unacast.com
@@ -146,14 +146,6 @@ brokers:
       region: global
       category: background-check
       notes: privacy@hireright.com bounced; dpo@hireright.com is the verified contact per datarequests.org. Updated 2026-08-20. Well-known data broker with a published first-party privacy channel.
-    - id: idtrue
-      name: IDTrue
-      email: privacy@idtrue.com
-      website: https://www.idtrue.com
-      opt_out_url: https://www.idtrue.com/optout
-      region: us
-      category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: instantcheckmate
       name: Instant Checkmate
       email: privacy@instantcheckmate.com
@@ -161,7 +153,7 @@ brokers:
       opt_out_url: https://www.instantcheckmate.com/privacy-center/
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186698.'
     - id: intelius
       name: Intelius
       email: privacy@intelius.com
@@ -177,7 +169,7 @@ brokers:
       opt_out_url: https://www.kbmg.com/about-us/ccpa-privacy-policy/#optout
       region: us
       category: marketing
-      notes: john.petrillo@wundermandata.com bounced - Gmail's own delivery failure confirmed wundermandata.com can't be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'john.petrillo@wundermandata.com bounced - Gmail''s own delivery failure confirmed wundermandata.com can''t be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20. SWEEP-VERIFY 2026-09-13: Registration also independently confirmed at https://oag.ca.gov/data-broker/registration/186617.'
     - id: kochava
       name: KOCHAVA Inc.
       email: legal@kochava.com
@@ -185,7 +177,7 @@ brokers:
       opt_out_url: https://www.kochava.com/opt-out-do-not-sell-request-process/
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/192405.'
     - id: lexisnexis
       name: LexisNexis Risk Solutions
       email: privacy.information.mgr@lexisnexis.com
@@ -209,7 +201,7 @@ brokers:
       opt_out_url: https://merkleinc.com/en/privacy-policy/data-product-privacy-notice/control-your-personal-information.html
       region: us
       category: marketing
-      notes: Merkle is a dentsu brand for privacy-request purposes (confirmed via dentsu's privacy request form, which lists Merkle as a selectable brand) - contact routed to the group DPO rather than an individual employee address. The separate dentsu-inc entry was merged into this one. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'Merkle is a dentsu brand for privacy-request purposes (confirmed via dentsu''s privacy request form, which lists Merkle as a selectable brand) - contact routed to the group DPO rather than an individual employee address. The separate dentsu-inc entry was merged into this one. SWEEP-VERIFY 2026-09-13: Confirmed on the CA AG''s historical data-broker registry (oag.ca.gov) under Merkle Inc.'
     - id: mylife
       name: MyLife
       email: privacy@mylife.com
@@ -217,7 +209,7 @@ brokers:
       opt_out_url: https://www.mylife.com/ccpa/index.pubview
       region: us
       category: people-search
-      notes: Insightbridge LLC is MyLife.com's registered owner/operator (same entity for privacy-request purposes) - the separate insightbridge entry was merged into this one. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'Insightbridge LLC is MyLife.com''s registered owner/operator (same entity for privacy-request purposes) - the separate insightbridge entry was merged into this one. SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/539822.'
     - id: neighborwho
       name: NeighborWho
       email: privacy@neighborwho.com
@@ -225,7 +217,7 @@ brokers:
       opt_out_url: https://neighborwho.com/remove
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Covered under BeenVerified''s registration (https://oag.ca.gov/data-broker/registration/186586) - NeighborWho is one of its listed brands.'
     - id: nuwber
       name: Nuwber
       email: support@nuwber.com
@@ -233,7 +225,7 @@ brokers:
       opt_out_url: https://nuwber.com/removal/link
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/189182.'
     - id: peoplefindersdaas
       name: Peoplefindersdaas
       email: privacy@peoplefindersdaas.com
@@ -241,7 +233,7 @@ brokers:
       opt_out_url: https://www.peoplefindersdaas.com/personal-information
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/191581.'
     - id: peoplesmart
       name: PeopleSmart
       email: privacy@peoplesmart.com
@@ -249,7 +241,7 @@ brokers:
       opt_out_url: https://www.peoplesmart.com/svc/optout/search/contact_optouts
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name in a targeted search - kept on the strength of its own current, working privacy contact, not registry provenance.'
     - id: pipl
       name: Pipl
       email: privacy@pipl.com
@@ -272,7 +264,7 @@ brokers:
       website: https://www.safegraph.com/
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186409.'
     - id: spokeo
       name: Spokeo
       email: privacy@spokeo.com
@@ -280,7 +272,7 @@ brokers:
       opt_out_url: https://www.spokeo.com/optout
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186310.'
     - id: sterling
       name: Sterling
       email: privacy@sterlingcheck.com
@@ -295,7 +287,7 @@ brokers:
       opt_out_url: https://thatsthem.com/optout
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name in a targeted search - kept on the strength of its own current, working privacy contact, not registry provenance.'
     - id: atdata
       name: AtData, LLC
       email: privacy@atdata.com
@@ -318,7 +310,7 @@ brokers:
       opt_out_url: https://www.truthfinder.com/privacy-center/
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186697.'
     - id: usphonebook
       name: USPhonebook
       email: info@usphonebook.com
@@ -326,7 +318,7 @@ brokers:
       opt_out_url: https://www.usphonebook.com/opt-out
       region: us
       category: people-search
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: No oag.ca.gov historical registration found under this name in a targeted search - kept on the strength of its own current, working privacy contact, not registry provenance.'
     - id: versium-analytics
       name: Versium Analytics, Inc
       email: optout@versium.com
@@ -334,7 +326,7 @@ brokers:
       opt_out_url: https://versium.com/ccpa-opt-out
       region: us
       category: marketing
-      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+      notes: 'SWEEP-VERIFY 2026-09-13: Confirmed data-broker registration: https://oag.ca.gov/data-broker/registration/186021.'
     - id: smartclip
       name: Smartclip
       email: privacy@smartclip.tv

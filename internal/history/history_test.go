@@ -549,10 +549,6 @@ func addBrokerResponseForProfile(t *testing.T, s *Store, profileID, brokerID str
 	return resp
 }
 
-// findBrokerResponseByID is a small test helper - there's no production
-// GetBrokerResponseByID, so this scans GetAllBrokerResponses (which spans
-// every profile, matching what a full-inbox re-scan uses) for the row under
-// test.
 func findBrokerResponseByID(t *testing.T, s *Store, id int64) *BrokerResponse {
 	t.Helper()
 	all, err := s.GetAllBrokerResponses()
@@ -565,6 +561,34 @@ func findBrokerResponseByID(t *testing.T, s *Store, id int64) *BrokerResponse {
 		}
 	}
 	return nil
+}
+
+func TestBrokerResponseReviewIsProfileScoped(t *testing.T) {
+	s := newTestStore(t)
+	resp := addBrokerResponseForProfile(t, s, "profile-a", "broker-a")
+	if err := s.UpdateBrokerResponseClassification(resp.ID, "profile-a", "unknown", "", "", 0.5, true); err != nil {
+		t.Fatalf("UpdateBrokerResponseClassification: %v", err)
+	}
+
+	got, err := s.GetBrokerResponseByID(resp.ID, "profile-b")
+	if err != nil || got != nil {
+		t.Fatalf("cross-profile GetBrokerResponseByID = %+v, %v; want nil, nil", got, err)
+	}
+	if err := s.MarkBrokerResponseReviewed(resp.ID, "profile-b"); err != sql.ErrNoRows {
+		t.Fatalf("cross-profile MarkBrokerResponseReviewed error = %v, want sql.ErrNoRows", err)
+	}
+	got, err = s.GetBrokerResponseByID(resp.ID, "profile-a")
+	if err != nil || got == nil || !got.NeedsReview || got.EmailBody != "original body" {
+		t.Fatalf("GetBrokerResponseByID = %+v, %v", got, err)
+	}
+
+	if err := s.MarkBrokerResponseReviewed(resp.ID, "profile-a"); err != nil {
+		t.Fatalf("MarkBrokerResponseReviewed: %v", err)
+	}
+	got, err = s.GetBrokerResponseByID(resp.ID, "profile-a")
+	if err != nil || got == nil || got.NeedsReview {
+		t.Fatalf("reviewed response = %+v, %v", got, err)
+	}
 }
 
 func TestProfileIsolation_UpdateBrokerResponseClassification(t *testing.T) {

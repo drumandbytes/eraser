@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/drumandbytes/eraser/compare/v0.6.0...v0.6.1) (2026-09-12)
+
+
+### Bug Fixes
+
+* **web:** restore manual response review flow ([#57](https://github.com/drumandbytes/eraser/issues/57)) ([469145c](https://github.com/drumandbytes/eraser/commit/469145c24722fbc3745cc415ea5a056297231c11))
+
 ## [0.6.0](https://github.com/drumandbytes/eraser/compare/v0.5.4...v0.6.0) (2026-09-07)
 
 

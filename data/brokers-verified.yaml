@@ -366,3 +366,88 @@ brokers:
       region: us
       category: people-search
       notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+    - id: smartclip
+      name: Smartclip
+      email: privacy@smartclip.tv
+      website: https://www.smartclip.tv/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy - DPO listed as Thomas Servatius, Ringstr. 16-20, 33378 Rheda-Wiedenbrueck, Germany. Not previously in the campaign.'
+    - id: etarget-sk
+      name: eTarget s.r.o.
+      email: gdpr@etarget.sk
+      website: https://www.etarget.sk/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-08-20 from their privacy policy contact section. Not previously in the campaign.'
+    - id: schufa
+      name: SCHUFA Holding AG
+      email: datenschutz@schufa.de
+      website: https://www.schufa.de/
+      region: eu
+      category: financial-b2b
+      notes: 'Added 2026-09-12 from their GDPR/data-protection contact page - the major German consumer credit bureau. Their own materials note they steer requesters toward a paid "Bonitatsauskunft" product first; the free Art. 15 GDPR access/erasure request is a separate legal right.'
+    - id: crif
+      name: CRIF S.p.A.
+      email: dirprivacy@crif.com
+      website: https://www.crif.com/
+      region: eu
+      category: financial-b2b
+      notes: 'Added 2026-09-12 from their privacy policy - pan-EU credit/business-information bureau (Italy HQ). Country-specific DPO contacts exist too (UK: dpo.uk@crif.com; Austria: auskunft@crif.com) if the Italian address does not respond.'
+    - id: dun-bradstreet-eu
+      name: Dun & Bradstreet (EU, incl. former Bisnode entities)
+      email: eudpo@dnb.com
+      website: https://www.dnb.com/en-gb/privacy/gdpr/
+      region: eu
+      category: financial-b2b
+      notes: 'Added 2026-09-12 from their EU GDPR contact page. D&B acquired Bisnode in 2021 and consolidated EU privacy requests under this EU DPO address; local Bisnode-branded offices route here too.'
+    - id: deutsche-post-direkt
+      name: Deutsche Post Direkt GmbH
+      email: datenschutz@postdirekt.de
+      website: https://www.deutschepost.de/de/d/deutsche-post-direkt.html
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their data-protection contact page - German address/geo-marketing data broker (Deutsche Post subsidiary).'
+    - id: az-direct
+      name: AZ Direct GmbH
+      email: datenschutz@az-direct.com
+      website: https://www.az-direct.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their data-protection contact page - German/Austrian address broker (Bertelsmann group). A 2026 noyb complaint alleges AZ Direct has resisted providing full Art. 15 data-origin/recipient information, calling it "too burdensome" - a request may take persistence.'
+    - id: adform
+      name: Adform A/S
+      email: dpo@adform.com
+      website: https://site.adform.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their Privacy Center - Danish ad-tech DSP/DMP. They ask for an ID document scan to verify identity before processing the request.'
+    - id: criteo
+      name: Criteo SA
+      email: dpo@criteo.com
+      website: https://www.criteo.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their privacy policy - French retargeting/ad-tech company, one of the largest EU-based ad-tech data brokers.'
+    - id: rtb-house
+      name: RTB House S.A.
+      email: dpo@rtbhouse.com
+      website: https://www.rtbhouse.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their privacy notices - Polish programmatic/retargeting ad-tech company.'
+    - id: equativ
+      name: Equativ (formerly Smart AdServer)
+      email: privacy@smartadserver.com
+      website: https://equativ.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their privacy documentation - French ad-serving/ad-tech company, rebranded from Smart AdServer.'
+    - id: teads
+      name: Teads
+      email: privacy@teads.com
+      website: https://www.teads.com/
+      region: eu
+      category: marketing
+      notes: 'Added 2026-09-12 from their privacy policy - French outstream video ad-tech company (part of Outbrain). dpo@teads.com and dpo-uk@teads.com are alternates.'
+

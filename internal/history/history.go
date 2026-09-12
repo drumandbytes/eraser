@@ -737,6 +737,34 @@ func (s *Store) AddBrokerResponse(resp *BrokerResponse) error {
 }
 
 // FindBrokerResponseBySubject finds an existing response by profile, broker_id and email_subject
+func (s *Store) GetBrokerResponseByID(id int64, profileID string) (*BrokerResponse, error) {
+	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject, email_body,
+		form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
+		FROM broker_responses WHERE id = ? AND profile_id = ?`
+
+	var r BrokerResponse
+	var needsReviewInt int
+	var receivedAtStr, processedAtStr, createdAtStr sql.NullString
+	var emailBody, formURL, confirmURL sql.NullString
+	if err := s.db.QueryRow(query, id, normalizeProfileID(profileID)).Scan(
+		&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.ResponseType, &r.EmailFrom, &r.EmailSubject, &emailBody,
+		&formURL, &confirmURL, &r.Confidence, &needsReviewInt, &receivedAtStr, &processedAtStr, &createdAtStr); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get broker response: %w", err)
+	}
+
+	r.EmailBody = emailBody.String
+	r.FormURL = formURL.String
+	r.ConfirmURL = confirmURL.String
+	r.NeedsReview = needsReviewInt == 1
+	r.ReceivedAt = parseFlexibleTimeString(receivedAtStr)
+	r.ProcessedAt = parseFlexibleTimeString(processedAtStr)
+	r.CreatedAt = parseFlexibleTimeString(createdAtStr)
+	return &r, nil
+}
+
 func (s *Store) FindBrokerResponseBySubject(profileID, brokerID, subject string) (*BrokerResponse, error) {
 	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject,
 		form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at
@@ -791,6 +819,21 @@ func (s *Store) UpdateBrokerResponseBody(id int64, profileID string, body string
 	_, err := s.db.Exec(query, body, id, normalizeProfileID(profileID))
 	if err != nil {
 		return fmt.Errorf("failed to update broker response body: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) MarkBrokerResponseReviewed(id int64, profileID string) error {
+	result, err := s.db.Exec(`UPDATE broker_responses SET needs_review = 0 WHERE id = ? AND profile_id = ?`, id, normalizeProfileID(profileID))
+	if err != nil {
+		return fmt.Errorf("failed to mark broker response reviewed: %w", err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check broker response update: %w", err)
+	}
+	if updated == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }

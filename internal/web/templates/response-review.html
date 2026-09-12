@@ -1,0 +1,80 @@
+{{define "content"}}
+<div class="space-y-6 fade-in-up">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <a href="/tasks" class="btn btn-ghost p-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+            <div>
+                <h1 class="font-display text-2xl font-bold text-primary">Review Response</h1>
+                <p class="text-secondary mt-1">{{.Response.BrokerName}}</p>
+            </div>
+        </div>
+        {{if .Response.NeedsReview}}
+        <form action="/api/pipeline/responses/{{.Response.ID}}/reviewed" method="POST">
+            <button type="submit" class="btn btn-primary">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Mark Reviewed
+            </button>
+        </form>
+        {{end}}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 card p-6">
+            <h2 class="font-display text-lg font-semibold text-primary mb-4">Email</h2>
+            <dl class="space-y-3 mb-6">
+                <div>
+                    <dt class="text-xs text-muted">From</dt>
+                    <dd class="text-sm text-primary">{{.Response.EmailFrom}}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-muted">Subject</dt>
+                    <dd class="text-sm text-primary">{{.Response.EmailSubject}}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs text-muted">Received</dt>
+                    <dd class="text-sm text-primary">{{.Response.ReceivedAt.Format "Jan 2, 2006 3:04 PM"}}</dd>
+                </div>
+            </dl>
+            {{if .Response.EmailBody}}
+            <div class="text-sm text-secondary whitespace-pre-wrap break-words p-4 rounded-lg" style="background: var(--bg-elevated);">{{.Response.EmailBody}}</div>
+            {{else}}
+            <p class="text-sm text-muted">Email body unavailable. Review the message in your inbox.</p>
+            {{end}}
+        </div>
+
+        <div class="space-y-6">
+            <div class="card p-6">
+                <h2 class="font-display text-lg font-semibold text-primary mb-4">Classification</h2>
+                <dl class="space-y-3">
+                    <div>
+                        <dt class="text-xs text-muted">Response type</dt>
+                        <dd class="text-sm text-primary">{{.Response.ResponseType}}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-muted">Confidence</dt>
+                        <dd class="text-sm text-primary">{{percent .Response.Confidence}}</dd>
+                    </div>
+                </dl>
+                {{if or .Response.FormURL .Response.ConfirmURL}}
+                <div class="mt-4 space-y-2">
+                    {{if .Response.FormURL}}
+                    <a href="{{.Response.FormURL}}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary w-full">Open Form</a>
+                    {{end}}
+                    {{if .Response.ConfirmURL}}
+                    <a href="{{.Response.ConfirmURL}}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary w-full">Open Confirmation Link</a>
+                    {{end}}
+                </div>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{template "layout" .}}

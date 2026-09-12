@@ -1,11 +1,13 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
@@ -147,6 +149,45 @@ func TestUnconfiguredInstallRoutes(t *testing.T) {
 }
 
 // The 404 path also renders through the router without a 500.
+func TestResponseReviewFlow(t *testing.T) {
+	s := smokeServer(t)
+	resp := &history.BrokerResponse{
+		ProfileID:    "default",
+		BrokerID:     "spokeo",
+		BrokerName:   "Spokeo",
+		ResponseType: "unknown",
+		EmailFrom:    "privacy@spokeo.com",
+		EmailSubject: "Re: Removal request",
+		EmailBody:    "Please verify your request.",
+		Confidence:   0.4,
+		NeedsReview:  true,
+		ReceivedAt:   time.Now(),
+	}
+	if err := s.historyStore.AddBrokerResponse(resp); err != nil {
+		t.Fatalf("AddBrokerResponse: %v", err)
+	}
+	router := s.setupRouter()
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/pipeline/responses/%d", resp.ID), nil)
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), resp.EmailBody) {
+		t.Fatalf("review page: %d\n%s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/pipeline/responses/%d/reviewed", resp.ID), nil)
+	req.Header.Set("HX-Request", "true")
+	rec = httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("mark reviewed: %d\n%s", rec.Code, rec.Body.String())
+	}
+	got, err := s.historyStore.GetBrokerResponseByID(resp.ID, "default")
+	if err != nil || got == nil || got.NeedsReview {
+		t.Fatalf("reviewed response = %+v, %v", got, err)
+	}
+}
+
 func TestUnknownRouteIs404(t *testing.T) {
 	s := smokeServer(t)
 	router := s.setupRouter()

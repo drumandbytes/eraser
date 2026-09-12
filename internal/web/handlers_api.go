@@ -192,6 +192,27 @@ func (s *Server) handleAPIResponses(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleAPIResponseReviewed(w http.ResponseWriter, r *http.Request) {
+	var responseID int64
+	if _, err := fmt.Sscanf(chi.URLParam(r, "responseID"), "%d", &responseID); err != nil {
+		http.Error(w, "Response not found", http.StatusNotFound)
+		return
+	}
+	if s.historyStore == nil {
+		http.Error(w, "Database not available", http.StatusInternalServerError)
+		return
+	}
+	if err := s.historyStore.MarkBrokerResponseReviewed(responseID, s.activeProfile(r).ID); err != nil {
+		http.Error(w, "Response not found", http.StatusNotFound)
+		return
+	}
+	if r.Header.Get("HX-Request") == "true" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	http.Redirect(w, r, "/tasks", http.StatusFound)
+}
+
 func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
 	if cfg == nil || !cfg.Inbox.Enabled {

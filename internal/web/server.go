@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -353,11 +354,17 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Compress(5))
+	r.Use(requireLoopbackHost)
 	r.Use(securityHeaders)
 
 	// filippo.io/csrf enforces same-origin via Sec-Fetch-Site, not tokens, so
 	// it needs no TrustedOrigins tuning for a loopback plaintext server - and
-	// isn't the unmaintained gorilla/csrf carrying CVE-2025-47909.
+	// isn't the unmaintained gorilla/csrf carrying CVE-2025-47909. Sec-Fetch-Site
+	// alone doesn't cover DNS rebinding though: a browser computes it from the
+	// requesting page's origin STRING, so a page served from an
+	// attacker-controlled hostname that's been DNS-rebound to 127.0.0.1 still
+	// reads as same-origin - only the Host header still names the attacker's
+	// hostname, which requireLoopbackHost (above) catches.
 	r.Use(csrf.Protect(s.csrfKey))
 
 	// Static files
@@ -421,6 +428,39 @@ func (s *Server) setupRouter() *chi.Mux {
 	})
 
 	return r
+}
+
+// requireLoopbackHost rejects any request whose Host header doesn't name a
+// loopback address, closing the DNS-rebinding gap that csrf.Protect's
+// Sec-Fetch-Site check doesn't cover (see the comment above where this is
+// registered in setupRouter).
+func requireLoopbackHost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !hostAllowed(r.Host) {
+			http.Error(w, "Forbidden: this server only accepts requests addressed to localhost", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// hostAllowed reports whether host - a request's Host header, "host" or
+// "host:port" - names loopback. The server always binds 127.0.0.1, so a
+// non-loopback Host value only ever shows up via DNS rebinding (an
+// attacker-controlled hostname resolved to 127.0.0.1) rather than a real
+// remote request, since nothing outside the machine can reach this port
+// under any hostname at all.
+func hostAllowed(host string) bool {
+	h := host
+	if hh, _, err := net.SplitHostPort(host); err == nil {
+		h = hh
+	}
+	switch strings.ToLower(h) {
+	case "127.0.0.1", "::1", "localhost":
+		return true
+	default:
+		return false
+	}
 }
 
 // securityHeaders adds security headers to all responses

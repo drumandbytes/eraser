@@ -1,6 +1,6 @@
 # Eraser
 
-Take back your privacy. Eraser sends data removal requests to 750+ data brokers on your behalf—for free.
+Take back your privacy. Eraser sends data removal requests to 700+ data brokers on your behalf—for free.
 
 📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
 
@@ -8,7 +8,7 @@ You know those sites like Spokeo, BeenVerified, and Whitepages that have your ho
 
 ### What to Expect
 
-**The good:** Eraser automatically sends removal request emails to 750+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
+**The good:** Eraser automatically sends removal request emails to 700+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
 
 **The reality:** Some brokers require additional steps. They might send you a confirmation link to click, ask you to fill out a form on their website, or request identity verification. Eraser tracks these responses and shows you exactly what needs manual attention.
 
@@ -90,7 +90,7 @@ The wizard walks you through entering your personal information (the data broker
 **Step 4: Send Removal Requests**
 
 From the dashboard, you can:
-- Browse the list of 750+ data brokers
+- Browse the list of 700+ data brokers
 - Send requests one at a time or in bulk
 - Track which requests have been sent and their status
 - Exclude a broker from sends with one click (and bring it back later) - useful for a broker you'd rather skip, e.g. one that demands ID verification
@@ -162,7 +162,7 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser send --dry-run` | Preview without sending |
 | `eraser send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
 | `eraser send --resend` | Force re-send even to brokers within the cooldown window |
-| `eraser list-brokers` | Show all 750+ brokers |
+| `eraser list-brokers` | Show all 700+ brokers |
 | `eraser status` | View history and stats |
 | `eraser status --limit 50` | Show more history |
 | `eraser add-broker` | Add a custom broker interactively |
@@ -272,6 +272,34 @@ Or use the interactive command:
 ./eraser add-broker
 ```
 
+### Choosing a broker list
+
+The full list is broad and inherited from upstream, so it carries some noise (dead
+addresses, companies that turn out not to be brokers). If you'd rather email only
+companies that are confirmed data brokers with a current first-party privacy
+email or rights portal — built from registries and authoritative privacy notices
+across the US, EU, Latin America, New Zealand, and Kenya — use the
+smaller verified list:
+
+```bash
+./eraser send --list verified          # one run
+./eraser send --broker spokeo,pipl     # explicit broker IDs
+./eraser send --region eu --category financial-b2b
+./eraser send --exclude broker-id --status never
+```
+
+`--broker`, `--region`, `--category`, and `--exclude` can be repeated or comma-separated. `--status eligible` is the safe default; use `never`, `failed`, or `all` to select by send history. The web Brokers page exposes the same filters before bulk sending.
+
+Or set it permanently in `config.yaml`:
+
+```yaml
+options:
+  broker_list: verified                # or: broker_file: /path/to/your-own-list.yaml
+```
+
+The weekly CI audit keeps the full list from rotting — it clears dead email
+domains automatically and opens a PR for review.
+
 ---
 
 ## Security Notes
@@ -346,7 +374,7 @@ eraser/
 │   │   └── templates/            # gdpr.tmpl, ccpa.tmpl, generic.tmpl
 │   └── web/                     # Web UI - server.go has core setup, handlers_*.go files
 │                                 # hold the actual page/API handlers by resource
-├── data/brokers.yaml           # 750+ broker database
+├── data/brokers.yaml           # 700+ broker database
 ├── config.example.yaml         # Example configuration
 └── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```

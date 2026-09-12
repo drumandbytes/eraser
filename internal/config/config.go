@@ -259,7 +259,17 @@ type Options struct {
 	// 24h window, so a large broker list can't blow past your provider's
 	// daily sending cap (Gmail's is ~500/day) or read as bulk-spam behavior.
 	// 0 uses the default (450). Overridden per-run with --ignore-daily-limit.
-	DailySendLimit  int      `yaml:"daily_send_limit,omitempty"`
+	DailySendLimit int `yaml:"daily_send_limit,omitempty"`
+	// BrokerList picks which built-in list the send-family commands use:
+	//   "" / "full" - the full ~750-entry list (default)
+	//   "verified"  - the smaller registry-sourced list (data/brokers-verified.yaml)
+	// Overridden per-run with `send --list`. Ignored when BrokerFile or
+	// --brokers points at an explicit file.
+	BrokerList string `yaml:"broker_list,omitempty"`
+	// BrokerFile points the send-family commands at your own broker list,
+	// the config equivalent of the global --brokers flag (which still wins).
+	// Takes precedence over BrokerList.
+	BrokerFile      string   `yaml:"broker_file,omitempty"`
 	Regions         []string `yaml:"regions"`
 	ExcludedBrokers []string `yaml:"excluded_brokers,omitempty"`
 	// ExcludedCategories skips every broker whose category (case-insensitive)

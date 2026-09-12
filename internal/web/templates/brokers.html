@@ -87,7 +87,7 @@
                     type="text"
                     id="broker-search"
                     name="search"
-                    placeholder="Search brokers by name or email..."
+                    placeholder="Search by ID, name, or email..."
                     value="{{.Search}}"
                     class="input pl-10"
                     hx-get="/api/brokers"
@@ -166,6 +166,31 @@
                 </label>
             </div>
         </div>
+        {{if not .ManualMode}}
+        <details class="mt-4">
+            <summary class="text-sm font-medium text-secondary cursor-pointer">Advanced send filters</summary>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                <div>
+                    <label for="send-status" class="block text-xs text-muted mb-1">History status</label>
+                    <select id="send-status" class="input">
+                        <option value="eligible">Eligible (25-day cooldown)</option>
+                        <option value="never">Never sent</option>
+                        <option value="failed">Last attempt failed</option>
+                        <option value="all">All matching brokers</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="send-broker-ids" class="block text-xs text-muted mb-1">Only broker IDs</label>
+                    <input id="send-broker-ids" class="input" placeholder="spokeo, pipl">
+                </div>
+                <div>
+                    <label for="send-exclude-ids" class="block text-xs text-muted mb-1">Exclude broker IDs</label>
+                    <input id="send-exclude-ids" class="input" placeholder="broker-a, broker-b">
+                </div>
+            </div>
+            <p class="text-xs text-muted mt-2">Search, category, and region above are also applied. “All” ignores send history; review the list before sending.</p>
+        </details>
+        {{end}}
     </div>
 
     <!-- Broker list: count header + desktop table + mobile cards. The inner
@@ -269,8 +294,8 @@ function showLostJobMessage() {
 // statusFilter is optional: pass 'failed' from the Retry Failed button to
 // target only brokers whose last send attempt failed. Left empty, the
 // backend defaults to 'pending' (never-sent brokers) - same as before.
-async function startSendAll(statusFilter) {
-    const isRetry = statusFilter === 'failed';
+async function startSendAll(statusOverride) {
+    const isRetry = statusOverride === 'failed';
     const btn = document.getElementById(isRetry ? 'retry-failed-btn' : 'send-all-btn');
     const btnText = document.getElementById(isRetry ? 'retry-failed-text' : 'send-all-text');
     const spinner = document.getElementById(isRetry ? 'retry-failed-spinner' : 'send-all-spinner');
@@ -284,14 +309,19 @@ async function startSendAll(statusFilter) {
     const search = document.getElementById('broker-search').value;
     const category = document.querySelector('[name="category"]').value;
     const region = document.querySelector('[name="region"]').value;
+    const status = statusOverride || document.getElementById('send-status').value;
+    const brokerIds = document.getElementById('send-broker-ids').value;
+    const excludeIds = document.getElementById('send-exclude-ids').value;
+
+    if (status === 'all' && !confirm('Send to all matching brokers regardless of send history?')) {
+        resetButtons();
+        return;
+    }
 
     // Get CSRF token
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-    const params = { search, category, region };
-    if (statusFilter) {
-        params.status = statusFilter;
-    }
+    const params = { search, category, region, status, broker_ids: brokerIds, exclude_ids: excludeIds };
 
     try {
         const resp = await fetch('/api/send-all', {

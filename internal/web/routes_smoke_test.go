@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -41,6 +42,16 @@ func smokeServer(t *testing.T) *Server {
 		{ID: "noemail", Name: "No Email Broker", Region: "us", Category: "marketing", OptOutURL: "https://example.com/opt-out"},
 	}
 	return s
+}
+
+// loopbackRequest is httptest.NewRequest with the Host a real browser would
+// send to this server (it only ever binds 127.0.0.1) - plain
+// httptest.NewRequest defaults Host to "example.com", which requireLoopbackHost
+// now rejects.
+func loopbackRequest(method, target string, body io.Reader) *http.Request {
+	req := httptest.NewRequest(method, target, body)
+	req.Host = "127.0.0.1"
+	return req
 }
 
 // bodyLooksLikeTemplateError catches a broken html/template render leaking into
@@ -91,7 +102,7 @@ func TestGETRoutesRenderWithoutError(t *testing.T) {
 
 	for _, route := range routes {
 		t.Run(route, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, route, nil)
+			req := loopbackRequest(http.MethodGet, route, nil)
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
 
@@ -112,7 +123,7 @@ func TestGETRoutesRenderWithoutError(t *testing.T) {
 
 	// Routes that are intentional redirects.
 	for _, route := range []string{"/forms"} {
-		req := httptest.NewRequest(http.MethodGet, route, nil)
+		req := loopbackRequest(http.MethodGet, route, nil)
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
 		if rec.Code != http.StatusFound {
@@ -129,7 +140,7 @@ func TestUnconfiguredInstallRoutes(t *testing.T) {
 	router := s.setupRouter()
 
 	for _, route := range []string{"/", "/setup", "/setup/profile", "/setup/email", "/setup/test", "/setup/complete"} {
-		req := httptest.NewRequest(http.MethodGet, route, nil)
+		req := loopbackRequest(http.MethodGet, route, nil)
 		rec := httptest.NewRecorder()
 		router.ServeHTTP(rec, req)
 		if rec.Code >= 500 {
@@ -140,7 +151,7 @@ func TestUnconfiguredInstallRoutes(t *testing.T) {
 		}
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := loopbackRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "/setup" {
@@ -168,14 +179,14 @@ func TestResponseReviewFlow(t *testing.T) {
 	}
 	router := s.setupRouter()
 
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/pipeline/responses/%d", resp.ID), nil)
+	req := loopbackRequest(http.MethodGet, fmt.Sprintf("/pipeline/responses/%d", resp.ID), nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), resp.EmailBody) {
 		t.Fatalf("review page: %d\n%s", rec.Code, rec.Body.String())
 	}
 
-	req = httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/pipeline/responses/%d/reviewed", resp.ID), nil)
+	req = loopbackRequest(http.MethodPost, fmt.Sprintf("/api/pipeline/responses/%d/reviewed", resp.ID), nil)
 	req.Header.Set("HX-Request", "true")
 	rec = httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -192,7 +203,7 @@ func TestUnknownRouteIs404(t *testing.T) {
 	s := smokeServer(t)
 	router := s.setupRouter()
 
-	req := httptest.NewRequest(http.MethodGet, "/does-not-exist", nil)
+	req := loopbackRequest(http.MethodGet, "/does-not-exist", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {

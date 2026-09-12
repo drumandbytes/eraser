@@ -35,6 +35,32 @@ new, in `brokers.yaml` shape) and `review.md` (fuzzy matches to eyeball). Fill i
 them into `data/brokers.yaml`, then run `eraser audit-brokers` to drop any that
 are already dead. Both output files are gitignored.
 
+### The verified list (`data/brokers-verified.yaml`)
+
+A second, smaller embedded list offered as `eraser send --list verified` /
+`options.broker_list: verified`. The bar for an entry: a company we can
+confidently call a data broker (US: cross-checkable against a state registry;
+elsewhere: a regulator-recognized credit bureau or established data-intelligence
+company) **and** a current first-party privacy email or rights portal. It's a
+curated subset, not a mirror of `brokers.yaml` - the point is
+signal, not coverage.
+
+Grow it the same way as the main list, but keep only entries you can stand
+behind:
+
+```bash
+# US: diff a state registry CSV against BOTH lists, fill category + contact,
+# add the good ones to data/brokers-verified.yaml (and usually brokers.yaml too)
+go run ./scripts/import-registries -csv ca-registry.csv -name-col "Data Broker Name" \
+    -url-col "Website" -email-col "Email Address"
+
+# EU: credit bureaus + GVL big names with a direct privacy address
+go run ./scripts/import-registries -gvl https://vendor-list.consensu.org/v3/vendor-list.json
+```
+
+`eraser validate-brokers` (no arg) checks this list too, with a lower entry-count
+floor (`MinVerifiedBrokerCount`).
+
 ### The EU/EEA side
 
 There is no EU equivalent of the state registries - GDPR replaced the old
@@ -77,9 +103,14 @@ Two checks, both also wired into CI:
   emails, well-formed URLs. Run `eraser validate-brokers candidates.yaml` before
   merging a batch from the importer.
 - **Liveness** - `.github/workflows/broker-audit.yml` runs `eraser audit-brokers
-  --fail-on-dead` every Monday. A red run means one or more brokers look
-  defunct; open the log, investigate, and prune by hand (the audit never edits
-  the file). Also runnable from the Actions tab on demand.
+  --fix` every Monday. `--fix` clears the email of any broker whose mail domain is
+  dead (MX and host lookup both fail) - keeping the row, blanking the address, and
+  appending a dated note - then the workflow opens a PR against `data/brokers.yaml`
+  if anything changed. A quiet week opens no PR. Review the PR before merging;
+  investigate `website-dead` / `unknown` entries (printed in the run log, never
+  auto-edited) by hand. Also runnable from the Actions tab on demand. Run
+  `eraser audit-brokers --fix` locally with `--brokers <path>` to do the same to a
+  working copy.
 
 ## Security/Correctness Sweep (2026-08)
 

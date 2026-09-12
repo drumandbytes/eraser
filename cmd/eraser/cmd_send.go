@@ -21,6 +21,12 @@ var (
 	ignoreDailyLimit bool
 	resend           bool
 	manualSend       bool
+	listFlag         string
+	brokerIDs        []string
+	regions          []string
+	categories       []string
+	excludedIDs      []string
+	statusFilter     string
 )
 
 // resendCooldown is how long after a successful send a broker is skipped by
@@ -45,14 +51,43 @@ safe to just re-run 'eraser send' until it reports nothing left to do.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend()
 		},
+		Args: cobra.NoArgs,
 	}
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
 	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
 	cmd.Flags().BoolVar(&manualSend, "manual", false, "Don't send: show each email and let you mark it sent after you send it by hand (implied by options.send_mode: manual)")
+	cmd.Flags().StringVar(&listFlag, "list", "", "Which broker list to use: full (default) or verified (smaller, registry-sourced). Overrides options.broker_list")
+	cmd.Flags().StringSliceVar(&brokerIDs, "broker", nil, "Only send to these broker IDs (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&regions, "region", nil, "Only send to these regions: us, eu, global (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&categories, "category", nil, "Only send to these categories (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&excludedIDs, "exclude", nil, "Skip these broker IDs for this run (comma-separated or repeated)")
+	cmd.Flags().StringVar(&statusFilter, "status", "eligible", "History filter: eligible, never, failed, or all")
 
 	return cmd
+}
+
+func filterBrokersByStatus(brokers []broker.Broker, statuses map[string]history.BrokerStatus, statusFilter string, now time.Time) []broker.Broker {
+	filtered := brokers[:0:0]
+	for _, b := range brokers {
+		status, exists := statuses[b.ID]
+		include := false
+		switch statusFilter {
+		case "all":
+			include = true
+		case "never":
+			include = !exists
+		case "failed":
+			include = exists && status.Status == history.StatusFailed
+		case "eligible":
+			include = !exists || status.Status != history.StatusSent || now.Sub(status.LastSent) >= resendCooldown
+		}
+		if include {
+			filtered = append(filtered, b)
+		}
+	}
+	return filtered
 }
 
 func runSend() error {
@@ -77,12 +112,26 @@ func runSend() error {
 		cfg.Options.DryRun = true
 	}
 
-	brokerDB, err := broker.Load(brokerFile)
+	if listFlag != "" {
+		cfg.Options.BrokerList = listFlag
+	}
+	if cfg.Options.BrokerList != "" && !strings.EqualFold(cfg.Options.BrokerList, "full") && !strings.EqualFold(cfg.Options.BrokerList, "verified") {
+		return fmt.Errorf("invalid broker list %q: must be full or verified", cfg.Options.BrokerList)
+	}
+	brokerDB, err := broker.LoadList(brokerFile, cfg.Options.BrokerFile, cfg.Options.BrokerList)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
+	if unknown := brokerDB.UnknownIDs(brokerIDs); len(unknown) > 0 {
+		return fmt.Errorf("unknown broker ID(s): %s", strings.Join(unknown, ", "))
+	}
 
-	brokers := brokerDB.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories)
+	selectedRegions := cfg.Options.Regions
+	if len(regions) > 0 {
+		selectedRegions = regions
+	}
+	excluded := append(append([]string{}, cfg.Options.ExcludedBrokers...), excludedIDs...)
+	brokers := brokerDB.Select(brokerIDs, selectedRegions, categories, excluded, cfg.Options.ExcludedCategories)
 	if len(brokers) == 0 {
 		fmt.Println("No brokers to process.")
 		return nil
@@ -96,33 +145,24 @@ func runSend() error {
 	}
 	defer func() { _ = store.Close() }()
 
-	// Skip brokers already successfully emailed within the cooldown window,
-	// unless --resend was passed. This is what makes it safe to just re-run
-	// `eraser send` to resume a large backlog without double-emailing
-	// brokers from an earlier run this same campaign.
-	if !resend && !cfg.Options.DryRun {
-		lastSent, err := store.LastSuccessfulSendTimes(activeProfile.ID)
-		if err != nil {
-			return fmt.Errorf("failed to check send history: %w", err)
-		}
-
-		filtered := brokers[:0:0]
-		skipped := 0
-		for _, b := range brokers {
-			if sentAt, ok := lastSent[b.ID]; ok && time.Since(sentAt) < resendCooldown {
-				skipped++
-				continue
-			}
-			filtered = append(filtered, b)
-		}
-		if skipped > 0 {
-			fmt.Printf("⏭️  Skipping %d broker(s) already emailed in the last %d days (use --resend to override)\n", skipped, int(resendCooldown.Hours()/24))
-		}
-		brokers = filtered
+	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
+	if statusFilter == "" {
+		statusFilter = "eligible"
 	}
+	if statusFilter != "eligible" && statusFilter != "never" && statusFilter != "failed" && statusFilter != "all" {
+		return fmt.Errorf("invalid status %q: must be eligible, never, failed, or all", statusFilter)
+	}
+	if resend {
+		statusFilter = "all"
+	}
+	statuses, err := store.GetAllBrokerStatuses(activeProfile.ID)
+	if err != nil {
+		return fmt.Errorf("failed to check send history: %w", err)
+	}
+	brokers = filterBrokersByStatus(brokers, statuses, statusFilter, time.Now())
 
 	if len(brokers) == 0 {
-		fmt.Println("Nothing to send - every broker has been emailed recently. Run with --resend to force, or check back after the cooldown window.")
+		fmt.Printf("Nothing to send - no brokers match status %q.\n", statusFilter)
 		return nil
 	}
 

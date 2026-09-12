@@ -11,8 +11,15 @@ import (
 // TestEmbeddedBrokerDataValid is the CI guard: the broker list shipped in the
 // binary must always pass structural validation.
 func TestEmbeddedBrokerDataValid(t *testing.T) {
-	if _, err := Validate(data.BrokersYAML); err != nil {
+	if _, err := Validate(data.BrokersYAML, MinSaneBrokerCount); err != nil {
 		t.Fatalf("embedded data/brokers.yaml is invalid:\n%v", err)
+	}
+}
+
+// TestEmbeddedVerifiedDataValid guards the smaller registry-sourced list.
+func TestEmbeddedVerifiedDataValid(t *testing.T) {
+	if _, err := Validate(data.BrokersVerifiedYAML, MinVerifiedBrokerCount); err != nil {
+		t.Fatalf("embedded data/brokers-verified.yaml is invalid:\n%v", err)
 	}
 }
 
@@ -33,7 +40,7 @@ func TestValidateCatchesProblems(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := Validate([]byte(tc.yaml))
+			_, err := Validate([]byte(tc.yaml), MinSaneBrokerCount)
 			if err == nil {
 				t.Fatalf("expected an error mentioning %q, got nil", tc.want)
 			}
@@ -44,8 +51,24 @@ func TestValidateCatchesProblems(t *testing.T) {
 	}
 }
 
+func TestSelectFiltersRecipients(t *testing.T) {
+	db := &BrokerDatabase{Brokers: []Broker{
+		{ID: "alpha", Name: "Alpha", Region: "us", Category: "marketing"},
+		{ID: "beta", Name: "Beta", Region: "eu", Category: "people-search"},
+		{ID: "gamma", Name: "Gamma", Region: "global", Category: "marketing"},
+	}}
+
+	got := db.Select([]string{" alpha ", "gamma"}, []string{"global", "us"}, []string{"marketing"}, []string{"gamma"}, nil)
+	if len(got) != 1 || got[0].ID != "alpha" {
+		t.Fatalf("Select returned %+v, want alpha", got)
+	}
+	if unknown := db.UnknownIDs([]string{"alpha", "missing", " MISSING "}); len(unknown) != 1 || unknown[0] != "missing" {
+		t.Fatalf("UnknownIDs returned %v", unknown)
+	}
+}
+
 func TestValidateAcceptsGoodData(t *testing.T) {
-	if _, err := Validate([]byte(fillerYAML(""))); err != nil {
+	if _, err := Validate([]byte(fillerYAML("")), MinSaneBrokerCount); err != nil {
 		t.Fatalf("expected valid, got: %v", err)
 	}
 }

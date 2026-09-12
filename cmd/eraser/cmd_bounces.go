@@ -65,6 +65,12 @@ func runCleanupBounces(remove bool, days int) error {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
+	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	if err != nil {
+		return fmt.Errorf("failed to initialize history: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+
 	fmt.Println("🔍 Scanning inbox for bounced emails...")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
@@ -89,6 +95,8 @@ func runCleanupBounces(remove bool, days int) error {
 
 	fmt.Printf("Found %d bounced email(s):\n\n", len(bounceEmails))
 
+	everSent := everSentBrokerIDs(cfg, store)
+
 	// Track brokers to remove
 	type bouncedBroker struct {
 		email      string
@@ -108,6 +116,10 @@ func runCleanupBounces(remove bool, days int) error {
 		b := brokerDB.FindByEmail(bouncedRecipient)
 		if b == nil {
 			fmt.Printf("⚠️  %s - not found in broker database\n", bouncedRecipient)
+			continue
+		}
+		if !everSent[b.ID] {
+			fmt.Printf("⚠️  %s - looks like a bounce for %s (%s), but there's no record of ever emailing them - skipping as a likely misclassified or spoofed message\n", bouncedRecipient, b.Name, b.ID)
 			continue
 		}
 
@@ -244,6 +256,33 @@ func runMarkBounced(brokerIDs []string, note string) error {
 		fmt.Printf("Updated %d broker(s).\n", updated)
 	}
 	return nil
+}
+
+// everSentBrokerIDs returns the set of broker IDs any configured profile has
+// ever successfully sent to.
+//
+// It exists because FetchBounceEmails classifies a message as a bounce
+// purely from its From/Subject text - neither is authenticated in any way,
+// and every broker's email is public in this open-source repo's
+// data/brokers.yaml. Anyone who can land a message in the monitored inbox
+// (a spoofed From, or any sender that isn't SPF/DKIM checked) can shape a
+// fake NDR naming any broker they choose and have --remove silently clear
+// that broker's real contact. Requiring that we've actually sent this user
+// mail to the broker at some point doesn't authenticate the bounce, but it
+// does shrink the attack down to brokers this user has genuinely contacted,
+// rather than any of the ~700 public entries.
+func everSentBrokerIDs(cfg *config.Config, store *history.Store) map[string]bool {
+	everSent := map[string]bool{}
+	for _, p := range cfg.GetProfiles() {
+		times, err := store.LastSuccessfulSendTimes(p.ID)
+		if err != nil {
+			continue // don't fail the whole scan over one profile's history
+		}
+		for id := range times {
+			everSent[id] = true
+		}
+	}
+	return everSent
 }
 
 // truncateString truncates a string to the specified length

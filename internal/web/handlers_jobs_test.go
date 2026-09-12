@@ -2,10 +2,17 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/email"
+	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -157,5 +164,70 @@ func TestHandleAPIJobStatus_UnknownJobID(t *testing.T) {
 
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusNotFound, rec.Body.String())
+	}
+}
+
+// TestProcessSendJobRespectsRollingDailyLimit is the bug processSendJob's
+// alreadySentToday exists to fix: its own `sent` counter always starts at 0,
+// so a daily_send_limit check against `sent` alone only ever capped a
+// single invocation - resuming a paused job after a restart, or clicking
+// "Send all" again later the same day, could each push past the configured
+// limit by another full batch. With the fix, a profile that has already hit
+// its limit today must pause immediately, before sending anything.
+func TestProcessSendJobRespectsRollingDailyLimit(t *testing.T) {
+	cfg := testConfig("a")
+	cfg.Options.DailySendLimit = 2
+	s := newTestServer(t, cfg)
+
+	store, err := history.NewStore(filepath.Join(t.TempDir(), "history.db"))
+	if err != nil {
+		t.Fatalf("history.NewStore: %v", err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	s.historyStore = store
+
+	// Seed 2 successful sends "already sent today" - exactly the configured
+	// limit - so processSendJob must not send anything more this run.
+	for i := range 2 {
+		rec := &history.Record{
+			ProfileID: "a",
+			BrokerID:  fmt.Sprintf("already-sent-%d", i),
+			Email:     "privacy@example.com",
+			Status:    history.StatusSent,
+			SentAt:    time.Now().Add(-time.Hour),
+		}
+		if err := store.Add(rec); err != nil {
+			t.Fatalf("seed history.Add: %v", err)
+		}
+	}
+
+	toSend := []BrokerWithStatus{
+		{Broker: broker.Broker{ID: "new-broker", Name: "New Broker", Email: "privacy@new-broker.example"}},
+	}
+	job := s.jobManager.Create(len(toSend), "a")
+	// A sender pointed at an address nothing listens on: if processSendJob
+	// tried to actually send, this would fail with a connection error
+	// (recorded as a failed send) rather than the pause this test expects,
+	// so a regression here fails loudly instead of silently passing.
+	sender, err := email.NewSender(config.EmailConfig{
+		Provider: "smtp",
+		From:     "test@example.com",
+		SMTP:     config.SMTPConfig{Host: "127.0.0.1", Port: 1},
+	})
+	if err != nil {
+		t.Fatalf("email.NewSender: %v", err)
+	}
+
+	s.processSendJob(job, toSend, sender)
+
+	if status := job.GetStatus(); status != JobStatusPaused {
+		t.Fatalf("job status = %q, want %q (daily limit already met before this run)", status, JobStatusPaused)
+	}
+	snap := readJob(t, job)
+	if snap.Sent != 0 || snap.Failed != 0 {
+		t.Fatalf("job sent=%d failed=%d, want 0/0 - it should have paused before attempting new-broker", snap.Sent, snap.Failed)
+	}
+	if got, err := store.CountSentSince("a", time.Now().Add(-24*time.Hour)); err != nil || got != 2 {
+		t.Fatalf("CountSentSince after run = %d, %v, want 2 (unchanged - nothing new sent)", got, err)
 	}
 }

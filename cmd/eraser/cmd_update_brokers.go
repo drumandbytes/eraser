@@ -93,7 +93,7 @@ func runUpdateBrokers(url string, check bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to read response: %w", err)
 	}
-	db, err := broker.Validate(body)
+	db, err := broker.Validate(body, broker.MinSaneBrokerCount)
 	if err != nil {
 		return fmt.Errorf("refusing to replace the local copy - %w", err)
 	}

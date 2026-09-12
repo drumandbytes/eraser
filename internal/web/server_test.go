@@ -161,7 +161,7 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
 	}
 
-	got := s.getBrokersWithStatus("default", "", "", "", "", false, false)
+	got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, false)
 
 	if len(got) != 1 || got[0].ID != "beenverified" {
 		t.Errorf("expected only beenverified to survive exclusion, got %+v", got)
@@ -184,7 +184,7 @@ func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
 	}
 
-	got := s.getBrokersWithStatus("default", "", "", "", "", false, true)
+	got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, true)
 
 	if len(got) != 3 {
 		t.Fatalf("expected all 3 brokers with showExcluded=true, got %d: %+v", len(got), got)
@@ -223,5 +223,51 @@ func TestRenderWithCSRFHandlesNilConfig(t *testing.T) {
 	}
 	if strings.Contains(rec.Body.String(), "Template error") {
 		t.Errorf("response contains a template execution error: %s", rec.Body.String())
+	}
+}
+
+func TestHostAllowed(t *testing.T) {
+	cases := []struct {
+		host string
+		want bool
+	}{
+		{"127.0.0.1:8080", true},
+		{"127.0.0.1", true},
+		{"localhost:8080", true},
+		{"LOCALHOST", true},
+		{"[::1]:8080", true},
+		{"::1", true},
+		// The DNS-rebinding case this exists to catch: a hostname that
+		// resolves to 127.0.0.1 but isn't one of the literal loopback names.
+		{"attacker.example:8080", false},
+		{"evil.localhost.attacker.com", false},
+		{"0.0.0.0:8080", false},
+	}
+	for _, tc := range cases {
+		if got := hostAllowed(tc.host); got != tc.want {
+			t.Errorf("hostAllowed(%q) = %v, want %v", tc.host, got, tc.want)
+		}
+	}
+}
+
+func TestRequireLoopbackHostBlocksNonLoopback(t *testing.T) {
+	handler := requireLoopbackHost(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "attacker.example"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("non-loopback Host: got status %d, want 403", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "127.0.0.1:8080"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("loopback Host: got status %d, want 200", rec.Code)
 	}
 }

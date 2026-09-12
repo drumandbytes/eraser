@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/google/uuid"
 )
 
@@ -210,11 +211,19 @@ func (jm *JobManager) cleanupLoop() {
 	}
 }
 
-// Create creates a new job with the given total count, scoped to profileID
+// Create creates a new job with the given total count, scoped to profileID.
+// Does not check for an already-active job for that profile - callers that
+// need "only one job per profile" must use CreateIfNoActive instead, or
+// they reopen the TOCTOU window CreateIfNoActive exists to close.
 func (jm *JobManager) Create(total int, profileID string) *Job {
 	jm.mu.Lock()
 	defer jm.mu.Unlock()
+	return jm.createLocked(total, profileID)
+}
 
+// createLocked is Create's body, factored out so CreateIfNoActive can check
+// for an active job and insert the new one under the same lock acquisition.
+func (jm *JobManager) createLocked(total int, profileID string) *Job {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	job := &Job{
@@ -232,6 +241,25 @@ func (jm *JobManager) Create(total int, profileID string) *Job {
 
 	jm.jobs[job.ID] = job
 	return job
+}
+
+// CreateIfNoActive atomically checks for a running job for profileID and
+// creates a new one only if there isn't one - closing the gap between a
+// caller's own GetActive check and its later Create call, during which a
+// second concurrent request for the same profile could pass the same check
+// and create a second job that ends up double-sending the same brokers.
+// Returns (existingActiveJob, false) if one was already running, or
+// (newJob, true) otherwise.
+func (jm *JobManager) CreateIfNoActive(total int, profileID string) (*Job, bool) {
+	jm.mu.Lock()
+	defer jm.mu.Unlock()
+
+	for _, job := range jm.jobs {
+		if job.GetStatus() == JobStatusRunning && job.ProfileID == profileID {
+			return job, false
+		}
+	}
+	return jm.createLocked(total, profileID), true
 }
 
 // Get returns a job by ID, or nil if not found
@@ -297,11 +325,21 @@ func NewJobPersistence(dataDir string) *JobPersistence {
 	return &JobPersistence{dataDir: dataDir}
 }
 
-func (jp *JobPersistence) filePath() string {
-	return filepath.Join(jp.dataDir, "pending_job.json")
+// filePath returns where a profile's pending-job state lives. GetActive
+// lets two profiles send concurrently, each against its own daily limit and
+// history, so their persisted state can't share one file either - a second
+// profile's Save used to silently overwrite the first's, and a restart
+// would then resume (or just forget) only whichever one wrote last. The
+// default profile keeps the bare pre-multi-profile filename so an in-flight
+// job survives an upgrade across this change.
+func (jp *JobPersistence) filePath(profileID string) string {
+	if profileID == "" || profileID == config.DefaultProfileID {
+		return filepath.Join(jp.dataDir, "pending_job.json")
+	}
+	return filepath.Join(jp.dataDir, "pending_job-"+config.SlugifyID(profileID)+".json")
 }
 
-// Save saves the job state to disk
+// Save saves the job state to disk, keyed by state.ProfileID.
 func (jp *JobPersistence) Save(state *PersistentJobState) error {
 	if err := os.MkdirAll(jp.dataDir, 0700); err != nil {
 		return err
@@ -312,12 +350,13 @@ func (jp *JobPersistence) Save(state *PersistentJobState) error {
 		return err
 	}
 
-	return os.WriteFile(jp.filePath(), data, 0600)
+	return os.WriteFile(jp.filePath(state.ProfileID), data, 0600)
 }
 
-// Load loads a pending job state from disk, returns nil if none exists
-func (jp *JobPersistence) Load() (*PersistentJobState, error) {
-	data, err := os.ReadFile(jp.filePath())
+// Load loads a pending job state for profileID from disk, returns nil if
+// none exists.
+func (jp *JobPersistence) Load(profileID string) (*PersistentJobState, error) {
+	data, err := os.ReadFile(jp.filePath(profileID))
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
@@ -334,8 +373,9 @@ func (jp *JobPersistence) Load() (*PersistentJobState, error) {
 }
 
 // Clear removes the saved job state
-func (jp *JobPersistence) Clear() error {
-	err := os.Remove(jp.filePath())
+// Clear removes profileID's saved job state.
+func (jp *JobPersistence) Clear(profileID string) error {
+	err := os.Remove(jp.filePath(profileID))
 	if os.IsNotExist(err) {
 		return nil
 	}

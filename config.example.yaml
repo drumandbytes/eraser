@@ -74,6 +74,18 @@ options:
   # Override per-run with --ignore-daily-limit or --resend.
   daily_send_limit: 450
 
+  # Which built-in broker list to use (optional):
+  #   full (default) - the full ~750-entry list
+  #   verified       - a smaller list built from public data-broker registries
+  #                    (US state registries + EU credit bureaus); every entry is
+  #                    a confirmed data broker with a working removal contact.
+  # Override per-run with `eraser send --list verified`.
+  # broker_list: verified
+
+  # Use your own broker list instead of a built-in one (optional). Same effect
+  # as the global --brokers flag, which still wins if both are set.
+  # broker_file: /home/you/.eraser/my-brokers.yaml
+
   # Only send to brokers in these regions (optional)
   # regions:
   #   - us

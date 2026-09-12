@@ -54,7 +54,11 @@ func runServe(port int) error {
 		}
 	}
 
-	brokerDB, err := broker.Load(brokerFile)
+	var brokerOpts config.Options
+	if cfg != nil {
+		brokerOpts = cfg.Options
+	}
+	brokerDB, err := broker.LoadList(brokerFile, brokerOpts.BrokerFile, brokerOpts.BrokerList)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}

@@ -40,7 +40,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 	missingEmail := r.URL.Query().Get("missing_email") == "true"
 	showExcluded := r.URL.Query().Get("show_excluded") == "true"
 
-	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, missingEmail, showExcluded)
+	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, nil, nil, missingEmail, showExcluded)
 
 	dailyLimit := effectiveDailyLimit(s.getConfig())
 

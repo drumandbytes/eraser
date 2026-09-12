@@ -46,8 +46,9 @@ eraser/
 │       │                        # (setup wizard), handlers_profile.go (profile switching)
 │       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
 │       └── session.go           # Setup-wizard session store
-├── data/brokers.yaml            # 750+ data broker database (embedded via data/embed.go)
-├── scripts/import-registries/   # helper: grow brokers.yaml from state registry CSVs
+├── data/brokers.yaml            # 700+ data broker database (embedded via data/embed.go)
+├── data/brokers-verified.yaml   # smaller registry-sourced list; `send --list verified`
+├── scripts/import-registries/   # helper: grow either list from state registry CSVs
 ├── docs/                        # Granular reference docs (this directory)
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
@@ -62,6 +63,17 @@ CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `go
 (written by `eraser update-brokers`, a conditional download), then the embedded
 copy - no implicit `./data` scanning. `add-broker`/`cleanup-bounces` write to a
 real path via `resolveBrokerWritePath()`.
+
+`data/brokers-verified.yaml` is a second embedded list: a smaller set built from
+public registries and authoritative privacy notices, where every entry is a
+confirmed data broker with a current first-party privacy email or rights portal.
+The send-family commands (`send`, `draft`, `mark-sent`, `serve`) call
+`broker.LoadList(flag, cfg.Options.BrokerFile, cfg.Options.BrokerList)` instead of
+`broker.Load`, adding two steps ahead of the `~/.eraser` fallback: an
+`options.broker_file` path, then the verified list when `options.broker_list`
+(or `send --list`) is `verified`. Everything else stays on the full list. Grow
+the verified list with `scripts/import-registries` - see
+[auditing.md](auditing.md).
 
 Each broker in `data/brokers.yaml` (top-level key `brokers:`) has:
 - `id`: Unique lowercase hyphenated identifier (e.g., `spokeo`, `been-verified`)

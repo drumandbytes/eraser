@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/drumandbytes/eraser/compare/v0.6.1...v0.7.0) (2026-09-12)
+
+
+### Features
+
+* **brokers:** verified registry-sourced list, custom list config, audit auto-prune ([#55](https://github.com/drumandbytes/eraser/issues/55)) ([460a8b8](https://github.com/drumandbytes/eraser/commit/460a8b8ab9f2b22ec90c1c2cbc3befa32063bfd5))
+
 ## [0.6.1](https://github.com/drumandbytes/eraser/compare/v0.6.0...v0.6.1) (2026-09-12)
 
 

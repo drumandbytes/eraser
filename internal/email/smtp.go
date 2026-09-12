@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/smtp"
 	"strings"
 
@@ -39,16 +40,18 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 	message.WriteString("\r\n")
 	message.WriteString(msg.Body)
 
-	auth := smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
+	var auth smtp.Auth
+	if s.config.UseTLS {
+		auth = smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
+	} else if s.config.Username != "" {
+		return Result{Success: false, Error: fmt.Errorf("SMTP auth requires TLS")}
+	}
 
 	var err error
 	if s.config.UseTLS {
-		err = s.sendWithTLS(addr, auth, msg.From, msg.To, []byte(message.String()))
+		err = s.send(ctx, addr, auth, msg.From, msg.To, []byte(message.String()), true)
 	} else {
-		if s.config.Username != "" {
-			return Result{Success: false, Error: fmt.Errorf("SMTP auth requires TLS")}
-		}
-		err = smtp.SendMail(addr, nil, msg.From, []string{msg.To}, []byte(message.String()))
+		err = s.send(ctx, addr, nil, msg.From, msg.To, []byte(message.String()), false)
 	}
 	if err != nil {
 		return Result{Success: false, Error: sanitizeSMTPError(err)}
@@ -71,24 +74,59 @@ func sanitizeSMTPError(err error) error {
 	return fmt.Errorf("SMTP error: check your configuration")
 }
 
-func (s *SMTPSender) sendWithTLS(addr string, auth smtp.Auth, from, to string, msg []byte) error {
-	conn, err := tls.Dial("tcp", addr, &tls.Config{
-		ServerName: s.config.Host,
-		MinVersion: tls.VersionTLS12,
-	})
+// send dials addr, optionally wraps the connection in TLS, and runs the SMTP
+// transaction - all under ctx. net/smtp has no context support of its own
+// (smtp.SendMail included, which is why this doesn't just call it), so a
+// server that accepts the connection and then never answers would otherwise
+// hang the caller forever: the 30s timeout callers set on ctx, and a
+// cancelled job's Cancel button, would both be silently ignored. Closing the
+// connection when ctx is done is what actually makes those work - net/smtp's
+// blocking Read/Write calls return an error the moment the underlying conn
+// closes.
+func (s *SMTPSender) send(ctx context.Context, addr string, auth smtp.Auth, from, to string, msg []byte, useTLS bool) error {
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", addr)
 	if err != nil {
-		return fmt.Errorf("TLS connection failed: %w", err)
+		return fmt.Errorf("connection failed: %w", err)
 	}
-	defer func() { _ = conn.Close() }()
+	if deadline, ok := ctx.Deadline(); ok {
+		_ = conn.SetDeadline(deadline)
+	}
 
-	client, err := smtp.NewClient(conn, s.config.Host)
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = conn.Close() // unblocks any in-flight Read/Write below
+		case <-done:
+		}
+	}()
+
+	smtpConn := conn
+	if useTLS {
+		tlsConn := tls.Client(conn, &tls.Config{
+			ServerName: s.config.Host,
+			MinVersion: tls.VersionTLS12,
+		})
+		if err := tlsConn.HandshakeContext(ctx); err != nil {
+			_ = conn.Close()
+			return fmt.Errorf("TLS handshake failed: %w", err)
+		}
+		smtpConn = tlsConn
+	}
+
+	client, err := smtp.NewClient(smtpConn, s.config.Host)
 	if err != nil {
+		_ = smtpConn.Close()
 		return fmt.Errorf("SMTP client creation failed: %w", err)
 	}
 	defer func() { _ = client.Close() }()
 
-	if err := client.Auth(auth); err != nil {
-		return fmt.Errorf("authentication failed: %w", err)
+	if auth != nil {
+		if err := client.Auth(auth); err != nil {
+			return fmt.Errorf("authentication failed: %w", err)
+		}
 	}
 	if err := client.Mail(from); err != nil {
 		return fmt.Errorf("sender rejected: %w", err)

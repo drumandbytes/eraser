@@ -17,11 +17,25 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// checkPendingJob checks for an incomplete job from a previous session and resumes it
+// checkPendingJob checks every configured profile for an incomplete job
+// from a previous session and resumes each one it finds. Pending-job state
+// is persisted per profile (JobPersistence.filePath), since GetActive lets
+// two profiles send concurrently - a single shared file could only ever
+// remember one of them.
 func (s *Server) checkPendingJob() {
-	state, err := s.jobPersistence.Load()
+	cfg := s.getConfig()
+	if cfg == nil {
+		return
+	}
+	for _, p := range cfg.GetProfiles() {
+		s.checkPendingJobForProfile(p.ID)
+	}
+}
+
+func (s *Server) checkPendingJobForProfile(profileID string) {
+	state, err := s.jobPersistence.Load(profileID)
 	if err != nil {
-		log.Printf("Warning: failed to load pending job: %v", err)
+		log.Printf("Warning: failed to load pending job for profile %s: %v", profileID, err)
 		return
 	}
 
@@ -29,7 +43,7 @@ func (s *Server) checkPendingJob() {
 		return // No pending job
 	}
 
-	fmt.Printf("\nFound incomplete send job: %d of %d brokers remaining\n", len(state.RemainingBrokers), state.Total)
+	fmt.Printf("\nFound incomplete send job for profile %s: %d of %d brokers remaining\n", profileID, len(state.RemainingBrokers), state.Total)
 	fmt.Printf("Already sent: %d, failed: %d\n", state.Sent, state.Failed)
 
 	// Auto-resume the job
@@ -41,17 +55,27 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 	// Wait a moment for the server to fully start
 	time.Sleep(2 * time.Second)
 
+	// state.ProfileID is empty for a job persisted before multi-profile
+	// support existed - normalizes to the same "default" every other
+	// pre-migration record falls back to. Resolved up front so every Clear
+	// call below (including the early-return ones) targets the same file
+	// Load read from, rather than the bare pre-migration name.
+	profileID := state.ProfileID
+	if profileID == "" {
+		profileID = config.DefaultProfileID
+	}
+
 	cfg := s.getConfig()
 	if cfg == nil || cfg.Email.Provider == "" {
 		log.Printf("Cannot resume job: email not configured")
-		_ = s.jobPersistence.Clear()
+		_ = s.jobPersistence.Clear(profileID)
 		return
 	}
 
 	sender, err := email.NewSender(cfg.Email)
 	if err != nil {
 		log.Printf("Cannot resume job: failed to create email sender: %v", err)
-		_ = s.jobPersistence.Clear()
+		_ = s.jobPersistence.Clear(profileID)
 		return
 	}
 
@@ -69,18 +93,12 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 
 	if len(toSend) == 0 {
 		log.Printf("No valid brokers remaining in pending job")
-		_ = s.jobPersistence.Clear()
+		_ = s.jobPersistence.Clear(profileID)
 		return
 	}
 
 	// Create a new job to continue processing, preserving the profile the
-	// original job was scoped to. state.ProfileID is empty for a job
-	// persisted before multi-profile support existed - normalizes to the
-	// same "default" every other pre-migration record falls back to.
-	profileID := state.ProfileID
-	if profileID == "" {
-		profileID = config.DefaultProfileID
-	}
+	// original job was scoped to.
 	job := s.jobManager.Create(state.Total, profileID)
 	job.Update(state.Sent, state.Failed, "", "")
 
@@ -281,7 +299,20 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job := s.jobManager.Create(len(toSend), activeProfile.ID)
+	// The GetActive check above is a fast-fail for the common case (skip
+	// building toSend and validating the sender for a request that's going
+	// to be rejected anyway); it doesn't itself prevent two concurrent
+	// requests both passing it before either creates a job. CreateIfNoActive
+	// re-checks and inserts under one lock, so only one of them wins here.
+	job, created := s.jobManager.CreateIfNoActive(len(toSend), activeProfile.ID)
+	if !created {
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":  "A send job is already in progress",
+			"job_id": job.ID,
+		})
+		return
+	}
 
 	brokerIDs := make([]string, len(toSend))
 	for i, b := range toSend {
@@ -364,6 +395,22 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 	dailyLimit := effectiveDailyLimit(cfg)
 	job.SetDailyLimit(dailyLimit)
 
+	// alreadySentToday anchors the limit to the actual rolling-24h send
+	// history (the same check the CLI's `send` does via CountSentSince),
+	// not just this invocation's local counter. Without it, `sent` restarts
+	// at 0 every time processSendJob runs - on a server restart resuming a
+	// paused job, or simply on a second "Send all" click later the same
+	// day - so daily_send_limit only ever capped a single run, not the
+	// actual volume sent per day.
+	alreadySentToday := 0
+	if s.historyStore != nil {
+		if n, err := s.historyStore.CountSentSince(activeProfile.ID, time.Now().Add(-24*time.Hour)); err == nil {
+			alreadySentToday = n
+		} else {
+			log.Printf("Warning: failed to check daily send count, limit will only cover this run: %v", err)
+		}
+	}
+
 	// Track remaining brokers for persistence
 	remaining := make([]string, len(toSend))
 	for i, b := range toSend {
@@ -376,10 +423,10 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 		}
 
 		// Check daily limit
-		if sent >= dailyLimit {
+		if alreadySentToday+sent >= dailyLimit {
 			job.Pause(sent, fmt.Sprintf("Daily limit of %d emails reached. Remaining %d brokers will be sent when you restart tomorrow.", dailyLimit, len(remaining)))
 			s.saveJobProgress(job, sent, failed, remaining)
-			log.Printf("Job paused: daily limit of %d reached, %d remaining", dailyLimit, len(remaining))
+			log.Printf("Job paused: daily limit of %d reached (%d already sent today, %d this run), %d remaining", dailyLimit, alreadySentToday, sent, len(remaining))
 			return
 		}
 
@@ -464,7 +511,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 	}
 
 	job.Complete()
-	if err := s.jobPersistence.Clear(); err != nil {
+	if err := s.jobPersistence.Clear(job.ProfileID); err != nil {
 		log.Printf("Warning: failed to clear job state: %v", err)
 	}
 }

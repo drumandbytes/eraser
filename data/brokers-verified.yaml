@@ -1,7 +1,7 @@
 # Verified data-broker list - a smaller, higher-signal alternative to
 # data/brokers.yaml. Every entry is a company we can confidently call a
 # data broker (US: cross-checkable against state registries; EU: credit /
-# data-intelligence bureaus) with a working removal contact.
+# data-intelligence bureaus) with a current first-party removal/privacy channel.
 #
 # Select it with `eraser send --list verified` or options.broker_list: verified.
 # Grow it from registry CSVs - see docs/auditing.md.
@@ -21,7 +21,7 @@ brokers:
       opt_out_url: https://isapps.acxiom.com/optout/optout.aspx
       region: global
       category: marketing
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: advancedbackgroundchecks
       name: AdvancedBackgroundChecks
       email: privacy@advancedbackgroundchecks.com
@@ -29,7 +29,7 @@ brokers:
       opt_out_url: https://www.advancedbackgroundchecks.com/removal
       region: us
       category: background-check
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: alliant-cooperative-data-solutions
       name: Alliant Cooperative Data Solutions LLC
       email: compliance@alliantdata.com
@@ -37,7 +37,7 @@ brokers:
       opt_out_url: https://alliantinsight.com/data-services-and-website-privacy-policy/
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: beenverified
       name: BeenVerified
       email: privacy@beenverified.com
@@ -45,21 +45,21 @@ brokers:
       opt_out_url: https://www.beenverified.com/app/optout/search
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: checkr
       name: Checkr
       email: hello@checkr.com
       website: https://checkr.com
       region: us
       category: background-check
-      notes: privacy@checkr.com bounced; hello@checkr.com is the address Checkr's own privacy policy recommends. Updated 2026-08-20. Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: privacy@checkr.com bounced; hello@checkr.com is the address Checkr's own privacy policy recommends. Updated 2026-08-20. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: corelogic
       name: CoreLogic
       email: privacy@corelogic.com
       website: https://www.corelogic.com
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de
@@ -82,7 +82,7 @@ brokers:
       opt_out_url: https://www.cuebiq.com/privacypolicy/
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: data-axle
       name: Data Axle, Inc.
       email: doba_privacy@donorbase.com
@@ -90,7 +90,7 @@ brokers:
       opt_out_url: https://www.data-axle.com/do-not-sell-my-data/
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: 'Infogroup is the former Data Axle identity and was merged into this entry; infogroup.com redirects here. Cross-checkable against the California CPPA data-broker registry.'
     - id: epsilon
       name: Epsilon Data Management
       email: privacy@epsilon.com
@@ -98,7 +98,7 @@ brokers:
       opt_out_url: https://www.epsilon.com/privacy/consumer-preference-center
       region: global
       category: marketing
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: equifax-marketing
       name: Equifax Marketing Services
       email: UKDPO@equifax.com
@@ -106,7 +106,7 @@ brokers:
       opt_out_url: https://www.equifax.com/personal/education/identity/opt-out-prescreen/
       region: global
       category: marketing
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: experian-marketing
       name: Experian Marketing Services
       email: privacy@experian.com
@@ -114,7 +114,7 @@ brokers:
       opt_out_url: https://www.experian.com/privacy/opting_out
       region: global
       category: marketing
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: 'Includes Tapad, acquired by Experian; the defunct standalone Tapad contact was merged here. Well-known data broker with a published first-party privacy channel.'
     - id: fastpeoplesearch
       name: FastPeopleSearch
       email: privacy@fastpeoplesearch.com
@@ -122,30 +122,30 @@ brokers:
       opt_out_url: https://www.fastpeoplesearch.com/removal
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: foursquare-labs
       name: Foursquare Labs, Inc.
       email: legal@foursquare.com
-      website: https://www.location.foursquare.com/
-      opt_out_url: https://optout.aboutads.info/?c=2&lang=EN
+      website: https://foursquare.com/
+      opt_out_url: https://foursquare.com/data-requests
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: gravy-analytics
-      name: Gravy Analytics, Inc.
-      email: legal@gravyanalytics.com
-      website: https://www.gravyanalytics.com/
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+    - id: unacast
+      name: Unacast, Inc.
+      email: privacy@unacast.com
+      website: https://www.unacast.com/
       opt_out_url: https://www.unacast.com/opt-out
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: 'GA-UC Holdings and Gravy Analytics now route through Unacast; consolidated under the current company and first-party privacy channel. Cross-checkable against the California CPPA data-broker registry.'
     - id: hireright
       name: HireRight
       email: dpo@hireright.com
       website: https://www.hireright.com
       region: global
       category: background-check
-      notes: privacy@hireright.com bounced; dpo@hireright.com is the verified contact per datarequests.org. Updated 2026-08-20. Well-known data broker with a confirmed removal contact.
+      notes: privacy@hireright.com bounced; dpo@hireright.com is the verified contact per datarequests.org. Updated 2026-08-20. Well-known data broker with a published first-party privacy channel.
     - id: idtrue
       name: IDTrue
       email: privacy@idtrue.com
@@ -153,31 +153,23 @@ brokers:
       opt_out_url: https://www.idtrue.com/optout
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: infogroup
-      name: Infogroup Inc.
-      email: privacyteam@infogroup.com
-      website: https://www.infogroup.com/
-      opt_out_url: https://www.data-axle.com/do-not-sell-my-data/
-      region: us
-      category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: instantcheckmate
       name: Instant Checkmate
       email: privacy@instantcheckmate.com
       website: https://www.instantcheckmate.com
-      opt_out_url: https://www.instantcheckmate.com/opt-out
+      opt_out_url: https://www.instantcheckmate.com/privacy-center/
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: intelius
       name: Intelius
       email: privacy@intelius.com
       website: https://www.intelius.com
-      opt_out_url: https://www.intelius.com/opt-out
+      opt_out_url: https://www.intelius.com/privacy-center/
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: 'Intelius LLC also operates ZabaSearch and US Search; their duplicate targets were merged here. Cross-checkable against the California CPPA data-broker registry.'
     - id: kbm-group
       name: KBM GROUP LLC
       email: DoNotMail@wundermanthompson.com
@@ -185,7 +177,7 @@ brokers:
       opt_out_url: https://www.kbmg.com/about-us/ccpa-privacy-policy/#optout
       region: us
       category: marketing
-      notes: john.petrillo@wundermandata.com bounced - Gmail's own delivery failure confirmed wundermandata.com can't be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20. Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: john.petrillo@wundermandata.com bounced - Gmail's own delivery failure confirmed wundermandata.com can't be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: kochava
       name: KOCHAVA Inc.
       email: legal@kochava.com
@@ -193,7 +185,7 @@ brokers:
       opt_out_url: https://www.kochava.com/opt-out-do-not-sell-request-process/
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: lexisnexis
       name: LexisNexis Risk Solutions
       email: privacy.information.mgr@lexisnexis.com
@@ -201,7 +193,7 @@ brokers:
       opt_out_url: https://optout.lexisnexis.com
       region: global
       category: background-check
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: liveramp
       name: LiveRamp
       email: privacy@liveramp.com
@@ -209,7 +201,7 @@ brokers:
       opt_out_url: https://liveramp.com/opt_out/
       region: global
       category: marketing
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: merkle
       name: Merkle Inc.
       email: DPO@dentsu.com
@@ -217,7 +209,7 @@ brokers:
       opt_out_url: https://merkleinc.com/en/privacy-policy/data-product-privacy-notice/control-your-personal-information.html
       region: us
       category: marketing
-      notes: Merkle is a dentsu brand for privacy-request purposes (confirmed via dentsu's privacy request form, which lists Merkle as a selectable brand) - contact routed to the group DPO rather than an individual employee address. The separate dentsu-inc entry was merged into this one. Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Merkle is a dentsu brand for privacy-request purposes (confirmed via dentsu's privacy request form, which lists Merkle as a selectable brand) - contact routed to the group DPO rather than an individual employee address. The separate dentsu-inc entry was merged into this one. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: mylife
       name: MyLife
       email: privacy@mylife.com
@@ -225,7 +217,7 @@ brokers:
       opt_out_url: https://www.mylife.com/ccpa/index.pubview
       region: us
       category: people-search
-      notes: Insightbridge LLC is MyLife.com's registered owner/operator (same entity for privacy-request purposes) - the separate insightbridge entry was merged into this one. Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Insightbridge LLC is MyLife.com's registered owner/operator (same entity for privacy-request purposes) - the separate insightbridge entry was merged into this one. Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: neighborwho
       name: NeighborWho
       email: privacy@neighborwho.com
@@ -233,7 +225,7 @@ brokers:
       opt_out_url: https://neighborwho.com/remove
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: nuwber
       name: Nuwber
       email: support@nuwber.com
@@ -241,7 +233,7 @@ brokers:
       opt_out_url: https://nuwber.com/removal/link
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: peoplefindersdaas
       name: Peoplefindersdaas
       email: privacy@peoplefindersdaas.com
@@ -249,14 +241,15 @@ brokers:
       opt_out_url: https://www.peoplefindersdaas.com/personal-information
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: peoplesmart
       name: PeopleSmart
       email: privacy@peoplesmart.com
       website: https://www.peoplesmart.com
+      opt_out_url: https://www.peoplesmart.com/svc/optout/search/contact_optouts
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: pipl
       name: Pipl
       email: privacy@pipl.com
@@ -264,7 +257,7 @@ brokers:
       opt_out_url: https://pipl.com/personal-information-removal-request
       region: global
       category: people-search
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: regis24
       name: Regis24
       email: datenschutz@regis24.de
@@ -279,7 +272,7 @@ brokers:
       website: https://www.safegraph.com/
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: spokeo
       name: Spokeo
       email: privacy@spokeo.com
@@ -287,22 +280,14 @@ brokers:
       opt_out_url: https://www.spokeo.com/optout
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: sterling
       name: Sterling
       email: privacy@sterlingcheck.com
       website: https://www.sterlingcheck.com
       region: global
       category: background-check
-      notes: Well-known data broker with a confirmed removal contact.
-    - id: tapad
-      name: Tapad (Experian)
-      email: privacy@tapad.com
-      website: https://www.tapad.com
-      opt_out_url: https://www.tapad.com/privacy-policy
-      region: global
-      category: marketing
-      notes: Well-known data broker with a confirmed removal contact.
+      notes: Well-known data broker with a published first-party privacy channel.
     - id: thatsthem
       name: ThatsThem
       email: support@thatsthem.com
@@ -310,30 +295,30 @@ brokers:
       opt_out_url: https://thatsthem.com/optout
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: towerdata
-      name: TowerData
-      email: privacy@towerdata.com
-      website: https://www.towerdata.com
-      opt_out_url: https://www.towerdata.com/company/privacy_policy
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
+    - id: atdata
+      name: AtData, LLC
+      email: privacy@atdata.com
+      website: https://atdata.com/
+      opt_out_url: https://instantdata.atdata.com/optout
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: 'TowerData and FreshAddress merged and rebranded as AtData in 2021; Experian acquired AtData in 2026, but AtData still publishes this first-party privacy channel. Cross-checkable against the California CPPA data-broker registry.'
     - id: transunion-marketing
       name: TransUnion Marketing
       email: privacy@transunion.com
       website: https://www.transunion.com
       region: global
       category: marketing
-      notes: TransUnion acquired Neustar in 2021; TransUnion's own privacy notices state a request via one of the related-entity notices (including Marketing Solutions) covers the others, so the separate neustar entry was merged into this one. Well-known data broker with a confirmed removal contact.
+      notes: TransUnion acquired Neustar in 2021; TransUnion's own privacy notices state a request via one of the related-entity notices (including Marketing Solutions) covers the others, so the separate neustar entry was merged into this one. Well-known data broker with a published first-party privacy channel.
     - id: truthfinder
       name: TruthFinder
       email: privacy@truthfinder.com
       website: https://www.truthfinder.com
-      opt_out_url: https://www.truthfinder.com/opt-out
+      opt_out_url: https://www.truthfinder.com/privacy-center/
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: usphonebook
       name: USPhonebook
       email: info@usphonebook.com
@@ -341,15 +326,7 @@ brokers:
       opt_out_url: https://www.usphonebook.com/opt-out
       region: us
       category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: ussearch
-      name: USSearch
-      email: privacy@ussearch.com
-      website: https://www.ussearch.com
-      opt_out_url: https://suppression.peopleconnect.us/?brand=USSearch
-      region: us
-      category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: versium-analytics
       name: Versium Analytics, Inc
       email: optout@versium.com
@@ -357,15 +334,7 @@ brokers:
       opt_out_url: https://versium.com/ccpa-opt-out
       region: us
       category: marketing
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
-    - id: zabasearch
-      name: ZabaSearch
-      email: privacy@zabasearch.com
-      website: https://www.zabasearch.com
-      opt_out_url: https://www.zabasearch.com/block_records
-      region: us
-      category: people-search
-      notes: Well-known US data broker with a confirmed removal contact; cross-checkable against the California CPPA data-broker registry.
+      notes: Well-known US data broker with a published first-party privacy channel; cross-checkable against the California CPPA data-broker registry.
     - id: smartclip
       name: Smartclip
       email: privacy@smartclip.tv
@@ -420,7 +389,7 @@ brokers:
       email: dpo@adform.com
       website: https://site.adform.com/
       region: eu
-      category: marketing
+      category: requires-id
       notes: 'Added 2026-09-12 from their Privacy Center - Danish ad-tech DSP/DMP. They ask for an ID document scan to verify identity before processing the request.'
     - id: criteo
       name: Criteo SA
@@ -438,11 +407,12 @@ brokers:
       notes: 'Added 2026-09-12 from their privacy notices - Polish programmatic/retargeting ad-tech company.'
     - id: equativ
       name: Equativ (formerly Smart AdServer)
-      email: privacy@smartadserver.com
+      email: dpo@equativ.com
       website: https://equativ.com/
+      opt_out_url: https://privacy.equativ.com/user-rights-hub/
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their privacy documentation - French ad-serving/ad-tech company, rebranded from Smart AdServer.'
+      notes: 'Added 2026-09-12 from their privacy documentation - French ad-serving/ad-tech company, rebranded from Smart AdServer. Updated to Equativ''s current DPO address and User Rights Hub.'
     - id: teads
       name: Teads
       email: privacy@teads.com
@@ -451,3 +421,59 @@ brokers:
       category: marketing
       notes: 'Added 2026-09-12 from their privacy policy - French outstream video ad-tech company (part of Outbrain). dpo@teads.com and dpo-uk@teads.com are alternates.'
 
+    - id: nosis
+      name: 'Nosis Laboratorio de Investigación y Desarrollo S.A.'
+      email: derechoacceso@nosis.com
+      website: https://www.nosis.com/
+      opt_out_url: https://www.nosis.com/es/legales/datos-personales
+      region: global
+      category: requires-id
+      notes: 'Argentine commercial/credit intelligence bureau (reports, scoring, "Big Data Personas" on ~40M Argentinians); Ley 25.326 data-rights channel with a direct address. DNI is required for rights requests.'
+    - id: cial-dun-bradstreet
+      name: CIAL Dun & Bradstreet
+      email: privacy@cialdnb.com
+      website: https://en.cialdnb.com/
+      opt_out_url: https://es.cialdnb.com/politica-de-privacidade
+      region: global
+      category: financial-b2b
+      notes: 'LATAM business-data/credit-intelligence network (43 countries, D&B affiliate in Argentina/Brazil/Mexico/Peru); privacy@cialdnb.com is their named DPO contact. Well-known data broker with a current first-party privacy channel.'
+    - id: circulo-de-credito
+      name: Círculo de Crédito S.A. de C.V. S.I.C.
+      email: ""
+      website: https://www.circulodecredito.com.mx/
+      opt_out_url: https://www.circulodecredito.com.mx/reclamacion
+      region: global
+      category: financial-b2b
+      notes: 'Mexican credit bureau regulated by SHCP/CNBV/Banxico/CONDUSEF. The first-party reclamation portal handles modification or deletion under the LRSIC; statutory retention limits apply.'
+    - id: buro-de-credito-mx
+      name: Buró de Crédito (Trans Union de México S.A. S.I.C.)
+      email: ""
+      website: https://www.burodecredito.com.mx/
+      opt_out_url: https://www.burodecredito.com.mx/personas-f%C3%ADsicas/productos/reporte-de-cr%C3%A9dito-especial/reclamaciones.html
+      region: global
+      category: financial-b2b
+      notes: 'Mexican LRSIC-regulated credit bureau with a current first-party reclamation channel. Official ID and supporting documents are required; statutory retention limits apply. Distinct controller from transunion-marketing.'
+    - id: datacredito-experian-co
+      name: DataCrédito Experian Colombia
+      email: ""
+      website: https://www.datacredito.com.co/
+      opt_out_url: https://apps.datacredito.com.co/raw/ciudadanos/ciudadanos/web/indexReclamos
+      region: global
+      category: financial-b2b
+      notes: 'Colombian credit bureau operated by Experian Colombia S.A.; its first-party Habeas Data page routes claims through this SIC-regulated portal. Distinct Colombian controller from experian-marketing.'
+    - id: centrix-nz
+      name: Centrix Group Limited
+      email: helpdesk@centrix.co.nz
+      website: https://www.centrix.co.nz/
+      opt_out_url: https://www.centrix.co.nz/my-credit-score/suppress-your-credit-file/
+      region: global
+      category: financial-b2b
+      notes: 'New Zealand consumer credit bureau (Credit Reporting Privacy Code 2020) with direct helpdesk and credit-report contacts plus a first-party credit-file suppression form.'
+    - id: metropol-crb
+      name: Metropol Credit Reference Bureau Limited
+      email: data@metropol.co.ke
+      website: https://metropol.co.ke/
+      opt_out_url: https://metropol.co.ke/privacy-policy-statement/
+      region: global
+      category: financial-b2b
+      notes: 'Kenyan credit bureau regulated by the Central Bank of Kenya, with a named Data Privacy Office. Erasure requests route to disputes@metropol.co.ke; CRB Regulations may require retention.'

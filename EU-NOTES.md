@@ -4,12 +4,11 @@ This fork of [eraser](https://github.com/digisamroc/eraser) is set up for an EU/
 
 ## What changed
 
-`data/brokers.yaml` originally shipped 764 brokers, 751 of them US-region. That's kept as-is (US-owned platforms, ad-tech, and breach-sourced people-search sites do end up holding EU residents' data too), plus EU/UK entries with direct opt-out emails have been added as they were found. The exact count moves around over time - EU/UK additions push it up, campaign-response reviews that find duplicate/dead entries push it back down (see auditing.md) - which is why the docs quote a round floor rather than a specific number. The floor moved to "750+" on 2026-09-08 (list at 763), down to "700+" on 2026-09-12 after a full-list legitimacy sweep merged 1 duplicate and removed 20 entries that couldn't be confirmed as real, operating data brokers (list at 741, then 718 after resolving the sweep's remaining flags), then a dedicated EU-coverage pass the same day added 10 researched entries (list at 728) - the sweep and its findings are described in the PR that landed it, not repeated here. Run `grep -c '^    - id:' data/brokers.yaml` for the current true count:
+`data/brokers.yaml` originally shipped 764 brokers, 751 of them US-region. That's kept as-is (US-owned platforms, ad-tech, and breach-sourced people-search sites do end up holding EU residents' data too), plus EU/UK entries with direct opt-out emails have been added as they were found. The exact count moves around over time - EU/UK additions push it up, campaign-response reviews that find duplicate/dead entries push it back down (see auditing.md) - which is why the docs quote a round floor rather than a specific number. The floor moved to "750+" on 2026-09-08 (list at 763), down to "700+" on 2026-09-12 after a full-list legitimacy sweep merged 1 duplicate and removed 20 entries that couldn't be confirmed as real, operating data brokers (list at 741, then 718 after resolving the sweep's remaining flags), then a dedicated EU-coverage pass the same day added 10 researched entries (list at 728). A subsequent global pass consolidated stale aliases, removed one unreachable EU entry, and added authoritative credit/data-intelligence channels in Latin America, New Zealand, and Kenya (list at 723) - the sweep and its findings are described in the PR that landed it, not repeated here. Run `grep -c '^    - id:' data/brokers.yaml` for the current true count:
 
 - `192-com` (192.com, UK)
 - `creditreform-de` (Creditreform, Germany)
 - `regis24` (Regis24, Germany)
-- `seawave-media` (Seawave Media, UK)
 - `adikteev` (Adikteev, ad-tech)
 - `smartclip` (Smartclip, ad-tech)
 - `genius-sports` (Genius Sports Group)
@@ -31,10 +30,11 @@ data broker," and Scope3's privacy policy explicitly states it doesn't sell or s
 data - neither belongs in a data-broker list regardless of region.
 
 16 of the entries above are also in `data/brokers-verified.yaml` - see
-[architecture.md](docs/architecture.md) for the `full`/`verified` list selector. Excluded:
-`seawave-media` (no working email on file), `adikteev` (replied it's a processor, not a
-controller, and can't action the request directly), and `genius-sports` (`region: global`, not
-EU-specific - already reachable regardless of region filter).
+[architecture.md](docs/architecture.md) for the `full`/`verified` list selector. `adikteev` is
+excluded because it replied that it's a processor, not a controller, and can't action the
+request directly. `genius-sports` is `region: global`, so it is already reachable regardless of
+the EU region filter. `seawave-media` was removed after its address hard-bounced and no website
+or request channel could be verified.
 
 ## What's NOT in brokers.yaml
 

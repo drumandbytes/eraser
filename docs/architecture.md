@@ -65,9 +65,9 @@ copy - no implicit `./data` scanning. `add-broker`/`cleanup-bounces` write to a
 real path via `resolveBrokerWritePath()`.
 
 `data/brokers-verified.yaml` is a second embedded list: a smaller set built from
-public data-broker registries (US state registries + EU credit/data-intelligence
-bureaus), where every entry is a confirmed data broker with a working removal
-contact. The send-family commands (`send`, `draft`, `mark-sent`, `serve`) call
+public registries and authoritative privacy notices, where every entry is a
+confirmed data broker with a current first-party privacy email or rights portal.
+The send-family commands (`send`, `draft`, `mark-sent`, `serve`) call
 `broker.LoadList(flag, cfg.Options.BrokerFile, cfg.Options.BrokerList)` instead of
 `broker.Load`, adding two steps ahead of the `~/.eraser` fallback: an
 `options.broker_file` path, then the verified list when `options.broker_list`

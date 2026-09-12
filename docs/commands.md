@@ -11,7 +11,7 @@ go test ./...
 
 # CLI
 ./eraser init                          # Interactive config setup
-./eraser send [--dry-run] [--resend] [--ignore-daily-limit] [--list full|verified]
+./eraser send [--dry-run] [--resend] [--ignore-daily-limit] [--list full|verified] [--broker id] [--region eu] [--category financial-b2b] [--exclude id] [--status eligible|never|failed|all]
 ./eraser list-brokers [--region eu] [--category financial-b2b] [--search kargo] [--missing-email]
 ./eraser status [--limit 50]
 ./eraser draft [<broker-id>...] [--region eu] [--category people-search] [-o ./out]  # render emails to send by hand
@@ -34,7 +34,7 @@ go test ./...
 ./eraser profile add                   # add a second/third named profile
 ```
 
-The broker list is embedded in the binary. For the send-family commands (`send`, `draft`, `mark-sent`, `serve`) the resolution order is: `--brokers <path>` flag → `options.broker_file` → `options.broker_list: verified` (the smaller registry-sourced list, `data/brokers-verified.yaml`) → `~/.eraser/brokers.yaml` (written by `update-brokers`) → the embedded full list. `send --list full|verified` overrides `options.broker_list` per run. Other commands (`audit-brokers`, `guides`, `list-brokers`, reply processing) always act on the full list. `add-broker` and `cleanup-bounces` write to `./data/brokers.yaml` in a source checkout, or `~/.eraser/brokers.yaml` otherwise.
+The broker list is embedded in the binary. For the send-family commands (`send`, `draft`, `mark-sent`, `serve`) the resolution order is: `--brokers <path>` flag → `options.broker_file` → `options.broker_list: verified` (the smaller registry-sourced list, `data/brokers-verified.yaml`) → `~/.eraser/brokers.yaml` (written by `update-brokers`) → the embedded full list. `send --list full|verified` overrides `options.broker_list` per run. `send` also accepts repeatable or comma-separated `--broker`, `--region`, `--category`, and `--exclude` filters. `--status eligible` is the safe default (never sent, failed, or last success at least 25 days old); `never`, `failed`, and `all` are explicit alternatives. Other commands (`audit-brokers`, `guides`, `list-brokers`, reply processing) always act on the full list. `add-broker` and `cleanup-bounces` write to `./data/brokers.yaml` in a source checkout, or `~/.eraser/brokers.yaml` otherwise.
 
 Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a global `--profile <id>` flag. It can be omitted entirely for the common single-profile setup; it's required once more than one profile is configured. See [multi-profile.md](multi-profile.md) for the full model.
 

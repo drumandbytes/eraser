@@ -40,8 +40,9 @@ are already dead. Both output files are gitignored.
 A second, smaller embedded list offered as `eraser send --list verified` /
 `options.broker_list: verified`. The bar for an entry: a company we can
 confidently call a data broker (US: cross-checkable against a state registry;
-EU: a credit-reference / data-intelligence bureau) **and** a working removal
-contact. It's a curated subset, not a mirror of `brokers.yaml` - the point is
+elsewhere: a regulator-recognized credit bureau or established data-intelligence
+company) **and** a current first-party privacy email or rights portal. It's a
+curated subset, not a mirror of `brokers.yaml` - the point is
 signal, not coverage.
 
 Grow it the same way as the main list, but keep only entries you can stand

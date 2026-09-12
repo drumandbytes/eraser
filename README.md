@@ -276,13 +276,19 @@ Or use the interactive command:
 
 The full list is broad and inherited from upstream, so it carries some noise (dead
 addresses, companies that turn out not to be brokers). If you'd rather email only
-companies that are confirmed data brokers with a working removal contact — built
-from public registries (US state registries + EU credit bureaus) — use the
+companies that are confirmed data brokers with a current first-party privacy
+email or rights portal — built from registries and authoritative privacy notices
+across the US, EU, Latin America, New Zealand, and Kenya — use the
 smaller verified list:
 
 ```bash
 ./eraser send --list verified          # one run
+./eraser send --broker spokeo,pipl     # explicit broker IDs
+./eraser send --region eu --category financial-b2b
+./eraser send --exclude broker-id --status never
 ```
+
+`--broker`, `--region`, `--category`, and `--exclude` can be repeated or comma-separated. `--status eligible` is the safe default; use `never`, `failed`, or `all` to select by send history. The web Brokers page exposes the same filters before bulk sending.
 
 Or set it permanently in `config.yaml`:
 

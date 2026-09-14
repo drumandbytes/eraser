@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/drumandbytes/eraser/compare/v0.7.0...v0.7.1) (2026-09-14)
+
+
+### Bug Fixes
+
+* **brokers:** mark Irys and CRISIL as device-id/ID-required, name operator ([#64](https://github.com/drumandbytes/eraser/issues/64)) ([578f199](https://github.com/drumandbytes/eraser/commit/578f19922a056ebf2c2a41bfd5afad355a5ae049))
+
 ## [0.7.0](https://github.com/drumandbytes/eraser/compare/v0.6.1...v0.7.0) (2026-09-12)
 
 

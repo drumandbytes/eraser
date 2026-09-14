@@ -1236,7 +1236,8 @@ brokers:
       website: https://www.greenwich.com/
       opt_out_url: https://www.crisil.com/content/crisilcom/en/home/crisil-privacy-notice/do-not-sell-my-personal-information.html
       region: us
-      category: marketing
+      category: requires-id
+      notes: 'Added 2026-09-14: replied to GDPR erasure request demanding proof of identity (passport, ID card, driving licence, or employee ID) before proceeding - not supplying ID.'
     - id: cross-pixel-media
       name: Cross Pixel Media, Inc.
       email: privacy@crosspixel.net

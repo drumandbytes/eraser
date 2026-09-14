@@ -2405,11 +2405,12 @@ brokers:
       category: marketing
     - id: irys
       name: Irys
-      email: ariyo.noibi@irys.us
+      email: ""
       website: https://www.irys.us/
       opt_out_url: https://www.irys.us/do-not-sell-ccpa
       region: us
-      category: marketing
+      category: device-id-only
+      notes: 'Reply (2026-09-14): only holds mobile AAID tied to geolocation - no name/address/email collected, so not reachable via this tool''s profile-based request.'
     - id: iso-services
       name: ISO Services Inc
       email: bgeorge@verisk.com

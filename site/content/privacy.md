@@ -56,8 +56,9 @@ the database and it's gone.
 
 ## Who is responsible
 
-Eraser is run by Maris Popens, in Estonia. Write to <maris@popens.lv> about
-anything on this page, including any of the rights above.
+Eraser is run by Drumandbytes OÜ (registry code 17599202), Uus-Sadama tn 21-207,
+10120 Tallinn, Estonia. Write to <privacy@drumandbytes.com> about anything on
+this page, including any of the rights above.
 
 You can also raise anything publicly as a
 [GitHub issue](https://github.com/drumandbytes/eraser/issues/new).

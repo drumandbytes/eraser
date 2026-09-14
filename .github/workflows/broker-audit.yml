@@ -39,7 +39,7 @@ jobs:
         run: go run ./cmd/eraser validate-brokers data/brokers.yaml
 
       - name: Open prune PR if anything changed
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: broker-audit/prune
           base: main

@@ -3192,7 +3192,8 @@ brokers:
       email: privacy@nexsales.com
       website: https://www.nexsales.com/
       region: us
-      category: marketing
+      category: requires-id
+      notes: 'Added 2026-09-18: replied to GDPR erasure request asking for a copy of government-issued ID and any prior communications from NexSales before proceeding (cited a 45-day window) - not supplying ID.'
     - id: nextroll
       name: Nextroll, Inc.
       email: ""

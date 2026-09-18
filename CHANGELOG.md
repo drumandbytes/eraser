@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.2](https://github.com/drumandbytes/eraser/compare/v0.7.1...v0.7.2) (2026-09-18)
+
+
+### Bug Fixes
+
+* **brokers:** mark NexSales as requires-id ([#67](https://github.com/drumandbytes/eraser/issues/67)) ([df1b15f](https://github.com/drumandbytes/eraser/commit/df1b15f7cdd90660b5670c7577f5a7efa1e19283))
+
 ## [0.7.1](https://github.com/drumandbytes/eraser/compare/v0.7.0...v0.7.1) (2026-09-14)
 
 

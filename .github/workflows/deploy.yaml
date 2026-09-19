@@ -58,3 +58,10 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy site/public --project-name=eraser --branch=main
+
+  indexnow:
+    needs: deploy
+    uses: drumandbytes/reusable-actions/.github/workflows/indexnow.yml@v1
+    with:
+      host: eraser.drumandbytes.dev
+      key: ${{ vars.INDEXNOW_KEY }}

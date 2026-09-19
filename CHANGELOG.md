@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.3](https://github.com/drumandbytes/eraser/compare/v0.7.2...v0.7.3) (2026-09-19)
+
+
+### Bug Fixes
+
+* **site:** unique broker metadata, jurisdiction-correct legal text, noindex dead ends ([#70](https://github.com/drumandbytes/eraser/issues/70)) ([99fabd2](https://github.com/drumandbytes/eraser/commit/99fabd2fed9000d27de66f0c385a90694b3e2447))
+
 ## [0.7.2](https://github.com/drumandbytes/eraser/compare/v0.7.1...v0.7.2) (2026-09-18)
 
 

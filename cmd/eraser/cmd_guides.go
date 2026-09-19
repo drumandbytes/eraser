@@ -73,8 +73,78 @@ var dateInText = regexp.MustCompile(`\b(\d{4}-\d{2}-\d{2})\b`)
 type guidePage struct {
 	Broker      broker.Broker
 	LastChecked string // extracted from Notes, if any
+	Description string
+	Timeline    string
+	Noindex     bool
 	GDPRBody    string
 	CCPABody    string
+}
+
+// noindexedBrokers are curated pages with nothing actionable for most
+// readers -- kept reachable (the guide still explains why) but excluded from
+// search and the sitemap. A manual, reviewed list: whether a broker reply
+// means "dead end" is an editorial call, not something to infer from Notes
+// text automatically (most bounced-email or "no data found" notes turn out to
+// have a working alternate channel once checked).
+var noindexedBrokers = map[string]bool{
+	"publicrecordsnow": true, // no email or opt-out URL on file; the one we had bounced
+	"regis24":          true, // DE/AT-only credit bureau; explicit no-further-action reply
+}
+
+// timelineText names the deadline a broker's reply is legally bound by.
+// Region-gated: previously this sentence cited both GDPR's one month and the
+// CCPA's 45 days on every page, including e.g. a German-only credit bureau
+// with no CCPA exposure at all.
+func timelineText(region string) string {
+	switch region {
+	case "eu":
+		return "Under GDPR they must respond within one month."
+	case "us":
+		return "Under the CCPA, they must respond within 45 days."
+	default: // "global" - could be either, depending on the requester
+		return "Under GDPR they must respond within one month if you're in the EU/EEA/UK, or within 45 days under the CCPA if you're in the US."
+	}
+}
+
+// guideDescription is the meta description / JSON-LD description for a
+// broker page - previously the site-wide default, verbatim, on every page.
+func guideDescription(b broker.Broker, lastChecked string) string {
+	var method string
+	switch {
+	case b.OptOutURL != "":
+		method = "submit their opt-out form"
+	case b.Email != "":
+		method = "email a data-removal request"
+	default:
+		method = "contact them directly"
+	}
+
+	var window string
+	switch b.Region {
+	case "eu":
+		window = "GDPR gives them one month to respond"
+	case "us":
+		window = "CCPA gives them 45 days to respond"
+	default:
+		window = "GDPR or CCPA applies depending on your location"
+	}
+
+	desc := fmt.Sprintf("How to opt out of %s: %s. %s.", b.Name, method, window)
+	if lastChecked != "" {
+		desc = fmt.Sprintf("%s Checked %s.", desc, lastChecked)
+	}
+	return truncateRunes(desc, 160)
+}
+
+// truncateRunes cuts by rune, not byte, count -- broker names carry accented
+// characters (Buró, Crédito, Investigación), and byte-slicing a UTF-8 string
+// can split one in half.
+func truncateRunes(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return strings.TrimSpace(string(r[:max-1])) + "…"
 }
 
 func runGuides(outDir, format string) error {
@@ -113,6 +183,9 @@ func runGuides(outDir, format string) error {
 		if m := dateInText.FindStringSubmatch(b.Notes); m != nil {
 			page.LastChecked = m[1]
 		}
+		page.Timeline = timelineText(b.Region)
+		page.Description = guideDescription(b, page.LastChecked)
+		page.Noindex = noindexedBrokers[b.ID]
 		if gdpr, err := engine.Render("gdpr", pp, b); err == nil {
 			page.GDPRBody = gdpr.Body
 		}
@@ -207,12 +280,17 @@ var guideFuncs = template.FuncMap{
 
 var guideMD = template.Must(template.New("md").Funcs(guideFuncs).Parse(`---
 title: "How to opt out of {{.Broker.Name}}"
+description: "{{.Description}}"
 broker_id: "{{.Broker.ID}}"
 region: "{{.Broker.Region}}"
 category: "{{.Broker.Category}}"
 {{if .Broker.Email}}email: "{{.Broker.Email}}"{{end}}
 {{if .Broker.OptOutURL}}opt_out_url: "{{.Broker.OptOutURL}}"{{end}}
 {{if .LastChecked}}last_checked: "{{.LastChecked}}"{{end}}
+{{if .Noindex}}robots: "noindex,follow"
+sitemap:
+  disable: true
+{{end}}
 ---
 
 **{{.Broker.Name}}** is a {{title .Broker.Category}} data broker{{if eq .Broker.Region "eu"}} (EU){{else if eq .Broker.Region "us"}} (US){{end}}.
@@ -228,10 +306,14 @@ category: "{{.Broker.Category}}"
 2. Follow their removal / suppression process. You may need to confirm by email or verify your identity.
 {{if .Broker.Email}}3. If the form fails, email **{{.Broker.Email}}** with the request below.{{end}}
 {{else if .Broker.Email}}
-Email **{{.Broker.Email}}** with the request below. Under GDPR they must respond within one month; under the CCPA, within 45 days.
+Email **{{.Broker.Email}}** with the request below. {{.Timeline}}
 {{else}}
 No public opt-out URL or email is on file for this broker yet. Try their website's privacy page, or contact them and cite the laws below.
 {{end}}
+
+{{if or .GDPRBody .CCPABody}}
+<details>
+<summary>Request letter templates</summary>
 
 {{if .GDPRBody}}
 ### GDPR request (EU/EEA residents)
@@ -246,6 +328,9 @@ No public opt-out URL or email is on file for this broker yet. Try their website
 ` + "```" + `
 {{.CCPABody}}
 ` + "```" + `
+{{end}}
+
+</details>
 {{end}}
 
 ---

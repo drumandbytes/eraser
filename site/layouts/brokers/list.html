@@ -9,6 +9,17 @@
   details change. Missing one, or spotted a bad address?
   <a href="https://github.com/drumandbytes/eraser/issues/new">Let us know.</a></p>
 
+  <!-- Plain links to every guide page, server-rendered -- the table below is
+       filled in by directory.js from brokers.json, so a crawler that skips JS
+       (or the first indexing pass) would otherwise see zero broker links here. -->
+  <h2>Opt-out guides</h2>
+  <ul class="guide-links">
+    {{ range .Pages.ByTitle }}
+    <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+    {{ end }}
+  </ul>
+
+  <h2>Full broker list</h2>
   <div class="filters">
     <input type="search" id="q" placeholder="Filter by name…" autocomplete="off">
     <select id="region"><option value="">All regions</option><option>us</option><option>eu</option><option>global</option></select>

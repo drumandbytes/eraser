@@ -17,7 +17,13 @@ jobs:
     # 'pull_request', so gating on the event silently skipped every run. The
     # reusable workflow looks up the PR and enforces the author allow-list,
     # which is the actual safety gate; a run with no open PR just no-ops.
-    if: github.event.workflow_run.conclusion == 'success'
+    # Every other actor's CI completion used to match this too, spinning up
+    # the reusable workflow (and its PR lookup) just to no-op - narrowing the
+    # trigger itself to the two actors that can ever be eligible below.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      (github.event.workflow_run.actor.login == 'dependabot[bot]' ||
+       github.event.workflow_run.actor.login == 'dnb-robot[bot]')
     uses: drumandbytes/reusable-actions/.github/workflows/auto-merge.yml@v1
     with:
       # release-please's own PR; patch bumps auto-merge, minor/major don't.

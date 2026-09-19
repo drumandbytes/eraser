@@ -9,6 +9,7 @@
 <title>{{ if .IsHome }}Eraser — data broker removal{{ else }}{{ .Title }} · Eraser{{ end }}</title>
 <meta name="description" content="{{ with .Description }}{{ . }}{{ else }}{{ .Site.Params.description }}{{ end }}">
 <link rel="canonical" href="{{ .Permalink }}">
+{{ with .Params.robots }}<meta name="robots" content="{{ . }}">{{ end }}
 {{ partial "head-seo.html" . }}
 <link rel="stylesheet" href="{{ "css/site.css" | relURL }}">
 <!-- No analytics beacon here on purpose. Cloudflare injects one at the edge for

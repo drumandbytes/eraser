@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/drumandbytes/eraser/compare/v0.7.3...v0.7.4) (2026-09-20)
+
+
+### Bug Fixes
+
+* stop path-filtering the workflow that hosts the required-check gate ([#72](https://github.com/drumandbytes/eraser/issues/72)) ([1b03bbd](https://github.com/drumandbytes/eraser/commit/1b03bbd11a87bef747d4e6947da8f72e85cd9eb5))
+
 ## [0.7.3](https://github.com/drumandbytes/eraser/compare/v0.7.2...v0.7.3) (2026-09-19)
 
 

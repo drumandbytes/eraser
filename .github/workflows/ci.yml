@@ -2,9 +2,14 @@ name: CI
 
 on:
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
+
+# No paths-ignore here on purpose: this workflow hosts required-checks-passed,
+# which the org's branch ruleset requires by name on every PR. A path filter
+# on the workflow trigger means GitHub never even starts the run for an
+# excluded diff (e.g. a docs-only PR) -- not "skipped", just never reported --
+# so the ruleset's required check sits at "Expected" forever and the PR can't
+# merge. Filter what runs inside jobs (paths-filter, changed-files, etc.) if
+# needed, never the trigger.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

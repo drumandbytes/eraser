@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/drumandbytes/eraser/compare/v0.7.4...v0.8.0) (2026-09-23)
+
+
+### Features
+
+* **profiles:** dedicated email account per profile ([#76](https://github.com/drumandbytes/eraser/issues/76)) ([ddb9418](https://github.com/drumandbytes/eraser/commit/ddb94183c5c2a06aab817a0c538390c8ebea201b))
+
 ## [0.7.4](https://github.com/drumandbytes/eraser/compare/v0.7.3...v0.7.4) (2026-09-20)
 
 

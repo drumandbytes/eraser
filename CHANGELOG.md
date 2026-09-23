@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/drumandbytes/eraser/compare/v0.8.0...v0.8.1) (2026-09-23)
+
+
+### Bug Fixes
+
+* **brokers:** add Perion (device-id-only, no email path) ([#79](https://github.com/drumandbytes/eraser/issues/79)) ([4b50e5f](https://github.com/drumandbytes/eraser/commit/4b50e5fd7767baff3e2131ecc11fcac068444a38))
+
 ## [0.8.0](https://github.com/drumandbytes/eraser/compare/v0.7.4...v0.8.0) (2026-09-23)
 
 

@@ -198,10 +198,14 @@ func runSend() error {
 		return fmt.Errorf("failed to initialize templates: %w", err)
 	}
 
+	// Resolve the SMTP account to send from: activeProfile's own mail.email
+	// override if it has one, otherwise the shared top-level email: block.
+	emailCfg := cfg.EmailForProfile(activeProfile)
+
 	// Initialize email sender (unless dry-run)
 	var sender *email.SMTPSender
 	if !cfg.Options.DryRun {
-		sender, err = email.NewSender(cfg.Email)
+		sender, err = email.NewSender(emailCfg)
 		if err != nil {
 			return fmt.Errorf("failed to initialize email sender: %w", err)
 		}
@@ -251,7 +255,7 @@ func runSend() error {
 		} else {
 			msg := email.Message{
 				To:      b.Email,
-				From:    cfg.Email.From,
+				From:    emailCfg.From,
 				Subject: emailMsg.Subject,
 				Body:    emailMsg.Body,
 			}
@@ -314,7 +318,7 @@ func runSendManual(cfg *config.Config, activeProfile config.NamedProfile, broker
 	if tmplName == "" {
 		tmplName = "gdpr"
 	}
-	from := cfg.Email.From
+	from := cfg.EmailForProfile(activeProfile).From
 	if from == "" {
 		from = activeProfile.Email
 	}

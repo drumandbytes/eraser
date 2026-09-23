@@ -99,4 +99,33 @@
         </div>
     </div>
 </div>
+
+<!-- Dedicated Email Account -->
+<div class="pt-6 border-t border-[var(--border)]">
+    <p class="text-sm text-muted mb-1">Optional: dedicated email account</p>
+    <p class="text-xs text-muted mb-4">By default this profile sends and gets its replies monitored through the account configured in <a href="/settings" class="text-accent hover:underline">Settings</a>. Give it its own Gmail account instead if you'd rather each profile send from (and get replies to) a different address - clear the address below to go back to the shared account.</p>
+
+    <div class="space-y-4">
+        <div>
+            <label for="mail_email" class="label">Gmail Address</label>
+            <input type="email" name="mail_email" id="mail_email"
+                value="{{.MailEmail}}"
+                class="input {{if .Errors.mail_email}}border-error{{end}}"
+                placeholder="jane@gmail.com">
+            {{if .Errors.mail_email}}
+            <p class="mt-1 text-sm text-error">{{.Errors.mail_email}}</p>
+            {{end}}
+        </div>
+        <div>
+            <label for="mail_password" class="label">App Password</label>
+            <input type="password" name="mail_password" id="mail_password"
+                class="input {{if .Errors.mail_password}}border-error{{end}}"
+                placeholder="{{if .MailConfigured}}Leave blank to keep current{{else}}xxxx xxxx xxxx xxxx{{end}}">
+            {{if .Errors.mail_password}}
+            <p class="mt-1 text-sm text-error">{{.Errors.mail_password}}</p>
+            {{end}}
+            <p class="mt-1 text-xs text-muted">A 16-character <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-accent hover:underline">Gmail App Password</a>, not the regular account password</p>
+        </div>
+    </div>
+</div>
 {{end}}

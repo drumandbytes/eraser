@@ -215,7 +215,7 @@ func (s *Server) handleAPIResponseReviewed(w http.ResponseWriter, r *http.Reques
 
 func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
-	if cfg == nil || !cfg.Inbox.Enabled {
+	if cfg == nil || !cfg.InboxForProfile(s.activeProfile(r)).Enabled {
 		_, _ = w.Write([]byte(`
 			<div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
 				<strong>Inbox monitoring not configured.</strong>
@@ -224,8 +224,13 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 		`))
 		return
 	}
+	// Scans only the active profile's own inbox (its mail.inbox override, or
+	// the shared inbox: block if it doesn't have one) - `eraser monitor`
+	// covers every configured inbox in one run for the automated/background
+	// path.
+	inboxCfg := cfg.InboxForProfile(s.activeProfile(r))
 
-	monitor := inbox.NewMonitor(cfg.Inbox, s.brokerDB.Brokers)
+	monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
@@ -252,10 +257,10 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Also check archive folder if configured
-	if cfg.Inbox.ArchiveFolder != "" {
-		archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, cfg.Inbox.ArchiveFolder, 7)
+	if inboxCfg.ArchiveFolder != "" {
+		archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, inboxCfg.ArchiveFolder, 7)
 		if err != nil {
-			log.Printf("Warning: failed to fetch from archive folder %s: %v", cfg.Inbox.ArchiveFolder, err)
+			log.Printf("Warning: failed to fetch from archive folder %s: %v", inboxCfg.ArchiveFolder, err)
 		} else {
 			emails = append(emails, archiveEmails...)
 		}
@@ -337,12 +342,12 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 
 	// Auto-archive processed emails to the Eraser folder
 	var archived int
-	if cfg.Inbox.AutoArchive && len(processedUIDs) > 0 {
-		if err := monitor.ArchiveEmails(processedUIDs, cfg.Inbox.ArchiveFolder); err != nil {
+	if inboxCfg.AutoArchive && len(processedUIDs) > 0 {
+		if err := monitor.ArchiveEmails(processedUIDs, inboxCfg.ArchiveFolder); err != nil {
 			log.Printf("Warning: failed to archive emails: %v", err)
 		} else {
 			archived = len(processedUIDs)
-			log.Printf("Archived %d emails to %s folder", archived, cfg.Inbox.ArchiveFolder)
+			log.Printf("Archived %d emails to %s folder", archived, inboxCfg.ArchiveFolder)
 		}
 	}
 
@@ -367,7 +372,7 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 // handleAPIInboxRescan rescans all emails and reclassifies them with the improved classifier
 func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
-	if cfg == nil || !cfg.Inbox.Enabled {
+	if cfg == nil || !cfg.InboxForProfile(s.activeProfile(r)).Enabled {
 		_, _ = w.Write([]byte(`
 			<div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
 				<strong>Inbox monitoring not configured.</strong>
@@ -376,6 +381,7 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 		`))
 		return
 	}
+	inboxCfg := cfg.InboxForProfile(s.activeProfile(r))
 
 	clearFirst := r.URL.Query().Get("clear") == "true"
 	if clearFirst && s.historyStore != nil {
@@ -389,7 +395,7 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	monitor := inbox.NewMonitor(cfg.Inbox, s.brokerDB.Brokers)
+	monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 180*time.Second)
 	defer cancel()
@@ -416,10 +422,10 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Also check archive folder if configured
-	if cfg.Inbox.ArchiveFolder != "" {
-		archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, cfg.Inbox.ArchiveFolder, 30)
+	if inboxCfg.ArchiveFolder != "" {
+		archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, inboxCfg.ArchiveFolder, 30)
 		if err != nil {
-			log.Printf("Warning: failed to fetch from archive folder %s: %v", cfg.Inbox.ArchiveFolder, err)
+			log.Printf("Warning: failed to fetch from archive folder %s: %v", inboxCfg.ArchiveFolder, err)
 		} else {
 			emails = append(emails, archiveEmails...)
 		}
@@ -583,24 +589,33 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// If there are records missing bodies, try to fetch from IMAP
+	// If there are records missing bodies, try to fetch from IMAP. Responses
+	// span every profile (GetAllBrokerResponses is global), so this fetches
+	// from every distinct configured inbox rather than just the active
+	// profile's, or a reply sent to another profile's own account would
+	// never get its body backfilled.
 	cfg := s.getConfig()
 	var bodiesUpdated int
-	if missingBodies > 0 && cfg != nil && cfg.Inbox.Server != "" && s.brokerDB != nil {
+	var inboxes []config.InboxConfig
+	if cfg != nil {
+		inboxes = cfg.ConfiguredInboxes()
+	}
+	if missingBodies > 0 && len(inboxes) > 0 && s.brokerDB != nil {
 		log.Printf("Found %d records missing email bodies, fetching from IMAP...", missingBodies)
 
-		monitor := inbox.NewMonitor(cfg.Inbox, s.brokerDB.Brokers)
+		// Fetch emails from both INBOX and archive folder, across every
+		// configured inbox.
+		var allEmails []inbox.Email
 
-		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
-		defer cancel()
+		for _, inboxCfg := range inboxes {
+			monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
 
-		if err := monitor.Connect(ctx); err != nil {
-			log.Printf("Warning: failed to connect to IMAP for body fetch: %v", err)
-		} else {
-			defer func() { _ = monitor.Disconnect() }()
-
-			// Fetch emails from both INBOX and archive folder
-			var allEmails []inbox.Email
+			ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+			if err := monitor.Connect(ctx); err != nil {
+				log.Printf("Warning: failed to connect to IMAP for body fetch: %v", err)
+				cancel()
+				continue
+			}
 
 			emails, err := monitor.FetchRecentEmails(ctx, 30) // 30 days
 			if err != nil {
@@ -610,8 +625,8 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// Also fetch from archive folder if configured
-			if cfg.Inbox.ArchiveFolder != "" {
-				archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, cfg.Inbox.ArchiveFolder, 30)
+			if inboxCfg.ArchiveFolder != "" {
+				archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, inboxCfg.ArchiveFolder, 30)
 				if err != nil {
 					log.Printf("Warning: failed to fetch from archive folder: %v", err)
 				} else {
@@ -619,45 +634,48 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			log.Printf("Fetched %d emails from IMAP", len(allEmails))
+			_ = monitor.Disconnect()
+			cancel()
+		}
 
-			// Build lookup map: key = "broker_id|subject" -> email body
-			emailBodies := make(map[string]string)
-			for _, email := range allEmails {
-				if email.BrokerID == "" {
-					continue // Not matched to a broker
-				}
-				key := email.BrokerID + "|" + email.Subject
-				body := email.Body
-				if body == "" {
-					body = email.HTMLBody
-				}
-				if body != "" {
-					emailBodies[key] = body
-				}
+		log.Printf("Fetched %d emails from IMAP", len(allEmails))
+
+		// Build lookup map: key = "broker_id|subject" -> email body
+		emailBodies := make(map[string]string)
+		for _, email := range allEmails {
+			if email.BrokerID == "" {
+				continue // Not matched to a broker
 			}
+			key := email.BrokerID + "|" + email.Subject
+			body := email.Body
+			if body == "" {
+				body = email.HTMLBody
+			}
+			if body != "" {
+				emailBodies[key] = body
+			}
+		}
 
-			for _, resp := range responses {
-				if resp.EmailBody != "" {
-					continue // Already has body
-				}
-				key := resp.BrokerID + "|" + resp.EmailSubject
-				if body, ok := emailBodies[key]; ok {
-					err := s.historyStore.UpdateBrokerResponseBody(resp.ID, resp.ProfileID, body)
-					if err == nil {
-						bodiesUpdated++
-						// Update the in-memory response too for reclassification
-						for i := range responses {
-							if responses[i].ID == resp.ID {
-								responses[i].EmailBody = body
-								break
-							}
+		for _, resp := range responses {
+			if resp.EmailBody != "" {
+				continue // Already has body
+			}
+			key := resp.BrokerID + "|" + resp.EmailSubject
+			if body, ok := emailBodies[key]; ok {
+				err := s.historyStore.UpdateBrokerResponseBody(resp.ID, resp.ProfileID, body)
+				if err == nil {
+					bodiesUpdated++
+					// Update the in-memory response too for reclassification
+					for i := range responses {
+						if responses[i].ID == resp.ID {
+							responses[i].EmailBody = body
+							break
 						}
 					}
 				}
 			}
-			log.Printf("Updated %d records with email bodies from IMAP", bodiesUpdated)
 		}
+		log.Printf("Updated %d records with email bodies from IMAP", bodiesUpdated)
 	}
 
 	// Reclassify each response - use full classifier if body available, otherwise subject-only

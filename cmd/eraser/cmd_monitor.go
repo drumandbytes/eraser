@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/drumandbytes/eraser/internal/broker"
@@ -49,7 +50,8 @@ func runMonitor(days int, once bool, watch bool) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if err := cfg.ValidateInbox(); err != nil {
+	inboxes := cfg.ConfiguredInboxes()
+	if len(inboxes) == 0 {
 		fmt.Println("📧 Inbox monitoring is not configured.")
 		fmt.Println()
 		fmt.Println("To enable inbox monitoring, add the following to your config.yaml:")
@@ -64,7 +66,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		fmt.Println("  1. Enable 2-Step Verification")
 		fmt.Println("  2. Generate an App Password at https://myaccount.google.com/apppasswords")
 		fmt.Println("  3. Enable IMAP in Gmail settings")
-		return err
+		return fmt.Errorf("inbox: monitoring is not enabled in config")
 	}
 
 	brokerDB, err := broker.Load(brokerFile)
@@ -78,8 +80,6 @@ func runMonitor(days int, once bool, watch bool) error {
 	}
 	defer func() { _ = store.Close() }()
 
-	monitor := inbox.NewMonitor(cfg.Inbox, brokerDB.Brokers)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -91,28 +91,81 @@ func runMonitor(days int, once bool, watch bool) error {
 		cancel()
 	}()
 
+	if len(inboxes) > 1 {
+		fmt.Printf("📬 Monitoring %d configured inboxes for broker responses (last %d days)...\n", len(inboxes), days)
+	}
+
+	if !watch {
+		// Plain scans run sequentially - simpler, and avoids concurrent
+		// writes to the shared SQLite history store (see the --watch note
+		// below).
+		for _, inboxCfg := range inboxes {
+			if err := scanInbox(ctx, inboxCfg, brokerDB, store, days, once, watch); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// --watch blocks per inbox (each one waits for new mail indefinitely),
+	// so watching more than one inbox genuinely needs concurrency here.
+	//
+	// ponytail: this writes to the shared history.Store from multiple
+	// goroutines with no WAL/busy_timeout tuning, so concurrent inserts can
+	// occasionally hit SQLITE_BUSY under real contention (rare: broker
+	// replies are infrequent and NewStore's single *sql.DB already
+	// serializes at the connection-pool level, but not guaranteed). Add
+	// PRAGMA busy_timeout in history.NewStore if this shows up in practice.
+	var wg sync.WaitGroup
+	errs := make([]error, len(inboxes))
+	for i, inboxCfg := range inboxes {
+		wg.Add(1)
+		go func(i int, inboxCfg config.InboxConfig) {
+			defer wg.Done()
+			errs[i] = scanInbox(ctx, inboxCfg, brokerDB, store, days, once, watch)
+		}(i, inboxCfg)
+	}
+	wg.Wait()
+
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// scanInbox connects to one IMAP inbox, classifies and stores its broker
+// replies, and (with --watch) keeps watching it for new mail until ctx is
+// cancelled. Every profile that shares this inbox (or falls back to it) is
+// scanned together - a shared inbox carries replies for every such
+// profile's sent requests, so each reply is attributed after the fact via
+// ResolveProfileForBroker rather than to any one of them.
+func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, once bool, watch bool) error {
+	monitor := inbox.NewMonitor(inboxCfg, brokerDB.Brokers)
+
 	if err := monitor.Connect(ctx); err != nil {
-		return fmt.Errorf("failed to connect to inbox: %w", err)
+		return fmt.Errorf("failed to connect to inbox %s: %w", inboxCfg.Email, err)
 	}
 	defer func() { _ = monitor.Disconnect() }()
 
-	fmt.Printf("📬 Monitoring inbox for broker responses (last %d days)...\n", days)
+	fmt.Printf("📬 Monitoring %s for broker responses (last %d days)...\n", inboxCfg.Email, days)
 	fmt.Println()
 
 	emails, err := monitor.FetchBrokerEmails(ctx, days)
 	if err != nil {
-		return fmt.Errorf("failed to fetch emails: %w", err)
+		return fmt.Errorf("failed to fetch emails from %s: %w", inboxCfg.Email, err)
 	}
 
 	if len(emails) == 0 {
-		fmt.Println("No emails from known brokers found.")
+		fmt.Printf("No emails from known brokers found in %s.\n", inboxCfg.Email)
 		if !watch {
 			return nil
 		}
 	}
 
 	// Classify and process each email
-	fmt.Printf("Found %d emails from data brokers\n", len(emails))
+	fmt.Printf("Found %d emails from data brokers in %s\n", len(emails), inboxCfg.Email)
 	fmt.Println()
 
 	var responses []inbox.ClassifiedResponse
@@ -120,10 +173,6 @@ func runMonitor(days int, once bool, watch bool) error {
 		classified := inbox.ClassifyResponse(&email)
 		responses = append(responses, classified)
 
-		// A shared inbox carries replies for every profile's sent requests
-		// together, so attribute this reply to whichever profile actually
-		// emailed this broker rather than to whatever --profile this scan
-		// happens to be running as.
 		profileID, err := store.ResolveProfileForBroker(email.BrokerID)
 		if err != nil {
 			profileID = history.DefaultProfileID
@@ -171,8 +220,8 @@ func runMonitor(days int, once bool, watch bool) error {
 	}
 
 	// Archive processed emails if enabled
-	if cfg.Inbox.AutoArchive && len(emails) > 0 {
-		archiveFolder := cfg.Inbox.ArchiveFolder
+	if inboxCfg.AutoArchive && len(emails) > 0 {
+		archiveFolder := inboxCfg.ArchiveFolder
 
 		// Ensure archive folder exists
 		if err := monitor.EnsureFolderExists(archiveFolder); err != nil {
@@ -199,7 +248,7 @@ func runMonitor(days int, once bool, watch bool) error {
 	summary := inbox.SummarizeResponses(responses)
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("📊 Summary:")
+	fmt.Printf("📊 Summary for %s:\n", inboxCfg.Email)
 	fmt.Printf("  Total responses:     %d\n", summary.Total)
 	fmt.Printf("  ✅ Success:          %d\n", summary.Success)
 	fmt.Printf("  📝 Form required:    %d\n", summary.FormRequired)
@@ -215,7 +264,7 @@ func runMonitor(days int, once bool, watch bool) error {
 
 	if watch {
 		fmt.Println()
-		fmt.Println("👀 Watching for new emails... (Ctrl+C to stop)")
+		fmt.Printf("👀 Watching %s for new emails... (Ctrl+C to stop)\n", inboxCfg.Email)
 
 		err := monitor.WatchForNewEmails(ctx, func(email inbox.Email) {
 			fmt.Println()
@@ -248,7 +297,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		})
 
 		if err != nil && err != context.Canceled {
-			return fmt.Errorf("watch error: %w", err)
+			return fmt.Errorf("watch error on %s: %w", inboxCfg.Email, err)
 		}
 	}
 

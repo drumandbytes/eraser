@@ -149,6 +149,7 @@ func runProfileAdd() error {
 	np.ZipCode = prompt(reader, "ZIP/Postal code (optional): ")
 	np.Country = prompt(reader, "Country (optional): ")
 	np.Phone = prompt(reader, "Phone number (optional): ")
+	np.Mail = promptMailOverride(reader, nil)
 
 	cfg.Profiles = append(existingProfiles, np)
 
@@ -193,6 +194,7 @@ func runProfileEdit(id string) error {
 	updated.ZipCode = promptWithDefault(reader, "ZIP/Postal code (optional)", existing.ZipCode)
 	updated.Country = promptWithDefault(reader, "Country (optional)", existing.Country)
 	updated.Phone = promptWithDefault(reader, "Phone number (optional)", existing.Phone)
+	updated.Mail = promptMailOverride(reader, existing.Mail)
 
 	if len(cfg.Profiles) > 0 {
 		for i, p := range cfg.Profiles {
@@ -261,4 +263,60 @@ func runProfileRemove(id string) error {
 	fmt.Printf("✅ Removed profile %q\n", existing.ID)
 
 	return nil
+}
+
+// promptMailOverride optionally collects a dedicated Gmail account (used for
+// both SMTP sends and IMAP reply monitoring) for one profile, so it doesn't
+// have to share the top-level email:/inbox: blocks with every other profile
+// (see docs/multi-profile.md). Like `eraser init`, this only interactively
+// supports a Gmail app-password account; a different provider, or separate
+// send/monitor accounts, needs a hand-edited `mail:` block under the
+// profile in config.yaml. Returns nil to keep sharing the top-level blocks.
+func promptMailOverride(reader *bufio.Reader, existing *config.MailConfig) *config.MailConfig {
+	fmt.Println()
+	existingAddr := ""
+	if existing != nil && existing.Email != nil {
+		existingAddr = existing.Email.From
+	}
+
+	if existingAddr != "" {
+		answer := strings.ToLower(strings.TrimSpace(prompt(reader, fmt.Sprintf(
+			"This profile has its own email account (%s). Keep it? Enter to keep, 'change' to replace it, or 'remove' to go back to the shared account: ", existingAddr))))
+		switch answer {
+		case "", "keep":
+			return existing
+		case "remove":
+			return nil
+		}
+		// Anything else (including "change") falls through to re-entering it below.
+	} else {
+		answer := strings.ToLower(strings.TrimSpace(prompt(reader,
+			"Use a separate Gmail account for this profile's sends and reply monitoring, instead of the shared one? (y/N): ")))
+		if !strings.HasPrefix(answer, "y") {
+			return nil
+		}
+	}
+
+	addr := prompt(reader, "  Gmail address: ")
+	password := promptSecretWithDefault(reader, "  App password (16-character code)", "")
+
+	return &config.MailConfig{
+		Email: &config.EmailConfig{
+			Provider: "smtp",
+			From:     addr,
+			SMTP: config.SMTPConfig{
+				Host:     "smtp.gmail.com",
+				Port:     465,
+				UseTLS:   true,
+				Username: addr,
+				Password: password,
+			},
+		},
+		Inbox: &config.InboxConfig{
+			Enabled:  true,
+			Provider: "gmail",
+			Email:    addr,
+			Password: password,
+		},
+	}
 }

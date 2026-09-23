@@ -66,13 +66,27 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 	}
 
 	cfg := s.getConfig()
-	if cfg == nil || cfg.Email.Provider == "" {
+	if cfg == nil {
 		log.Printf("Cannot resume job: email not configured")
 		_ = s.jobPersistence.Clear(profileID)
 		return
 	}
 
-	sender, err := email.NewSender(cfg.Email)
+	activeProfile, err := cfg.GetProfile(profileID)
+	if err != nil {
+		if profiles := cfg.GetProfiles(); len(profiles) > 0 {
+			activeProfile = profiles[0]
+		}
+	}
+
+	emailCfg := cfg.EmailForProfile(activeProfile)
+	if emailCfg.Provider == "" {
+		log.Printf("Cannot resume job: email not configured")
+		_ = s.jobPersistence.Clear(profileID)
+		return
+	}
+
+	sender, err := email.NewSender(emailCfg)
 	if err != nil {
 		log.Printf("Cannot resume job: failed to create email sender: %v", err)
 		_ = s.jobPersistence.Clear(profileID)
@@ -125,7 +139,15 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cfg := s.getConfig()
-	if cfg == nil || cfg.Email.Provider == "" {
+	if cfg == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`<span class="text-red-600">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
+		return
+	}
+
+	activeProfile := s.activeProfile(r)
+	emailCfg := cfg.EmailForProfile(activeProfile)
+	if emailCfg.Provider == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`<span class="text-red-600">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
 		return
@@ -142,7 +164,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sender, err := email.NewSender(cfg.Email)
+	sender, err := email.NewSender(emailCfg)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
 		return
@@ -153,7 +175,6 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	// to "generic", which meant every web-UI send cited generic privacy law
 	// language instead of GDPR Article 17 regardless of what init/settings
 	// configured. config.Load guarantees Options.Template is never empty.
-	activeProfile := s.activeProfile(r)
 	tmplName := cfg.Options.Template
 	rendered, err := s.tmplEngine.Render(tmplName, activeProfile.Profile, *br)
 	if err != nil {
@@ -163,7 +184,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 
 	msg := email.Message{
 		To:      br.Email,
-		From:    cfg.Email.From,
+		From:    emailCfg.From,
 		Subject: rendered.Subject,
 		Body:    rendered.Body,
 	}
@@ -236,7 +257,13 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cfg := s.getConfig()
-	if cfg == nil || cfg.Email.Provider == "" {
+	if cfg == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Email not configured. Please configure email settings first."})
+		return
+	}
+	emailCfg := cfg.EmailForProfile(activeProfile)
+	if emailCfg.Provider == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Email not configured. Please configure email settings first."})
 		return
@@ -292,7 +319,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create email sender (validate config before starting job)
-	sender, err := email.NewSender(cfg.Email)
+	sender, err := email.NewSender(emailCfg)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -445,7 +472,7 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 
 		msg := email.Message{
 			To:      b.Email,
-			From:    cfg.Email.From,
+			From:    cfg.EmailForProfile(activeProfile).From,
 			Subject: rendered.Subject,
 			Body:    rendered.Body,
 		}

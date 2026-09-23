@@ -27,6 +27,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         {{if eq .ID $.ActiveProfile.ID}}<span class="badge badge-success">Active</span>{{end}}
+                        {{if .Mail}}<span class="badge badge-neutral" title="Sends/monitors through its own email account instead of the shared one">Own account</span>{{end}}
                         <a href="/settings/profiles/{{.ID}}/edit" class="btn btn-ghost text-sm py-1 px-3">Edit</a>
                         {{if gt (len $.Profiles) 1}}
                         <button type="button" onclick="deleteProfile('{{.ID}}')" class="btn btn-ghost text-sm py-1 px-3 text-error">Delete</button>
@@ -37,7 +38,7 @@
             </div>
 
             {{if le (len .Profiles) 1}}
-            <p class="text-secondary mb-6 text-sm">Add a second profile to send removal requests for another identity (e.g. a spouse or family member) - email/inbox settings stay shared between them.</p>
+            <p class="text-secondary mb-6 text-sm">Add a second profile to send removal requests for another identity (e.g. a spouse or family member). Email/inbox settings are shared by default - each profile can optionally use its own account instead (see its Edit page).</p>
             {{end}}
 
             <a href="/settings/profiles/new" class="btn btn-secondary">

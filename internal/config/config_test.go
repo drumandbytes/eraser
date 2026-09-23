@@ -130,3 +130,169 @@ func TestSlugifyID(t *testing.T) {
 		})
 	}
 }
+
+const multiProfileMailConfig = `
+profiles:
+  - id: default
+    first_name: Test
+    last_name: User
+    email: test@example.com
+  - id: spouse
+    first_name: Spouse
+    last_name: User
+    email: spouse@example.com
+    mail:
+      email:
+        provider: smtp
+        from: spouse@gmail.com
+        smtp:
+          host: smtp.gmail.com
+          port: 465
+          username: spouse@gmail.com
+          password: app-password
+      inbox:
+        enabled: true
+        provider: gmail
+        email: spouse@gmail.com
+        password: app-password
+email:
+  provider: smtp
+  from: test@example.com
+  smtp:
+    host: smtp.example.com
+    port: 465
+inbox:
+  enabled: true
+  provider: gmail
+  email: test@example.com
+  password: shared-password
+`
+
+func TestEmailForProfileFallsBackToSharedBlock(t *testing.T) {
+	cfg, err := Load(writeTestConfig(t, multiProfileMailConfig))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	def, err := cfg.GetProfile("default")
+	if err != nil {
+		t.Fatalf("GetProfile(default): %v", err)
+	}
+	got := cfg.EmailForProfile(def)
+	if got.From != "test@example.com" || got.SMTP.Host != "smtp.example.com" {
+		t.Errorf("EmailForProfile(default) = %+v, want the shared block", got)
+	}
+}
+
+func TestEmailForProfileUsesOverride(t *testing.T) {
+	cfg, err := Load(writeTestConfig(t, multiProfileMailConfig))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	spouse, err := cfg.GetProfile("spouse")
+	if err != nil {
+		t.Fatalf("GetProfile(spouse): %v", err)
+	}
+	got := cfg.EmailForProfile(spouse)
+	if got.From != "spouse@gmail.com" || got.SMTP.Username != "spouse@gmail.com" {
+		t.Errorf("EmailForProfile(spouse) = %+v, want the profile's own override", got)
+	}
+}
+
+func TestInboxForProfileFallsBackAndOverrides(t *testing.T) {
+	cfg, err := Load(writeTestConfig(t, multiProfileMailConfig))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	def, _ := cfg.GetProfile("default")
+	if got := cfg.InboxForProfile(def); got.Email != "test@example.com" {
+		t.Errorf("InboxForProfile(default).Email = %q, want the shared inbox", got.Email)
+	}
+
+	spouse, _ := cfg.GetProfile("spouse")
+	if got := cfg.InboxForProfile(spouse); got.Email != "spouse@gmail.com" {
+		t.Errorf("InboxForProfile(spouse).Email = %q, want the profile's own override", got.Email)
+	}
+}
+
+func TestConfiguredInboxesDedupesSharedInbox(t *testing.T) {
+	// Neither profile overrides inbox - both resolve to the same shared
+	// inbox, which should only be scanned once.
+	body := `
+profiles:
+  - id: default
+    first_name: Test
+    last_name: User
+    email: test@example.com
+  - id: spouse
+    first_name: Spouse
+    last_name: User
+    email: spouse@example.com
+email:
+  provider: smtp
+  from: test@example.com
+  smtp:
+    host: smtp.example.com
+    port: 465
+inbox:
+  enabled: true
+  provider: gmail
+  email: test@example.com
+  password: shared-password
+`
+	cfg, err := Load(writeTestConfig(t, body))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	inboxes := cfg.ConfiguredInboxes()
+	if len(inboxes) != 1 {
+		t.Fatalf("ConfiguredInboxes() returned %d inboxes, want 1 (deduped): %+v", len(inboxes), inboxes)
+	}
+}
+
+func TestConfiguredInboxesIncludesDistinctOverrides(t *testing.T) {
+	cfg, err := Load(writeTestConfig(t, multiProfileMailConfig))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	inboxes := cfg.ConfiguredInboxes()
+	if len(inboxes) != 2 {
+		t.Fatalf("ConfiguredInboxes() returned %d inboxes, want 2 (shared + spouse's override): %+v", len(inboxes), inboxes)
+	}
+}
+
+func TestValidateRejectsInvalidProfileMailOverride(t *testing.T) {
+	body := `
+profiles:
+  - id: default
+    first_name: Test
+    last_name: User
+    email: test@example.com
+  - id: spouse
+    first_name: Spouse
+    last_name: User
+    email: spouse@example.com
+    mail:
+      email:
+        provider: smtp
+        from: spouse@gmail.com
+email:
+  provider: smtp
+  from: test@example.com
+  smtp:
+    host: smtp.example.com
+    port: 465
+`
+	cfg, err := Load(writeTestConfig(t, body))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("Validate() = nil, want an error for the spouse profile's incomplete mail.email override (missing smtp host/port)")
+	}
+}

@@ -63,6 +63,64 @@ type NamedProfile struct {
 	// new ID).
 	ID      string `yaml:"id"`
 	Profile `yaml:",inline"`
+	// Mail overrides the shared top-level email:/inbox: blocks for this
+	// profile only, so each profile can send and monitor replies through a
+	// distinct email account instead of one account shared by every
+	// profile - see EmailForProfile/InboxForProfile. Leave nil (the common
+	// case) to keep using the shared blocks.
+	Mail *MailConfig `yaml:"mail,omitempty"`
+}
+
+// MailConfig holds one profile's email/inbox overrides. Either field may be
+// set independently - e.g. a profile can send from its own SMTP account
+// while still sharing the default inbox for reply monitoring.
+type MailConfig struct {
+	Email *EmailConfig `yaml:"email,omitempty"`
+	Inbox *InboxConfig `yaml:"inbox,omitempty"`
+}
+
+// EmailForProfile returns the SMTP config to use for sends made under this
+// profile: its Mail.Email override if set, otherwise the shared top-level
+// Email block.
+func (c *Config) EmailForProfile(p NamedProfile) EmailConfig {
+	if p.Mail != nil && p.Mail.Email != nil {
+		return *p.Mail.Email
+	}
+	return c.Email
+}
+
+// InboxForProfile returns the IMAP config to use when monitoring replies for
+// this profile: its Mail.Inbox override if set, otherwise the shared
+// top-level Inbox block.
+func (c *Config) InboxForProfile(p NamedProfile) InboxConfig {
+	if p.Mail != nil && p.Mail.Inbox != nil {
+		return *p.Mail.Inbox
+	}
+	return c.Inbox
+}
+
+// ConfiguredInboxes returns every distinct enabled IMAP inbox referenced by
+// the configured profiles - each profile's Mail.Inbox override, or the
+// shared top-level Inbox for any profile without one - deduplicated by
+// email address so profiles sharing one account aren't scanned twice.
+// `monitor` uses this to cover every profile's replies instead of only the
+// shared inbox.
+func (c *Config) ConfiguredInboxes() []InboxConfig {
+	seen := make(map[string]bool)
+	var result []InboxConfig
+	for _, p := range c.GetProfiles() {
+		inbox := c.InboxForProfile(p)
+		if !inbox.Enabled {
+			continue
+		}
+		key := strings.ToLower(inbox.Email)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, inbox)
+	}
+	return result
 }
 
 // DefaultProfileID is the synthetic ID used for the legacy single Profile
@@ -316,19 +374,11 @@ func Load(path string) (*Config, error) {
 		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
-	if cfg.Inbox.Folder == "" {
-		cfg.Inbox.Folder = "INBOX"
-	}
-	if cfg.Inbox.ArchiveFolder == "" {
-		cfg.Inbox.ArchiveFolder = "Eraser"
-	}
-	if cfg.Inbox.Provider == "gmail" && cfg.Inbox.Server == "" {
-		cfg.Inbox.Server = "imap.gmail.com"
-		cfg.Inbox.Port = 993
-	}
-	if cfg.Inbox.Provider == "outlook" && cfg.Inbox.Server == "" {
-		cfg.Inbox.Server = "outlook.office365.com"
-		cfg.Inbox.Port = 993
+	applyInboxDefaults(&cfg.Inbox)
+	for i := range cfg.Profiles {
+		if cfg.Profiles[i].Mail != nil && cfg.Profiles[i].Mail.Inbox != nil {
+			applyInboxDefaults(cfg.Profiles[i].Mail.Inbox)
+		}
 	}
 
 	if cfg.Pipeline.BrowserTimeoutSec == 0 {
@@ -339,6 +389,27 @@ func Load(path string) (*Config, error) {
 	// clobbering an explicit false.
 
 	return &cfg, nil
+}
+
+// applyInboxDefaults fills in Folder/ArchiveFolder and, for the two
+// providers with a well-known IMAP endpoint, Server/Port - shared by the
+// top-level Inbox block and every profile's Mail.Inbox override so both go
+// through the same default-filling rather than two copies drifting apart.
+func applyInboxDefaults(inbox *InboxConfig) {
+	if inbox.Folder == "" {
+		inbox.Folder = "INBOX"
+	}
+	if inbox.ArchiveFolder == "" {
+		inbox.ArchiveFolder = "Eraser"
+	}
+	if inbox.Provider == "gmail" && inbox.Server == "" {
+		inbox.Server = "imap.gmail.com"
+		inbox.Port = 993
+	}
+	if inbox.Provider == "outlook" && inbox.Server == "" {
+		inbox.Server = "outlook.office365.com"
+		inbox.Port = 993
+	}
 }
 
 func Save(path string, cfg *Config) error {
@@ -356,6 +427,7 @@ func Save(path string, cfg *Config) error {
 func (c *Config) Validate() error {
 	profiles := c.GetProfiles()
 	seen := make(map[string]bool, len(profiles))
+	manual := c.IsManualSend()
 	for _, np := range profiles {
 		if np.ID == "" {
 			return fmt.Errorf("profiles: every profile needs an id")
@@ -371,30 +443,37 @@ func (c *Config) Validate() error {
 		if np.Email == "" {
 			return fmt.Errorf("profile %q: email is required", np.ID)
 		}
+		if !manual && np.Mail != nil && np.Mail.Email != nil {
+			if err := validateEmailConfig(*np.Mail.Email); err != nil {
+				return fmt.Errorf("profile %q: mail.email: %w", np.ID, err)
+			}
+		}
 	}
 
 	// Manual mode sends nothing itself, so it needs no email configuration.
-	if c.IsManualSend() {
+	if manual {
 		return nil
 	}
 
-	if c.Email.Provider == "" {
+	return validateEmailConfig(c.Email)
+}
+
+func validateEmailConfig(e EmailConfig) error {
+	if e.Provider == "" {
 		return fmt.Errorf("email: provider is required (or set options.send_mode: manual)")
 	}
-	if c.Email.From == "" {
+	if e.From == "" {
 		return fmt.Errorf("email: from address is required")
 	}
-
-	if c.Email.Provider != "smtp" {
-		return fmt.Errorf("email: unknown provider %q (only smtp is supported)", c.Email.Provider)
+	if e.Provider != "smtp" {
+		return fmt.Errorf("email: unknown provider %q (only smtp is supported)", e.Provider)
 	}
-	if c.Email.SMTP.Host == "" {
+	if e.SMTP.Host == "" {
 		return fmt.Errorf("email.smtp: host is required")
 	}
-	if c.Email.SMTP.Port == 0 {
+	if e.SMTP.Port == 0 {
 		return fmt.Errorf("email.smtp: port is required")
 	}
-
 	return nil
 }
 
@@ -406,19 +485,23 @@ func (c *Config) IsManualSend() bool {
 
 // ValidateInbox validates inbox configuration (only called when inbox monitoring is used)
 func (c *Config) ValidateInbox() error {
-	if !c.Inbox.Enabled {
+	return validateInboxConfig(c.Inbox)
+}
+
+func validateInboxConfig(inbox InboxConfig) error {
+	if !inbox.Enabled {
 		return fmt.Errorf("inbox: monitoring is not enabled in config")
 	}
-	if c.Inbox.Email == "" {
+	if inbox.Email == "" {
 		return fmt.Errorf("inbox: email address is required")
 	}
-	if c.Inbox.Password == "" {
+	if inbox.Password == "" {
 		return fmt.Errorf("inbox: password (app password) is required")
 	}
-	if c.Inbox.Server == "" {
+	if inbox.Server == "" {
 		return fmt.Errorf("inbox: IMAP server is required")
 	}
-	if c.Inbox.Port == 0 {
+	if inbox.Port == 0 {
 		return fmt.Errorf("inbox: IMAP port is required")
 	}
 	return nil

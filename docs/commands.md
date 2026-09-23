@@ -43,8 +43,8 @@ Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a g
 User config is stored at `~/.eraser/config.yaml` (see `config.example.yaml` for the full schema). Key sections:
 
 - `profile` - the legacy/primary profile: name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities
-- `profiles` - optional list of additional named profiles (see [multi-profile.md](multi-profile.md)); when present, this list is authoritative and `profile` above becomes vestigial unless one entry has `id: default`
+- `profiles` - optional list of additional named profiles (see [multi-profile.md](multi-profile.md)); when present, this list is authoritative and `profile` above becomes vestigial unless one entry has `id: default`. Each entry can set its own `mail.email`/`mail.inbox` to send/monitor through a dedicated account instead of the shared blocks below - see [multi-profile.md](multi-profile.md#per-profile-email-accounts)
 - `email` - SMTP only
 - `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `broker_list` (`full`/`verified`), `broker_file` (path to your own list), `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`), `send_mode` (`manual` = Eraser never sends; render with `draft` / `send --manual`, record with `mark-sent`; no `email:` block needed)
-- `inbox` - IMAP settings, for `monitor`/`pipeline`/the web UI's inbox scan (shared across all profiles - see [multi-profile.md](multi-profile.md#shared-inbox))
+- `inbox` - IMAP settings, for `monitor`/`pipeline`/the web UI's inbox scan. Shared by default across every profile that doesn't set its own `mail.inbox` override (see [multi-profile.md](multi-profile.md#shared-inbox)); `monitor` scans every distinct inbox in one run, the web UI's scan/rescan only the active profile's own
 - `pipeline` - browser automation settings for `fill`

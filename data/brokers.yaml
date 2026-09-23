@@ -3455,6 +3455,14 @@ brokers:
       website: https://www.interseller.io/
       region: us
       category: marketing
+    - id: perion
+      name: Perion Network Ltd.
+      email: ""
+      notes: 'privacyperion@perion.com: "our product does not process direct identifiers, such as names, e-mail addresses, phone numbers... we solely process online identifiers and online activities associated with that identifier" - directs requests to the form''s "Identification" tab instead (2026-09-23).'
+      website: https://www.perion.com/
+      opt_out_url: https://wkf.ms/3VkBXyv
+      region: global
+      category: device-id-only
     - id: permutive
       name: Permutive, Inc
       email: privacy@permutive.com

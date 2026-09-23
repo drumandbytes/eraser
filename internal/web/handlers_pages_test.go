@@ -40,3 +40,33 @@ func TestPipelineShowsScanButtonForProfileMailOverride(t *testing.T) {
 		t.Error("expected the Scan Inbox button to render for a profile with its own configured mail.inbox override")
 	}
 }
+
+// TestSettingsShowsOwnAccountBadgeForProfileMailOverride checks the
+// Settings page's profile list flags which profiles have a dedicated mail
+// account, so it's visible without opening each one's Edit page.
+func TestSettingsShowsOwnAccountBadgeForProfileMailOverride(t *testing.T) {
+	s := newTestServer(t, &config.Config{
+		Profiles: []config.NamedProfile{
+			{ID: "default", Profile: config.Profile{FirstName: "Test", LastName: "User", Email: "test@example.com"}},
+			{
+				ID:      "spouse",
+				Profile: config.Profile{FirstName: "Spouse", LastName: "User", Email: "spouse@example.com"},
+				Mail: &config.MailConfig{
+					Email: &config.EmailConfig{Provider: "smtp", From: "spouse@gmail.com"},
+				},
+			},
+		},
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/settings", nil)
+	w := httptest.NewRecorder()
+	s.handleSettings(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if strings.Count(body, "Own account") != 1 {
+		t.Errorf("expected exactly one 'Own account' badge (only spouse has a mail override), got: %s", body)
+	}
+}

@@ -1,10 +1,18 @@
 # Eraser
 
-Take back your privacy. Eraser sends data removal requests to 700+ data brokers on your behalf—for free.
+[![CI](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml/badge.svg)](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/drumandbytes/eraser)](https://github.com/drumandbytes/eraser/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/drumandbytes/eraser)](https://goreportcard.com/report/github.com/drumandbytes/eraser)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities. · [More Drumandbytes projects](https://drumandbytes.com/projects/)
+**Take back your privacy.** Eraser sends data removal requests to 700+ data brokers on your behalf — for free.
+
+![Eraser dashboard](.github/images/dashboard.png)
 
 You know those sites like Spokeo, BeenVerified, and Whitepages that have your home address, phone number, and family members' names? They're called data brokers, and there are hundreds of them. Services like Incogni and DeleteMe charge $100+/year to send opt-out requests to these companies. Eraser does the same thing, but it's open source and completely free.
+
+📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
+🔗 [More Drumandbytes projects](https://drumandbytes.com/projects/)
 
 ### What to Expect
 

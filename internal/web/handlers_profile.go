@@ -82,8 +82,11 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 // handleSettingsProfileNew adds a second (or third, ...) named profile from
 // the web UI - previously only possible via `eraser profile add` on the
 // CLI. Only collects the same core fields the setup wizard's profile step
-// does; email/SMTP configuration is shared across all profiles, so there's
-// nothing else to ask for here.
+// does. A profile's own dedicated email account (NamedProfile.Mail - see
+// docs/multi-profile.md) is a config.yaml-only, CLI-only option for now
+// (like several other advanced Options fields this settings UI doesn't
+// surface either); this form leaves it untouched, so a profile added here
+// keeps sharing the top-level email:/inbox: blocks.
 func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)

@@ -175,7 +175,7 @@ func (s *Server) handlePipeline(w http.ResponseWriter, r *http.Request) {
 		"PipelineStats":   pipelineStats,
 		"Responses":       recentResponses,
 		"PendingTasks":    pendingTasks,
-		"InboxConfigured": cfg.Inbox.Enabled,
+		"InboxConfigured": cfg.InboxForProfile(active).Enabled,
 	}
 
 	s.renderWithCSRF(w, r, "pipeline.html", data)

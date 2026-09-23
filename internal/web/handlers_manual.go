@@ -35,8 +35,10 @@ func (s *Server) handleBrokerEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	from := active.Email
-	if cfg := s.getConfig(); cfg != nil && cfg.Email.From != "" {
-		from = cfg.Email.From
+	if cfg := s.getConfig(); cfg != nil {
+		if emailCfg := cfg.EmailForProfile(active); emailCfg.From != "" {
+			from = emailCfg.From
+		}
 	}
 
 	// mailto: query params - url.Values.Encode uses "+" for spaces, which some

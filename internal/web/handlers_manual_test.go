@@ -126,3 +126,40 @@ func TestBrokerEmailPageAndMarkSent(t *testing.T) {
 		t.Errorf("history after mark-sent = %+v", recs)
 	}
 }
+
+// TestBrokerEmailPageUsesProfileMailOverrideFrom is a regression test for a
+// gap found after the CLI/API send paths were switched to
+// Config.EmailForProfile: this manual-mode "copy the email" page still read
+// the shared cfg.Email.From directly, so a profile with its own mail.email
+// override would show the wrong From address (and mailto: link) here even
+// though `send`/the web send handlers already used its own account.
+func TestBrokerEmailPageUsesProfileMailOverrideFrom(t *testing.T) {
+	s := newTestServer(t, &config.Config{
+		Profiles: []config.NamedProfile{{
+			ID:      "spouse",
+			Profile: config.Profile{FirstName: "Spouse", LastName: "User", Email: "spouse@example.com"},
+			Mail: &config.MailConfig{
+				Email: &config.EmailConfig{Provider: "smtp", From: "spouse@gmail.com"},
+			},
+		}},
+		Options: config.Options{Template: "gdpr", SendMode: "manual"},
+	})
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+	s.brokerDB = &broker.BrokerDatabase{Brokers: []broker.Broker{
+		{ID: "acme", Name: "Acme Data", Email: "privacy@acme.example", Region: "us", Category: "people-search"},
+	}}
+
+	req := httptest.NewRequest(http.MethodGet, "/brokers/acme/email", nil)
+	req = withURLParam(req, "brokerID", "acme")
+	req.AddCookie(&http.Cookie{Name: activeProfileCookie, Value: "spouse"})
+	w := httptest.NewRecorder()
+	s.handleBrokerEmail(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", w.Code, w.Body.String())
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "spouse@gmail.com") {
+		t.Errorf("expected the page to show the profile's own mail override address (spouse@gmail.com), got: %s", body)
+	}
+}

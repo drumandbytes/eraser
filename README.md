@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml/badge.svg)](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/drumandbytes/eraser)](https://github.com/drumandbytes/eraser/releases)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/drumandbytes/eraser)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
 **Take back your privacy.** Eraser sends data removal requests to 700+ data brokers on your behalf — for free.
 

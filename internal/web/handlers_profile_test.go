@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -181,6 +182,150 @@ func TestHandleSettingsProfileEditLegacySingleProfileWritesBackToProfileBlock(t 
 	}
 	if cfg.Profile.FirstName != "New" || cfg.Profile.Email != "new@example.com" {
 		t.Errorf("expected legacy profile: block to be updated, got %+v", cfg.Profile)
+	}
+}
+
+func TestHandleSettingsProfileNewWithMailOverride(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	form := url.Values{
+		"first_name":    {"Anna"},
+		"last_name":     {"Popena"},
+		"email":         {"anna@example.com"},
+		"mail_email":    {"anna@gmail.com"},
+		"mail_password": {"app-password"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/settings/profiles/new", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileNew(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	profiles := s.getConfig().GetProfiles()
+	added := profiles[len(profiles)-1]
+	if added.Mail == nil || added.Mail.Email == nil || added.Mail.Email.From != "anna@gmail.com" {
+		t.Fatalf("expected a mail override for anna@gmail.com, got %+v", added.Mail)
+	}
+	if added.Mail.Inbox == nil || added.Mail.Inbox.Email != "anna@gmail.com" || !added.Mail.Inbox.Enabled {
+		t.Errorf("expected a matching inbox override, got %+v", added.Mail.Inbox)
+	}
+}
+
+func TestHandleSettingsProfileNewMailOverrideRequiresPassword(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	form := url.Values{
+		"first_name": {"Anna"},
+		"last_name":  {"Popena"},
+		"email":      {"anna@example.com"},
+		"mail_email": {"anna@gmail.com"}, // no mail_password
+	}
+	req := httptest.NewRequest(http.MethodPost, "/settings/profiles/new", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileNew(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200 (re-render with errors), got %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "App password is required") {
+		t.Errorf("expected an app-password validation error, got: %s", rec.Body.String())
+	}
+	if len(s.getConfig().GetProfiles()) != 1 {
+		t.Error("no profile should have been added when mail override validation fails")
+	}
+}
+
+// profileWithMailOverride returns a two-profile config ("default" plain,
+// "spouse" with a dedicated Gmail account already configured) for testing
+// the edit form's keep/change/remove behavior against an existing override.
+func profileWithMailOverride() *config.Config {
+	cfg := testConfig("default", "spouse")
+	for i := range cfg.Profiles {
+		if cfg.Profiles[i].ID != "spouse" {
+			continue
+		}
+		cfg.Profiles[i].Mail = &config.MailConfig{
+			Email: &config.EmailConfig{
+				Provider: "smtp",
+				From:     "spouse@gmail.com",
+				SMTP: config.SMTPConfig{
+					Host:     "smtp.gmail.com",
+					Port:     465,
+					UseTLS:   true,
+					Username: "spouse@gmail.com",
+					Password: "original-app-password",
+				},
+			},
+			Inbox: &config.InboxConfig{
+				Enabled:  true,
+				Provider: "gmail",
+				Email:    "spouse@gmail.com",
+				Password: "original-app-password",
+			},
+		}
+	}
+	return cfg
+}
+
+func TestHandleSettingsProfileEditKeepsMailPasswordWhenBlank(t *testing.T) {
+	s := newTestServer(t, profileWithMailOverride())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	form := url.Values{
+		"first_name": {"Test"},
+		"last_name":  {"spouse"},
+		"email":      {"spouse@example.com"},
+		"mail_email": {"spouse@gmail.com"}, // unchanged address, blank password
+	}
+	req := withURLParam(httptest.NewRequest(http.MethodPost, "/settings/profiles/spouse/edit", strings.NewReader(form.Encode())), "profileID", "spouse")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileEdit(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	spouse, err := s.getConfig().GetProfile("spouse")
+	if err != nil {
+		t.Fatalf("GetProfile(spouse): %v", err)
+	}
+	if spouse.Mail == nil || spouse.Mail.Email == nil || spouse.Mail.Email.SMTP.Password != "original-app-password" {
+		t.Errorf("expected the original app password to be kept when the field was left blank, got %+v", spouse.Mail)
+	}
+}
+
+func TestHandleSettingsProfileEditRemovesMailOverrideWhenAddressCleared(t *testing.T) {
+	s := newTestServer(t, profileWithMailOverride())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	form := url.Values{
+		"first_name": {"Test"},
+		"last_name":  {"spouse"},
+		"email":      {"spouse@example.com"},
+		// mail_email intentionally omitted - clearing it removes the override.
+	}
+	req := withURLParam(httptest.NewRequest(http.MethodPost, "/settings/profiles/spouse/edit", strings.NewReader(form.Encode())), "profileID", "spouse")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileEdit(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	spouse, err := s.getConfig().GetProfile("spouse")
+	if err != nil {
+		t.Fatalf("GetProfile(spouse): %v", err)
+	}
+	if spouse.Mail != nil {
+		t.Errorf("expected the mail override to be removed, got %+v", spouse.Mail)
 	}
 }
 

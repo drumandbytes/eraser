@@ -79,24 +79,84 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 	return profile, errors
 }
 
+// buildMailOverrideFromForm parses the optional "dedicated email account"
+// fields shared by the add/edit profile forms (mail_email/mail_password) -
+// the web equivalent of `eraser profile add/edit`'s mail-override prompt
+// (see promptMailOverride in cmd/eraser/cmd_profile.go and
+// docs/multi-profile.md#per-profile-email-accounts). A blank mail_email
+// means "no override" (nil, matching NamedProfile.Mail's zero value) - it's
+// also how an existing override gets removed by clearing the field.
+// existingAddr/existingPassword let a blank mail_password on an edit keep
+// the already-stored app password rather than blanking it out, the same
+// blank-to-keep pattern cmd_profile.go's promptSecretWithDefault uses - but
+// only when the address wasn't also changed, since the old password almost
+// certainly doesn't belong to a newly-typed address.
+func buildMailOverrideFromForm(r *http.Request, existingAddr, existingPassword string) (*config.MailConfig, map[string]string) {
+	addr := strings.TrimSpace(r.FormValue("mail_email"))
+	password := r.FormValue("mail_password")
+
+	errors := make(map[string]string)
+	if addr == "" {
+		if password != "" {
+			errors["mail_email"] = "Enter the Gmail address this app password belongs to"
+		}
+		return nil, errors
+	}
+
+	if err := email.ValidateEmail(addr); err != nil {
+		errors["mail_email"] = "Please enter a valid email address"
+	}
+	if password == "" && existingAddr != "" && strings.EqualFold(addr, existingAddr) {
+		password = existingPassword
+	}
+	if password == "" {
+		errors["mail_password"] = "App password is required"
+	}
+	if len(errors) > 0 {
+		return nil, errors
+	}
+
+	return &config.MailConfig{
+		Email: &config.EmailConfig{
+			Provider: "smtp",
+			From:     addr,
+			SMTP: config.SMTPConfig{
+				Host:     "smtp.gmail.com",
+				Port:     465,
+				UseTLS:   true,
+				Username: addr,
+				Password: password,
+			},
+		},
+		Inbox: &config.InboxConfig{
+			Enabled:  true,
+			Provider: "gmail",
+			Email:    addr,
+			Password: password,
+		},
+	}, errors
+}
+
 // handleSettingsProfileNew adds a second (or third, ...) named profile from
 // the web UI - previously only possible via `eraser profile add` on the
-// CLI. Only collects the same core fields the setup wizard's profile step
-// does. A profile's own dedicated email account (NamedProfile.Mail - see
-// docs/multi-profile.md) is a config.yaml-only, CLI-only option for now
-// (like several other advanced Options fields this settings UI doesn't
-// surface either); this form leaves it untouched, so a profile added here
-// keeps sharing the top-level email:/inbox: blocks.
+// CLI. Collects the same core fields the setup wizard's profile step does,
+// plus the optional dedicated-email-account fields (see
+// buildMailOverrideFromForm).
 func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
 		profile, errors := buildProfileFromForm(r)
+		mail, mailErrors := buildMailOverrideFromForm(r, "", "")
+		for k, v := range mailErrors {
+			errors[k] = v
+		}
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
-				"Title":   "Add Profile",
-				"Profile": profile,
-				"Errors":  errors,
+				"Title":     "Add Profile",
+				"Profile":   profile,
+				"Errors":    errors,
+				"MailEmail": r.FormValue("mail_email"),
 			})
 			return
 		}
@@ -110,13 +170,15 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 		newCfg.Profiles = append(append([]config.NamedProfile{}, existing...), config.NamedProfile{
 			ID:      config.SlugifyProfileID(profile.FirstName, profile.LastName, existing),
 			Profile: profile,
+			Mail:    mail,
 		})
 
 		if err := config.Save(s.configPath, &newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
-				"Title":   "Add Profile",
-				"Profile": profile,
-				"Errors":  map[string]string{"_": "Failed to save configuration: " + err.Error()},
+				"Title":     "Add Profile",
+				"Profile":   profile,
+				"Errors":    map[string]string{"_": "Failed to save configuration: " + err.Error()},
+				"MailEmail": r.FormValue("mail_email"),
 			})
 			return
 		}
@@ -127,9 +189,10 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 	}
 
 	s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
-		"Title":   "Add Profile",
-		"Profile": config.Profile{},
-		"Errors":  map[string]string{},
+		"Title":     "Add Profile",
+		"Profile":   config.Profile{},
+		"Errors":    map[string]string{},
+		"MailEmail": "",
 	})
 }
 
@@ -152,16 +215,28 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	existingMailAddr, existingMailPassword := "", ""
+	if existing.Mail != nil && existing.Mail.Email != nil {
+		existingMailAddr = existing.Mail.Email.From
+		existingMailPassword = existing.Mail.Email.SMTP.Password
+	}
+
 	if r.Method == "POST" {
 		limitFormBody(w, r)
 		profile, errors := buildProfileFromForm(r)
+		mail, mailErrors := buildMailOverrideFromForm(r, existingMailAddr, existingMailPassword)
+		for k, v := range mailErrors {
+			errors[k] = v
+		}
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
-				"Title":     "Edit Profile",
-				"ProfileID": id,
-				"Profile":   profile,
-				"Errors":    errors,
+				"Title":          "Edit Profile",
+				"ProfileID":      id,
+				"Profile":        profile,
+				"Errors":         errors,
+				"MailEmail":      r.FormValue("mail_email"),
+				"MailConfigured": existingMailAddr != "",
 			})
 			return
 		}
@@ -174,6 +249,7 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 			for i, p := range updated {
 				if strings.EqualFold(p.ID, existing.ID) {
 					updated[i].Profile = profile
+					updated[i].Mail = mail
 					found = true
 					break
 				}
@@ -186,16 +262,22 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 		} else {
 			// Legacy single-profile mode (no profiles: list yet) - write
 			// back to the top-level profile: block rather than promoting to
-			// a profiles: list just because it was edited.
+			// a profiles: list just because it was edited. A dedicated mail
+			// account is a NamedProfile-only concept (it exists to tell
+			// several profiles' accounts apart), so it's a no-op here - the
+			// lone profile already has the top-level email:/inbox: blocks
+			// to itself.
 			newCfg.Profile = profile
 		}
 
 		if err := config.Save(s.configPath, &newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
-				"Title":     "Edit Profile",
-				"ProfileID": id,
-				"Profile":   profile,
-				"Errors":    map[string]string{"_": "Failed to save configuration: " + err.Error()},
+				"Title":          "Edit Profile",
+				"ProfileID":      id,
+				"Profile":        profile,
+				"Errors":         map[string]string{"_": "Failed to save configuration: " + err.Error()},
+				"MailEmail":      r.FormValue("mail_email"),
+				"MailConfigured": existingMailAddr != "",
 			})
 			return
 		}
@@ -206,10 +288,12 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 	}
 
 	s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
-		"Title":     "Edit Profile",
-		"ProfileID": existing.ID,
-		"Profile":   existing.Profile,
-		"Errors":    map[string]string{},
+		"Title":          "Edit Profile",
+		"ProfileID":      existing.ID,
+		"Profile":        existing.Profile,
+		"Errors":         map[string]string{},
+		"MailEmail":      existingMailAddr,
+		"MailConfigured": existingMailAddr != "",
 	})
 }
 

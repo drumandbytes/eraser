@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: true  # this workflow pushes with the checkout's credentials
 
       - uses: actions/setup-go@v7
         with:
@@ -39,7 +41,7 @@ jobs:
         run: go run ./cmd/eraser validate-brokers data/brokers.yaml
 
       - name: Open prune PR if anything changed
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           branch: broker-audit/prune
           base: main

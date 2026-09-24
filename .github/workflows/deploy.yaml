@@ -35,12 +35,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
+      # No module cache in a deploy job: a cache written by another ref could
+      # end up in what gets published. The Go step here only generates site
+      # content, so the cold fetch costs little.
       - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
+          cache: false
 
-      - uses: peaceiris/actions-hugo@v3
+      - uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
         with:
           hugo-version: "0.165.0"
 
@@ -53,7 +59,7 @@ jobs:
       - name: Build
         run: hugo --minify --source site
 
-      - uses: cloudflare/wrangler-action@v4
+      - uses: cloudflare/wrangler-action@25853364521e0d392ece9b0c1e97a4b37b638087 # v4.1.2
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

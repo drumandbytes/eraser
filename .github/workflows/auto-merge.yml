@@ -34,4 +34,8 @@ jobs:
       # This merges with the dnb-robot app token instead, so the merge properly
       # cascades into another Release Please run that actually finishes the release.
       use-app-token-for-merge: true
-    secrets: inherit
+    # Only the two secrets the called workflow uses, rather than `inherit`
+    # handing it every repo and org secret.
+    secrets:
+      DNB_ROBOT_CLIENT_ID: ${{ secrets.DNB_ROBOT_CLIENT_ID }}
+      AUTOMATION_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}

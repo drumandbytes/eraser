@@ -19,7 +19,6 @@ jobs:
   ci:
     uses: drumandbytes/reusable-actions/.github/workflows/go-ci.yml@v1
     with:
-      go-version: "1.26"
       test-race: true
 
   # Single stable name for the org's required-status-check ruleset to point

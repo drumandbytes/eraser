@@ -70,7 +70,7 @@ homebrew_casks:
       name: homebrew-tap
       branch: main
     directory: Casks
-    homepage: "https://eraser.drumandbytes.dev"
+    homepage: "https://eraser.drumandbytes.dev/"
     description: "Send data removal requests to data brokers"
     license: "MIT"
     commit_author:

@@ -3,19 +3,13 @@ name: CI
 on:
   pull_request:
 
-# No paths-ignore here on purpose: this workflow hosts required-checks-passed,
-# which the org's branch ruleset requires by name on every PR. A path filter
-# on the workflow trigger means GitHub never even starts the run for an
-# excluded diff (e.g. a docs-only PR) -- not "skipped", just never reported --
-# so the ruleset's required check sits at "Expected" forever and the PR can't
-# merge. Filter what runs inside jobs (paths-filter, changed-files, etc.) if
-# needed, never the trigger.
+# No paths-ignore: a filtered-out run never reports required-checks-passed,
+# which the ruleset requires, so the PR could never merge.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Read-only token; no job here writes to the repo or reads other scopes.
 permissions:
   contents: read
 
@@ -25,13 +19,10 @@ jobs:
     with:
       test-race: true
 
-  # Audit of this repo's own workflows; accepted findings are in
-  # .github/zizmor.yml.
   zizmor:
     uses: drumandbytes/reusable-actions/.github/workflows/zizmor.yml@v1
 
-  # Single stable name for the org's required-status-check ruleset to point
-  # at, regardless of how the real jobs above are split or renamed.
+  # The one name the ruleset requires, however the jobs above change.
   required-checks-passed:
     name: Required checks passed
     runs-on: ubuntu-latest

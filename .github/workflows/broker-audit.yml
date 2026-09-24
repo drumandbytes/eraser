@@ -1,10 +1,7 @@
 name: Broker audit
 
-# Weekly liveness check of the broker list: every entry's email domain
-# (MX/host lookup) and website (HTTP HEAD). `audit-brokers --fix` clears the
-# email of any broker whose mail domain is dead (keeping the row + a dated
-# note); if that changed data/brokers.yaml, a PR is opened for review. A quiet
-# week opens no PR. Also runnable on demand.
+# Weekly check of each broker's mail domain and website. `--fix` clears
+# dead emails; a PR opens only if data/brokers.yaml changed.
 
 on:
   schedule:

@@ -1,14 +1,7 @@
 name: Deploy to Cloudflare Pages
 
-# Replaces the GitHub Pages deploy. The move is for analytics: Cloudflare Web
-# Analytics only records when the beacon is injected at the edge, which needs
-# proxied traffic, and the GitHub Pages hostname had to stay grey-clouded so
-# GitHub could reach the origin to renew its certificate.
-#
-# Not using reusable-actions' deploy-cloudflare-pages.yml: that one installs
-# Node and runs an npm build, while this site needs Go (to generate the guides)
-# and Hugo. Only the deploy step is shared in spirit -- same wrangler action,
-# same org secrets.
+# Cloudflare Pages, not GitHub Pages: Web Analytics needs proxied traffic.
+# Not the reusable deploy, since this site builds with Go and Hugo.
 
 on:
   push:
@@ -38,9 +31,7 @@ jobs:
         with:
           persist-credentials: false
 
-      # No module cache in a deploy job: a cache written by another ref could
-      # end up in what gets published. The Go step here only generates site
-      # content, so the cold fetch costs little.
+      # No module cache: another ref's cache could end up in the published site.
       - uses: actions/setup-go@v7
         with:
           go-version: "1.26"

@@ -1,0 +1,18 @@
+# zizmor configuration, read by the zizmor job in ci.yml. Anything accepted
+# here is accepted on purpose -- each entry says why.
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # GitHub's own and the org's actions stay on tags (Dependabot moves
+        # them); third-party actions are SHA-pinned.
+        "actions/*": ref-pin
+        "drumandbytes/*": ref-pin
+        "*": hash-pin
+
+  dangerous-triggers:
+    ignore:
+      # workflow_run so Dependabot PRs get a token that can merge; never
+      # checks out PR code.
+      - auto-merge.yml

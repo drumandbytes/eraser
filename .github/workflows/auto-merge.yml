@@ -7,19 +7,12 @@ on:
 
 jobs:
   auto-merge:
-    # The reusable workflow cannot grant itself more than the caller has, and
-    # the org default for GITHUB_TOKEN is read-only — so declare it here.
+    # The org default token is read-only.
     permissions:
       contents: write
       pull-requests: write
-    # Only the conclusion is checked, not workflow_run.event: a same-repo
-    # branch (which is how Dependabot pushes) triggers CI as 'push', not
-    # 'pull_request', so gating on the event silently skipped every run. The
-    # reusable workflow looks up the PR and enforces the author allow-list,
-    # which is the actual safety gate; a run with no open PR just no-ops.
-    # Every other actor's CI completion used to match this too, spinning up
-    # the reusable workflow (and its PR lookup) just to no-op - narrowing the
-    # trigger itself to the two actors that can ever be eligible below.
+    # Not gated on workflow_run.event: Dependabot branches run CI as 'push'.
+    # The reusable workflow's author check is the real gate.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       (github.event.workflow_run.actor.login == 'dependabot[bot]' ||
@@ -28,14 +21,9 @@ jobs:
     with:
       # release-please's own PR; patch bumps auto-merge, minor/major don't.
       patch-only-authors: '["dnb-robot[bot]"]'
-      # GITHUB_TOKEN-authored merges don't trigger further workflow runs, which
-      # left a release-please release stuck (manifest/changelog bumped, no
-      # tag/release/images ever built) — see drumandbytes/reusable-actions#16.
-      # This merges with the dnb-robot app token instead, so the merge properly
-      # cascades into another Release Please run that actually finishes the release.
+      # A GITHUB_TOKEN merge triggers no workflows, so the release would never
+      # be cut (reusable-actions#16).
       use-app-token-for-merge: true
-    # Only the two secrets the called workflow uses, rather than `inherit`
-    # handing it every repo and org secret.
     secrets:
       DNB_ROBOT_CLIENT_ID: ${{ secrets.DNB_ROBOT_CLIENT_ID }}
       AUTOMATION_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}

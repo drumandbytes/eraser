@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/drumandbytes/eraser/compare/v0.8.1...v0.8.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* **release:** add trailing slash to cask homepage ([#82](https://github.com/drumandbytes/eraser/issues/82)) ([c41d938](https://github.com/drumandbytes/eraser/commit/c41d9388e0d5fe529fc84c06dee083d36e1f7fcd))
+
 ## [0.8.1](https://github.com/drumandbytes/eraser/compare/v0.8.0...v0.8.1) (2026-09-23)
 
 

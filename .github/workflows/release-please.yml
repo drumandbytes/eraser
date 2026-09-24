@@ -11,4 +11,8 @@ permissions:
 jobs:
   release-please:
     uses: drumandbytes/reusable-actions/.github/workflows/release-please.yml@v1
-    secrets: inherit
+    # Only the two secrets the called workflow uses, rather than `inherit`
+    # handing it every repo and org secret.
+    secrets:
+      DNB_ROBOT_CLIENT_ID: ${{ secrets.DNB_ROBOT_CLIENT_ID }}
+      AUTOMATION_APP_PRIVATE_KEY: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}

@@ -50,6 +50,14 @@ jobs:
       - name: Build
         run: hugo --minify --source site
 
+      # indexnow reads the sitemap from here; Cloudflare can refuse runner IPs.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sitemap
+          path: site/public/**/sitemap*.xml
+          if-no-files-found: error
+          retention-days: 1
+
       - uses: cloudflare/wrangler-action@25853364521e0d392ece9b0c1e97a4b37b638087 # v4.1.2
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -62,3 +70,4 @@ jobs:
     with:
       host: eraser.drumandbytes.dev
       key: ${{ vars.INDEXNOW_KEY }}
+      sitemap-artifact: sitemap

@@ -4216,6 +4216,7 @@ brokers:
       opt_out_url: https://privacy.sovrn.com/opt-out
       region: us
       category: marketing
+      notes: 'Reply 2026-09-26: Sovrn processes device/browser identifiers rather than data that directly identifies individuals; confirmed deletion of what it could match "against verifiable information" as of 2026-08-31, with backup/archive retention caveats. An emailed request can''t cover cookie/device IDs - use the opt_out_url from each browser/device too.'
     - id: specialists-marketing-services
       name: Specialists Marketing Services, Inc.
       email: dataprivacyteam@sms-inc.com

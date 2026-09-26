@@ -1804,11 +1804,12 @@ brokers:
       category: marketing
     - id: first-orion
       name: First Orion, Inc.
-      email: ccparequests@firstorion.com
+      email: ""
       website: https://www.firstorion.com/
-      opt_out_url: https://privacy.firstorion.com/
+      opt_out_url: ""
       region: us
       category: marketing
+      notes: 'Reply 2026-09-25: First Orion has ceased operating as a data broker and no longer possesses personal information from its former broker activities - "no additional action required". Email and opt_out_url cleared; nothing to send here.'
     - id: stefan-certic
       name: Stefan Certic
       email: legal@myflashcloud.com
@@ -4215,6 +4216,7 @@ brokers:
       opt_out_url: https://privacy.sovrn.com/opt-out
       region: us
       category: marketing
+      notes: 'Reply 2026-09-26: Sovrn processes device/browser identifiers rather than data that directly identifies individuals; confirmed deletion of what it could match "against verifiable information" as of 2026-08-31, with backup/archive retention caveats. An emailed request can''t cover cookie/device IDs - use the opt_out_url from each browser/device too.'
     - id: specialists-marketing-services
       name: Specialists Marketing Services, Inc.
       email: dataprivacyteam@sms-inc.com

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.3](https://github.com/drumandbytes/eraser/compare/v0.8.2...v0.8.3) (2026-09-26)
+
+
+### Bug Fixes
+
+* **brokers:** First Orion ceased, Sovrn device-level note ([#88](https://github.com/drumandbytes/eraser/issues/88)) ([ef89b06](https://github.com/drumandbytes/eraser/commit/ef89b06e39b39f6fca1999d439fa77db8e22cecc))
+
 ## [0.8.2](https://github.com/drumandbytes/eraser/compare/v0.8.1...v0.8.2) (2026-09-24)
 
 

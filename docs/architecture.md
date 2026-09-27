@@ -33,6 +33,7 @@ eraser/
 │   ├── history/history.go      # SQLite history tracking, pipeline status, per-profile scoping
 │   ├── inbox/                   # IMAP monitoring + reply classification (success/form-required/
 │   │                             # confirmation/rejection/pending/bounced)
+│   ├── schedule/                # unattended cycles: shared lock + state file, launchd/systemd install
 │   ├── template/
 │   │   ├── template.go          # Template rendering engine
 │   │   └── templates/           # Embedded: gdpr.tmpl, ccpa.tmpl, generic.tmpl
@@ -42,7 +43,8 @@ eraser/
 │       │                        # by resource: handlers_pages.go (dashboard/brokers/history/
 │       │                        # pipeline/tasks), handlers_api.go (HTMX JSON/fragment
 │       │                        # endpoints), handlers_jobs.go (send-job API + background
-│       │                        # send processing), handlers_settings.go, handlers_setup.go
+│       │                        # send processing), handlers_settings.go, handlers_setup.go;
+│       │                        # scheduler.go runs `eraser auto --once` for schedule.enabled
 │       │                        # (setup wizard), handlers_profile.go (profile switching)
 │       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
 │       └── session.go           # Setup-wizard session store

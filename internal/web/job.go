@@ -282,6 +282,18 @@ func (jm *JobManager) GetActive(profileID string) *Job {
 	return nil
 }
 
+// AnyActive reports whether any profile has a send job running.
+func (jm *JobManager) AnyActive() bool {
+	jm.mu.RLock()
+	defer jm.mu.RUnlock()
+	for _, job := range jm.jobs {
+		if job.GetStatus() == JobStatusRunning {
+			return true
+		}
+	}
+	return false
+}
+
 // Cleanup removes completed jobs older than the specified duration
 func (jm *JobManager) Cleanup(maxAge time.Duration) {
 	jm.mu.Lock()

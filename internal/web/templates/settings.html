@@ -200,6 +200,94 @@
             {{end}}
         </div>
 
+        <!-- Automation Section -->
+        {{with .Automation}}
+        <div class="card p-6" id="automation">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
+                    <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-primary">Automation</h2>
+                    <p class="text-sm text-muted">Send due requests and check the inbox {{.Every}}, for every profile</p>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center justify-between py-3 border-b border-[var(--border-subtle)]">
+                    <div>
+                        <p class="text-sm text-muted">Status</p>
+                        <p class="text-primary font-medium">
+                            {{if .Installed}}Scheduled by your OS - runs even when this web app is closed
+                            {{else if .Enabled}}On while this web app is running
+                            {{else}}Off{{end}}
+                        </p>
+                    </div>
+                    {{if .Running}}<span class="badge badge-warning">Running now</span>
+                    {{else if or .Installed .Enabled}}<span class="badge badge-success">Active</span>
+                    {{else}}<span class="badge badge-neutral">Off</span>{{end}}
+                </div>
+                <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
+                    <div>
+                        <p class="text-sm text-muted">Last run</p>
+                        {{if .Last}}
+                        <p class="text-secondary">{{.Last.LastRun.Format "Jan 2, 15:04"}}{{if .LastVia}} via {{.LastVia}}{{end}} - {{.Last.Sent}} sent</p>
+                        {{if .Last.Error}}<p class="text-sm text-error mt-1">{{.Last.Error}}</p>{{end}}
+                        {{else}}
+                        <p class="text-secondary">Never</p>
+                        {{end}}
+                    </div>
+                </div>
+                {{if not .Next.IsZero}}
+                <div class="flex items-start justify-between py-3">
+                    <div>
+                        <p class="text-sm text-muted">Next run</p>
+                        <p class="text-secondary">Around {{.Next.Format "Jan 2, 15:04"}}</p>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                {{if .Supported}}
+                <form method="POST" action="/settings/automation#automation">
+                    {{$.CSRFField}}
+                    {{if .Installed}}
+                    <button type="submit" name="action" value="remove" class="btn btn-secondary">Remove OS schedule</button>
+                    {{else}}
+                    <button type="submit" name="action" value="install" class="btn btn-primary">Schedule with my OS</button>
+                    {{end}}
+                </form>
+                {{end}}
+                {{if not .Installed}}
+                <form method="POST" action="/settings/automation#automation">
+                    {{$.CSRFField}}
+                    {{if .Enabled}}
+                    <button type="submit" name="action" value="disable" class="btn btn-secondary">Turn off in-app automation</button>
+                    {{else}}
+                    <button type="submit" name="action" value="enable" class="btn {{if .Supported}}btn-secondary{{else}}btn-primary{{end}}">Run while this app is open</button>
+                    {{end}}
+                </form>
+                {{end}}
+                <form method="POST" action="/settings/automation#automation">
+                    {{$.CSRFField}}
+                    <button type="submit" name="action" value="run" class="btn btn-ghost" {{if .Running}}disabled{{end}}>Run now</button>
+                </form>
+            </div>
+            <p class="text-xs text-muted mt-3">
+                Each broker is re-sent 25 days after its last request, within your daily limit. {{if .Supported}}The OS schedule keeps working with this app closed; the in-app option only runs while it's open.{{else}}Your OS has no supported scheduler, so automation runs while this app is open (or run <code>eraser auto</code> in a terminal).{{end}}
+            </p>
+
+            {{if .Message}}
+            <div class="mt-4 alert {{if .Success}}alert-success{{else}}alert-error{{end}}">
+                {{.Message}}
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
         <!-- Request Options Section -->
         <div class="card p-6">
             <div class="flex items-center gap-3 mb-6">

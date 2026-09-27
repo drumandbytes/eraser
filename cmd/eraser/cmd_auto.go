@@ -48,6 +48,8 @@ progress exits quietly.`,
 				mode := "once"
 				if schedule.UnderOSJob() {
 					mode = "os"
+				} else if os.Getenv("ERASER_AUTO_MODE") == "serve" {
+					mode = "serve" // started by the web UI's scheduler
 				}
 				return runAutoCycle(mode)
 			}
@@ -56,7 +58,7 @@ progress exits quietly.`,
 	}
 
 	cmd.Flags().BoolVar(&once, "once", false, "Run one cycle and exit")
-	cmd.Flags().DurationVar(&every, "every", 6*time.Hour, "Time between cycles in loop mode (minimum 1h)")
+	cmd.Flags().DurationVar(&every, "every", schedule.Interval, "Time between cycles in loop mode (minimum 1h)")
 
 	return cmd
 }

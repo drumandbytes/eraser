@@ -44,6 +44,15 @@ type Config struct {
 	Options  Options        `yaml:"options"`
 	Inbox    InboxConfig    `yaml:"inbox,omitempty"`
 	Pipeline Pipeline       `yaml:"pipeline,omitempty"`
+	Schedule Schedule       `yaml:"schedule,omitempty"`
+}
+
+// Schedule is the in-app fallback for automated cycles when the OS scheduler
+// ('eraser schedule install') isn't set up.
+type Schedule struct {
+	// Enabled makes a running 'eraser serve' run a cycle every 6 hours.
+	// Ignored while the OS job is installed.
+	Enabled bool `yaml:"enabled,omitempty"`
 }
 
 // NamedProfile is a person's identity plus the stable ID used by --profile,

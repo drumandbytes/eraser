@@ -72,3 +72,17 @@ func TestRenderSystemd(t *testing.T) {
 		}
 	}
 }
+
+func TestNextOSRun(t *testing.T) {
+	loc := time.FixedZone("X", 2*3600)
+	for _, tc := range []struct{ now, want string }{
+		{"2026-09-27 05:00", "2026-09-27 06:07"},
+		{"2026-09-27 06:07", "2026-09-27 12:07"}, // exactly on a slot: the next one
+		{"2026-09-27 18:30", "2026-09-28 00:07"},
+	} {
+		now, _ := time.ParseInLocation("2006-01-02 15:04", tc.now, loc)
+		if got := NextOSRun(now).Format("2006-01-02 15:04"); got != tc.want {
+			t.Errorf("NextOSRun(%s) = %s, want %s", tc.now, got, tc.want)
+		}
+	}
+}

@@ -28,10 +28,11 @@ eraser/
 │   │                            # validation (domain.go)
 │   ├── config/config.go        # User configuration (profile(s), email, options, inbox, pipeline)
 │   ├── email/
-│   │   ├── sender.go            # Sender interface + NewSender (SMTP only)
+│   │   ├── sender.go            # NewSender (SMTP only), address validation
+│   │   ├── removal.go           # SendRemoval: render + send + history record, shared by CLI and web
 │   │   └── smtp.go              # SMTP implementation
 │   ├── history/history.go      # SQLite history tracking, pipeline status, per-profile scoping
-│   ├── inbox/                   # IMAP monitoring + reply classification (success/form-required/
+│   ├── inbox/                   # IMAP scan (scan.go: ScanAndStore/RecordReply) + reply classification (success/form-required/
 │   │                             # confirmation/rejection/pending/bounced)
 │   ├── schedule/                # unattended cycles: shared lock + state file, launchd/systemd install
 │   ├── template/

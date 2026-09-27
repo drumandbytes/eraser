@@ -37,7 +37,7 @@ Nearly every `Store` method takes a `profileID string` and filters by it. Two ar
 
 ### Shared inbox
 
-A shared mailbox carries replies for every profile's sent requests together. When processing an inbound reply, attribute it to whichever profile actually emailed that broker - not to whatever profile happens to be "active" in the CLI/web session doing the scan. That's what `Store.ResolveProfileForBroker(brokerID string) (string, error)` is for: it looks up the most recent `removal_requests` row for that broker across *all* profiles and returns its `profile_id` (falling back to `"default"` if the broker was never emailed by anyone). Both `handleAPIInboxScan`/`handleAPIInboxRescan` (web) and `runMonitor` (CLI) call this per email before storing the classified response.
+A shared mailbox carries replies for every profile's sent requests together. When processing an inbound reply, attribute it to whichever profile actually emailed that broker - not to whatever profile happens to be "active" in the CLI/web session doing the scan. That's what `Store.ResolveProfileForBroker(brokerID string) (string, error)` is for: it looks up the most recent `removal_requests` row for that broker across *all* profiles and returns its `profile_id` (falling back to `"default"` if the broker was never emailed by anyone). `inbox.RecordReply` (used by `Monitor.ScanAndStore` for the CLI monitor, the web scan/rescan and automated cycles) calls this per email before storing the classified response.
 
 ## Per-profile email accounts (`internal/config/config.go`)
 

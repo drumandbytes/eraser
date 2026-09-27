@@ -65,60 +65,29 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// configured template (gdpr/ccpa/generic); config.Load guarantees one
-	tmplName := cfg.Options.Template
-	rendered, err := s.tmplEngine.Render(tmplName, activeProfile.Profile, *br)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	record, err := email.SendRemoval(ctx, sender, s.tmplEngine, cfg.Options.Template, activeProfile, emailCfg.From, *br)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Template error: %s</span>`, template.HTMLEscapeString(err.Error()))
 		return
 	}
+	s.recordSend(record)
 
-	msg := email.Message{
-		To:      br.Email,
-		From:    emailCfg.From,
-		Subject: rendered.Subject,
-		Body:    rendered.Body,
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
-	defer cancel()
-
-	result := sender.Send(ctx, msg)
-
-	// Record in history
-	record := &history.Record{
-		ProfileID:  activeProfile.ID,
-		BrokerID:   br.ID,
-		BrokerName: br.Name,
-		Email:      br.Email,
-		Template:   tmplName,
-		SentAt:     time.Now(),
-	}
-
-	if result.Success {
-		record.Status = history.StatusSent
-		record.MessageID = result.MessageID
-	} else {
-		record.Status = history.StatusFailed
-		if result.Error != nil {
-			record.Error = result.Error.Error()
-		}
-	}
-
-	if s.historyStore != nil {
-		if err := s.historyStore.Add(record); err != nil {
-			log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
-		}
-	}
-
-	if result.Success {
+	if record.Status == history.StatusSent {
 		_, _ = w.Write([]byte(`<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Sent</span>`))
 	} else {
-		errMsg := "Unknown error"
-		if result.Error != nil {
-			errMsg = result.Error.Error()
-		}
-		_, _ = fmt.Fprintf(w, `<span class="text-red-600" title="%s">Failed</span>`, template.HTMLEscapeString(errMsg))
+		_, _ = fmt.Fprintf(w, `<span class="text-red-600" title="%s">Failed</span>`, template.HTMLEscapeString(record.Error))
+	}
+}
+
+// recordSend stores a send attempt, logging (not failing on) a write error.
+func (s *Server) recordSend(record *history.Record) {
+	if s.historyStore == nil {
+		return
+	}
+	if err := s.historyStore.Add(record); err != nil {
+		log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
 	}
 }
 
@@ -325,69 +294,25 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 
 		job.Update(sent, failed, b.Name, b.ID)
 
-		// Generate email using the user's configured template (see the
-		// same fix/comment in handleAPISendOne above)
-		rendered, err := s.tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b.Broker)
+		ctx, cancel := context.WithTimeout(job.Context(), 30*time.Second)
+		record, err := email.SendRemoval(ctx, sender, s.tmplEngine, cfg.Options.Template, activeProfile, cfg.EmailForProfile(activeProfile).From, b.Broker)
+		cancel()
 		if err != nil {
 			failed++
 			job.Update(sent, failed, b.Name, b.ID)
 			continue
 		}
+		s.recordSend(record)
 
-		msg := email.Message{
-			To:      b.Email,
-			From:    cfg.EmailForProfile(activeProfile).From,
-			Subject: rendered.Subject,
-			Body:    rendered.Body,
-		}
-
-		// Use job's context with timeout for cancellation support
-		ctx, cancel := context.WithTimeout(job.Context(), 30*time.Second)
-		result := sender.Send(ctx, msg)
-		cancel()
-
-		// Record in history
-		record := &history.Record{
-			ProfileID:  activeProfile.ID,
-			BrokerID:   b.ID,
-			BrokerName: b.Name,
-			Email:      b.Email,
-			Template:   cfg.Options.Template,
-			SentAt:     time.Now(),
-		}
-
-		if result.Success {
-			record.Status = history.StatusSent
-			record.MessageID = result.MessageID
+		if record.Status == history.StatusSent {
 			sent++
-			job.ResetAuthFailures() // Reset on success
+			job.ResetAuthFailures()
 		} else {
-			record.Status = history.StatusFailed
-			errMsg := ""
-			if result.Error != nil {
-				errMsg = result.Error.Error()
-				record.Error = errMsg
-			}
 			failed++
-
-			// Check for auth failures and stop if too many consecutive
-			if strings.Contains(strings.ToLower(errMsg), "auth") {
-				if job.RecordAuthFailure() {
-					if s.historyStore != nil {
-						if err := s.historyStore.Add(record); err != nil {
-							log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
-						}
-					}
-					job.StopWithError("auth", "Stopped due to repeated authentication failures. Your email provider may have rate-limited or blocked your account. Please check your email settings and try again later.")
-					log.Printf("Job stopped: repeated auth failures after %d sent, %d failed", sent, failed)
-					return
-				}
-			}
-		}
-
-		if s.historyStore != nil {
-			if err := s.historyStore.Add(record); err != nil {
-				log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
+			if strings.Contains(strings.ToLower(record.Error), "auth") && job.RecordAuthFailure() {
+				job.StopWithError("auth", "Stopped due to repeated authentication failures. Your email provider may have rate-limited or blocked your account. Please check your email settings and try again later.")
+				log.Printf("Job stopped: repeated auth failures after %d sent, %d failed", sent, failed)
+				return
 			}
 		}
 

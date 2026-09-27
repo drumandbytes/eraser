@@ -236,68 +236,49 @@ func runSend() error {
 			continue
 		}
 
-		emailMsg, err := tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b)
-		if err != nil {
-			fmt.Printf("  ❌ Failed to render template: %v\n", err)
-			failCount++
-			continue
-		}
-
 		if cfg.Options.DryRun {
+			emailMsg, err := tmplEngine.Render(cfg.Options.Template, activeProfile.Profile, b)
+			if err != nil {
+				fmt.Printf("  ❌ Failed to render template: %v\n", err)
+				failCount++
+				continue
+			}
 			fmt.Printf("  📧 Would send: %s\n", emailMsg.Subject)
 			fmt.Printf("  📍 To: %s\n", b.Email)
 			successCount++
+			continue
+		}
+
+		record, err := email.SendRemoval(context.Background(), sender, tmplEngine, cfg.Options.Template, activeProfile, emailCfg.From, b)
+		if err != nil {
+			fmt.Printf("  ❌ %v\n", err)
+			failCount++
+			continue
+		}
+		if record.Status == history.StatusSent {
+			fmt.Printf("  ✅ Sent successfully\n")
+			successCount++
+			authFails = 0
 		} else {
-			msg := email.Message{
-				To:      b.Email,
-				From:    emailCfg.From,
-				Subject: emailMsg.Subject,
-				Body:    emailMsg.Body,
+			fmt.Printf("  ❌ Failed: %s\n", record.Error)
+			failCount++
+			if strings.Contains(strings.ToLower(record.Error), "auth") {
+				authFails++
 			}
+		}
+		if err := store.Add(record); err != nil {
+			fmt.Printf("  ⚠️  Failed to record history: %v\n", err)
+		}
 
-			result := sender.Send(context.Background(), msg)
+		// Same cutoff as the web job sender: a bad password or a provider
+		// block would otherwise mark every due broker failed, and failed
+		// brokers are retried on every run.
+		if authFails >= 3 {
+			return fmt.Errorf("stopped after %d consecutive authentication failures (%d sent, %d failed) - check your email settings", authFails, successCount, failCount)
+		}
 
-			// Record in history
-			record := &history.Record{
-				ProfileID:  activeProfile.ID,
-				BrokerID:   b.ID,
-				BrokerName: b.Name,
-				Email:      b.Email,
-				Template:   cfg.Options.Template,
-				SentAt:     time.Now(),
-			}
-
-			if result.Success {
-				record.Status = history.StatusSent
-				record.MessageID = result.MessageID
-				fmt.Printf("  ✅ Sent successfully\n")
-				successCount++
-				authFails = 0
-			} else {
-				record.Status = history.StatusFailed
-				record.Error = result.Error.Error()
-				fmt.Printf("  ❌ Failed: %v\n", result.Error)
-				failCount++
-				if strings.Contains(strings.ToLower(record.Error), "auth") {
-					authFails++
-				}
-			}
-
-			if err := store.Add(record); err != nil {
-				fmt.Printf("  ⚠️  Failed to record history: %v\n", err)
-			}
-
-			// Same cutoff as the web job sender: a bad password or a provider
-			// block would otherwise mark every due broker failed, and failed
-			// brokers are retried on every run.
-			if authFails >= 3 {
-				return fmt.Errorf("stopped after %d consecutive authentication failures (%d sent, %d failed) - check your email settings", authFails, successCount, failCount)
-			}
-
-			// Rate limiting
-			if i < len(brokers)-1 {
-				time.Sleep(time.Duration(cfg.Options.RateLimitMs) * time.Millisecond)
-			}
+		if i < len(brokers)-1 {
+			time.Sleep(time.Duration(cfg.Options.RateLimitMs) * time.Millisecond)
 		}
 	}
 

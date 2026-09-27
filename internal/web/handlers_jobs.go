@@ -20,7 +20,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	// Rate limiting - prevent abuse of email sending
 	if !s.rateLimiter.Allow("send") {
 		w.WriteHeader(http.StatusTooManyRequests)
-		_, _ = w.Write([]byte(`<span class="text-yellow-600">Rate limit exceeded. Please wait a moment before sending more emails.</span>`))
+		_, _ = w.Write([]byte(`<span class="text-warning">Rate limit exceeded. Please wait a moment before sending more emails.</span>`))
 		return
 	}
 
@@ -29,14 +29,14 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	br := s.brokerDB.FindByID(brokerID)
 	if br == nil {
 		w.WriteHeader(http.StatusNotFound)
-		_, _ = w.Write([]byte(`<span class="text-red-600">Broker not found</span>`))
+		_, _ = w.Write([]byte(`<span class="text-error">Broker not found</span>`))
 		return
 	}
 
 	cfg := s.getConfig()
 	if cfg == nil {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`<span class="text-red-600">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
+		_, _ = w.Write([]byte(`<span class="text-error">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
 		return
 	}
 
@@ -44,24 +44,24 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	emailCfg := cfg.EmailForProfile(activeProfile)
 	if emailCfg.Provider == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`<span class="text-red-600">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
+		_, _ = w.Write([]byte(`<span class="text-error">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
 		return
 	}
 
 	if cfg.Options.DryRun {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`<span class="text-amber-600">Web sending is disabled while options.dry_run is true.</span>`))
+		_, _ = w.Write([]byte(`<span class="text-warning">Web sending is disabled while options.dry_run is true.</span>`))
 		return
 	}
 	if br.Email == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`<span class="text-amber-600">No email on file - needs manual follow-up (check for an opt-out form/portal)</span>`))
+		_, _ = w.Write([]byte(`<span class="text-warning">No email on file - needs manual follow-up (check for an opt-out form/portal)</span>`))
 		return
 	}
 
 	sender, err := email.NewSender(emailCfg)
 	if err != nil {
-		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
+		_, _ = fmt.Fprintf(w, `<span class="text-error">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
 		return
 	}
 
@@ -69,15 +69,15 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	record, err := email.SendRemoval(ctx, sender, s.tmplEngine, cfg.Options.Template, activeProfile, emailCfg.From, *br)
 	if err != nil {
-		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Template error: %s</span>`, template.HTMLEscapeString(err.Error()))
+		_, _ = fmt.Fprintf(w, `<span class="text-error">Template error: %s</span>`, template.HTMLEscapeString(err.Error()))
 		return
 	}
 	s.recordSend(record)
 
 	if record.Status == history.StatusSent {
-		_, _ = w.Write([]byte(`<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Sent</span>`))
+		_, _ = w.Write([]byte(`<span class="badge badge-success">Sent</span>`))
 	} else {
-		_, _ = fmt.Fprintf(w, `<span class="text-red-600" title="%s">Failed</span>`, template.HTMLEscapeString(record.Error))
+		_, _ = fmt.Fprintf(w, `<span class="text-error" title="%s">Failed</span>`, template.HTMLEscapeString(record.Error))
 	}
 }
 

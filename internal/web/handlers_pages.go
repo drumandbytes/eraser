@@ -358,13 +358,13 @@ func (s *Server) handleTaskComplete(w http.ResponseWriter, r *http.Request) {
 
 	if s.historyStore == nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`<span class="text-red-600">Database not available</span>`))
+		_, _ = w.Write([]byte(`<span class="text-error">Database not available</span>`))
 		return
 	}
 
 	if err := s.historyStore.CompletePendingTask(taskID, s.activeProfile(r).ID, status); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
+		_, _ = fmt.Fprintf(w, `<span class="text-error">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
 		return
 	}
 
@@ -379,13 +379,13 @@ func (s *Server) handleTaskSkip(w http.ResponseWriter, r *http.Request) {
 
 	if s.historyStore == nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(`<span class="text-red-600">Database not available</span>`))
+		_, _ = w.Write([]byte(`<span class="text-error">Database not available</span>`))
 		return
 	}
 
 	if err := s.historyStore.CompletePendingTask(taskID, s.activeProfile(r).ID, "skipped"); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, `<span class="text-red-600">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
+		_, _ = fmt.Fprintf(w, `<span class="text-error">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
 		return
 	}
 

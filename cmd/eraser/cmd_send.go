@@ -29,10 +29,6 @@ var (
 	statusFilter     string
 )
 
-// resendCooldown: long enough that resuming a backlog across the daily cap
-// skips yesterday's brokers, short enough for the monthly re-run.
-const resendCooldown = 25 * 24 * time.Hour
-
 func sendCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send",
@@ -78,7 +74,7 @@ func filterBrokersByStatus(brokers []broker.Broker, statuses map[string]history.
 		case "failed":
 			include = exists && status.Status == history.StatusFailed
 		case "eligible":
-			include = !exists || status.Status != history.StatusSent || now.Sub(status.LastSent) >= resendCooldown
+			include = !exists || status.Status != history.StatusSent || now.Sub(status.LastSent) >= history.ResendCooldown
 		}
 		if include {
 			filtered = append(filtered, b)
@@ -157,6 +153,7 @@ func runSend() error {
 		return fmt.Errorf("failed to check send history: %w", err)
 	}
 	brokers = filterBrokersByStatus(brokers, statuses, statusFilter, time.Now())
+	history.SortBySendPriority(brokers, func(b broker.Broker) time.Time { return statuses[b.ID].LastSent })
 
 	if len(brokers) == 0 {
 		fmt.Printf("Nothing to send - no brokers match status %q.\n", statusFilter)

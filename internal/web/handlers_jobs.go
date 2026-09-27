@@ -297,6 +297,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	toSend = filtered
+	history.SortBySendPriority(toSend, func(b BrokerWithStatus) time.Time { return b.lastSentAt })
 
 	if len(toSend) == 0 {
 		noneMsg := "No pending brokers to send to."

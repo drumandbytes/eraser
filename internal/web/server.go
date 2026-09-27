@@ -546,6 +546,7 @@ type BrokerWithStatus struct {
 	TotalSent  int
 	Excluded   bool // true if excluded via config.Options.ExcludedBrokers/ExcludedCategories
 	ManualMode bool // config.Options.send_mode == "manual" - row shows "Email" + "Mark sent" instead of "Send"
+	lastSentAt time.Time
 }
 
 func stringSet(items []string) map[string]bool {
@@ -647,6 +648,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		if status, ok := brokerStatuses[b.ID]; ok {
 			bws.Status = string(status.Status)
 			bws.TotalSent = status.TotalSent
+			bws.lastSentAt = status.LastSent
 			if !status.LastSent.IsZero() {
 				bws.LastSent = status.LastSent.Format("Jan 2, 2006")
 			}
@@ -659,7 +661,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 				continue
 			} else if statusFilter == "failed" && bws.Status != "failed" {
 				continue
-			} else if statusFilter == "eligible" && bws.Status == "sent" && time.Since(brokerStatuses[b.ID].LastSent) < 25*24*time.Hour {
+			} else if statusFilter == "eligible" && bws.Status == "sent" && time.Since(bws.lastSentAt) < history.ResendCooldown {
 				continue
 			}
 		}

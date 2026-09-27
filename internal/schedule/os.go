@@ -10,13 +10,35 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// Every is how often the OS job runs. Six hours rather than daily: the send
-// cap is a rolling 24h window, so a run exactly 24h after the last one still
-// sees that run's sends inside the window and sends nothing. Runs with
-// nothing due are cheap no-ops.
+// Interval is how often cycles run, in every mode. Six hours rather than
+// daily: the send cap is a rolling 24h window, so a run exactly 24h after
+// the last one still sees that run's sends inside the window and sends
+// nothing. Runs with nothing due are cheap no-ops.
+const Interval = 6 * time.Hour
+
+// Every describes Interval for messages.
 const Every = "every 6 hours"
+
+// osSlots are the local hours the OS job fires at, on minute 7.
+var osSlots = []int{0, 6, 12, 18}
+
+// NextOSRun is when the installed OS job next fires after now.
+func NextOSRun(now time.Time) time.Time {
+	day := time.Date(now.Year(), now.Month(), now.Day(), 0, 7, 0, 0, now.Location())
+	for d := 0; d < 2; d++ {
+		for _, h := range osSlots {
+			if t := day.AddDate(0, 0, d).Add(time.Duration(h) * time.Hour); t.After(now) {
+				return t
+			}
+		}
+	}
+	return day.AddDate(0, 0, 1)
+}
 
 const (
 	launchdLabel = "com.drumandbytes.eraser.auto"
@@ -38,6 +60,55 @@ func (j Job) args() []string {
 // the environment launchd and systemd set for their services.
 func UnderOSJob() bool {
 	return os.Getenv("XPC_SERVICE_NAME") == launchdLabel || os.Getenv("INVOCATION_ID") != ""
+}
+
+// NewJob checks that cfg can run unattended and builds the OS job for it.
+// It refuses configs that would fail on every run.
+func NewJob(cfg *config.Config, configPath string) (Job, error) {
+	if err := cfg.Validate(); err != nil {
+		return Job{}, fmt.Errorf("fix your config before scheduling: %w", err)
+	}
+	if cfg.IsManualSend() && len(cfg.ConfiguredInboxes()) == 0 {
+		return Job{}, fmt.Errorf("nothing to automate: send_mode is manual and no inbox is configured")
+	}
+	abs, err := filepath.Abs(configPath)
+	if err != nil {
+		return Job{}, err
+	}
+	exe, err := StableExecutable()
+	if err != nil {
+		return Job{}, err
+	}
+	return Job{Exe: exe, ConfigPath: abs, LogPath: filepath.Join(filepath.Dir(abs), "auto.log")}, nil
+}
+
+// StableExecutable is the path the OS job should run. It prefers the eraser
+// on PATH (e.g. Homebrew's symlink, which survives upgrades) when that's the
+// same binary as this one, and refuses a 'go run' temp build.
+func StableExecutable() (string, error) {
+	self, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to find the eraser binary: %w", err)
+	}
+	selfReal, err := filepath.EvalSymlinks(self)
+	if err != nil {
+		selfReal = self
+	}
+	tmp, err := filepath.EvalSymlinks(os.TempDir())
+	if err != nil {
+		tmp = os.TempDir()
+	}
+	if strings.HasPrefix(selfReal, filepath.Clean(tmp)+string(filepath.Separator)) || strings.Contains(selfReal, "go-build") {
+		return "", fmt.Errorf("this is a temporary 'go run' build (%s) - build or install eraser first, then set up the schedule from that binary", selfReal)
+	}
+	if onPath, err := exec.LookPath("eraser"); err == nil {
+		if abs, err := filepath.Abs(onPath); err == nil {
+			if real, err := filepath.EvalSymlinks(abs); err == nil && real == selfReal {
+				return abs, nil
+			}
+		}
+	}
+	return selfReal, nil
 }
 
 // Supported reports whether Install can set up an OS job on this platform.
@@ -160,7 +231,7 @@ func renderPlist(j Job) string {
 		fmt.Fprintf(&args, "\t\t<string>%s</string>\n", esc(a))
 	}
 	var times strings.Builder
-	for _, h := range []int{0, 6, 12, 18} {
+	for _, h := range osSlots {
 		fmt.Fprintf(&times, "\t\t<dict><key>Hour</key><integer>%d</integer><key>Minute</key><integer>7</integer></dict>\n", h)
 	}
 	// StartCalendarInterval (unlike StartInterval) runs a missed slot on

@@ -40,6 +40,8 @@ The broker list is embedded in the binary. For the send-family commands (`send`,
 
 `auto` runs one cycle per call with `--once`, or loops every `--every` (min 1h) in the foreground. `schedule install` writes a launchd agent (`~/Library/LaunchAgents/com.drumandbytes.eraser.auto.plist`, output in `auto.log` next to the config) or a systemd user timer (`eraser-auto.timer`, output in the journal) that runs `auto --once --config <abs path>` at 00/06/12/18:07; missed slots run on wake. Every 6 hours rather than daily because `daily_send_limit` is a rolling 24h window: a run exactly 24h after the last one would find the cap still used up. All modes share `auto.lock` in the config directory, so cycles never overlap, and write the last result to `auto-state.json` (shown by `schedule status`). The loop refuses to start while the OS job is installed. With `send_mode: manual`, cycles only scan the inbox.
 
+The web UI's Settings → Automation card does the same without a terminal: install/remove the OS job, turn on the in-app scheduler (`schedule.enabled`: `serve` runs `eraser auto --once` as a child process every 6 hours while it's open), or run a cycle now. It covers every profile, not just the active one. "Send all" refuses while a cycle holds the lock, and a daily-cap-paused job resumed at startup skips brokers sent since it paused.
+
 Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a global `--profile <id>` flag. It can be omitted entirely for the common single-profile setup; it's required once more than one profile is configured. See [multi-profile.md](multi-profile.md) for the full model.
 
 ## Configuration
@@ -52,3 +54,4 @@ User config is stored at `~/.eraser/config.yaml` (see `config.example.yaml` for 
 - `options` - `template`, `rate_limit_ms`, `daily_send_limit`, `broker_list` (`full`/`verified`), `broker_file` (path to your own list), `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`), `send_mode` (`manual` = Eraser never sends; render with `draft` / `send --manual`, record with `mark-sent`; no `email:` block needed)
 - `inbox` - IMAP settings, for `monitor`/`pipeline`/the web UI's inbox scan. Shared by default across every profile that doesn't set its own `mail.inbox` override (see [multi-profile.md](multi-profile.md#shared-inbox)); `monitor` scans every distinct inbox in one run, the web UI's scan/rescan only the active profile's own
 - `pipeline` - browser automation settings for `fill`
+- `schedule` - `enabled: true` makes a running `eraser serve` run an automated cycle every 6 hours (the in-app fallback when the OS job from `schedule install` isn't set up; ignored while it is). Set from the web UI's Settings → Automation card too

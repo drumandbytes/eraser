@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
@@ -24,7 +21,8 @@ machine was asleep or off happen at the next wake.
 
 macOS uses a launchd agent (output in auto.log next to your config), Linux a
 systemd user timer (output in 'journalctl --user -u eraser-auto'). Elsewhere,
-run 'eraser auto' in the foreground instead.`,
+run 'eraser auto' in the foreground, or set schedule.enabled: true and keep
+'eraser serve' running (Settings -> Automation in the web UI does both).`,
 	}
 	cmd.AddCommand(&cobra.Command{
 		Use:          "install",
@@ -58,35 +56,21 @@ run 'eraser auto' in the foreground instead.`,
 
 func runScheduleInstall() error {
 	if !schedule.Supported() {
-		return fmt.Errorf("no OS scheduler support on %s - run 'eraser auto' in the foreground instead (it loops every 6h)", runtime.GOOS)
+		return fmt.Errorf("no OS scheduler support on %s - run 'eraser auto' in the foreground instead (it loops every 6h), or keep 'eraser serve' running with schedule.enabled: true", runtime.GOOS)
 	}
 
-	cfgPath, err := filepath.Abs(resolveConfigPath())
-	if err != nil {
-		return err
-	}
-	// Refuse a job that would fail on every run.
-	cfg, err := config.Load(cfgPath)
+	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
-	if err := cfg.Validate(); err != nil {
-		return fmt.Errorf("fix your config before scheduling: %w", err)
-	}
-	if cfg.IsManualSend() && len(cfg.ConfiguredInboxes()) == 0 {
-		return fmt.Errorf("nothing to automate: send_mode is manual and no inbox is configured")
-	}
-
-	exe, err := stableExecutable()
+	job, err := schedule.NewJob(cfg, resolveConfigPath())
 	if err != nil {
 		return err
 	}
-
-	job := schedule.Job{Exe: exe, ConfigPath: cfgPath, LogPath: filepath.Join(filepath.Dir(cfgPath), "auto.log")}
 	if err := schedule.Install(job); err != nil {
 		return err
 	}
-	fmt.Printf("✅ Scheduled: %s auto --once, %s.\n", exe, schedule.Every)
+	fmt.Printf("✅ Scheduled: %s auto --once, %s.\n", job.Exe, schedule.Every)
 	if cfg.IsManualSend() {
 		fmt.Println("   send_mode is manual, so runs only check the inbox.")
 	}
@@ -99,35 +83,6 @@ func runScheduleInstall() error {
 	}
 	fmt.Println("   Check on it with 'eraser schedule status'.")
 	return nil
-}
-
-// stableExecutable is the path the OS job should run. It prefers the eraser
-// on PATH (e.g. Homebrew's symlink, which survives upgrades) when that's the
-// same binary as this one, and refuses a 'go run' temp build.
-func stableExecutable() (string, error) {
-	self, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("failed to find the eraser binary: %w", err)
-	}
-	selfReal, err := filepath.EvalSymlinks(self)
-	if err != nil {
-		selfReal = self
-	}
-	tmp, err := filepath.EvalSymlinks(os.TempDir())
-	if err != nil {
-		tmp = os.TempDir()
-	}
-	if strings.HasPrefix(selfReal, filepath.Clean(tmp)+string(filepath.Separator)) || strings.Contains(selfReal, "go-build") {
-		return "", fmt.Errorf("this is a temporary 'go run' build (%s) - build or install eraser first, then run 'eraser schedule install' from that binary", selfReal)
-	}
-	if onPath, err := exec.LookPath("eraser"); err == nil {
-		if abs, err := filepath.Abs(onPath); err == nil {
-			if real, err := filepath.EvalSymlinks(abs); err == nil && real == selfReal {
-				return abs, nil
-			}
-		}
-	}
-	return selfReal, nil
 }
 
 func runScheduleStatus() error {

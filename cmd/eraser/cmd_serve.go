@@ -36,7 +36,7 @@ The server runs locally on your machine - no data is sent to external servers.`,
 		},
 	}
 
-	cmd.Flags().IntVar(&port, "port", 8080, "Port to listen on")
+	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
 
 	return cmd
 }

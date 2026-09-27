@@ -92,11 +92,22 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 		brokerMap[b.ID] = b
 	}
 
+	// Anything sent since the job paused (an automatic run, the CLI, a
+	// "Send all" click) is no longer due; resending it would double-email.
+	var statuses map[string]history.BrokerStatus
+	if s.historyStore != nil {
+		statuses, _ = s.historyStore.GetAllBrokerStatuses(profileID)
+	}
 	var toSend []BrokerWithStatus
 	for _, id := range state.RemainingBrokers {
-		if b, ok := brokerMap[id]; ok {
-			toSend = append(toSend, BrokerWithStatus{Broker: b, Status: "never"})
+		b, ok := brokerMap[id]
+		if !ok {
+			continue
 		}
+		if st, sent := statuses[id]; sent && st.Status == history.StatusSent && time.Since(st.LastSent) < history.ResendCooldown {
+			continue
+		}
+		toSend = append(toSend, BrokerWithStatus{Broker: b, Status: "never"})
 	}
 
 	if len(toSend) == 0 {
@@ -320,7 +331,19 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// GetActive above is only a fast-fail; CreateIfNoActive re-checks under the lock
+	// An automatic cycle (in-app, CLI or OS job) sends to the same brokers;
+	// running both at once could email a broker twice. Checked under cycleMu
+	// so the in-app scheduler can't start one between this check and the
+	// job existing.
+	s.cycleMu.Lock()
+	if s.cycleRunning || s.cycleInProgress() {
+		s.cycleMu.Unlock()
+		w.WriteHeader(http.StatusConflict)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "An automatic run is sending right now. Try again once it finishes."})
+		return
+	}
 	job, created := s.jobManager.CreateIfNoActive(len(toSend), activeProfile.ID)
+	s.cycleMu.Unlock()
 	if !created {
 		w.WriteHeader(http.StatusConflict)
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -429,7 +452,11 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 
 		// Check daily limit
 		if alreadySentToday+sent >= dailyLimit {
-			job.Pause(sent, fmt.Sprintf("Daily limit of %d emails reached. Remaining %d brokers will be sent when you restart tomorrow.", dailyLimit, len(remaining)))
+			next := "Click Send all again tomorrow to send the rest, or turn on automation in Settings."
+			if s.inAppScheduling() || s.osInstalled() {
+				next = "Automation will send the rest once the limit frees up."
+			}
+			job.Pause(sent, fmt.Sprintf("Daily limit of %d emails reached. %d brokers remaining. %s", dailyLimit, len(remaining), next))
 			s.saveJobProgress(job, sent, failed, remaining)
 			log.Printf("Job paused: daily limit of %d reached (%d already sent today, %d this run), %d remaining", dailyLimit, alreadySentToday, sent, len(remaining))
 			return

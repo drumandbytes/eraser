@@ -122,7 +122,7 @@ That's the password you'll use in Eraser's setup wizard. Your regular Gmail pass
 
 **Daily sending limits:** Gmail allows ~500 emails per day. Eraser caps itself at 450/day by default (`options.daily_send_limit`) and automatically resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
 
-**Automating it:** `eraser schedule install` has your OS run Eraser every 6 hours. Each run sends to whichever brokers are due (each broker is re-sent 25 days after its last request, within the daily cap) and checks your inbox for replies. Everything stays on your machine; `eraser schedule status` shows the last run, `eraser schedule remove` undoes it. Where there's no launchd/systemd, `eraser auto` does the same in the foreground.
+**Automating it:** `eraser schedule install` has your OS run Eraser every 6 hours. Each run sends to whichever brokers are due (each broker is re-sent 25 days after its last request, within the daily cap) and checks your inbox for replies. Everything stays on your machine; `eraser schedule status` shows the last run, `eraser schedule remove` undoes it. The web UI's **Settings → Automation** card does all of this with buttons, including a "run while this app is open" option for systems without launchd/systemd; on the CLI, `eraser auto` loops in the foreground instead.
 
 ### Prefer not to give any tool your email password?
 

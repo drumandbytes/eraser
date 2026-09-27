@@ -22,6 +22,7 @@ import (
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/schedule"
 	emaTemplate "github.com/drumandbytes/eraser/internal/template"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -119,6 +120,16 @@ type Server struct {
 	rateLimiter    *RateLimiter
 	jobManager     *JobManager
 	jobPersistence *JobPersistence
+	dataDir        string // config directory: job state, schedule lock and state
+
+	// In-app scheduler (scheduler.go). The OS hooks are fields so tests
+	// don't touch the real launchd/systemd setup.
+	cycleMu       sync.Mutex
+	cycleRunning  bool
+	stopScheduler context.CancelFunc
+	osInstalled   func() bool
+	installOS     func(schedule.Job) error
+	removeOS      func() error
 }
 
 func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker.BrokerDatabase, historyStore *history.Store, tmplEngine *emaTemplate.Engine) (*Server, error) {
@@ -146,6 +157,10 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 		rateLimiter:    NewRateLimiter(defaultRateLimit, defaultRateWindow),
 		jobManager:     NewJobManager(),
 		jobPersistence: NewJobPersistence(dataDir),
+		dataDir:        dataDir,
+		osInstalled:    schedule.Installed,
+		installOS:      schedule.Install,
+		removeOS:       schedule.Remove,
 	}
 	s.config.Store(cfg)
 
@@ -317,6 +332,10 @@ func (s *Server) Start() error {
 	// Check for pending job and offer to resume
 	s.checkPendingJob()
 
+	ctx, cancel := context.WithCancel(context.Background())
+	s.stopScheduler = cancel
+	go s.runScheduler(ctx)
+
 	go func() {
 		time.Sleep(500 * time.Millisecond)
 		url := fmt.Sprintf("http://localhost:%d", s.port)
@@ -335,6 +354,9 @@ func (s *Server) Start() error {
 
 // Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
+	if s.stopScheduler != nil {
+		s.stopScheduler()
+	}
 	return s.httpServer.Shutdown(ctx)
 }
 
@@ -365,6 +387,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/history", s.handleHistory)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
+	r.Post("/settings/automation", s.handleSettingsAutomation)
 	r.Get("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Post("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Get("/settings/profiles/{profileID}/edit", s.handleSettingsProfileEdit)

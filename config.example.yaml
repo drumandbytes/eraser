@@ -101,3 +101,10 @@ options:
   # act on a request (this tool won't supply one on your behalf)
   # excluded_categories:
   #   - requires-id
+
+# Automation (optional). The best option is 'eraser schedule install' (or
+# Settings -> Automation -> "Schedule with my OS"), which runs Eraser every
+# 6 hours even with the web UI closed. Where that isn't available, this makes
+# a running 'eraser serve' do the same while it's open:
+# schedule:
+#   enabled: true

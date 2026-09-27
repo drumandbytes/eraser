@@ -11,6 +11,7 @@ import (
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/schedule"
 	emaTemplate "github.com/drumandbytes/eraser/internal/template"
 )
 
@@ -30,6 +31,11 @@ func newTestServer(t *testing.T, cfg *config.Config) *Server {
 	if err != nil {
 		t.Fatalf("NewServer: %v", err)
 	}
+	// Keep the schedule lock/state and the OS scheduler off the real machine.
+	s.dataDir = t.TempDir()
+	s.osInstalled = func() bool { return false }
+	s.installOS = func(schedule.Job) error { t.Error("unexpected OS install"); return nil }
+	s.removeOS = func() error { t.Error("unexpected OS remove"); return nil }
 	return s
 }
 

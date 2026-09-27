@@ -37,11 +37,10 @@ func sendCmd() *cobra.Command {
 
 To avoid tripping your email provider's daily sending limit (or looking like
 bulk spam to it), each run only sends up to options.daily_send_limit emails
-(default 450). Sends go out in rounds: run it again - the same day or
-tomorrow - to keep working through a large broker list, skipping brokers
-already emailed this round. Once every broker has been emailed, nothing is
-due until 25 days after that round's last send, so it's safe to just re-run
-'eraser send' (or schedule it daily).`,
+(default 450) and skips brokers it already emailed successfully in the last
+25 days. Run it again - the same day or tomorrow - to keep working through
+a large broker list; already-sent brokers are automatically skipped, so it's
+safe to just re-run 'eraser send' until it reports nothing left to do.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runSend()
 		},
@@ -50,7 +49,7 @@ due until 25 days after that round's last send, so it's safe to just re-run
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview emails without sending")
 	cmd.Flags().BoolVar(&ignoreDailyLimit, "ignore-daily-limit", false, "Send to all matching brokers in one run, ignoring the daily cap (only if your provider can handle the volume)")
-	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed in the current round")
+	cmd.Flags().BoolVar(&resend, "resend", false, "Also re-send to brokers already emailed within the last 25 days")
 	cmd.Flags().BoolVar(&manualSend, "manual", false, "Don't send: show each email and let you mark it sent after you send it by hand (implied by options.send_mode: manual)")
 	cmd.Flags().StringVar(&listFlag, "list", "", "Which broker list to use: full (default) or verified (smaller, registry-sourced). Overrides options.broker_list")
 	cmd.Flags().StringSliceVar(&brokerIDs, "broker", nil, "Only send to these broker IDs (comma-separated or repeated)")
@@ -62,7 +61,7 @@ due until 25 days after that round's last send, so it's safe to just re-run
 	return cmd
 }
 
-func filterBrokersByStatus(brokers []broker.Broker, statuses map[string]history.BrokerStatus, round history.Round, statusFilter string) []broker.Broker {
+func filterBrokersByStatus(brokers []broker.Broker, statuses map[string]history.BrokerStatus, statusFilter string, now time.Time) []broker.Broker {
 	filtered := brokers[:0:0]
 	for _, b := range brokers {
 		status, exists := statuses[b.ID]
@@ -75,7 +74,7 @@ func filterBrokersByStatus(brokers []broker.Broker, statuses map[string]history.
 		case "failed":
 			include = exists && status.Status == history.StatusFailed
 		case "eligible":
-			include = round.Due(status, exists)
+			include = !exists || status.Status != history.StatusSent || now.Sub(status.LastSent) >= history.ResendCooldown
 		}
 		if include {
 			filtered = append(filtered, b)
@@ -153,11 +152,7 @@ func runSend() error {
 	if err != nil {
 		return fmt.Errorf("failed to check send history: %w", err)
 	}
-	round, err := store.CurrentRound(activeProfile.ID, time.Now())
-	if err != nil {
-		return err
-	}
-	brokers = filterBrokersByStatus(brokers, statuses, round, statusFilter)
+	brokers = filterBrokersByStatus(brokers, statuses, statusFilter, time.Now())
 	history.SortBySendPriority(brokers, func(b broker.Broker) time.Time { return statuses[b.ID].LastSent })
 
 	if len(brokers) == 0 {

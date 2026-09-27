@@ -127,11 +127,8 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 		return nil, fmt.Errorf("failed to generate CSRF key: %w", err)
 	}
 
-	// Job persistence lives alongside the config file, so an alternate
-	// --config also gets its own isolated pending_job.json instead of
-	// always sharing ~/.eraser (matches history.DBPathFor's same reasoning
-	// for history.db). configPath is only ever "" from tests constructing
-	// a Server directly - preserve the old default there.
+	// job file next to the config, like history.DBPathFor; configPath is
+	// "" only in tests
 	dataDir := filepath.Dir(configPath)
 	if configPath == "" {
 		home, _ := os.UserHomeDir()
@@ -160,12 +157,9 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 	return s, nil
 }
 
-// getConfig returns the server's current config. Server.config is an
-// atomic.Pointer[config.Config] rather than a plain *config.Config because
-// it's written concurrently (handleSettingsInbox, handleSetupComplete) while
-// being read by many handlers and by background send-job goroutines for the
-// duration of a send - see the load-copy-mutate-store pattern at the two
-// write sites for how updates stay race-free.
+// getConfig returns the current config. It's an atomic.Pointer because
+// settings handlers write it while handlers and send jobs read it; writers
+// load-copy-mutate-store.
 func (s *Server) getConfig() *config.Config {
 	return s.config.Load()
 }
@@ -293,10 +287,8 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		return nil, err
 	}
 
-	// Add each partial as a standalone template for HTMX fragment responses.
-	// Every partial is associated into the set so one partial can invoke another
-	// with {{template "partials/x.html" .}} (e.g. broker-actions.html reuses the
-	// desktop/mobile action clusters).
+	// each partial standalone for HTMX fragments, all associated so one
+	// partial can include another
 	for entry := range partialTemplates {
 		set := template.New("").Funcs(funcs)
 		for pName, pContent := range partialTemplates {
@@ -357,14 +349,9 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(requireLoopbackHost)
 	r.Use(securityHeaders)
 
-	// filippo.io/csrf enforces same-origin via Sec-Fetch-Site, not tokens, so
-	// it needs no TrustedOrigins tuning for a loopback plaintext server - and
-	// isn't the unmaintained gorilla/csrf carrying CVE-2025-47909. Sec-Fetch-Site
-	// alone doesn't cover DNS rebinding though: a browser computes it from the
-	// requesting page's origin STRING, so a page served from an
-	// attacker-controlled hostname that's been DNS-rebound to 127.0.0.1 still
-	// reads as same-origin - only the Host header still names the attacker's
-	// hostname, which requireLoopbackHost (above) catches.
+	// filippo.io/csrf checks Sec-Fetch-Site, not tokens (and isn't the
+	// unmaintained gorilla/csrf, CVE-2025-47909). A DNS-rebound hostname still
+	// reads as same-origin, so requireLoopbackHost checks Host too.
 	r.Use(csrf.Protect(s.csrfKey))
 
 	// Static files
@@ -430,10 +417,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	return r
 }
 
-// requireLoopbackHost rejects any request whose Host header doesn't name a
-// loopback address, closing the DNS-rebinding gap that csrf.Protect's
-// Sec-Fetch-Site check doesn't cover (see the comment above where this is
-// registered in setupRouter).
+// requireLoopbackHost rejects non-loopback Host headers (DNS rebinding).
 func requireLoopbackHost(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !hostAllowed(r.Host) {
@@ -444,12 +428,8 @@ func requireLoopbackHost(next http.Handler) http.Handler {
 	})
 }
 
-// hostAllowed reports whether host - a request's Host header, "host" or
-// "host:port" - names loopback. The server always binds 127.0.0.1, so a
-// non-loopback Host value only ever shows up via DNS rebinding (an
-// attacker-controlled hostname resolved to 127.0.0.1) rather than a real
-// remote request, since nothing outside the machine can reach this port
-// under any hostname at all.
+// hostAllowed reports whether a Host header names loopback. We bind
+// 127.0.0.1, so anything else can only be DNS rebinding.
 func hostAllowed(host string) bool {
 	h := host
 	if hh, _, err := net.SplitHostPort(host); err == nil {
@@ -475,11 +455,9 @@ func securityHeaders(next http.Handler) http.Handler {
 		// Control referrer information
 		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 
-		// Content Security Policy - restrict resource loading.
-		// 'unsafe-inline' (style-src) covers layout.html's <style> block and
-		// inline style attributes; 'unsafe-inline' (script-src) covers HTMX's
-		// inline attributes and the small inline scripts in the templates.
-		// No 'unsafe-eval'. All CSS and JS is self-hosted under /static/.
+		// CSP: unsafe-inline covers layout.html's <style>, style attributes,
+		// HTMX attributes and small inline scripts. No unsafe-eval; all
+		// assets self-hosted under /static/.
 		csp := "default-src 'self'; " +
 			"script-src 'self' 'unsafe-inline'; " +
 			"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
@@ -528,20 +506,13 @@ func openBrowser(url string) {
 	_ = exec.Command(cmd, args...).Start()
 }
 
-// activeProfileCookie names the cookie that remembers which profile the web
-// UI is currently scoped to. Plain (not HttpOnly/Secure) since it carries no
-// secret - just a UI preference - and the server always validates it against
-// the configured profile list before trusting it, so a tampered value just
-// falls back to the first profile rather than granting anything.
+// activeProfileCookie holds the web UI's profile choice. Not HttpOnly/Secure:
+// no secret, and it's validated against the config (bad value = first profile).
 const activeProfileCookie = "eraser_profile"
 
-// activeProfile resolves which profile the current request should act on.
-// Unlike the CLI's --profile flag (where an ambiguous, unspecified profile
-// is a hard error - see config.GetProfile), the web UI always has a
-// definite answer: the eraser_profile cookie if it still names a configured
-// profile, else the first configured profile. This is what every
-// profile-scoped handler below should call instead of reaching for
-// s.config.Profile directly.
+// activeProfile is the request's profile: the cookie if it names a configured
+// one, else the first. Unlike --profile, never ambiguous. Use this, not
+// s.config.Profile.
 func (s *Server) activeProfile(r *http.Request) config.NamedProfile {
 	cfg := s.getConfig()
 	if cfg == nil {
@@ -577,12 +548,6 @@ type BrokerWithStatus struct {
 	ManualMode bool // config.Options.send_mode == "manual" - row shows "Email" + "Mark sent" instead of "Send"
 }
 
-// getBrokersWithStatus returns brokers with their history status. When
-// showExcluded is false (the normal case - the default brokers view, and
-// every send path), brokers matching ExcludedBrokers/ExcludedCategories are
-// dropped entirely, same as broker.Filter. When true (the brokers page's
-// "Show excluded" checkbox), they're included instead, with Excluded set,
-// so the UI can render an Include button instead of Send.
 func stringSet(items []string) map[string]bool {
 	set := make(map[string]bool, len(items))
 	for _, item := range items {
@@ -593,6 +558,8 @@ func stringSet(items []string) map[string]bool {
 	return set
 }
 
+// getBrokersWithStatus returns brokers with history status. Excluded brokers
+// are dropped unless showExcluded, where they're kept with Excluded set.
 func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, includeIDs, excludeIDs []string, missingEmail, showExcluded bool) []BrokerWithStatus {
 	// Get all broker statuses from history, scoped to the active profile
 	var brokerStatuses map[string]history.BrokerStatus
@@ -603,11 +570,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		brokerStatuses = make(map[string]history.BrokerStatus)
 	}
 
-	// excluded_brokers/excluded_categories (config.yaml) used to only be
-	// enforced by the CLI's `send` command via broker.Filter - the web UI's
-	// list and bulk-send both went through this function instead, which
-	// never looked at either option, so a configured exclusion silently had
-	// no effect here. Apply the same two checks broker.Filter does.
+	// same exclusions as broker.Filter; the web UI used to skip them
 	var excludedIDs, excludedNames, excludedCats, configuredRegions map[string]bool
 	if cfg := s.getConfig(); cfg != nil {
 		excludedIDs = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
@@ -774,14 +737,9 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	data["CSRFToken"] = ""
 	data["CSRFField"] = template.HTML("")
 
-	// Every page gets the profile switcher's data, regardless of whether the
-	// handler itself needed the active profile - Profiles has length 1 for a
-	// single-profile config, in which case layout.html hides the switcher.
-	// Profiles/ActiveProfile must always be set, even when cfg is nil (a
-	// fresh install with no config.yaml yet, e.g. the very first /setup
-	// page) - leaving the map key entirely absent used to make layout.html's
-	// `{{len .Profiles}}` fail with "error calling len: reflect: call of
-	// reflect.Value.Type on zero Value" on every brand-new install.
+	// Profiles/ActiveProfile always set, even with no config yet (first
+	// /setup): layout.html's len .Profiles failed on a missing key.
+	// The switcher hides itself for a single profile.
 	data["Profiles"] = []config.NamedProfile{}
 	data["ActiveProfile"] = config.NamedProfile{}
 	data["CurrentPath"] = r.URL.Path

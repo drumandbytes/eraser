@@ -9,16 +9,8 @@ import (
 	"testing"
 )
 
-// TestHandleSettingsInboxSetsGmailServerDefaults guards against a
-// regression where saving inbox settings from the web UI wrote an
-// InboxConfig with Server/Port left at their zero values (settings.html
-// only collects email/password - it's a Gmail-only form and never asked
-// for a server/port). That produced a live in-memory config (and a saved
-// config.yaml) with server="" port=0, which broke the next inbox
-// scan/monitor with "dial tcp :0: connect: can't assign requested
-// address" until the process was restarted (config.Load's own
-// default-filling only runs at startup, not when handleSettingsInbox
-// stores directly into the already-running server's config).
+// Saving inbox settings must set Gmail server/port: the form stores straight
+// into the live config, and zero values broke the next scan with "dial tcp :0".
 func TestHandleSettingsInboxSetsGmailServerDefaults(t *testing.T) {
 	s := newTestServer(t, testConfig())
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")

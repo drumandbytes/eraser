@@ -36,13 +36,8 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleAPIBrokerStatus returns just the status-badge fragment for one
-// broker (the desktop badge, plus an out-of-band swap for the mobile one) -
-// used by the brokers page during an active send job to refresh only the
-// row that just changed, instead of re-fetching and re-rendering the
-// entire (700+) broker table on every poll tick. See
-// internal/history.Store.GetBrokerStatus for the single-broker-scoped query
-// this uses instead of the all-brokers GROUP BY.
+// handleAPIBrokerStatus returns one broker's status badge (plus the mobile OOB
+// swap), so an active send refreshes one row instead of the 700+ row table.
 func (s *Server) handleAPIBrokerStatus(w http.ResponseWriter, r *http.Request) {
 	brokerID := chi.URLParam(r, "brokerID")
 	if s.brokerDB.FindByID(brokerID) == nil {
@@ -589,11 +584,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// If there are records missing bodies, try to fetch from IMAP. Responses
-	// span every profile (GetAllBrokerResponses is global), so this fetches
-	// from every distinct configured inbox rather than just the active
-	// profile's, or a reply sent to another profile's own account would
-	// never get its body backfilled.
+	// backfill bodies from every configured inbox: responses span all profiles
 	cfg := s.getConfig()
 	var bodiesUpdated int
 	var inboxes []config.InboxConfig

@@ -74,15 +74,9 @@ func sanitizeSMTPError(err error) error {
 	return fmt.Errorf("SMTP error: check your configuration")
 }
 
-// send dials addr, optionally wraps the connection in TLS, and runs the SMTP
-// transaction - all under ctx. net/smtp has no context support of its own
-// (smtp.SendMail included, which is why this doesn't just call it), so a
-// server that accepts the connection and then never answers would otherwise
-// hang the caller forever: the 30s timeout callers set on ctx, and a
-// cancelled job's Cancel button, would both be silently ignored. Closing the
-// connection when ctx is done is what actually makes those work - net/smtp's
-// blocking Read/Write calls return an error the moment the underlying conn
-// closes.
+// send runs the SMTP transaction under ctx. net/smtp has no context support,
+// so a silent server would hang forever and ignore timeouts and Cancel;
+// closing the conn on ctx.Done unblocks its reads and writes.
 func (s *SMTPSender) send(ctx context.Context, addr string, auth smtp.Auth, from, to string, msg []byte, useTLS bool) error {
 	var d net.Dialer
 	conn, err := d.DialContext(ctx, "tcp", addr)

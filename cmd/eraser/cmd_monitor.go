@@ -107,10 +107,8 @@ func runMonitor(days int, once bool, watch bool) error {
 		return nil
 	}
 
-	// --watch blocks per inbox (each one waits for new mail indefinitely),
-	// so watching more than one inbox genuinely needs concurrency here.
-	// Concurrent writes to the shared store are safe: NewStore opens it in
-	// WAL mode with a busy_timeout.
+	// --watch blocks per inbox, so several inboxes need goroutines. NewStore's
+	// WAL + busy_timeout makes their concurrent writes safe.
 	var wg sync.WaitGroup
 	errs := make([]error, len(inboxes))
 	for i, inboxCfg := range inboxes {
@@ -130,12 +128,9 @@ func runMonitor(days int, once bool, watch bool) error {
 	return nil
 }
 
-// scanInbox connects to one IMAP inbox, classifies and stores its broker
-// replies, and (with --watch) keeps watching it for new mail until ctx is
-// cancelled. Every profile that shares this inbox (or falls back to it) is
-// scanned together - a shared inbox carries replies for every such
-// profile's sent requests, so each reply is attributed after the fact via
-// ResolveProfileForBroker rather than to any one of them.
+// scanInbox classifies and stores one inbox's broker replies, and with --watch
+// keeps watching until ctx ends. Replies are attributed per broker via
+// ResolveProfileForBroker, since a shared inbox serves several profiles.
 func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, once bool, watch bool) error {
 	monitor := inbox.NewMonitor(inboxCfg, brokerDB.Brokers)
 

@@ -2,12 +2,8 @@ package browser
 
 import "testing"
 
-// Table-driven coverage for matchesAllowedDomain, the shared allowlist logic
-// behind both Browser.NavigateAndFill's pre-navigation check and
-// ConfirmationHandler's redirect-hop re-validation. A regression here (e.g.
-// a suffix check that accidentally allows "evilbroker.com" to match an
-// allowed "broker.com") would silently reopen the PII-exfiltration hole
-// these checks were added to close.
+// matchesAllowedDomain backs both allowlist checks; a loose suffix match
+// (evilbroker.com vs broker.com) would reopen the PII exfiltration hole.
 func TestMatchesAllowedDomain(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -129,13 +125,8 @@ func TestMatchesAllowedDomain(t *testing.T) {
 	}
 }
 
-// The empty-allowlist behavior documented above (matchesAllowedDomain itself
-// always returns false for an empty/nil list) is deliberately *not* what
-// Browser.NavigateAndFill does at the call site -- it treats an empty list as
-// "no restriction configured" and skips the check entirely (see browser.go,
-// `if len(b.allowedDomains) > 0`). This test just pins down the lower-level
-// function's own behavior so that call-site policy doesn't get confused with
-// it.
+// The function itself returns false for an empty list; NavigateAndFill treats
+// empty as "not configured" at the call site. This pins the function only.
 func TestMatchesAllowedDomain_EmptyAllowlistIsDocumentedAsNoMatch(t *testing.T) {
 	match, _, err := matchesAllowedDomain("https://anything.example.com", []string{})
 	if err != nil {

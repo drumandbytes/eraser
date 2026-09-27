@@ -16,11 +16,8 @@ import (
 	gomail "github.com/emersion/go-message/mail"
 )
 
-// buildMIMEMessage builds a single-part text/plain MIME message (valid
-// RFC 5322 + MIME headers, no multipart wrapping needed since mail.NewReader
-// synthesizes one) with the given body. Content-Transfer-Encoding is set to
-// "8bit" so the bytes pass through undecoded, making the resulting decoded
-// body directly comparable to the input.
+// buildMIMEMessage builds a single-part text/plain message with 8bit encoding,
+// so the decoded body equals the input.
 func buildMIMEMessage(t *testing.T, body string) []byte {
 	t.Helper()
 
@@ -43,14 +40,8 @@ func buildMIMEMessage(t *testing.T, body string) []byte {
 	return buf.Bytes()
 }
 
-// TestParseMessageCapsOversizedMIMEPart is the highest-priority regression
-// test for the maxMIMEPartBytes fix: a broker-reply email is
-// attacker-influenced (anyone can mail the monitored inbox), so a MIME part
-// body read without a bound would let a huge attachment or body force
-// unbounded memory growth. This constructs a synthetic oversized MIME
-// message directly (no live/mocked IMAP server needed - parseMessage takes
-// an *imap.Message whose Body map we can populate ourselves) and asserts
-// the parsed Email.Body never exceeds the cap.
+// An oversized MIME part must be capped at maxMIMEPartBytes (inbox content is
+// attacker-controlled).
 func TestParseMessageCapsOversizedMIMEPart(t *testing.T) {
 	const oversizeBy = 5 << 20 // 5MB past the cap
 	const size = maxMIMEPartBytes + oversizeBy
@@ -118,11 +109,7 @@ func TestParseMessageDoesNotPadSmallBodies(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------
-// Fake IMAP server helpers, used by the tests below to exercise code paths
-// that need a real *client.Client (a concrete type from emersion/go-imap
-// with no interface seam - see notes on TestDeletedUIDsBesides and
-// TestUidSearchCtxCancellation for why this route was chosen and what was
-// left untested).
+// Fake IMAP server helpers for code that needs a real *client.Client.
 // ---------------------------------------------------------------------
 
 // fakeIMAPServer runs a scripted conversation against one accepted
@@ -201,20 +188,9 @@ func writeLines(conn net.Conn, lines ...string) error {
 	return nil
 }
 
-// TestDeletedUIDsBesides exercises the deletedUIDsBesides helper added by
-// the Expunge over-deletion fix, against a minimal scripted IMAP server on
-// a real loopback TCP connection.
-//
-// Why a real server and not a mock: Monitor.client is the concrete
-// *client.Client type from github.com/emersion/go-imap/client - there is no
-// interface seam to substitute a fake implementation, and several of the
-// client's methods (UidSearch included) refuse to run unless the client
-// believes it is in the IMAP "selected" state, which is only reachable by
-// actually driving the wire protocol. go-imap's own client tests solve this
-// with an unexported test-only state setter that isn't visible outside
-// their package, so from internal/inbox the only path in is a real
-// loopback listener speaking just enough IMAP: a PREAUTH greeting (skips
-// LOGIN) followed by a scripted SELECT and UID SEARCH exchange.
+// TestDeletedUIDsBesides runs against a scripted loopback IMAP server:
+// *client.Client is concrete, and UidSearch needs the "selected" state,
+// reachable only over the wire (PREAUTH greeting, then SELECT and UID SEARCH).
 func TestDeletedUIDsBesides(t *testing.T) {
 	addr := fakeIMAPServer(t, func(conn net.Conn, br *bufio.Reader) error {
 		// Advertise capabilities directly in the greeting (via the
@@ -284,13 +260,7 @@ func TestDeletedUIDsBesides(t *testing.T) {
 	}
 }
 
-// TestUidSearchCtxCancellation checks that uidSearchCtx returns promptly
-// with ctx.Err() when the context is canceled while the underlying IMAP
-// command is still in flight, mirroring the existing cancellation pattern
-// WatchForNewEmails uses for its blocking IDLE call. The fake server reads
-// the UID SEARCH command and then deliberately never responds, simulating
-// a slow/hung server; the test asserts uidSearchCtx does not block on that
-// non-response.
+// uidSearchCtx must return ctx.Err() promptly while the server never answers.
 func TestUidSearchCtxCancellation(t *testing.T) {
 	gotCommand := make(chan struct{})
 
@@ -368,11 +338,7 @@ func TestUidSearchCtxCancellation(t *testing.T) {
 	}
 }
 
-// TestFetchMessagesCtxCancellation is the fetchMessagesCtx analogue of
-// TestUidSearchCtxCancellation above: the fake server acknowledges SELECT,
-// reads the UID FETCH command, and then hangs, verifying fetchMessagesCtx
-// also returns promptly on context cancellation instead of blocking on the
-// UidFetch call.
+// Same as above for fetchMessagesCtx and a hung UID FETCH.
 func TestFetchMessagesCtxCancellation(t *testing.T) {
 	gotCommand := make(chan struct{})
 
@@ -455,20 +421,9 @@ func TestFetchMessagesCtxCancellation(t *testing.T) {
 	}
 }
 
-// Note on ArchiveEmails / the Expunge over-deletion fix as a whole:
-// deletedUIDsBesides (tested above) is the new logic the fix introduced.
-// A full end-to-end ArchiveEmails test (forcing the UID MOVE to fail so the
-// COPY+STORE+EXPUNGE fallback runs, then asserting the expunge-count
-// mismatch warning is logged) is possible with the same fake-server
-// approach but requires scripting a longer, more failure-prone exchange
-// (capability negotiation so the real client.UidMove sends a wire command
-// instead of silently rerouting to its own internal fallback, then COPY,
-// STORE, the deletedUIDsBesides SEARCH, and EXPUNGE in sequence, plus
-// capturing the log package's default output). Given that risk/complexity
-// for coverage that deletedUIDsBesides's own test already exercises at the
-// unit level, it was left out here rather than force it; the code path is
-// still straight-line log-and-continue logic with no branching this test
-// suite doesn't already cover in isolation.
+// No end-to-end ArchiveEmails test: forcing the COPY+STORE+EXPUNGE fallback
+// needs a long, brittle scripted exchange, and deletedUIDsBesides is covered
+// above; the rest is straight-line log-and-continue.
 
 // fetchMatching only downloads bodies for mail the envelope pass keeps, so
 // these predicates must accept everything the old full-fetch-then-filter

@@ -80,17 +80,9 @@ func TestLastSuccessfulSendTimes(t *testing.T) {
 	}
 }
 
-// TestGetAllBrokerStatusesScansAggregateTime guards against a regression
-// where GetAllBrokerStatuses scanned its MAX(sent_at) column into
-// sql.NullTime directly. Aggregate functions lose the driver's native
-// time.Time conversion (confirmed against modernc.org/sqlite - a raw
-// `sent_at` column scans fine, but `MAX(sent_at)` comes back as a plain
-// string), so that scan errored on every call, and the error was silently
-// discarded by getBrokersWithStatus's `brokerStatuses, _ =
-// s.historyStore.GetAllBrokerStatuses(...)`, making every broker show as
-// "never sent" on the web UI's Brokers page regardless of real history.
-// LastSuccessfulSendTimes already had the right fix (parseSQLiteTime) -
-// this test would have caught that GetAllBrokerStatuses didn't.
+// MAX(sent_at) comes back as a string with modernc.org/sqlite, so scanning into
+// sql.NullTime failed, and the swallowed error showed every broker as
+// "never sent".
 func TestGetAllBrokerStatusesScansAggregateTime(t *testing.T) {
 	s := newTestStore(t)
 	now := time.Now()
@@ -194,12 +186,7 @@ func TestMarkFailedOnlyTouchesMostRecentSentRecord(t *testing.T) {
 	}
 }
 
-// Regression coverage for digisamroc/eraser#3: broker_responses.email_body
-// was referenced by AddBrokerResponse's INSERT (and UpdateBrokerResponseBody,
-// GetAllBrokerResponses, GetBrokerResponses) but missing from the CREATE
-// TABLE, so `eraser monitor` failed on every classified reply with "table
-// broker_responses has no column named email_body" on any database created
-// before the migrate() fix. This exercises the exact path that broke.
+// digisamroc/eraser#3: email_body was queried but missing from CREATE TABLE.
 func TestAddBrokerResponse_EmailBodyColumn(t *testing.T) {
 	s := newTestStore(t)
 
@@ -321,11 +308,8 @@ func TestProfileIsolation_EmptyProfileIDDefaultsConsistently(t *testing.T) {
 }
 
 func TestMigrationBackfillsExistingRowsToDefaultProfile(t *testing.T) {
-	// Simulate a pre-multi-profile database: create the removal_requests
-	// table without a profile_id column (as it existed before this
-	// feature), insert a row the old way, then run migrate() and confirm
-	// the ALTER TABLE ... DEFAULT backfill makes the row show up under
-	// DefaultProfileID rather than vanishing behind the new filter.
+	// pre-multi-profile table without profile_id; migrate() must backfill
+	// DefaultProfileID
 	dbPath := filepath.Join(t.TempDir(), "legacy.db")
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
@@ -406,15 +390,8 @@ func TestResolveProfileForBroker(t *testing.T) {
 
 // ==================== Profile-Scoped Task/Response Isolation ====================
 //
-// Regression coverage for a fix that added "AND profile_id = ?" to
-// GetPendingTaskByID, CompletePendingTask, MarkTaskOpened,
-// UpdateBrokerResponseClassification and UpdateBrokerResponseBody, so a
-// caller in one profile's session can no longer read or mutate a task/
-// response that belongs to another profile just by guessing/reusing its
-// numeric ID. Each test below confirms both halves: the cross-profile call
-// is a no-op (getter returns nil,nil; updater returns no error but leaves
-// the row untouched), and the same call with the correct profile still
-// works as before.
+// Task/response getters and updaters are scoped by profile_id: a wrong profile
+// is a no-op (nil,nil or untouched row), the right one still works.
 
 func addPendingTaskForProfile(t *testing.T, s *Store, profileID, brokerID string) *PendingTask {
 	t.Helper()

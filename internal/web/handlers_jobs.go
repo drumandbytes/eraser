@@ -17,11 +17,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// checkPendingJob checks every configured profile for an incomplete job
-// from a previous session and resumes each one it finds. Pending-job state
-// is persisted per profile (JobPersistence.filePath), since GetActive lets
-// two profiles send concurrently - a single shared file could only ever
-// remember one of them.
+// checkPendingJob resumes each profile's incomplete job; state is per
+// profile since two profiles can send concurrently.
 func (s *Server) checkPendingJob() {
 	cfg := s.getConfig()
 	if cfg == nil {
@@ -55,11 +52,8 @@ func (s *Server) resumePendingJob(state *PersistentJobState) {
 	// Wait a moment for the server to fully start
 	time.Sleep(2 * time.Second)
 
-	// state.ProfileID is empty for a job persisted before multi-profile
-	// support existed - normalizes to the same "default" every other
-	// pre-migration record falls back to. Resolved up front so every Clear
-	// call below (including the early-return ones) targets the same file
-	// Load read from, rather than the bare pre-migration name.
+	// jobs from before multi-profile have no ProfileID; resolve it up front so
+	// every Clear below targets the file Load read
 	profileID := state.ProfileID
 	if profileID == "" {
 		profileID = config.DefaultProfileID
@@ -170,11 +164,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate email content using template engine. Use the user's
-	// configured template (gdpr/ccpa/generic) - this used to be hardcoded
-	// to "generic", which meant every web-UI send cited generic privacy law
-	// language instead of GDPR Article 17 regardless of what init/settings
-	// configured. config.Load guarantees Options.Template is never empty.
+	// configured template (gdpr/ccpa/generic); config.Load guarantees one
 	tmplName := cfg.Options.Template
 	rendered, err := s.tmplEngine.Render(tmplName, activeProfile.Profile, *br)
 	if err != nil {
@@ -328,11 +318,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The GetActive check above is a fast-fail for the common case (skip
-	// building toSend and validating the sender for a request that's going
-	// to be rejected anyway); it doesn't itself prevent two concurrent
-	// requests both passing it before either creates a job. CreateIfNoActive
-	// re-checks and inserts under one lock, so only one of them wins here.
+	// GetActive above is only a fast-fail; CreateIfNoActive re-checks under the lock
 	job, created := s.jobManager.CreateIfNoActive(len(toSend), activeProfile.ID)
 	if !created {
 		w.WriteHeader(http.StatusConflict)
@@ -378,14 +364,8 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 // config.Load already fills this in normally, so this is just a safety net.
 const defaultDailyLimit = 250 // Gmail/SMTP: stay well under 500/day
 
-// effectiveDailyLimit returns the daily send limit to actually use, given a
-// (possibly nil) config: the configured value if it's a usable positive
-// number, else defaultDailyLimit. Used by both the brokers-page banner
-// (handleBrokers) and job enforcement (processSendJob) so they can't
-// disagree - they used to apply different fallback checks (`> 0` vs
-// `== 0`), which meant a hand-edited negative daily_send_limit made the
-// banner show the 250 default while processSendJob treated the negative
-// number as a real limit and paused the job after sending zero emails.
+// effectiveDailyLimit is the configured limit if positive, else the default.
+// Shared by the banner and processSendJob so they can't disagree.
 func effectiveDailyLimit(cfg *config.Config) int {
 	if cfg != nil && cfg.Options.DailySendLimit > 0 {
 		return cfg.Options.DailySendLimit
@@ -424,13 +404,8 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 	dailyLimit := effectiveDailyLimit(cfg)
 	job.SetDailyLimit(dailyLimit)
 
-	// alreadySentToday anchors the limit to the actual rolling-24h send
-	// history (the same check the CLI's `send` does via CountSentSince),
-	// not just this invocation's local counter. Without it, `sent` restarts
-	// at 0 every time processSendJob runs - on a server restart resuming a
-	// paused job, or simply on a second "Send all" click later the same
-	// day - so daily_send_limit only ever capped a single run, not the
-	// actual volume sent per day.
+	// count the real rolling 24h (like the CLI's CountSentSince), or the limit
+	// resets on every resume or second "Send all" the same day
 	alreadySentToday := 0
 	if s.historyStore != nil {
 		if n, err := s.historyStore.CountSentSince(activeProfile.ID, time.Now().Add(-24*time.Hour)); err == nil {

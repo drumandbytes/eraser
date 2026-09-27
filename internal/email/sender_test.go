@@ -2,14 +2,8 @@ package email
 
 import "testing"
 
-// Regression coverage for a real finding filed against upstream
-// (digisamroc/eraser#6): SMTP header injection via unsanitized From/To
-// fields. smtp.go interpolates msg.From/msg.To directly into raw header
-// lines ("To: %s\r\n"), so if a broker's email in data/brokers.yaml ever
-// contained a CRLF, an attacker could inject arbitrary headers (e.g. a
-// forged Bcc) into every message sent to that address. validateMessage
-// (called first thing in Send) is what actually prevents this - this test
-// exists so a future refactor can't silently drop that call.
+// digisamroc/eraser#6: From/To go straight into header lines, so a CRLF in a
+// broker address could inject headers (e.g. Bcc). Guards validateMessage in Send.
 func TestValidateEmail_RejectsHeaderInjection(t *testing.T) {
 	tests := []struct {
 		name    string

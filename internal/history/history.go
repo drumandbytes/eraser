@@ -21,11 +21,8 @@ const (
 	StatusPending Status = "pending"
 )
 
-// DefaultProfileID mirrors config.DefaultProfileID (history can't import
-// config - that would create an import cycle, since config has no
-// dependency on history and should stay that way). Every row written before
-// multi-profile support existed is attributed to this ID by the migration
-// below, and it's what a single-profile config's requests are stamped with.
+// DefaultProfileID mirrors config.DefaultProfileID (importing config would
+// cycle). Pre-multi-profile rows are migrated to it.
 const DefaultProfileID = "default"
 
 // PipelineStatus represents the current stage in the removal pipeline
@@ -177,17 +174,10 @@ func NewStore(dbPath string) (*Store, error) {
 	return store, nil
 }
 
-// addColumnIfMissing runs an `ALTER TABLE ... ADD COLUMN ...` migration
-// statement and swallows only the specific, expected failure modes:
-//   - the column already existing because this migration already ran on
-//     this database (SQLite reports that as a "duplicate column name" error).
-//   - the table not existing yet, on a brand-new database - these ALTER
-//     TABLE calls intentionally run before the CREATE TABLE IF NOT EXISTS
-//     below, so on a fresh install every one of them hits a table that
-//     doesn't exist yet (SQLite reports that as "no such table").
-//
-// Any other failure (disk full, permissions, corrupted db, ...) is a
-// genuine problem and is returned wrapped instead of being silently ignored.
+// addColumnIfMissing runs an ALTER TABLE ADD COLUMN migration, ignoring only
+// "duplicate column name" (already migrated) and "no such table" (fresh
+// install: these run before CREATE TABLE IF NOT EXISTS). Anything else is
+// returned.
 func addColumnIfMissing(db *sql.DB, alterSQL string) error {
 	if _, err := db.Exec(alterSQL); err != nil {
 		msg := strings.ToLower(err.Error())
@@ -214,20 +204,13 @@ func (s *Store) migrate() error {
 	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN opened_at DATETIME`); err != nil {
 		return err
 	}
-	// broker_responses.email_body: matches digisamroc/eraser#3 - the column
-	// was referenced by INSERT/SELECT/UPDATE statements below but never
-	// actually in the CREATE TABLE, so `eraser monitor` broke on every
-	// classified reply with "table broker_responses has no column named
-	// email_body" on any database created before this fix. Also added to
-	// the CREATE TABLE itself so a fresh install gets it from the start.
+	// broker_responses.email_body (digisamroc/eraser#3): used by queries but
+	// missing from CREATE TABLE, so `monitor` broke on older databases.
 	if err := addColumnIfMissing(s.db, `ALTER TABLE broker_responses ADD COLUMN email_body TEXT`); err != nil {
 		return err
 	}
-	// profile_id: added for multi-profile support. Every row written before
-	// this existed - across all three tables - gets attributed to
-	// DefaultProfileID here, matching what a single-profile config's
-	// GetProfiles() synthesizes, so existing history stays fully visible
-	// after upgrading rather than silently vanishing behind a profile filter.
+	// profile_id: existing rows in all three tables become DefaultProfileID,
+	// so pre-upgrade history stays visible.
 	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN profile_id TEXT NOT NULL DEFAULT '`+DefaultProfileID+`'`); err != nil {
 		return err
 	}
@@ -321,11 +304,7 @@ func (s *Store) migrate() error {
 	return nil
 }
 
-// normalizeProfileID defaults an empty profile ID to DefaultProfileID, so
-// callers that haven't been updated to pass one yet (or legitimately have
-// none - a single-profile setup) still get consistent, queryable rows
-// instead of an empty-string profile_id that GetProfiles()'s "default"
-// wrapper wouldn't match.
+// normalizeProfileID maps "" to DefaultProfileID so rows stay queryable.
 func normalizeProfileID(id string) string {
 	if id == "" {
 		return DefaultProfileID
@@ -474,13 +453,9 @@ func (s *Store) CountSentSince(profileID string, since time.Time) (int, error) {
 	return count, nil
 }
 
-// parseSQLiteTime parses a DATETIME value read back from this driver via an
-// aggregate function (e.g. MAX()), which loses its native time.Time scan
-// type and comes back as text. The modernc.org/sqlite driver serializes
-// time.Time using Go's default String() format, which can include a
-// monotonic-clock reading suffix (" m=...") that time.Parse rejects, so
-// that suffix is stripped first. Falls back to a couple of other formats
-// this codebase has stored timestamps in, for resilience across versions.
+// parseSQLiteTime parses DATETIME text returned by aggregates like MAX().
+// modernc.org/sqlite writes time.Time's String(), whose " m=..." monotonic
+// suffix time.Parse rejects, so it's stripped; older formats are tried too.
 func parseSQLiteTime(s string) (time.Time, error) {
 	if i := strings.Index(s, " m="); i != -1 {
 		s = s[:i]
@@ -502,11 +477,8 @@ func parseSQLiteTime(s string) (time.Time, error) {
 	return time.Time{}, lastErr
 }
 
-// parseFlexibleTimeString parses a nullable TEXT timestamp column as read
-// back by database/sql for this driver, which can come back in either
-// time.RFC3339 or the plain "2006-01-02 15:04:05" form depending on how it
-// was written. Returns the zero Time (with no error) for a NULL column,
-// matching how sql.NullTime callers already treat an unset timestamp.
+// parseFlexibleTimeString parses a nullable TEXT timestamp in RFC3339 or
+// "2006-01-02 15:04:05". NULL gives the zero Time.
 func parseFlexibleTimeString(s sql.NullString) time.Time {
 	if !s.Valid {
 		return time.Time{}
@@ -518,10 +490,7 @@ func parseFlexibleTimeString(s sql.NullString) time.Time {
 	return t
 }
 
-// LastSuccessfulSendTimes returns, for every broker with at least one
-// successful send, the timestamp of its most recent one - in a single
-// query, so callers filtering a large broker list against a resend
-// cooldown don't need one query per broker.
+// LastSuccessfulSendTimes returns each broker's latest successful send, in one query.
 func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time, error) {
 	rows, err := s.db.Query(
 		`SELECT broker_id, MAX(sent_at) FROM removal_requests WHERE profile_id = ? AND status = ? GROUP BY broker_id`,
@@ -551,18 +520,10 @@ func (s *Store) LastSuccessfulSendTimes(profileID string) (map[string]time.Time,
 	return times, rows.Err()
 }
 
-// MarkFailed flips a broker's most recent "sent" record over to "failed",
-// recording the given note in its error field. This exists because a normal
-// SMTP send only tells you the message was handed off, not that it actually
-// arrived - Add() records StatusSent as soon as the provider accepts it, and
-// a bounce shows up later as a separate, asynchronous email. Without inbox
-// monitoring enabled, nothing corrects that record automatically. Once a
-// bounce has been confirmed by hand (or a broker's contact info has been
-// fixed and it should be retried), this is what removes the false "sent" so
-// LastSuccessfulSendTimes() - and therefore the resend cooldown in `send` -
-// stops treating the broker as already contacted. Returns the number of
-// rows updated: 0 means there was no "sent" record for that broker to fix
-// (e.g. it was never sent, or was already marked failed).
+// MarkFailed flips a broker's latest "sent" record to "failed" with a note.
+// SMTP acceptance isn't delivery, and without inbox monitoring nothing fixes a
+// later bounce; this lets the resend cooldown stop counting that broker as
+// contacted. Returns rows updated (0 = nothing to fix).
 func (s *Store) MarkFailed(profileID, brokerID, note string) (int64, error) {
 	query := `UPDATE removal_requests SET status = ?, error = ?
 		WHERE id = (
@@ -576,16 +537,9 @@ func (s *Store) MarkFailed(profileID, brokerID, note string) (int64, error) {
 	return result.RowsAffected()
 }
 
-// ResolveProfileForBroker returns the profile_id of the most recent
-// removal_request sent to brokerID, regardless of which profile sent it.
-// Used when processing inbox replies: the shared IMAP inbox (config.Inbox
-// is one mailbox for the whole install, not per-profile) carries replies
-// for every profile's requests together, so a reply has to be attributed to
-// whichever profile actually emailed that broker rather than to whatever
-// profile happens to be "active" in the CLI/web session doing the
-// monitoring. Falls back to DefaultProfileID if the broker was never
-// emailed by any profile (e.g. a reply arrived before send()'s history
-// write, or the history was cleared).
+// ResolveProfileForBroker returns the profile that most recently emailed
+// brokerID, so replies in a shared inbox go to the right profile rather than
+// the active one. DefaultProfileID if none did.
 func (s *Store) ResolveProfileForBroker(brokerID string) (string, error) {
 	var profileID sql.NullString
 	err := s.db.QueryRow(
@@ -632,11 +586,7 @@ func (s *Store) GetAllBrokerStatuses(profileID string) (map[string]BrokerStatus,
 			if t, err := parseSQLiteTime(lastSent.String); err == nil {
 				bs.LastSent = t
 			} else {
-				// Don't fail the whole batch over one malformed row (the
-				// caller, getBrokersWithStatus, would otherwise fall back to
-				// an empty map and show every broker as "never sent" instead
-				// of just this one missing its timestamp) - but don't stay
-				// silent about it either, unlike this used to.
+				// log and skip one bad row rather than blanking every broker's status
 				log.Printf("Warning: failed to parse last send time %q for broker %q: %v", lastSent.String, bs.BrokerID, err)
 			}
 		}
@@ -646,11 +596,8 @@ func (s *Store) GetAllBrokerStatuses(profileID string) (map[string]BrokerStatus,
 	return statuses, rows.Err()
 }
 
-// GetBrokerStatus returns one broker's status - the single-broker-scoped
-// equivalent of GetAllBrokerStatuses, used by the web UI to refresh just
-// one row (see handleAPIBrokerStatus) instead of re-running the
-// GROUP-BY-plus-correlated-subquery query over every broker on every poll
-// tick during an active send.
+// GetBrokerStatus is GetAllBrokerStatuses for one broker, so the web UI can
+// refresh a single row while a send is polling.
 func (s *Store) GetBrokerStatus(profileID, brokerID string) (BrokerStatus, error) {
 	bs := BrokerStatus{BrokerID: brokerID}
 
@@ -685,12 +632,8 @@ func (s *Store) DeleteByStatus(profileID string, status Status) (int64, error) {
 	return result.RowsAffected()
 }
 
-// DeleteAllHistory removes every send-history record for one profile,
-// regardless of status. Used by the web UI's Settings > Danger Zone >
-// "Clear All History" action. This only touches removal_requests (what
-// brokers you've emailed and when) - broker_responses (inbox-classified
-// replies) is a separate table and is untouched; see ClearBrokerResponses
-// for that.
+// DeleteAllHistory removes one profile's removal_requests (Settings > Danger
+// Zone). broker_responses is untouched; see ClearBrokerResponses.
 func (s *Store) DeleteAllHistory(profileID string) (int64, error) {
 	result, err := s.db.Exec(`DELETE FROM removal_requests WHERE profile_id = ?`, normalizeProfileID(profileID))
 	if err != nil {
@@ -707,16 +650,8 @@ func DefaultDBPath() string {
 	return filepath.Join(home, ".eraser", "history.db")
 }
 
-// DBPathFor returns the history database path to use alongside a given
-// config file: history.db in the same directory as configPath, rather than
-// always the default ~/.eraser/history.db. Every command already accepts
-// --config to point at an alternate config file, but used to still read/
-// write the one shared default history.db regardless - this makes an
-// alternate --config imply an isolated data directory too, the way a user
-// pointing --config at a scratch file would expect. Falls back to
-// DefaultDBPath() when configPath is empty (matches DefaultConfigPath's own
-// fallback path, so behavior for the normal default-config case is
-// unchanged).
+// DBPathFor returns history.db next to configPath, so an alternate --config
+// gets isolated data. DefaultDBPath() when configPath is empty.
 func DBPathFor(configPath string) string {
 	if configPath == "" {
 		return DefaultDBPath()
@@ -911,10 +846,8 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 	return responses, rows.Err()
 }
 
-// GetBrokerResponsesForExport returns every classified response for one profile,
-// oldest first, with the raw email_body included (GetBrokerResponses omits it;
-// GetAllBrokerResponses includes it but is not profile-scoped). Used by
-// `eraser export`.
+// GetBrokerResponsesForExport returns one profile's responses, oldest first,
+// including email_body. Used by `eraser export`.
 func (s *Store) GetBrokerResponsesForExport(profileID string) ([]BrokerResponse, error) {
 	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from,
 		email_subject, email_body, form_url, confirm_url, confidence, needs_review,
@@ -1050,10 +983,7 @@ type FormWithStatus struct {
 // for one profile.
 func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 	profileID = normalizeProfileID(profileID)
-	// Get all broker_responses with form_url, joined with pending_tasks and removal_requests
-	// - all three joins are pinned to the same profile_id so a form/task/
-	// pipeline-status row from a different profile's identical broker_id
-	// never gets matched in.
+	// all three joins pinned to profile_id, so another profile's same broker never matches
 	query := `
 	SELECT
 		br.broker_id,
@@ -1301,10 +1231,8 @@ func (s *Store) GetPendingTaskStats(profileID string) (pending, completed, skipp
 
 // ==================== Pipeline Status Methods ====================
 
-// UpdatePipelineStatus updates the pipeline status for a broker within one
-// profile. Callers processing inbox replies (which can be for any profile)
-// should resolve profileID via ResolveProfileForBroker first rather than
-// assuming whatever profile happens to be active in their own session.
+// UpdatePipelineStatus sets a broker's pipeline status for one profile. For
+// inbox replies, resolve the profile via ResolveProfileForBroker first.
 func (s *Store) UpdatePipelineStatus(profileID, brokerID string, status PipelineStatus) error {
 	profileID = normalizeProfileID(profileID)
 	query := `UPDATE removal_requests SET pipeline_status = ? WHERE profile_id = ? AND broker_id = ? AND id = (

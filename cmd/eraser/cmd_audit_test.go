@@ -68,12 +68,8 @@ func TestAuditOneWebsiteDeadOnConnectionError(t *testing.T) {
 	}
 }
 
-// The distinction that keeps the scheduled audit honest: a connection failure is
-// only evidence of death when the hostname has stopped resolving. If DNS still
-// answers, we are far likelier to have been refused for running in a datacenter.
-// The first scheduled run called 73 brokers dead this way against 1 real one.
-// RFC 7505: a lone "." MX means the domain accepts no mail. Go surfaces it as a
-// normal record, so a naive len(mxs) > 0 reads it as a working contact.
+// A lone "." MX (RFC 7505) accepts no mail; Go returns it as a normal record,
+// so a naive len(mxs) > 0 would call it live.
 func TestAuditOneEmailDeadOnNullMX(t *testing.T) {
 	b := broker.Broker{ID: "nomail", Email: "privacy@nomail.example", Website: "https://nomail.example"}
 	checker := stubChecker(1, 0, 200, nil)

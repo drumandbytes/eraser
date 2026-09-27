@@ -20,14 +20,8 @@ func testProfile() *config.Profile {
 	}
 }
 
-// NavigateAndFill's domain allowlist check (browser.go) runs before any
-// chromedp call is made -- it operates purely on the URL string and
-// b.allowedDomains, and returns early on a mismatch well before `ctx` (which
-// wraps b.ctx) is even created. That means this regression test doesn't need
-// a real Chrome/Chromium binary at all: browser.New() itself only wires up
-// chromedp's allocator/context options without spawning a browser process
-// (chromedp launches lazily on the first chromedp.Run), and this path never
-// reaches a chromedp.Run call.
+// The allowlist check runs before any chromedp.Run, and New() doesn't launch
+// Chrome, so this needs no browser binary.
 func TestNavigateAndFill_RejectsDisallowedDomainBeforeTouchingBrowser(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Headless = true
@@ -57,13 +51,8 @@ func TestNavigateAndFill_RejectsDisallowedDomainBeforeTouchingBrowser(t *testing
 	}
 }
 
-// A subdomain of an allowed domain must still be accepted by the same check
-// (matchesAllowedDomain's subdomain-suffix rule) -- this only verifies the
-// check doesn't reject a legitimate case; it doesn't reach real navigation
-// (Timeout is effectively irrelevant since we never get past the allowlist
-// check without a reachable page, so we use an unroutable target and just
-// confirm the *error*, if any, is a navigation/timeout failure rather than
-// the domain-rejection message).
+// Subdomains must pass the allowlist; any error must be navigation/timeout,
+// not the domain rejection.
 func TestNavigateAndFill_AllowsSubdomainOfAllowedDomain(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Headless = true
@@ -85,14 +74,8 @@ func TestNavigateAndFill_AllowsSubdomainOfAllowedDomain(t *testing.T) {
 	// legitimate subdomain.
 }
 
-// submitForm's clickByTextJS regex (`/submit|remove|opt.?out|delete|request/i`)
-// is embedded inline in a JS snippet passed to chromedp.Evaluate, so it isn't
-// independently callable from Go. This test mirrors that exact pattern as a
-// Go regexp and checks it against representative button labels, to pin down
-// the intended matching semantics (and catch an accidental change to the
-// pattern) even where a full browser-based test isn't run. It is a proxy for
-// the JS behavior, not a substitute for TestSubmitForm_ClicksButtonByVisibleText
-// below.
+// Mirrors clickByTextJS's inline JS regex in Go to pin its semantics; a proxy,
+// not a substitute for TestSubmitForm_ClicksButtonByVisibleText.
 func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 	// Keep in sync with the pattern in submitForm's clickByTextJS (browser.go).
 	pattern := regexp.MustCompile(`(?i)submit|remove|opt.?out|delete|request`)
@@ -123,13 +106,8 @@ func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 	}
 }
 
-// requireChrome creates a Browser and probes it with a trivial navigation to
-// confirm a real Chrome/Chromium binary is actually launchable in this
-// environment. chromedp.NewExecAllocator/NewContext (called from New) don't
-// spawn a browser process by themselves -- the process only launches lazily
-// on the first chromedp.Run -- so this is the earliest point a missing-Chrome
-// environment can be detected. Tests that need a live browser call this and
-// get a Browser back, or the test is skipped cleanly.
+// requireChrome probes with a trivial navigation (Chrome launches lazily on the
+// first Run) and skips the test when no browser can start.
 func requireChrome(t *testing.T) *Browser {
 	t.Helper()
 
@@ -152,12 +130,7 @@ func requireChrome(t *testing.T) *Browser {
 	return b
 }
 
-// End-to-end check that submitForm's text-matching fallback (clickByTextJS)
-// actually finds and clicks a button that has no submit-ish CSS selector
-// (type=submit, .submit-button, #submit, #submit-btn) but does have matching
-// visible text -- this is exactly the case the old ":contains('Submit')"
-// selectors silently failed to handle, since that isn't valid CSS and
-// querySelector throws for it every time.
+// End to end: a button with no submit-ish selector but matching text gets clicked.
 func TestSubmitForm_ClicksButtonByVisibleText(t *testing.T) {
 	b := requireChrome(t)
 	defer b.Close()

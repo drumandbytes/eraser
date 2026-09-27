@@ -149,11 +149,8 @@ func runInit() error {
 	cfg.Inbox = existing.Inbox
 	cfg.Pipeline = existing.Pipeline
 
-	// Carry forward any additional named profiles added via 'eraser profile
-	// add' - re-running init only updates the primary/legacy profile, it
-	// must not silently drop the others. If a "default" entry exists among
-	// them, keep it in sync with the primary profile fields just entered
-	// above instead of leaving it stale.
+	// keep profiles added via `profile add`; sync any "default" entry with the
+	// primary fields just entered
 	cfg.Profiles = make([]config.NamedProfile, len(existing.Profiles))
 	copy(cfg.Profiles, existing.Profiles)
 	for i := range cfg.Profiles {

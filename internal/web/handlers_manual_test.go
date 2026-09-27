@@ -127,12 +127,7 @@ func TestBrokerEmailPageAndMarkSent(t *testing.T) {
 	}
 }
 
-// TestBrokerEmailPageUsesProfileMailOverrideFrom is a regression test for a
-// gap found after the CLI/API send paths were switched to
-// Config.EmailForProfile: this manual-mode "copy the email" page still read
-// the shared cfg.Email.From directly, so a profile with its own mail.email
-// override would show the wrong From address (and mailto: link) here even
-// though `send`/the web send handlers already used its own account.
+// The manual email page must use the profile's mail override From, like send does.
 func TestBrokerEmailPageUsesProfileMailOverrideFrom(t *testing.T) {
 	s := newTestServer(t, &config.Config{
 		Profiles: []config.NamedProfile{{

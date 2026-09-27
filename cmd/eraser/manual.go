@@ -10,11 +10,8 @@ import (
 	emailtmpl "github.com/drumandbytes/eraser/internal/template"
 )
 
-// selectBrokers picks the brokers a manual-mode command should act on: the
-// explicit IDs in args if any were given (erroring on an unknown one), else
-// every broker matching the region/category filters (all of them if both are
-// empty). Brokers with no email on file are kept - the caller decides whether
-// that matters (draft skips them, mark-sent still records intent).
+// selectBrokers returns the brokers named in args (unknown IDs error), else all
+// matching the filters. Brokers without an email are kept; callers decide.
 func selectBrokers(db *broker.BrokerDatabase, args []string, region, category string) ([]broker.Broker, error) {
 	if len(args) > 0 {
 		out := make([]broker.Broker, 0, len(args))

@@ -6,12 +6,8 @@ import (
 	"strings"
 )
 
-// matchesAllowedDomain reports whether rawURL's host matches one of
-// allowedDomains, either exactly or as a subdomain of one of them (e.g.
-// "www.example.com" or "mail.example.com" match an allowed "example.com").
-// It is the shared matching logic behind ConfirmationHandler.ValidateDomain
-// and Browser.NavigateAndFill's pre-navigation allowlist check, so both
-// paths apply identical rules to whatever URL they were handed.
+// matchesAllowedDomain reports whether rawURL's host is an allowed domain or a
+// subdomain of one. Shared by ValidateDomain and NavigateAndFill.
 func matchesAllowedDomain(rawURL string, allowedDomains []string) (bool, string, error) {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {

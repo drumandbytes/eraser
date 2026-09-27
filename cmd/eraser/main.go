@@ -20,11 +20,8 @@ var (
 // version is overridden at release time via -ldflags "-X main.version=...".
 var version = "dev"
 
-// resolveProfile resolves which configured profile a command should operate
-// as, honoring the global --profile flag. With the common single-profile
-// setup, --profile can be omitted entirely - GetProfile falls back to the
-// sole configured profile. With multiple profiles configured, --profile is
-// required and GetProfile returns an error listing the available IDs.
+// resolveProfile applies --profile; optional with a single profile, required
+// with several.
 func resolveProfile(cfg *config.Config) (config.NamedProfile, error) {
 	return cfg.GetProfile(profileFlag)
 }

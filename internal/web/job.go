@@ -243,13 +243,9 @@ func (jm *JobManager) createLocked(total int, profileID string) *Job {
 	return job
 }
 
-// CreateIfNoActive atomically checks for a running job for profileID and
-// creates a new one only if there isn't one - closing the gap between a
-// caller's own GetActive check and its later Create call, during which a
-// second concurrent request for the same profile could pass the same check
-// and create a second job that ends up double-sending the same brokers.
-// Returns (existingActiveJob, false) if one was already running, or
-// (newJob, true) otherwise.
+// CreateIfNoActive creates a job for profileID only if none is running, under
+// one lock, so two concurrent requests can't double-send. Returns
+// (existing, false) or (new, true).
 func (jm *JobManager) CreateIfNoActive(total int, profileID string) (*Job, bool) {
 	jm.mu.Lock()
 	defer jm.mu.Unlock()
@@ -325,13 +321,8 @@ func NewJobPersistence(dataDir string) *JobPersistence {
 	return &JobPersistence{dataDir: dataDir}
 }
 
-// filePath returns where a profile's pending-job state lives. GetActive
-// lets two profiles send concurrently, each against its own daily limit and
-// history, so their persisted state can't share one file either - a second
-// profile's Save used to silently overwrite the first's, and a restart
-// would then resume (or just forget) only whichever one wrote last. The
-// default profile keeps the bare pre-multi-profile filename so an in-flight
-// job survives an upgrade across this change.
+// filePath: one file per profile (they can send concurrently). The default
+// profile keeps the old bare filename so an in-flight job survives upgrade.
 func (jp *JobPersistence) filePath(profileID string) string {
 	if profileID == "" || profileID == config.DefaultProfileID {
 		return filepath.Join(jp.dataDir, "pending_job.json")

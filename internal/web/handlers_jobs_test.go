@@ -16,14 +16,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// newJobTestRouter builds a minimal chi router exposing just the job status
-// and cancel endpoints, bound to the real handlers on s. It deliberately
-// skips the CSRF/security-header/rate-limit middleware that setupRouter
-// wires up in production, since that middleware isn't what's under test
-// here and would otherwise force these tests to fabricate CSRF tokens for
-// no benefit - chi's URL-param extraction and the handlers' own logic
-// (including the profile-scoping fix) are exercised exactly as in
-// production.
+// newJobTestRouter exposes only the job endpoints, without the CSRF and other
+// middleware, which isn't under test.
 func newJobTestRouter(s *Server) *chi.Mux {
 	r := chi.NewRouter()
 	r.Get("/api/job/{jobID}/status", s.handleAPIJobStatus)
@@ -167,13 +161,8 @@ func TestHandleAPIJobStatus_UnknownJobID(t *testing.T) {
 	}
 }
 
-// TestProcessSendJobRespectsRollingDailyLimit is the bug processSendJob's
-// alreadySentToday exists to fix: its own `sent` counter always starts at 0,
-// so a daily_send_limit check against `sent` alone only ever capped a
-// single invocation - resuming a paused job after a restart, or clicking
-// "Send all" again later the same day, could each push past the configured
-// limit by another full batch. With the fix, a profile that has already hit
-// its limit today must pause immediately, before sending anything.
+// A profile that already hit today's limit must pause before sending anything,
+// even though processSendJob's own counter starts at 0.
 func TestProcessSendJobRespectsRollingDailyLimit(t *testing.T) {
 	cfg := testConfig("a")
 	cfg.Options.DailySendLimit = 2

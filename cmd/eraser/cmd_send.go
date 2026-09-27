@@ -29,11 +29,8 @@ var (
 	statusFilter     string
 )
 
-// resendCooldown is how long after a successful send a broker is skipped by
-// default on subsequent `send` runs - long enough that resuming an
-// in-progress backlog (spread across the daily cap) doesn't re-email
-// brokers from yesterday, short enough that the monthly re-run still hits
-// everyone again once brokers have had time to re-list you.
+// resendCooldown: long enough that resuming a backlog across the daily cap
+// skips yesterday's brokers, short enough for the monthly re-run.
 const resendCooldown = 25 * 24 * time.Hour
 
 func sendCmd() *cobra.Command {

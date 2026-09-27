@@ -29,11 +29,8 @@ const (
 	CaptchaTypeUnknown      = "unknown"
 )
 
-// detectCaptcha checks the page for various CAPTCHA types. It returns an
-// error only when a check hit a real failure (context deadline/cancel --
-// e.g. the browser died or timed out mid-check), never for a CAPTCHA simply
-// not being present, so callers can tell "no CAPTCHA" apart from "couldn't
-// tell because the browser is gone".
+// detectCaptcha errors only on context failure (browser died or timed out),
+// never for "no CAPTCHA".
 func (b *Browser) detectCaptcha(ctx context.Context) (CaptchaInfo, error) {
 	// Check for reCAPTCHA v2
 	if result, err := detectRecaptchaV2(ctx); err != nil {

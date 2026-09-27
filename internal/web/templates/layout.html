@@ -748,12 +748,8 @@
                 try {
                     const resp = await fetch(`/api/job/${jobId}/status`);
                     if (!resp.ok) {
-                        // The job vanished from this profile's view (e.g. the
-                        // user switched profiles mid-send, or it aged out of
-                        // the job manager) - stop polling AND tell listening
-                        // pages, so a progress card doesn't sit forever
-                        // showing "in progress" with no further updates ever
-                        // arriving.
+                        // job gone from this profile's view (switched profile,
+                        // aged out): stop and notify so no card hangs "in progress"
                         stop();
                         updateIndicator(null);
                         window.dispatchEvent(new CustomEvent('eraser:job-update', {

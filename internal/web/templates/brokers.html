@@ -205,24 +205,15 @@
 </div>
 
 <script>
-// Job tracking is driven by the shared window.eraserJobPoll (layout.html) -
-// it already checks for an active job on load and polls every page, so
-// this file only needs to react to its "eraser:job-update" events (see
-// handleJobUpdate below) rather than running its own independent poll
-// loop. window.eraserJobPoll.jobId is the source of truth for "which job
-// is this page currently showing", not a locally-tracked variable.
+// Job tracking comes from window.eraserJobPoll (layout.html); this page only
+// reacts to "eraser:job-update". eraserJobPoll.jobId is the source of truth.
 let lastSeenBrokerId = null;
 
 window.addEventListener('eraser:job-update', (e) => handleJobUpdate(e.detail));
 
 function handleJobUpdate(job) {
-    // Build the progress card on the first update this page sees for a
-    // job, regardless of its status - not just when status is 'running'.
-    // On page load, the active-job check and this event's own poll() are
-    // two separate fetches; if the job finished in the gap between them,
-    // the very first update here can already be non-running, and without
-    // this the completion UI/final refresh below would be silently
-    // skipped because the card never existed to update.
+    // build the card on the first update, whatever its status: the job may
+    // have finished before this page's first poll
     if (!document.getElementById('progress-bar')) {
         showProgressUI();
     }
@@ -254,14 +245,8 @@ function handleJobUpdate(job) {
     }
 }
 
-// The broker table only reflects each broker's status as of its last
-// fetch - during an active send, rows sit at "Never sent" until updated.
-// Refetching the entire ~700-row table on every 1.5s poll tick was
-// expensive for no reason: only one row actually changes per tick, so
-// this instead fetches and swaps just that single row's status badge.
-// job.current_broker_id is the broker currently being processed; the
-// *previous* current_broker_id is the one that just finished, so that's
-// the row refreshed here (deferred by one tick, cheap either way).
+// During a send, refresh just the row that finished (the previous
+// current_broker_id) instead of refetching the ~700-row table every tick.
 function maybeRefreshBrokerRow(job) {
     if (job.current_broker_id && job.current_broker_id !== lastSeenBrokerId) {
         if (lastSeenBrokerId) {

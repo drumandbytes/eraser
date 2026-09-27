@@ -82,12 +82,9 @@ func Parse(raw []byte) (*BrokerDatabase, error) {
 	return &db, nil
 }
 
-// Validate parses raw broker YAML and checks structural invariants: sane entry
-// count (at least minCount), required id/name, unique ids, known regions,
-// plausible emails, well-formed http(s) URLs. Unlike Parse it doesn't
-// sanitize, so a malformed URL is reported rather than silently blanked. One
-// error lists every problem (CI runs this against data/brokers.yaml); the
-// parsed db is returned so callers skip a second unmarshal.
+// Validate checks raw broker YAML (min count, id/name, unique ids, known
+// regions, plausible emails, http(s) URLs) without sanitizing, and reports
+// every problem in one error. CI runs it; the parsed db is returned too.
 func Validate(raw []byte, minCount int) (*BrokerDatabase, error) {
 	var db BrokerDatabase
 	if err := yaml.Unmarshal(raw, &db); err != nil {
@@ -173,17 +170,10 @@ func Load(overridePath string) (*BrokerDatabase, error) {
 	return Parse(data.BrokersYAML)
 }
 
-// LoadList resolves the broker database for the send-family commands, which
-// can point at a custom file or switch to the smaller verified list. Order:
-//
-//  1. overridePath (--brokers flag), when set
-//  2. configPath (options.broker_file), when set
-//  3. the embedded verified list, when listName == "verified"
-//  4. otherwise the normal Load() resolution (~/.eraser/brokers.yaml, then
-//     the embedded main list)
-//
-// Commands that should always act on the full list (audit, guides,
-// update-brokers, reply processing) keep calling Load directly.
+// LoadList resolves the broker database for send-family commands:
+// --brokers, then options.broker_file, then the embedded verified list for
+// "verified", else Load(). audit, guides, update-brokers and reply processing
+// call Load directly.
 func LoadList(overridePath, configPath, listName string) (*BrokerDatabase, error) {
 	if overridePath != "" {
 		return LoadFromFile(overridePath)
@@ -314,13 +304,9 @@ func (db *BrokerDatabase) RemoveByEmail(email string) *Broker {
 	return nil
 }
 
-// MarkEmailUnreachable finds a broker by their current email address and
-// clears it, recording the old address and the reason in Notes, instead of
-// removing the broker entirely. A bounced email usually means the company
-// changed its privacy-request address, not that it stopped existing -
-// deleting the whole record (name, category, website, opt-out URL) on a
-// bounce throws away everything needed to give it a working address later.
-// Returns the mutated broker, or nil if no broker has that email.
+// MarkEmailUnreachable clears a broker's email (old address and reason go to
+// Notes) instead of deleting it: a bounce usually means a changed address, not
+// a gone company. Returns the broker, or nil if none matched.
 func (db *BrokerDatabase) MarkEmailUnreachable(email, reason string) *Broker {
 	b := db.FindByEmail(email)
 	if b == nil {

@@ -53,15 +53,8 @@ func testConfig(profileIDs ...string) *config.Config {
 	return cfg
 }
 
-// TestServerConfigConcurrentAccess exercises Server.config (an
-// atomic.Pointer[config.Config]) with concurrent readers (getConfig, as
-// every handler does) and writers (s.config.Store, as handleSettingsInbox
-// and handleSetupComplete do via load-copy-mutate-store). Run with
-// `go test -race`: before the atomic.Pointer fix, Server.config was a plain
-// *config.Config mutated in place, which the race detector flags as soon as
-// a read and a write actually overlap - which is exactly what this test
-// forces by running many of each concurrently and without any external
-// synchronization between them.
+// Concurrent getConfig reads and Store writes; run with -race (config used to
+// be a plain pointer mutated in place).
 func TestServerConfigConcurrentAccess(t *testing.T) {
 	s := newTestServer(t, testConfig())
 
@@ -144,12 +137,7 @@ func TestServerConfigLoadCopyMutateStoreIsolation(t *testing.T) {
 	}
 }
 
-// TestGetBrokersWithStatusRespectsExclusions is a regression test:
-// excluded_brokers/excluded_categories used to only be enforced by the CLI's
-// `send` command (via broker.Filter) - the web UI's brokers list and bulk
-// "Send to All" both go through getBrokersWithStatus instead, which never
-// looked at either option, so a configured exclusion silently had no effect
-// there.
+// The web brokers list and "Send to All" must honor excluded_brokers/categories.
 func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 	cfg := testConfig()
 	cfg.Options.ExcludedBrokers = []string{"spokeo"}
@@ -168,11 +156,7 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 	}
 }
 
-// TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem is a companion to
-// TestGetBrokersWithStatusRespectsExclusions: the brokers page's "Show
-// excluded" checkbox needs excluded brokers back in the result (so an
-// Include button can be rendered for them), each flagged via Excluded so
-// the template can tell them apart from a normal sendable row.
+// "Show excluded" returns excluded brokers flagged Excluded.
 func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 	cfg := testConfig()
 	cfg.Options.ExcludedBrokers = []string{"spokeo"}
@@ -201,16 +185,8 @@ func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 	}
 }
 
-// TestRenderWithCSRFHandlesNilConfig is a regression test for
-// https://github.com/drumandbytes/eraser/issues/1: on a brand-new install
-// with no config.yaml yet, s.getConfig() returns nil for the very first
-// page served (GET /setup, the welcome step). renderWithCSRF used to only
-// set the "Profiles"/"ActiveProfile" map keys inside its `cfg != nil`
-// branch, so on that request they were absent entirely rather than merely
-// empty - and layout.html's nav bar unconditionally does
-// `{{if gt (len .Profiles) 1}}`, which fails with "error calling len:
-// reflect: call of reflect.Value.Type on zero Value" when the key is
-// missing (as opposed to present-but-nil, which len handles fine).
+// drumandbytes/eraser#1: on first /setup there's no config, and a missing
+// Profiles key made layout.html's len fail.
 func TestRenderWithCSRFHandlesNilConfig(t *testing.T) {
 	s := newTestServer(t, nil)
 

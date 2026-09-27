@@ -15,12 +15,7 @@ import (
 	"github.com/emersion/go-message/mail"
 )
 
-// maxMIMEPartBytes caps how much of a single MIME part body we read into
-// memory when parsing an incoming email. Broker-reply emails are
-// attacker-influenced (this inbox is monitored by IMAP and anyone can send
-// it mail), so reading a part body without a bound would let a huge
-// attachment or body force unbounded memory growth before we've even
-// checked its content-type.
+// maxMIMEPartBytes bounds each MIME part read: anyone can mail this inbox.
 const maxMIMEPartBytes = 10 << 20 // 10MB
 
 // Monitor handles IMAP connection and email monitoring
@@ -115,13 +110,9 @@ func (m *Monitor) Disconnect() error {
 	return nil
 }
 
-// uidSearchCtx runs UidSearch in a goroutine and honors ctx cancellation,
-// mirroring the pattern WatchForNewEmails uses for its blocking IDLE call
-// (the go-imap v1.2.1 client has no native context support, so this is the
-// only cancellation mechanism it offers). Note that if ctx is canceled
-// before the IMAP server responds, this returns early but the goroutine
-// keeps running the command against the shared connection until the server
-// replies - same caveat WatchForNewEmails documents for its IDLE loop.
+// uidSearchCtx runs UidSearch in a goroutine so ctx can cancel it (go-imap
+// v1.2.1 has no context support). On cancel the command keeps running on the
+// shared connection until the server replies, as with WatchForNewEmails.
 func (m *Monitor) uidSearchCtx(ctx context.Context, criteria *imap.SearchCriteria) ([]uint32, error) {
 	type result struct {
 		uids []uint32
@@ -598,18 +589,10 @@ func (m *Monitor) ArchiveEmails(uids []uint32, folder string) error {
 			return fmt.Errorf("failed to mark emails as deleted: %w", err)
 		}
 
-		// go-imap v1.2.1's client does not implement the UIDPLUS extension
-		// (there is no UidExpunge/"UID EXPUNGE" method - Expunge(ch) is the
-		// only option), and plain IMAP EXPUNGE removes EVERY \Deleted-flagged
-		// message in the mailbox, not just the ones we just flagged above. A
-		// concurrent process (or a stale flag left over from an earlier
-		// partial failure) could cause real mail loss here.
-		//
-		// We can't close that race with this library version, but we can
-		// avoid silently hiding it: check right before expunging whether any
-		// UID besides our own is already flagged \Deleted, and log loudly if
-		// so, then afterward verify the number of messages actually expunged
-		// matches what we expected and warn on mismatch.
+		// go-imap v1.2.1 has no UID EXPUNGE, and EXPUNGE removes every
+		// \Deleted message, not just ours, so a stray flag can lose mail. We
+		// can't close that race here; instead warn if other UIDs are already
+		// flagged, and check the expunged count afterwards.
 		if unexpected, err := m.deletedUIDsBesides(uids); err != nil {
 			log.Printf("Warning: could not verify \\Deleted flag scope before expunge: %v", err)
 		} else if len(unexpected) > 0 {

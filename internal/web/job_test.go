@@ -32,14 +32,8 @@ func readJob(t *testing.T, j *Job) jobSnap {
 	return s
 }
 
-// TestJobConcurrentUpdateAndReadIsConsistent hammers Job.Update,
-// Job.SetDailyLimit, and a status-poll marshal from many goroutines at once
-// and checks every snapshot is internally consistent: Progress always matches
-// the formula applied to that same snapshot's Sent/Failed/Total, never a value
-// carried over from a different, interleaved call. This is the invariant that
-// resumePendingJob/processSendJob used to violate by assigning
-// job.Sent/job.Failed/job.Progress directly instead of going through the
-// mutex-protected Update method. Run with `go test -race`.
+// Every snapshot must be self-consistent under concurrent Update/SetDailyLimit
+// and polling (direct field writes used to break this). Run with -race.
 func TestJobConcurrentUpdateAndReadIsConsistent(t *testing.T) {
 	jm := NewJobManager()
 	total := 100
@@ -191,11 +185,7 @@ func TestCreateIfNoActiveRejectsSecondJobForSameProfile(t *testing.T) {
 	}
 }
 
-// TestCreateIfNoActiveIsRaceSafe is the concurrent case CreateIfNoActive
-// exists for: handleAPISendAll's separate GetActive-then-Create used to
-// leave a window where two simultaneous requests for the same profile could
-// both pass the check and each create their own job, double-sending every
-// broker. Run with -race.
+// Concurrent requests for one profile must create only one job. Run with -race.
 func TestCreateIfNoActiveIsRaceSafe(t *testing.T) {
 	jm := NewJobManager()
 
@@ -261,11 +251,7 @@ func TestJobPersistencePerProfileFiles(t *testing.T) {
 	}
 }
 
-// TestJobPersistenceDefaultProfileUsesLegacyFilename ensures a pending job
-// saved before multi-profile support existed (or for the sole default
-// profile most installs have) survives this upgrade: it must still be
-// readable at the old bare pending_job.json path, not a
-// pending_job-default.json this code never wrote before.
+// The default profile must keep the legacy pending_job.json filename across upgrade.
 func TestJobPersistenceDefaultProfileUsesLegacyFilename(t *testing.T) {
 	dir := t.TempDir()
 	jp := NewJobPersistence(dir)

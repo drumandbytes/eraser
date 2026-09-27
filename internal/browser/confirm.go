@@ -105,11 +105,8 @@ func (h *ConfirmationHandler) ClickConfirmationLink(confirmURL string, validateD
 	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
 	req.Header.Set("Connection", "keep-alive")
 
-	// Track redirects, re-validating each hop against the known broker
-	// domains. Only the initial URL is validated by the caller (or above,
-	// via the validateDomain flag) -- without this, an open redirect on a
-	// broker site (or a compromised first hop) could carry an identifying
-	// token to an arbitrary third party across up to 10 hops.
+	// re-validate every redirect hop, or an open redirect could carry the
+	// token to a third party
 	var redirects []string
 	h.client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {

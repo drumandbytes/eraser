@@ -43,13 +43,8 @@ func (s *Server) handleAPISwitchProfile(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }
 
-// buildProfileFromForm parses and validates the profile-form fields shared
-// by the setup wizard (handleSetupProfile) and this "add profile" settings
-// form: first/middle/last name, email, and the optional address fields.
-// Returns the parsed profile and a field->message map of validation errors
-// (empty if valid) - factored out so the two handlers can't drift on what
-// "a valid profile" means, the way they previously did as two independent
-// copies of the same three checks.
+// buildProfileFromForm parses and validates the profile fields shared by the
+// setup wizard and the "add profile" form. Returns field -> error.
 func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 	profile := config.Profile{
 		FirstName:  strings.TrimSpace(r.FormValue("first_name")),
@@ -79,18 +74,10 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 	return profile, errors
 }
 
-// buildMailOverrideFromForm parses the optional "dedicated email account"
-// fields shared by the add/edit profile forms (mail_email/mail_password) -
-// the web equivalent of `eraser profile add/edit`'s mail-override prompt
-// (see promptMailOverride in cmd/eraser/cmd_profile.go and
-// docs/multi-profile.md#per-profile-email-accounts). A blank mail_email
-// means "no override" (nil, matching NamedProfile.Mail's zero value) - it's
-// also how an existing override gets removed by clearing the field.
-// existingAddr/existingPassword let a blank mail_password on an edit keep
-// the already-stored app password rather than blanking it out, the same
-// blank-to-keep pattern cmd_profile.go's promptSecretWithDefault uses - but
-// only when the address wasn't also changed, since the old password almost
-// certainly doesn't belong to a newly-typed address.
+// buildMailOverrideFromForm parses the optional dedicated account
+// (mail_email/mail_password), like promptMailOverride in the CLI. Blank email =
+// no override (also how one is removed). A blank password keeps the stored one
+// unless the address changed.
 func buildMailOverrideFromForm(r *http.Request, existingAddr, existingPassword string) (*config.MailConfig, map[string]string) {
 	addr := strings.TrimSpace(r.FormValue("mail_email"))
 	password := r.FormValue("mail_password")
@@ -137,11 +124,8 @@ func buildMailOverrideFromForm(r *http.Request, existingAddr, existingPassword s
 	}, errors
 }
 
-// handleSettingsProfileNew adds a second (or third, ...) named profile from
-// the web UI - previously only possible via `eraser profile add` on the
-// CLI. Collects the same core fields the setup wizard's profile step does,
-// plus the optional dedicated-email-account fields (see
-// buildMailOverrideFromForm).
+// handleSettingsProfileNew adds another named profile, with optional dedicated
+// mail account.
 func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
@@ -196,11 +180,8 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// handleSettingsProfileEdit edits an existing profile's fields. The
-// profile's ID itself is never changed here - NamedProfile.ID is stored
-// verbatim in history.db, so changing it would orphan that profile's
-// existing send history - only its Profile fields (name, email, address...)
-// are updated.
+// handleSettingsProfileEdit edits a profile's fields. The ID never changes: it's
+// stored in history.db.
 func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "profileID")
 
@@ -260,13 +241,8 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 			}
 			newCfg.Profiles = updated
 		} else {
-			// Legacy single-profile mode (no profiles: list yet) - write
-			// back to the top-level profile: block rather than promoting to
-			// a profiles: list just because it was edited. A dedicated mail
-			// account is a NamedProfile-only concept (it exists to tell
-			// several profiles' accounts apart), so it's a no-op here - the
-			// lone profile already has the top-level email:/inbox: blocks
-			// to itself.
+			// legacy single profile: write back to profile:, no promotion to a
+			// list; a mail override doesn't apply here
 			newCfg.Profile = profile
 		}
 
@@ -297,12 +273,8 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// handleSettingsProfileDelete removes a profile from the profiles: list.
-// It never deletes that profile's send history - removal_requests rows
-// stay in history.db tagged with the now-orphaned profile ID, and become
-// visible again if a profile with the same ID is re-added later. Refuses
-// to remove the only configured profile, since every profile-scoped
-// handler assumes there's always at least one.
+// handleSettingsProfileDelete removes a profile but keeps its history (visible
+// again if the ID is re-added). The last profile can't be removed.
 func (s *Server) handleSettingsProfileDelete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "profileID")
 

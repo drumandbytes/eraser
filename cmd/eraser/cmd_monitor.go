@@ -107,15 +107,11 @@ func runMonitor(days int, once bool, watch bool) error {
 		return nil
 	}
 
-	// --watch blocks per inbox (each one waits for new mail indefinitely),
-	// so watching more than one inbox genuinely needs concurrency here.
+	// --watch blocks per inbox, so several inboxes need goroutines.
 	//
-	// ponytail: this writes to the shared history.Store from multiple
-	// goroutines with no WAL/busy_timeout tuning, so concurrent inserts can
-	// occasionally hit SQLITE_BUSY under real contention (rare: broker
-	// replies are infrequent and NewStore's single *sql.DB already
-	// serializes at the connection-pool level, but not guaranteed). Add
-	// PRAGMA busy_timeout in history.NewStore if this shows up in practice.
+	// ponytail: concurrent writes to history.Store without busy_timeout can
+	// hit SQLITE_BUSY under contention (rare: replies are infrequent). Add
+	// PRAGMA busy_timeout in history.NewStore if it shows up.
 	var wg sync.WaitGroup
 	errs := make([]error, len(inboxes))
 	for i, inboxCfg := range inboxes {
@@ -135,12 +131,9 @@ func runMonitor(days int, once bool, watch bool) error {
 	return nil
 }
 
-// scanInbox connects to one IMAP inbox, classifies and stores its broker
-// replies, and (with --watch) keeps watching it for new mail until ctx is
-// cancelled. Every profile that shares this inbox (or falls back to it) is
-// scanned together - a shared inbox carries replies for every such
-// profile's sent requests, so each reply is attributed after the fact via
-// ResolveProfileForBroker rather than to any one of them.
+// scanInbox classifies and stores one inbox's broker replies, and with --watch
+// keeps watching until ctx ends. Replies are attributed per broker via
+// ResolveProfileForBroker, since a shared inbox serves several profiles.
 func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, once bool, watch bool) error {
 	monitor := inbox.NewMonitor(inboxCfg, brokerDB.Brokers)
 

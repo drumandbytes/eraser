@@ -125,12 +125,7 @@ func runProfileAdd() error {
 	if rawID == "" {
 		return fmt.Errorf("profile ID is required")
 	}
-	// Run the typed ID through the same charset rule the web UI's
-	// auto-generated IDs use (config.SlugifyID) - a raw ID with spaces,
-	// punctuation, or non-ASCII characters would otherwise round-trip
-	// incorrectly through the web UI's cookie-based profile switcher (Go's
-	// cookie writer silently drops bytes outside 0x20-0x7e instead of
-	// quoting them).
+	// same charset rule as web-generated IDs (non-ASCII breaks the profile cookie)
 	id := config.SlugifyID(rawID)
 	for _, p := range existingProfiles {
 		if strings.EqualFold(p.ID, id) {
@@ -265,13 +260,9 @@ func runProfileRemove(id string) error {
 	return nil
 }
 
-// promptMailOverride optionally collects a dedicated Gmail account (used for
-// both SMTP sends and IMAP reply monitoring) for one profile, so it doesn't
-// have to share the top-level email:/inbox: blocks with every other profile
-// (see docs/multi-profile.md). Like `eraser init`, this only interactively
-// supports a Gmail app-password account; a different provider, or separate
-// send/monitor accounts, needs a hand-edited `mail:` block under the
-// profile in config.yaml. Returns nil to keep sharing the top-level blocks.
+// promptMailOverride optionally sets a dedicated Gmail app-password account
+// (SMTP + IMAP) for one profile. Other providers need a hand-edited `mail:`
+// block (docs/multi-profile.md). nil = share the top-level blocks.
 func promptMailOverride(reader *bufio.Reader, existing *config.MailConfig) *config.MailConfig {
 	fmt.Println()
 	existingAddr := ""

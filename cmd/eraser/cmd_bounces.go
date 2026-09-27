@@ -258,19 +258,12 @@ func runMarkBounced(brokerIDs []string, note string) error {
 	return nil
 }
 
-// everSentBrokerIDs returns the set of broker IDs any configured profile has
-// ever successfully sent to.
+// everSentBrokerIDs returns brokers any profile has ever sent to.
 //
-// It exists because FetchBounceEmails classifies a message as a bounce
-// purely from its From/Subject text - neither is authenticated in any way,
-// and every broker's email is public in this open-source repo's
-// data/brokers.yaml. Anyone who can land a message in the monitored inbox
-// (a spoofed From, or any sender that isn't SPF/DKIM checked) can shape a
-// fake NDR naming any broker they choose and have --remove silently clear
-// that broker's real contact. Requiring that we've actually sent this user
-// mail to the broker at some point doesn't authenticate the bounce, but it
-// does shrink the attack down to brokers this user has genuinely contacted,
-// rather than any of the ~700 public entries.
+// Bounces are classified from unauthenticated From/Subject text and every
+// broker address is public, so anyone could forge an NDR and have --remove
+// clear a real contact. Limiting to brokers we've actually emailed shrinks
+// that to the user's own contacts.
 func everSentBrokerIDs(cfg *config.Config, store *history.Store) map[string]bool {
 	everSent := map[string]bool{}
 	for _, p := range cfg.GetProfiles() {

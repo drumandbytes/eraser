@@ -181,14 +181,14 @@ func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 
 	if session == nil || session.Email.Provider == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		_, _ = w.Write([]byte(`<div class="text-red-600">Email not configured. Please go back to the email step.</div>`))
+		_, _ = w.Write([]byte(`<div class="text-error">Email not configured. Please go back to the email step.</div>`))
 		return
 	}
 
 	sender, err := email.NewSender(session.Email)
 	if err != nil {
 		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+			<div class="alert alert-error">
 				<strong>Configuration error:</strong> %s
 				<p class="mt-2 text-sm">Please check your email settings and try again.</p>
 			</div>
@@ -220,12 +220,12 @@ Eraser`, session.Profile.FirstName),
 			errMsg = result.Error.Error()
 		}
 		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+			<div class="alert alert-error">
 				<strong>Test failed:</strong> %s
 				<p class="mt-2 text-sm">Please check your email configuration and try again.</p>
 			</div>
 			<div class="mt-4">
-				<a href="/setup/email" class="text-indigo-600 hover:text-indigo-800 font-medium">
+				<a href="/setup/email" class="text-accent hover:underline font-medium">
 					Back to Email Settings
 				</a>
 			</div>
@@ -234,12 +234,12 @@ Eraser`, session.Profile.FirstName),
 	}
 
 	_, _ = w.Write([]byte(`
-		<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+		<div class="alert alert-success">
 			<strong>Success!</strong> Test email sent to your address.
 			<p class="mt-2 text-sm">Check your inbox (and spam folder) for the test message.</p>
 		</div>
 		<div class="mt-4">
-			<a href="/setup/complete" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700">
+			<a href="/setup/complete" class="btn btn-primary">
 				Complete Setup
 			</a>
 		</div>

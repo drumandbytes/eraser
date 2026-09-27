@@ -209,326 +209,71 @@ func (s *Server) handleAPIResponseReviewed(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
-	cfg := s.getConfig()
-	if cfg == nil || !cfg.InboxForProfile(s.activeProfile(r)).Enabled {
-		_, _ = w.Write([]byte(`
-			<div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
-				<strong>Inbox monitoring not configured.</strong>
-				<p class="mt-1 text-sm">Go to <a href="/settings" class="underline">Settings</a> to configure IMAP access.</p>
-			</div>
-		`))
-		return
-	}
-	// Scans only the active profile's own inbox (its mail.inbox override, or
-	// the shared inbox: block if it doesn't have one) - `eraser monitor`
-	// covers every configured inbox in one run for the automated/background
-	// path.
-	inboxCfg := cfg.InboxForProfile(s.activeProfile(r))
-
-	monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
-
-	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
-	defer cancel()
-
-	if err := monitor.Connect(ctx); err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-				<strong>Failed to connect to inbox:</strong> %s
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
-		return
-	}
-	defer func() { _ = monitor.Disconnect() }()
-
-	// Fetch emails from last 7 days - check both INBOX and archive folder
-	emails, err := monitor.FetchBrokerEmails(ctx, 7)
-	if err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-				<strong>Failed to fetch emails:</strong> %s
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
-		return
-	}
-
-	// Also check archive folder if configured
-	if inboxCfg.ArchiveFolder != "" {
-		archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, inboxCfg.ArchiveFolder, 7)
-		if err != nil {
-			log.Printf("Warning: failed to fetch from archive folder %s: %v", inboxCfg.ArchiveFolder, err)
-		} else {
-			emails = append(emails, archiveEmails...)
-		}
-	}
-
-	if len(emails) == 0 {
-		_, _ = w.Write([]byte(`
-			<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-				<strong>No new broker emails found.</strong>
-				<p class="mt-1 text-sm">No emails from known data brokers in the last 7 days.</p>
-			</div>
-		`))
-		return
-	}
-
-	// Classify and store each email
-	var success, formRequired, confirmRequired, rejected, unknown int
-	var processedUIDs []uint32 // Track UIDs for archiving
-	for _, email := range emails {
-		classified := inbox.ClassifyResponse(&email)
-		processedUIDs = append(processedUIDs, email.UID)
-
-		// Get body content (prefer plain text, fall back to HTML)
-		bodyContent := email.Body
-		if bodyContent == "" {
-			bodyContent = email.HTMLBody
-		}
-
-		// A shared inbox carries replies for every profile's sent requests
-		// together, so attribute this reply to whichever profile actually
-		// emailed this broker rather than to whatever profile is "active"
-		// in the session running this scan.
-		profileID := history.DefaultProfileID
-		if s.historyStore != nil {
-			if resolved, err := s.historyStore.ResolveProfileForBroker(email.BrokerID); err == nil {
-				profileID = resolved
-			}
-		}
-
-		brokerResp := &history.BrokerResponse{
-			ProfileID:    profileID,
-			BrokerID:     email.BrokerID,
-			BrokerName:   email.BrokerName,
-			ResponseType: string(classified.Type),
-			EmailFrom:    email.From,
-			EmailSubject: email.Subject,
-			EmailBody:    bodyContent,
-			FormURL:      classified.FormURL,
-			ConfirmURL:   classified.ConfirmURL,
-			Confidence:   classified.Confidence,
-			NeedsReview:  classified.NeedsReview,
-			ReceivedAt:   email.ReceivedAt,
-		}
-
-		if s.historyStore != nil {
-			if _, err := s.historyStore.AddBrokerResponseIfNew(brokerResp); err != nil {
-				// Don't let a DB write failure silently vanish while the
-				// in-memory counters below still report success - this is
-				// exactly what caused digisamroc/eraser#17 (Pipeline page
-				// empty despite "Scan Complete!" reporting matches).
-				log.Printf("Warning: failed to store broker response for %s: %v", brokerResp.BrokerID, err)
-			}
-		}
-
-		// Count by type
-		switch classified.Type {
-		case inbox.ResponseSuccess:
-			success++
-		case inbox.ResponseFormRequired:
-			formRequired++
-		case inbox.ResponseConfirmationRequired:
-			confirmRequired++
-		case inbox.ResponseRejected:
-			rejected++
-		default:
-			unknown++
-		}
-	}
-
-	// Auto-archive processed emails to the Eraser folder
-	var archived int
-	if inboxCfg.AutoArchive && len(processedUIDs) > 0 {
-		if err := monitor.ArchiveEmails(processedUIDs, inboxCfg.ArchiveFolder); err != nil {
-			log.Printf("Warning: failed to archive emails: %v", err)
-		} else {
-			archived = len(processedUIDs)
-			log.Printf("Archived %d emails to %s folder", archived, inboxCfg.ArchiveFolder)
-		}
-	}
-
-	_, _ = fmt.Fprintf(w, `
-		<div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
-			<strong>Scan complete!</strong> Found %d broker emails.
-			<div class="mt-2 text-sm grid grid-cols-2 gap-2">
-				<div>Success: <span class="font-semibold">%d</span></div>
-				<div>Form required: <span class="font-semibold">%d</span></div>
-				<div>Confirm required: <span class="font-semibold">%d</span></div>
-				<div>Rejected: <span class="font-semibold">%d</span></div>
-				<div>Unknown: <span class="font-semibold">%d</span></div>
-			</div>
-			<p class="mt-2 text-sm">
-				<a href="/tasks" class="underline font-medium">View pending tasks</a> |
-				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
-			</p>
-		</div>
-	`, len(emails), success, formRequired, confirmRequired, rejected, unknown)
+	s.scanInbox(w, r, inbox.ScanOptions{Days: 7, IncludeArchive: true}, 60*time.Second)
 }
 
-// handleAPIInboxRescan rescans all emails and reclassifies them with the improved classifier
+// handleAPIInboxRescan re-reads 30 days and reclassifies replies already
+// stored; ?clear=true drops every stored reply first.
 func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
-	cfg := s.getConfig()
-	if cfg == nil || !cfg.InboxForProfile(s.activeProfile(r)).Enabled {
-		_, _ = w.Write([]byte(`
-			<div class="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded">
-				<strong>Inbox monitoring not configured.</strong>
-				<p class="mt-1 text-sm">Go to <a href="/settings" class="underline">Settings</a> to configure IMAP access.</p>
-			</div>
-		`))
-		return
-	}
-	inboxCfg := cfg.InboxForProfile(s.activeProfile(r))
-
-	clearFirst := r.URL.Query().Get("clear") == "true"
-	if clearFirst && s.historyStore != nil {
+	if r.URL.Query().Get("clear") == "true" && s.historyStore != nil && s.inboxConfigured(r) {
 		if err := s.historyStore.ClearBrokerResponses(); err != nil {
-			_, _ = fmt.Fprintf(w, `
-				<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-					<strong>Failed to clear responses:</strong> %s
-				</div>
-			`, template.HTMLEscapeString(err.Error()))
+			writeScanAlert(w, "error", "Failed to clear responses:", err.Error())
 			return
 		}
 	}
+	s.scanInbox(w, r, inbox.ScanOptions{Days: 30, IncludeArchive: true, Reclassify: true}, 180*time.Second)
+}
 
+func (s *Server) inboxConfigured(r *http.Request) bool {
+	cfg := s.getConfig()
+	return cfg != nil && cfg.InboxForProfile(s.activeProfile(r)).Enabled
+}
+
+// scanInbox scans the active profile's own inbox (its mail.inbox override,
+// or the shared inbox: block) - `eraser monitor` and automated cycles cover
+// every configured inbox.
+func (s *Server) scanInbox(w http.ResponseWriter, r *http.Request, opt inbox.ScanOptions, timeout time.Duration) {
+	if !s.inboxConfigured(r) {
+		_, _ = w.Write([]byte(`<div class="alert alert-warning"><strong>Inbox monitoring not configured.</strong>
+			Go to <a href="/settings" class="underline">Settings</a> to configure IMAP access.</div>`))
+		return
+	}
+	if s.historyStore == nil {
+		writeScanAlert(w, "error", "Database not available.", "")
+		return
+	}
+	inboxCfg := s.getConfig().InboxForProfile(s.activeProfile(r))
 	monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
 
-	ctx, cancel := context.WithTimeout(r.Context(), 180*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), timeout)
 	defer cancel()
-
 	if err := monitor.Connect(ctx); err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-				<strong>Failed to connect to inbox:</strong> %s
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
+		writeScanAlert(w, "error", "Failed to connect to inbox:", err.Error())
 		return
 	}
 	defer func() { _ = monitor.Disconnect() }()
 
-	// Fetch emails from last 30 days for full rescan - check both INBOX and archive folder
-	emails, err := monitor.FetchBrokerEmails(ctx, 30)
+	res, err := monitor.ScanAndStore(ctx, s.historyStore, opt)
 	if err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-				<strong>Failed to fetch emails:</strong> %s
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
+		writeScanAlert(w, "error", "Failed to fetch emails:", err.Error())
+		return
+	}
+	if res.Summary.Total == 0 {
+		writeScanAlert(w, "info", "No broker emails found.", fmt.Sprintf("No emails from known data brokers in the last %d days.", opt.Days))
 		return
 	}
 
-	// Also check archive folder if configured
-	if inboxCfg.ArchiveFolder != "" {
-		archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, inboxCfg.ArchiveFolder, 30)
-		if err != nil {
-			log.Printf("Warning: failed to fetch from archive folder %s: %v", inboxCfg.ArchiveFolder, err)
-		} else {
-			emails = append(emails, archiveEmails...)
-		}
+	sum := res.Summary
+	updated := ""
+	if opt.Reclassify {
+		updated = fmt.Sprintf(`<div>Updated: <span class="font-semibold">%d</span></div>`, res.Updated)
 	}
-
-	if len(emails) == 0 {
-		_, _ = w.Write([]byte(`
-			<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-				<strong>No broker emails found.</strong>
-				<p class="mt-1 text-sm">No emails from known data brokers in the last 30 days.</p>
-			</div>
-		`))
-		return
-	}
-
-	// Classify and store/update each email
-	var success, formRequired, confirmRequired, rejected, pending, unknown int
-	var updated, inserted int
-	for _, email := range emails {
-		classified := inbox.ClassifyResponse(&email)
-
-		// Get body content (prefer plain text, fall back to HTML)
-		bodyContent := email.Body
-		if bodyContent == "" {
-			bodyContent = email.HTMLBody
-		}
-
-		// A shared inbox carries replies for every profile's sent requests
-		// together, so attribute this reply to whichever profile actually
-		// emailed this broker rather than to whatever profile is "active"
-		// in the session running this rescan.
-		profileID := history.DefaultProfileID
-		if s.historyStore != nil {
-			if resolved, err := s.historyStore.ResolveProfileForBroker(email.BrokerID); err == nil {
-				profileID = resolved
-			}
-		}
-
-		if s.historyStore != nil {
-			existing, _ := s.historyStore.FindBrokerResponseBySubject(profileID, email.BrokerID, email.Subject)
-			if existing != nil {
-				err := s.historyStore.UpdateBrokerResponseClassification(
-					existing.ID,
-					existing.ProfileID,
-					string(classified.Type),
-					classified.FormURL,
-					classified.ConfirmURL,
-					classified.Confidence,
-					classified.NeedsReview,
-				)
-				if err == nil {
-					updated++
-				} else {
-					log.Printf("Warning: failed to update broker response classification for %s: %v", email.BrokerID, err)
-				}
-				// Also update the body if it was empty
-				if existing.EmailBody == "" && bodyContent != "" {
-					if err := s.historyStore.UpdateBrokerResponseBody(existing.ID, existing.ProfileID, bodyContent); err != nil {
-						log.Printf("Warning: failed to update broker response body for %s: %v", email.BrokerID, err)
-					}
-				}
-			} else {
-				// Insert new response
-				brokerResp := &history.BrokerResponse{
-					ProfileID:    profileID,
-					BrokerID:     email.BrokerID,
-					BrokerName:   email.BrokerName,
-					ResponseType: string(classified.Type),
-					EmailFrom:    email.From,
-					EmailSubject: email.Subject,
-					EmailBody:    bodyContent,
-					FormURL:      classified.FormURL,
-					ConfirmURL:   classified.ConfirmURL,
-					Confidence:   classified.Confidence,
-					NeedsReview:  classified.NeedsReview,
-					ReceivedAt:   email.ReceivedAt,
-				}
-				if err := s.historyStore.AddBrokerResponse(brokerResp); err == nil {
-					inserted++
-				} else {
-					log.Printf("Warning: failed to store broker response for %s: %v", email.BrokerID, err)
-				}
-			}
-		}
-
-		// Count by type
-		switch classified.Type {
-		case inbox.ResponseSuccess:
-			success++
-		case inbox.ResponseFormRequired:
-			formRequired++
-		case inbox.ResponseConfirmationRequired:
-			confirmRequired++
-		case inbox.ResponseRejected:
-			rejected++
-		case inbox.ResponsePending:
-			pending++
-		default:
-			unknown++
-		}
-	}
-
 	_, _ = fmt.Fprintf(w, `
-		<div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
-			<strong>Rescan complete!</strong> Processed %d broker emails.
+		<div class="alert alert-success">
+			<strong>Scan complete!</strong> Found %d broker emails.
 			<div class="mt-2 text-sm grid grid-cols-2 gap-2">
-				<div>Updated: <span class="font-semibold">%d</span></div>
 				<div>New: <span class="font-semibold">%d</span></div>
+				%s
 			</div>
 			<div class="mt-2 text-sm grid grid-cols-3 gap-2">
 				<div>Success: <span class="font-semibold">%d</span></div>
@@ -543,36 +288,29 @@ func (s *Server) handleAPIInboxRescan(w http.ResponseWriter, r *http.Request) {
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, len(emails), updated, inserted, success, formRequired, confirmRequired, pending, rejected, unknown)
+	`, sum.Total, len(res.New), updated, sum.Success, sum.FormRequired, sum.ConfirmRequired, sum.Pending, sum.Rejected, sum.Unknown)
+}
+
+// writeScanAlert writes an .alert-<kind> banner (layout.html); detail is escaped.
+func writeScanAlert(w http.ResponseWriter, kind, title, detail string) {
+	_, _ = fmt.Fprintf(w, `<div class="alert alert-%s"><strong>%s</strong> %s</div>`, kind, title, template.HTMLEscapeString(detail))
 }
 
 // handleAPIReclassify reclassifies all existing database records using subject-only patterns
 func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 	if s.historyStore == nil {
-		_, _ = w.Write([]byte(`
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-				<strong>Database not available.</strong>
-			</div>
-		`))
+		writeScanAlert(w, "error", "Database not available.", "")
 		return
 	}
 
 	responses, err := s.historyStore.GetAllBrokerResponses()
 	if err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-				<strong>Failed to get responses:</strong> %s
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
+		writeScanAlert(w, "error", "Failed to get responses:", err.Error())
 		return
 	}
 
 	if len(responses) == 0 {
-		_, _ = w.Write([]byte(`
-			<div class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-				<strong>No responses to reclassify.</strong>
-			</div>
-		`))
+		writeScanAlert(w, "info", "No responses to reclassify.", "")
 		return
 	}
 
@@ -729,7 +467,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, _ = fmt.Fprintf(w, `
-		<div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
+		<div class="alert alert-success">
 			<strong>Reclassification complete!</strong> Processed %d records.
 			<div class="mt-2 text-sm grid grid-cols-2 gap-2">
 				<div>Updated: <span class="font-semibold">%d</span></div>

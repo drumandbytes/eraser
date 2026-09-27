@@ -1,9 +1,11 @@
 package email
 
 import (
+	"bufio"
 	"context"
 	"net"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -89,4 +91,72 @@ func splitHostPortForTest(t *testing.T, addr string) (string, int) {
 		t.Fatalf("parse port %q: %v", portStr, err)
 	}
 	return host, port
+}
+
+// recordingSMTPServer speaks just enough plaintext SMTP to accept one
+// message and hands back its DATA.
+func recordingSMTPServer(t *testing.T) (addr string, data <-chan string) {
+	t.Helper()
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	t.Cleanup(func() { _ = ln.Close() })
+	out := make(chan string, 1)
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = conn.Close() }()
+		r := bufio.NewReader(conn)
+		reply := func(s string) { _, _ = conn.Write([]byte(s + "\r\n")) }
+		reply("220 test")
+		for {
+			line, err := r.ReadString('\n')
+			if err != nil {
+				return
+			}
+			switch cmd := strings.ToUpper(strings.TrimSpace(line)); {
+			case strings.HasPrefix(cmd, "EHLO"), strings.HasPrefix(cmd, "HELO"):
+				reply("250 test")
+			case strings.HasPrefix(cmd, "DATA"):
+				reply("354 go ahead")
+				var b strings.Builder
+				for {
+					l, err := r.ReadString('\n')
+					if err != nil || l == ".\r\n" {
+						break
+					}
+					b.WriteString(l)
+				}
+				out <- b.String()
+				reply("250 ok")
+			case strings.HasPrefix(cmd, "QUIT"):
+				reply("221 bye")
+				return
+			default:
+				reply("250 ok")
+			}
+		}
+	}()
+	return ln.Addr().String(), out
+}
+
+func TestSendRecordsTheMessageIDItSends(t *testing.T) {
+	addr, data := recordingSMTPServer(t)
+	host, portStr, _ := net.SplitHostPort(addr)
+	port, _ := strconv.Atoi(portStr)
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port}, "Jane Doe <jane@example.org>")
+
+	res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "Jane Doe <jane@example.org>", Subject: "Erasure request", Body: "hi"})
+	if !res.Success {
+		t.Fatalf("send failed: %v", res.Error)
+	}
+	if !strings.HasPrefix(res.MessageID, "<") || !strings.HasSuffix(res.MessageID, "@example.org>") {
+		t.Fatalf("MessageID %q isn't <random@sender-domain>", res.MessageID)
+	}
+	if got := <-data; !strings.Contains(got, "Message-ID: "+res.MessageID+"\r\n") {
+		t.Fatalf("sent message lacks header Message-ID: %s:\n%s", res.MessageID, got)
+	}
 }

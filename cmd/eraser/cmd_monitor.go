@@ -122,8 +122,7 @@ func runMonitor(days int, once bool, watch bool) error {
 }
 
 // scanInbox classifies and stores one inbox's broker replies, and with --watch
-// keeps watching until ctx ends. Replies are attributed per broker via
-// ResolveProfileForBroker, since a shared inbox serves several profiles.
+// keeps watching until ctx ends.
 func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, once bool, watch bool) error {
 	monitor := inbox.NewMonitor(inboxCfg, brokerDB.Brokers)
 
@@ -132,109 +131,21 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 	}
 	defer func() { _ = monitor.Disconnect() }()
 
-	fmt.Printf("📬 Monitoring %s for broker responses (last %d days)...\n", inboxCfg.Email, days)
-	fmt.Println()
+	fmt.Printf("📬 Monitoring %s for broker responses (last %d days)...\n\n", inboxCfg.Email, days)
 
-	emails, err := monitor.FetchBrokerEmails(ctx, days)
+	res, err := monitor.ScanAndStore(ctx, store, inbox.ScanOptions{Days: days})
 	if err != nil {
-		return fmt.Errorf("failed to fetch emails from %s: %w", inboxCfg.Email, err)
+		return err
+	}
+	fmt.Printf("Found %d emails from data brokers in %s, %d new\n\n", res.Summary.Total, inboxCfg.Email, len(res.New))
+	for _, r := range res.New {
+		printClassifiedResponse(r)
+	}
+	if res.Archived > 0 {
+		fmt.Printf("📁 Archived %d emails to '%s'\n", res.Archived, inboxCfg.ArchiveFolder)
 	}
 
-	if len(emails) == 0 {
-		fmt.Printf("No emails from known brokers found in %s.\n", inboxCfg.Email)
-		if !watch {
-			return nil
-		}
-	}
-
-	// Classify and process each email
-	fmt.Printf("Found %d emails from data brokers in %s\n", len(emails), inboxCfg.Email)
-	fmt.Println()
-
-	var responses []inbox.ClassifiedResponse
-	for _, email := range emails {
-		classified := inbox.ClassifyResponse(&email)
-		responses = append(responses, classified)
-
-		profileID, err := store.ResolveProfileForBroker(email.BrokerID)
-		if err != nil {
-			profileID = history.DefaultProfileID
-		}
-
-		brokerResp := &history.BrokerResponse{
-			ProfileID:    profileID,
-			BrokerID:     email.BrokerID,
-			BrokerName:   email.BrokerName,
-			ResponseType: string(classified.Type),
-			EmailFrom:    email.From,
-			EmailSubject: email.Subject,
-			EmailBody:    emailBody(email),
-			FormURL:      classified.FormURL,
-			ConfirmURL:   classified.ConfirmURL,
-			Confidence:   classified.Confidence,
-			NeedsReview:  classified.NeedsReview,
-			ReceivedAt:   email.ReceivedAt,
-		}
-
-		inserted, err := store.AddBrokerResponseIfNew(brokerResp)
-		if err != nil {
-			fmt.Printf("⚠️  Failed to store response: %v\n", err)
-		} else if !inserted {
-			// Seen on an earlier scan. Re-applying its pipeline status would
-			// undo progress made since (e.g. a form you've since filled).
-			continue
-		}
-
-		// Update pipeline status for the broker
-		var pipelineStatus history.PipelineStatus
-		switch classified.Type {
-		case inbox.ResponseSuccess:
-			pipelineStatus = history.PipelineConfirmed
-		case inbox.ResponseFormRequired:
-			pipelineStatus = history.PipelineFormRequired
-		case inbox.ResponseConfirmationRequired:
-			pipelineStatus = history.PipelineAwaitingConfirmation
-		case inbox.ResponseRejected:
-			pipelineStatus = history.PipelineRejected
-		case inbox.ResponsePending:
-			pipelineStatus = history.PipelineAwaitingResponse
-		default:
-			pipelineStatus = history.PipelineAwaitingResponse
-		}
-
-		// Ignore error if no matching record
-		_ = store.UpdatePipelineStatus(profileID, email.BrokerID, pipelineStatus)
-
-		printClassifiedResponse(classified)
-	}
-
-	// Archive processed emails if enabled
-	if inboxCfg.AutoArchive && len(emails) > 0 {
-		archiveFolder := inboxCfg.ArchiveFolder
-
-		// Ensure archive folder exists
-		if err := monitor.EnsureFolderExists(archiveFolder); err != nil {
-			fmt.Printf("⚠️  Could not create archive folder: %v\n", err)
-		} else {
-			// Collect UIDs to archive
-			var uidsToArchive []uint32
-			for _, email := range emails {
-				if email.UID > 0 {
-					uidsToArchive = append(uidsToArchive, email.UID)
-				}
-			}
-
-			if len(uidsToArchive) > 0 {
-				if err := monitor.ArchiveEmails(uidsToArchive, archiveFolder); err != nil {
-					fmt.Printf("⚠️  Could not archive emails: %v\n", err)
-				} else {
-					fmt.Printf("📁 Archived %d emails to '%s'\n", len(uidsToArchive), archiveFolder)
-				}
-			}
-		}
-	}
-
-	summary := inbox.SummarizeResponses(responses)
+	summary := res.Summary
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Printf("📊 Summary for %s:\n", inboxCfg.Email)
@@ -247,50 +158,24 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 	fmt.Printf("  ❓ Unknown:          %d\n", summary.Unknown)
 	fmt.Printf("  👁️  Need review:      %d\n", summary.NeedReview)
 
-	if once {
+	if once || !watch {
 		return nil
 	}
 
-	if watch {
+	fmt.Println()
+	fmt.Printf("👀 Watching %s for new emails... (Ctrl+C to stop)\n", inboxCfg.Email)
+	err = monitor.WatchForNewEmails(ctx, func(email inbox.Email) {
 		fmt.Println()
-		fmt.Printf("👀 Watching %s for new emails... (Ctrl+C to stop)\n", inboxCfg.Email)
-
-		err := monitor.WatchForNewEmails(ctx, func(email inbox.Email) {
-			fmt.Println()
-			fmt.Printf("📨 New email from %s (%s)\n", email.BrokerName, email.From)
-
-			classified := inbox.ClassifyResponse(&email)
-			printClassifiedResponse(classified)
-
-			profileID, err := store.ResolveProfileForBroker(email.BrokerID)
-			if err != nil {
-				profileID = history.DefaultProfileID
-			}
-
-			brokerResp := &history.BrokerResponse{
-				ProfileID:    profileID,
-				BrokerID:     email.BrokerID,
-				BrokerName:   email.BrokerName,
-				ResponseType: string(classified.Type),
-				EmailFrom:    email.From,
-				EmailSubject: email.Subject,
-				EmailBody:    emailBody(email),
-				FormURL:      classified.FormURL,
-				ConfirmURL:   classified.ConfirmURL,
-				Confidence:   classified.Confidence,
-				NeedsReview:  classified.NeedsReview,
-				ReceivedAt:   email.ReceivedAt,
-			}
-			if _, err := store.AddBrokerResponseIfNew(brokerResp); err != nil {
-				fmt.Printf("⚠️  Failed to store response: %v\n", err)
-			}
-		})
-
-		if err != nil && err != context.Canceled {
-			return fmt.Errorf("watch error on %s: %w", inboxCfg.Email, err)
+		fmt.Printf("📨 New email from %s (%s)\n", email.BrokerName, email.From)
+		classified, _, err := inbox.RecordReply(store, &email, false)
+		if err != nil {
+			fmt.Printf("⚠️  Failed to store response: %v\n", err)
 		}
+		printClassifiedResponse(classified)
+	})
+	if err != nil && err != context.Canceled {
+		return fmt.Errorf("watch error on %s: %w", inboxCfg.Email, err)
 	}
-
 	return nil
 }
 
@@ -323,13 +208,4 @@ func printClassifiedResponse(r inbox.ClassifiedResponse) {
 	if r.NeedsReview {
 		fmt.Printf("   ⚠️  Confidence: %.0f%% - manual review recommended\n", r.Confidence*100)
 	}
-}
-
-// emailBody is the stored body: plain text, else HTML. Stored so later
-// reclassification doesn't need to fetch the mail again.
-func emailBody(e inbox.Email) string {
-	if e.Body != "" {
-		return e.Body
-	}
-	return e.HTMLBody
 }

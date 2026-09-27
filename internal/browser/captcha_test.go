@@ -3,7 +3,7 @@ package browser
 import "testing"
 
 // IsCaptchaBlocking and GetCaptchaDescription are pure methods on an
-// already-populated CaptchaInfo - unlike the detectXxx family (which drive a
+// already-populated CaptchaInfo - unlike detectCaptcha (which drives a
 // live browser via chromedp and need a real Chrome instance, see
 // browser_chrome_test.go), these are cheap to check directly.
 
@@ -45,11 +45,7 @@ func TestCaptchaInfoGetCaptchaDescription(t *testing.T) {
 		{"not found", CaptchaInfo{Found: false}, "No CAPTCHA detected"},
 		{"recaptcha v2 has a known description", CaptchaInfo{Found: true, Type: CaptchaTypeRecaptchaV2}, "Google reCAPTCHA v2 - Click the checkbox and/or solve image puzzles"},
 		{"turnstile has a known description", CaptchaInfo{Found: true, Type: CaptchaTypeTurnstile}, "Cloudflare Turnstile - Usually auto-passes after brief check"},
-		{
-			"unrecognized type falls back to the detector's own Description",
-			CaptchaInfo{Found: true, Type: "some_future_captcha_type", Description: "custom detector description"},
-			"custom detector description",
-		},
+		{"unrecognized type falls back to unknown", CaptchaInfo{Found: true, Type: "some_future_captcha_type"}, "Unknown CAPTCHA type - Manual inspection required"},
 	}
 
 	for _, tt := range tests {

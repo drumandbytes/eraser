@@ -158,3 +158,38 @@ func TestSubmitForm_ClicksButtonByVisibleText(t *testing.T) {
 		t.Errorf("document.title = %q after submitForm; want %q (button was not clicked by text match)", title, "clicked")
 	}
 }
+
+// One page per detector branch, plus a clean page, so the single detection
+// script keeps each check and its order.
+func TestDetectCaptcha(t *testing.T) {
+	b := requireChrome(t)
+	defer b.Close()
+
+	cases := []struct{ name, body, want string }{
+		{"none", `<form><input name="email"></form>`, ""},
+		{"recaptcha v2", `<div class="g-recaptcha" data-sitekey="x"></div>`, CaptchaTypeRecaptchaV2},
+		{"recaptcha v3", `<script src="about:blank?recaptcha&render=abc"></script>`, CaptchaTypeRecaptchaV3},
+		{"hcaptcha", `<div class="h-captcha"></div>`, CaptchaTypeHCaptcha},
+		{"turnstile", `<div class="cf-turnstile"></div>`, CaptchaTypeTurnstile},
+		{"funcaptcha", `<div id="FunCaptcha"></div>`, CaptchaTypeFunCaptcha},
+		{"cloudflare", `<title>Just a moment...</title><p>checking</p>`, CaptchaTypeCloudflare},
+		{"text captcha", `<p>Enter the code shown</p><input name="captcha_answer">`, CaptchaTypeTextCaptcha},
+		{"image captcha", `<img src="/captcha.png" alt="x">`, CaptchaTypeImageCaptcha},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(b.ctx, b.config.Timeout)
+			defer cancel()
+			if err := chromedp.Run(ctx, chromedp.Navigate("data:text/html,<html><head></head><body>"+tc.body+"</body></html>")); err != nil {
+				t.Fatalf("navigate: %v", err)
+			}
+			got, err := b.detectCaptcha(ctx)
+			if err != nil {
+				t.Fatalf("detectCaptcha: %v", err)
+			}
+			if got.Type != tc.want || got.Found != (tc.want != "") {
+				t.Fatalf("got %+v, want type %q", got, tc.want)
+			}
+		})
+	}
+}

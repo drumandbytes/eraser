@@ -2,14 +2,10 @@ package web
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"sync"
 	"time"
-
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/google/uuid"
 )
 
 // JobStatus represents the status of a background job
@@ -227,7 +223,7 @@ func (jm *JobManager) createLocked(total int, profileID string) *Job {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	job := &Job{
-		ID:         uuid.New().String(),
+		ID:         rand.Text(),
 		ProfileID:  profileID,
 		Status:     JobStatusRunning,
 		Progress:   0,
@@ -305,82 +301,4 @@ func (jm *JobManager) Cleanup(maxAge time.Duration) {
 			delete(jm.jobs, id)
 		}
 	}
-}
-
-// PersistentJobState represents a job that can be saved/loaded from disk
-type PersistentJobState struct {
-	ID               string    `json:"id"`
-	ProfileID        string    `json:"profile_id"`
-	Status           JobStatus `json:"status"`
-	Sent             int       `json:"sent"`
-	Failed           int       `json:"failed"`
-	Total            int       `json:"total"`
-	StartedAt        time.Time `json:"started_at"`
-	RemainingBrokers []string  `json:"remaining_brokers"` // Broker IDs still to process
-	Search           string    `json:"search"`            // Original filter params
-	Category         string    `json:"category"`
-	Region           string    `json:"region"`
-	StatusFilter     string    `json:"status_filter"`
-}
-
-// JobPersistence handles saving/loading job state
-type JobPersistence struct {
-	dataDir string
-}
-
-// NewJobPersistence creates a new job persistence handler
-func NewJobPersistence(dataDir string) *JobPersistence {
-	return &JobPersistence{dataDir: dataDir}
-}
-
-// filePath: one file per profile (they can send concurrently). The default
-// profile keeps the old bare filename so an in-flight job survives upgrade.
-func (jp *JobPersistence) filePath(profileID string) string {
-	if profileID == "" || profileID == config.DefaultProfileID {
-		return filepath.Join(jp.dataDir, "pending_job.json")
-	}
-	return filepath.Join(jp.dataDir, "pending_job-"+config.SlugifyID(profileID)+".json")
-}
-
-// Save saves the job state to disk, keyed by state.ProfileID.
-func (jp *JobPersistence) Save(state *PersistentJobState) error {
-	if err := os.MkdirAll(jp.dataDir, 0700); err != nil {
-		return err
-	}
-
-	data, err := json.MarshalIndent(state, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(jp.filePath(state.ProfileID), data, 0600)
-}
-
-// Load loads a pending job state for profileID from disk, returns nil if
-// none exists.
-func (jp *JobPersistence) Load(profileID string) (*PersistentJobState, error) {
-	data, err := os.ReadFile(jp.filePath(profileID))
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	var state PersistentJobState
-	if err := json.Unmarshal(data, &state); err != nil {
-		return nil, err
-	}
-
-	return &state, nil
-}
-
-// Clear removes the saved job state
-// Clear removes profileID's saved job state.
-func (jp *JobPersistence) Clear(profileID string) error {
-	err := os.Remove(jp.filePath(profileID))
-	if os.IsNotExist(err) {
-		return nil
-	}
-	return err
 }

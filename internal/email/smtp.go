@@ -2,9 +2,11 @@ package email
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"fmt"
 	"net"
+	"net/mail"
 	"net/smtp"
 	"strings"
 
@@ -31,7 +33,16 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 
+	// Our own Message-ID, so the one recorded in history is the one the
+	// broker actually receives (and quotes back in In-Reply-To).
+	domain := "localhost"
+	if from, err := mail.ParseAddress(msg.From); err == nil {
+		domain = from.Address[strings.LastIndex(from.Address, "@")+1:]
+	}
+	messageID := "<" + rand.Text() + "@" + domain + ">"
+
 	var message strings.Builder
+	fmt.Fprintf(&message, "Message-ID: %s\r\n", messageID)
 	fmt.Fprintf(&message, "From: %s\r\n", msg.From)
 	fmt.Fprintf(&message, "To: %s\r\n", msg.To)
 	fmt.Fprintf(&message, "Subject: %s\r\n", msg.Subject)
@@ -59,7 +70,7 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 
 	return Result{
 		Success:   true,
-		MessageID: fmt.Sprintf("smtp-%s-%d", msg.To, ctx.Value(SequenceKey)),
+		MessageID: messageID,
 	}
 }
 

@@ -76,3 +76,18 @@ func TestIsPrivateOrLoopbackHost(t *testing.T) {
 		})
 	}
 }
+
+func TestExtractURLsFromHTML(t *testing.T) {
+	doc := `<p>Confirm <a class="btn" href="https://acme.example/confirm?t=1&amp;u=2">here</a>
+	or visit https://acme.example/portal.</p><a name="x">no href</a><img src="https://img.example/x.png">`
+	got := extractURLsFromHTML(doc)
+	want := []string{"https://acme.example/confirm?t=1&u=2", "https://acme.example/portal."}
+	if len(got) != len(want) {
+		t.Fatalf("got %q, want %q", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %q, want %q", got, want)
+		}
+	}
+}

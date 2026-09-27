@@ -40,6 +40,8 @@ const (
 	defaultSessionTTL = 30 * time.Minute
 )
 
+// RateLimiter caps requests per key in a sliding window. Keys are a fixed
+// handful of endpoint names, so the map never needs pruning.
 type RateLimiter struct {
 	mu       sync.Mutex
 	requests map[string][]time.Time
@@ -53,7 +55,6 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 		limit:    limit,
 		window:   window,
 	}
-	go rl.cleanupLoop()
 	return rl
 }
 
@@ -83,44 +84,24 @@ func (rl *RateLimiter) Allow(key string) bool {
 	return true
 }
 
-func (rl *RateLimiter) cleanupLoop() {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rl.mu.Lock()
-		windowStart := time.Now().Add(-rl.window)
-		for key, times := range rl.requests {
-			recent := rl.filterRecent(times, windowStart)
-			if len(recent) == 0 {
-				delete(rl.requests, key)
-			} else {
-				rl.requests[key] = recent
-			}
-		}
-		rl.mu.Unlock()
-	}
-}
-
 // Version is the build version shown in the web UI footer. main sets it from
 // its own -ldflags-injected version at startup; it stays "dev" otherwise.
 var Version = "dev"
 
 type Server struct {
-	config         atomic.Pointer[config.Config]
-	configPath     string
-	brokerDB       *broker.BrokerDatabase
-	historyStore   *history.Store
-	tmplEngine     *emaTemplate.Engine
-	templates      map[string]*template.Template
-	httpServer     *http.Server
-	port           int
-	csrfKey        []byte
-	sessions       *SessionStore
-	rateLimiter    *RateLimiter
-	jobManager     *JobManager
-	jobPersistence *JobPersistence
-	dataDir        string // config directory: job state, schedule lock and state
+	config       atomic.Pointer[config.Config]
+	configPath   string
+	brokerDB     *broker.BrokerDatabase
+	historyStore *history.Store
+	tmplEngine   *emaTemplate.Engine
+	templates    map[string]*template.Template
+	httpServer   *http.Server
+	port         int
+	csrfKey      []byte
+	sessions     *SessionStore
+	rateLimiter  *RateLimiter
+	jobManager   *JobManager
+	dataDir      string // config directory: schedule lock and state
 
 	// In-app scheduler (scheduler.go). The OS hooks are fields so tests
 	// don't touch the real launchd/systemd setup.
@@ -147,22 +128,30 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 	}
 
 	s := &Server{
-		configPath:     configPath,
-		brokerDB:       brokerDB,
-		historyStore:   historyStore,
-		tmplEngine:     tmplEngine,
-		port:           port,
-		csrfKey:        csrfKey,
-		sessions:       NewSessionStore(defaultSessionTTL),
-		rateLimiter:    NewRateLimiter(defaultRateLimit, defaultRateWindow),
-		jobManager:     NewJobManager(),
-		jobPersistence: NewJobPersistence(dataDir),
-		dataDir:        dataDir,
-		osInstalled:    schedule.Installed,
-		installOS:      schedule.Install,
-		removeOS:       schedule.Remove,
+		configPath:   configPath,
+		brokerDB:     brokerDB,
+		historyStore: historyStore,
+		tmplEngine:   tmplEngine,
+		port:         port,
+		csrfKey:      csrfKey,
+		sessions:     NewSessionStore(defaultSessionTTL),
+		rateLimiter:  NewRateLimiter(defaultRateLimit, defaultRateWindow),
+		jobManager:   NewJobManager(),
+		dataDir:      dataDir,
+		osInstalled:  schedule.Installed,
+		installOS:    schedule.Install,
+		removeOS:     schedule.Remove,
 	}
 	s.config.Store(cfg)
+
+	// Paused send jobs used to be saved here for resume-on-restart; that's
+	// gone, so drop any leftovers.
+	if configPath != "" {
+		leftovers, _ := filepath.Glob(filepath.Join(dataDir, "pending_job*.json"))
+		for _, f := range leftovers {
+			_ = os.Remove(f)
+		}
+	}
 
 	tmpl, err := s.parseTemplates()
 	if err != nil {
@@ -328,9 +317,6 @@ func (s *Server) Start() error {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-
-	// Check for pending job and offer to resume
-	s.checkPendingJob()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.stopScheduler = cancel

@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
 )
 
 // ExtractedURLs contains categorized URLs from an email
@@ -159,25 +159,33 @@ func extractURLsFromText(text string) []string {
 
 // extractURLsFromHTML extracts href values. The size bound is at the MIME read
 // in monitor.go; html is already in memory here.
-func extractURLsFromHTML(html string) []string {
+func extractURLsFromHTML(doc string) []string {
 	var urls []string
-
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
-	if err != nil {
-		// Fallback to regex
-		return extractURLsFromText(html)
-	}
-
-	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
-		if href, exists := s.Attr("href"); exists {
-			urls = append(urls, href)
+	var text strings.Builder
+	z := html.NewTokenizer(strings.NewReader(doc))
+	for {
+		switch z.Next() {
+		case html.ErrorToken:
+			// EOF, or unparseable input - either way, also check the text
+			// seen so far for bare URLs.
+			return append(urls, extractURLsFromText(text.String())...)
+		case html.TextToken:
+			text.Write(z.Text())
+			text.WriteByte(' ')
+		case html.StartTagToken, html.SelfClosingTagToken:
+			name, hasAttr := z.TagName()
+			if string(name) != "a" {
+				continue
+			}
+			for hasAttr {
+				var key, val []byte
+				key, val, hasAttr = z.TagAttr()
+				if string(key) == "href" {
+					urls = append(urls, string(val))
+				}
+			}
 		}
-	})
-
-	// Also check for URLs in plain text within the HTML
-	urls = append(urls, extractURLsFromText(doc.Text())...)
-
-	return urls
+	}
 }
 
 // cleanURL normalizes and validates a URL

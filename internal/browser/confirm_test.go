@@ -10,20 +10,11 @@ import (
 	"testing"
 )
 
-// Regression coverage for the redirect-hop re-validation added to
-// ClickConfirmationLink's http.Client.CheckRedirect callback. Before this
-// fix, only the *initial* confirmation URL was checked against the broker
-// domain allowlist; a broker site with an open redirect (or a compromised
-// first hop) could carry an identifying confirmation token to an arbitrary
-// third-party domain across the redirect chain. These tests confirm the
-// second hop is rejected before any request to it is made, and that a
-// legitimate redirect within the allowed domains still succeeds.
+// Every redirect hop is re-validated: a hop to a disallowed domain is rejected
+// before any request, a redirect within allowed domains still works.
 func TestClickConfirmationLink_RejectsRedirectToDisallowedDomain(t *testing.T) {
-	// The allowed server redirects to a domain that isn't in the allowlist.
-	// "evil.test" deliberately doesn't resolve to anything -- the point is
-	// that CheckRedirect must reject it *before* net/http ever tries to
-	// dial it, based purely on domain re-validation, not because the host
-	// happens to be unreachable.
+	// evil.test doesn't resolve on purpose: CheckRedirect must reject it
+	// before any dial
 	allowed := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "http://evil.test/landing", http.StatusFound)
 	}))
@@ -77,11 +68,7 @@ func TestClickConfirmationLink_AllowsRedirectToAllowedDomain(t *testing.T) {
 	firstHost := hostOnly(t, first.URL)
 	finalHost := hostOnly(t, final.URL)
 
-	// Both hops resolve to 127.0.0.1 but on different ports, and
-	// matchesAllowedDomain strips the port -- so without listing both
-	// loopback "hosts" explicitly this would collapse to one entry. Since
-	// httptest servers all share the 127.0.0.1 hostname, list it once; this
-	// still exercises the CheckRedirect path re-validating each hop.
+	// both hops are 127.0.0.1 (ports are stripped), so one entry covers them
 	domains := []string{firstHost}
 	if finalHost != firstHost {
 		domains = append(domains, finalHost)
@@ -118,12 +105,8 @@ func TestIsSuccessResponse(t *testing.T) {
 		{"200 with 'unsubscribed'", 200, "You have been unsubscribed", true},
 		{"200 with no recognizable phrase", 200, "<html><body>OK</body></html>", true},
 		{"200 but body says link expired", 200, "Sorry, this link expired yesterday", false},
-		// Note: the failurePatterns entry "already confirmed" is actually
-		// unreachable - any body containing that phrase also contains the
-		// success pattern "confirmed", which is checked first and wins (see
-		// "success phrase wins when both present" below). This case
-		// documents the real, current behavior rather than the seemingly
-		// intended one.
+		// "already confirmed" is unreachable: the "confirmed" success pattern
+		// matches first. Documents current behavior.
 		{"200 but body says already confirmed (shadowed by 'confirmed' success match)", 200, "This request was already confirmed", true},
 		{"200 but body says link invalid", 200, "Sorry, link invalid or already used", false},
 		{"200 but body says failed", 200, "Something failed while processing", false},
@@ -173,11 +156,8 @@ func TestExtractConfirmationStatus(t *testing.T) {
 	}
 }
 
-// hostOnly returns the host:port-stripped-of-port... actually just the bare
-// host (matchesAllowedDomain strips the port itself, but NewConfirmationHandler
-// stores domains verbatim, so passing host:port would never match an
-// incoming request's port-stripped host). This extracts just the hostname
-// portion of an httptest.Server's URL for use as an allowlist entry.
+// hostOnly returns an httptest URL's bare host: allowlist entries are stored
+// verbatim, so host:port would never match.
 func hostOnly(t *testing.T, rawURL string) string {
 	t.Helper()
 	host := strings.TrimPrefix(rawURL, "http://")

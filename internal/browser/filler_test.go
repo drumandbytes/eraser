@@ -9,14 +9,8 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// isContextErr distinguishes a real browser/context failure (deadline
-// exceeded, cancellation) from chromedp's normal "not found on this page"
-// signal, which fillSelector/fillByPattern report as (false, nil) rather
-// than an error. Getting this wrong in either direction is bad: treating a
-// real timeout as "field not found" would let NavigateAndFill report
-// Success=true after the browser died mid-fill (see browser.go's
-// hasFillErrors gate), while treating "not found" as a real error would
-// make ordinary missing fields blow up every fill attempt.
+// Both mistakes matter: a timeout read as "not found" reports Success after
+// the browser died; "not found" read as an error breaks every fill.
 func TestIsContextErr(t *testing.T) {
 	wrapped := fmt.Errorf("fillSelector: %w", context.DeadlineExceeded)
 	doubleWrapped := fmt.Errorf("tryFillField: %w", wrapped)

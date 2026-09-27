@@ -2,12 +2,8 @@ package inbox
 
 import "testing"
 
-// TestCleanURLRejectsPrivateAndLoopbackHosts covers the fix in cleanURL that
-// unconditionally rejects URLs pointing at private, loopback, link-local, or
-// localhost targets - the last line of defense against a broker-reply email
-// (attacker-influenced content) pointing an outbound request at an internal
-// service or a cloud metadata endpoint, even when the caller has disabled
-// the separate domain-allowlist check.
+// cleanURL rejects private/loopback/link-local targets even with the domain
+// allowlist disabled.
 func TestCleanURLRejectsPrivateAndLoopbackHosts(t *testing.T) {
 	tests := []struct {
 		name    string

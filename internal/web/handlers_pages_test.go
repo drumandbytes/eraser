@@ -9,12 +9,7 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// TestPipelineShowsScanButtonForProfileMailOverride is a regression test:
-// handlePipeline used to gate the "Scan Inbox" button on the shared
-// cfg.Inbox.Enabled, so a profile relying only on its own mail.inbox
-// override (with no shared inbox: block configured at all) would never see
-// the button, even though the API scan handler it points at already
-// resolves the inbox per profile (see handleAPIInboxScan).
+// "Scan Inbox" must show for a profile with only its own mail.inbox override.
 func TestPipelineShowsScanButtonForProfileMailOverride(t *testing.T) {
 	s := newTestServer(t, &config.Config{
 		Profiles: []config.NamedProfile{{

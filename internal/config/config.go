@@ -33,17 +33,12 @@ func checkFilePermissions(path string) error {
 }
 
 type Config struct {
-	// Profile is the legacy single-profile block. Still fully supported -
-	// GetProfiles() wraps it as a single "default" profile whenever Profiles
-	// is empty, so an existing single-person config.yaml keeps working
-	// unchanged. Ignored once Profiles is non-empty (see GetProfiles).
+	// Profile is the legacy single-profile block, wrapped by GetProfiles as
+	// "default". Ignored once Profiles is non-empty.
 	Profile Profile `yaml:"profile"`
-	// Profiles lets one eraser install send and track removal requests for
-	// more than one person (e.g. yourself and a family member) against the
-	// same broker database, email account, and options - each profile's
-	// send history, pipeline state, and pending tasks are tracked
-	// separately (see history.Store's profile_id column). Takes precedence
-	// over Profile when non-empty; Profile is otherwise ignored.
+	// Profiles tracks removal requests for several people against the same
+	// brokers, mail account and options; history is kept per profile
+	// (profile_id). Takes precedence over Profile.
 	Profiles []NamedProfile `yaml:"profiles,omitempty"`
 	Email    EmailConfig    `yaml:"email"`
 	Options  Options        `yaml:"options"`
@@ -51,23 +46,15 @@ type Config struct {
 	Pipeline Pipeline       `yaml:"pipeline,omitempty"`
 }
 
-// NamedProfile is one entry in a multi-profile config: a person identity
-// (name, address, contact info - everything Profile already carries) plus a
-// stable ID used to select it via --profile on the CLI, to scope history
-// records to it, and to switch between profiles in the web UI.
+// NamedProfile is a person's identity plus the stable ID used by --profile,
+// history rows and the web UI's switcher.
 type NamedProfile struct {
-	// ID should be short, lowercase, and hyphenated (like a broker ID) -
-	// e.g. "maris" or "spouse". Stored verbatim in history.db so changing it
-	// later orphans that profile's existing history from the CLI/web UI
-	// (the rows are still in the database, just no longer reachable by the
-	// new ID).
+	// ID: short, lowercase, hyphenated. Stored verbatim in history.db, so
+	// renaming it orphans the profile's existing history.
 	ID      string `yaml:"id"`
 	Profile `yaml:",inline"`
-	// Mail overrides the shared top-level email:/inbox: blocks for this
-	// profile only, so each profile can send and monitor replies through a
-	// distinct email account instead of one account shared by every
-	// profile - see EmailForProfile/InboxForProfile. Leave nil (the common
-	// case) to keep using the shared blocks.
+	// Mail overrides the shared email:/inbox: blocks for this profile only
+	// (see EmailForProfile/InboxForProfile). nil = use the shared blocks.
 	Mail *MailConfig `yaml:"mail,omitempty"`
 }
 
@@ -99,12 +86,8 @@ func (c *Config) InboxForProfile(p NamedProfile) InboxConfig {
 	return c.Inbox
 }
 
-// ConfiguredInboxes returns every distinct enabled IMAP inbox referenced by
-// the configured profiles - each profile's Mail.Inbox override, or the
-// shared top-level Inbox for any profile without one - deduplicated by
-// email address so profiles sharing one account aren't scanned twice.
-// `monitor` uses this to cover every profile's replies instead of only the
-// shared inbox.
+// ConfiguredInboxes returns every enabled IMAP inbox across profiles (overrides
+// or the shared one), deduplicated by address, so `monitor` covers everyone.
 func (c *Config) ConfiguredInboxes() []InboxConfig {
 	seen := make(map[string]bool)
 	var result []InboxConfig
@@ -128,10 +111,8 @@ func (c *Config) ConfiguredInboxes() []InboxConfig {
 // history rows are attributed to after the profile_id migration.
 const DefaultProfileID = "default"
 
-// GetProfiles returns every configured profile. A config with no explicit
-// profiles: list returns a single synthetic profile (ID "default") wrapping
-// the legacy top-level profile: block, so existing single-profile configs
-// keep working unchanged without needing to be rewritten.
+// GetProfiles returns every profile; with no profiles: list, the legacy
+// profile: block as a single "default" profile.
 func (c *Config) GetProfiles() []NamedProfile {
 	if len(c.Profiles) > 0 {
 		return c.Profiles
@@ -139,10 +120,8 @@ func (c *Config) GetProfiles() []NamedProfile {
 	return []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
 }
 
-// GetProfile resolves the active profile by ID. An empty id resolves to the
-// sole configured profile when there's exactly one; with several configured,
-// an empty id is ambiguous and returns an error listing the available IDs
-// (the caller - CLI flag, web session - must disambiguate).
+// GetProfile resolves a profile by ID. Empty id works only when exactly one
+// profile exists; otherwise it errors with the available IDs.
 func (c *Config) GetProfile(id string) (NamedProfile, error) {
 	profiles := c.GetProfiles()
 	if id == "" {
@@ -169,15 +148,9 @@ func profileIDs(profiles []NamedProfile) []string {
 
 var nonSlugChars = regexp.MustCompile(`[^a-z0-9]+`)
 
-// SlugifyID converts arbitrary text into a lowercase-hyphenated identifier
-// safe to use as a NamedProfile.ID - stripping everything outside [a-z0-9].
-// Both the CLI (`eraser profile add`) and the web UI's "add profile" form
-// must funnel a user-typed or name-derived ID through this same function:
-// Go's net/http cookie writer silently drops (rather than quotes) any byte
-// outside 0x20-0x7e when writing a Set-Cookie header, including any
-// non-ASCII UTF-8 byte such as diacritics in a name - an ID that carries
-// one round-trips incorrectly through the web UI's profile-switcher
-// cookie, silently falling back to the first configured profile.
+// SlugifyID lowercases and hyphenates s, keeping only [a-z0-9]. Every profile
+// ID must go through it: net/http silently drops non-ASCII bytes from
+// Set-Cookie, so an ID with diacritics breaks the web UI's profile cookie.
 func SlugifyID(s string) string {
 	base := nonSlugChars.ReplaceAllString(strings.ToLower(strings.TrimSpace(s)), "-")
 	base = strings.Trim(base, "-")
@@ -187,10 +160,8 @@ func SlugifyID(s string) string {
 	return base
 }
 
-// SlugifyProfileID derives a profile ID from a first/last name pair (see
-// SlugifyID for the charset rule), appending -2, -3, ... if the base is
-// already taken by an existing profile - so the web UI's "add profile" form
-// never needs to ask the user to pick an ID themselves.
+// SlugifyProfileID derives an ID from first/last name (see SlugifyID),
+// appending -2, -3, ... when taken.
 func SlugifyProfileID(firstName, lastName string, existing []NamedProfile) string {
 	base := SlugifyID(firstName + "-" + lastName)
 
@@ -223,12 +194,8 @@ type InboxConfig struct {
 type Pipeline struct {
 	AutoConfirm   bool `yaml:"auto_confirm"`    // Auto-click confirmation links
 	AutoFillForms bool `yaml:"auto_fill_forms"` // Enable browser automation for forms
-	// BrowserHeadless defaults to true (headless) when unset. A plain bool
-	// can't tell "explicitly set to false" apart from "never set" - both
-	// unmarshal as the zero value - so this used to get silently forced
-	// back to true on every load, discarding a `browser_headless: false`
-	// someone set to watch the browser solve a CAPTCHA. A pointer fixes
-	// that; use Headless() to read it with the default applied.
+	// BrowserHeadless is a pointer so an explicit false survives loading (a
+	// plain bool was forced back to true). Read it via Headless().
 	BrowserHeadless   *bool `yaml:"browser_headless,omitempty"`
 	BrowserTimeoutSec int   `yaml:"browser_timeout_sec"` // Browser operation timeout
 }
@@ -244,26 +211,19 @@ func (p Pipeline) Headless() bool {
 
 type Profile struct {
 	FirstName string `yaml:"first_name"`
-	// MiddleName is optional - most brokers only match on first/last name,
-	// but some (especially background-check and financial-b2b brokers)
-	// index records by full legal name, so including it helps them find
-	// (and thus actually delete) the right record.
+	// MiddleName: some brokers (background-check, financial-b2b) match on
+	// full legal name.
 	MiddleName string `yaml:"middle_name,omitempty"`
 	LastName   string `yaml:"last_name"`
 	Email      string `yaml:"email"`
-	// AdditionalEmails are other addresses you've used over the years (old
-	// personal accounts, work emails, etc). Brokers often indexed your record
-	// under one of these rather than your current address, so listing them
-	// all in the removal request helps them actually locate and delete it.
+	// AdditionalEmails: older addresses a broker may have indexed you under.
 	AdditionalEmails []string `yaml:"additional_emails,omitempty"`
 	// NameVariants covers other spellings brokers may have indexed you under -
 	// e.g. a diacritic-free version of your name ("Maris" for "Māris"), a
 	// maiden name, or a nickname you've used to sign up for things.
 	NameVariants []string `yaml:"name_variants,omitempty"`
-	// PreviousAddresses are other places you've lived recently enough that a
-	// broker might still have the record - a partial address (missing an
-	// apartment number, say) is still worth including, since most broker
-	// matching keys off street/city/postal code rather than the exact unit.
+	// PreviousAddresses: partial ones still help, since matching keys off
+	// street/city/postal code.
 	PreviousAddresses []string `yaml:"previous_addresses,omitempty"`
 	Address           string   `yaml:"address,omitempty"`
 	City              string   `yaml:"city,omitempty"`
@@ -303,26 +263,20 @@ type SMTPConfig struct {
 
 type Options struct {
 	Template string `yaml:"template"`
-	// SendMode selects how removal emails leave the machine:
-	//   "" / "smtp" - Eraser sends them itself over the configured SMTP account.
-	//   "manual"    - Eraser never sends. It renders the emails for you to send
-	//                 by hand from your own mail client, and you record each one
-	//                 with `eraser mark-sent` / the web UI's "Mark sent" button.
-	//                 No `email:` block is required in this mode.
-	// For users who won't give any tool their mailbox credentials.
+	// SendMode:
+	//   "" / "smtp" - Eraser sends over the configured SMTP account.
+	//   "manual"    - Eraser renders the emails for you to send yourself and
+	//                 record with `eraser mark-sent` / "Mark sent". No email:
+	//                 block needed; for users who won't share mailbox credentials.
 	SendMode    string `yaml:"send_mode,omitempty"`
 	DryRun      bool   `yaml:"dry_run"`
 	RateLimitMs int    `yaml:"rate_limit_ms"`
-	// DailySendLimit caps how many emails `send` will dispatch per rolling
-	// 24h window, so a large broker list can't blow past your provider's
-	// daily sending cap (Gmail's is ~500/day) or read as bulk-spam behavior.
-	// 0 uses the default (450). Overridden per-run with --ignore-daily-limit.
+	// DailySendLimit caps sends per rolling 24h to stay under provider limits
+	// (Gmail ~500/day). 0 = 450. Bypass with --ignore-daily-limit.
 	DailySendLimit int `yaml:"daily_send_limit,omitempty"`
-	// BrokerList picks which built-in list the send-family commands use:
-	//   "" / "full" - the full ~750-entry list (default)
-	//   "verified"  - the smaller registry-sourced list (data/brokers-verified.yaml)
-	// Overridden per-run with `send --list`. Ignored when BrokerFile or
-	// --brokers points at an explicit file.
+	// BrokerList: "" / "full" (~750 entries, default) or "verified"
+	// (data/brokers-verified.yaml). Overridden by `send --list`; ignored when
+	// BrokerFile or --brokers is set.
 	BrokerList string `yaml:"broker_list,omitempty"`
 	// BrokerFile points the send-family commands at your own broker list,
 	// the config equivalent of the global --brokers flag (which still wins).
@@ -330,11 +284,8 @@ type Options struct {
 	BrokerFile      string   `yaml:"broker_file,omitempty"`
 	Regions         []string `yaml:"regions"`
 	ExcludedBrokers []string `yaml:"excluded_brokers,omitempty"`
-	// ExcludedCategories skips every broker whose category (case-insensitive)
-	// matches one of these - e.g. "requires-id" to skip brokers that ask for
-	// a government-issued ID document or similar heavyweight identity
-	// verification before they'll act on a request, which this tool won't
-	// supply on your behalf.
+	// ExcludedCategories skips brokers by category (case-insensitive), e.g.
+	// "requires-id" for brokers that demand an ID document.
 	ExcludedCategories []string `yaml:"excluded_categories,omitempty"`
 }
 
@@ -391,10 +342,8 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-// applyInboxDefaults fills in Folder/ArchiveFolder and, for the two
-// providers with a well-known IMAP endpoint, Server/Port - shared by the
-// top-level Inbox block and every profile's Mail.Inbox override so both go
-// through the same default-filling rather than two copies drifting apart.
+// applyInboxDefaults fills Folder/ArchiveFolder and, for known providers,
+// Server/Port. Shared by the top-level inbox and per-profile overrides.
 func applyInboxDefaults(inbox *InboxConfig) {
 	if inbox.Folder == "" {
 		inbox.Folder = "INBOX"

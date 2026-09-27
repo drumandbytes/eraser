@@ -80,12 +80,8 @@ type guidePage struct {
 	CCPABody    string
 }
 
-// noindexedBrokers are curated pages with nothing actionable for most
-// readers -- kept reachable (the guide still explains why) but excluded from
-// search and the sitemap. A manual, reviewed list: whether a broker reply
-// means "dead end" is an editorial call, not something to infer from Notes
-// text automatically (most bounced-email or "no data found" notes turn out to
-// have a working alternate channel once checked).
+// noindexedBrokers: reachable but kept out of search and the sitemap, as they
+// offer nothing actionable. Curated by hand; a dead end is an editorial call.
 var noindexedBrokers = map[string]bool{
 	"publicrecordsnow": true, // no email or opt-out URL on file; the one we had bounced
 	"regis24":          true, // DE/AT-only credit bureau; explicit no-further-action reply

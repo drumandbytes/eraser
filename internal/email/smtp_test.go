@@ -34,11 +34,7 @@ func hangingSMTPServer(t *testing.T) string {
 	return ln.Addr().String()
 }
 
-// TestSendRespectsContextDeadline is the regression test for the bug fixed
-// in send(): net/smtp has no context support, so before this fix a hung
-// SMTP server (one that accepts the connection and then never responds)
-// made Send block forever, ignoring the 30s timeout every caller sets on
-// ctx. A short deadline here must still make Send return promptly.
+// A server that accepts and never answers must not outlive ctx's deadline.
 func TestSendRespectsContextDeadline(t *testing.T) {
 	addr := hangingSMTPServer(t)
 	host, port := splitHostPortForTest(t, addr)
@@ -60,11 +56,7 @@ func TestSendRespectsContextDeadline(t *testing.T) {
 	}
 }
 
-// TestSendRespectsContextCancellation covers the other half: a job's Cancel
-// button cancels the context with no deadline at all. Send must still
-// return promptly once cancelled, not hang until some other timeout - this
-// is the watcher-goroutine-closes-the-connection path, distinct from the
-// deadline/SetDeadline path TestSendRespectsContextDeadline exercises.
+// Cancel with no deadline (the job's Cancel button) must also return promptly.
 func TestSendRespectsContextCancellation(t *testing.T) {
 	addr := hangingSMTPServer(t)
 	host, port := splitHostPortForTest(t, addr)

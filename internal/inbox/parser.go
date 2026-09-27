@@ -157,14 +157,8 @@ func extractURLsFromText(text string) []string {
 	return matches
 }
 
-// extractURLsFromHTML extracts href values from HTML.
-//
-// html is always email.HTMLBody, which by the time it reaches here is
-// already a fully-materialized Go string - the actual memory-safety fix
-// for oversized broker-reply emails lives at the read that produced that
-// string (io.LimitReader around the MIME part body in monitor.go's
-// parseMessage), not here, since wrapping this parse in a LimitReader
-// would no longer reduce peak memory once the string already exists.
+// extractURLsFromHTML extracts href values. The size bound is at the MIME read
+// in monitor.go; html is already in memory here.
 func extractURLsFromHTML(html string) []string {
 	var urls []string
 
@@ -206,12 +200,8 @@ func cleanURL(rawURL string) string {
 		return ""
 	}
 
-	// Reject private/loopback/link-local/localhost targets unconditionally.
-	// Broker-reply emails are attacker-influenced, and cmd/eraser's
-	// --validate-domain flag (the domain-allowlist check) can be disabled
-	// by the user, so this is the last line of defense against an
-	// email-supplied URL pointing at an internal service or a cloud
-	// metadata endpoint (e.g. http://169.254.169.254/...).
+	// always reject private/loopback targets (e.g. 169.254.169.254): the email
+	// is attacker-influenced and --validate-domain can be turned off
 	if isPrivateOrLoopbackHost(parsed.Hostname()) {
 		return ""
 	}
@@ -219,12 +209,8 @@ func cleanURL(rawURL string) string {
 	return parsed.String()
 }
 
-// isPrivateOrLoopbackHost reports whether host (already stripped of any
-// port by url.URL.Hostname) is localhost by name, or a literal IP in a
-// loopback/private/link-local/unspecified range. It does not perform a DNS
-// lookup for non-literal hostnames (e.g. "internal.corp") - that would be a
-// heavier change with its own TOCTOU issues; the existing broker-domain
-// allowlist is the intended defense for those.
+// isPrivateOrLoopbackHost: localhost, or a literal loopback/private/link-local/
+// unspecified IP. No DNS lookup; the broker-domain allowlist covers names.
 func isPrivateOrLoopbackHost(host string) bool {
 	switch strings.ToLower(host) {
 	case "localhost", "127.0.0.1", "0.0.0.0", "::1":

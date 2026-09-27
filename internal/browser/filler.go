@@ -11,13 +11,9 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// isContextErr reports whether err is (or wraps) a context cancellation or
-// deadline error, as opposed to chromedp's normal "not found on this page"
-// signal (which shows up as a nil error with a false/empty result, not an
-// error at all -- see fillSelector/fillByPattern/detectXxx). A caller of
-// NavigateAndFill needs to be able to tell "this field/CAPTCHA type just
-// wasn't on the page" (expected, not a bug) apart from "the browser died or
-// timed out mid-fill" (a real failure) -- this is that distinction.
+// isContextErr reports a context cancel/deadline, as opposed to chromedp's
+// "not found" (nil error, empty result), so callers can tell a missing field
+// from a dead browser.
 func isContextErr(err error) bool {
 	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
 }
@@ -321,12 +317,8 @@ func (f *FormFiller) fillSelector(ctx context.Context, selector string, value st
 	return true, nil
 }
 
-// fillSelectElement sets the value of a <select> element by matching value
-// against an <option>'s value or visible text, setting el.value directly,
-// and dispatching a 'change' event so any listeners on the page notice.
-// Returns (false, nil) -- not an error -- if the select has no matching
-// <option>, since that's a legitimate "couldn't fill this field" outcome
-// rather than a browser/context failure.
+// fillSelectElement picks an <option> by value or text and fires 'change'.
+// No match is (false, nil), not an error.
 func (f *FormFiller) fillSelectElement(ctx context.Context, selector string, value string) (bool, error) {
 	js := fmt.Sprintf(`(function() {
 		var el = document.querySelector("%s");

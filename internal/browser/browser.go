@@ -113,11 +113,8 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		BrokerID: brokerID,
 	}
 
-	// Refuse to navigate to (and autofill PII into) a URL whose host isn't a
-	// known broker domain. Form URLs can originate from email-parsed content
-	// (untrusted), so without this a spoofed link could exfiltrate PII to an
-	// arbitrary site. An empty allowlist means "not configured" and skips
-	// the check, rather than rejecting everything.
+	// Only fill PII on known broker domains: form URLs can come from untrusted
+	// email. An empty allowlist means not configured.
 	if len(b.allowedDomains) > 0 {
 		valid, domain, err := matchesAllowedDomain(url, b.allowedDomains)
 		if err != nil {
@@ -316,11 +313,8 @@ func (b *Browser) submitForm(ctx context.Context) error {
 		}
 	}
 
-	// Fall back to matching a button by its visible text. The old selector
-	// list used jQuery-only ":contains('Submit')" etc, which is not valid
-	// CSS -- document.querySelector throws for it every time, so those
-	// selectors were silently dead code. Find-and-click happens in one JS
-	// snippet so we click the exact element we just found.
+	// match buttons by text in one JS snippet (the old ":contains()" selectors
+	// aren't valid CSS and never matched)
 	const clickByTextJS = `(() => {
 		const re = /submit|remove|opt.?out|delete|request/i;
 		const btn = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]'))

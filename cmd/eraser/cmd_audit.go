@@ -179,11 +179,8 @@ func runAuditBrokers(region, category string, timeout time.Duration, failOnDead,
 	}
 
 	if failOnDead {
-		// email-dead only. A dead mail domain is checkable from anywhere and means
-		// the removal request has nowhere to go, which is the thing that actually
-		// breaks the product. website-dead is still printed above, but it cannot
-		// distinguish "gone" from "blocks CI", so failing on it makes a scheduled
-		// job that always fails -- an alarm nobody reads.
+		// fail on email-dead only: website-dead can't tell "gone" from "blocks CI",
+		// so failing on it makes an alarm that always fires
 		dead := 0
 		for _, r := range results {
 			if r.verdict == verdictEmailDead {
@@ -265,11 +262,7 @@ func checkEmailAlive(email string, checker *auditChecker) bool {
 	domain := email[at+1:]
 
 	if mxs, err := checker.lookupMX(domain); err == nil && len(mxs) > 0 {
-		// A null MX (RFC 7505) is a single "." record, and it is the domain
-		// explicitly stating that it accepts no mail at all. Counting it as a
-		// live contact is worse than finding no MX: this is a definitive answer,
-		// not a missing one. No broker publishes one today, so this guards a
-		// silent future false positive rather than fixing a current miscount.
+		// null MX (RFC 7505, a lone ".") explicitly refuses mail: dead, not unknown
 		if len(mxs) == 1 && (mxs[0].Host == "." || mxs[0].Host == "") {
 			return false
 		}
@@ -286,11 +279,8 @@ func checkEmailAlive(email string, checker *auditChecker) bool {
 func checkWebsiteVerdict(website string, checker *auditChecker) auditVerdict {
 	resp, err := checker.httpHead(website)
 	if err != nil {
-		// A transport error only means "gone" if the name no longer resolves.
-		// If DNS still answers, we are far more likely to be blocked than to be
-		// looking at a dead broker -- these checks run from CI, and data brokers
-		// routinely refuse datacenter ranges. Calling that dead produced 73 false
-		// positives against 1 real one on the first scheduled run.
+		// Transport errors are "gone" only if DNS no longer resolves; brokers
+		// routinely block CI ranges (73 false positives vs 1 real on the first run).
 		if host := hostOf(website); host != "" {
 			if addrs, lookupErr := checker.lookupHost(host); lookupErr == nil && len(addrs) > 0 {
 				return verdictUnknown

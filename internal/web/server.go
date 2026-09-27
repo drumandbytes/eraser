@@ -144,6 +144,15 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 	}
 	s.config.Store(cfg)
 
+	// Paused send jobs used to be saved here for resume-on-restart; that's
+	// gone, so drop any leftovers.
+	if configPath != "" {
+		leftovers, _ := filepath.Glob(filepath.Join(dataDir, "pending_job*.json"))
+		for _, f := range leftovers {
+			_ = os.Remove(f)
+		}
+	}
+
 	tmpl, err := s.parseTemplates()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse templates: %w", err)

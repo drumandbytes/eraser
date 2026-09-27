@@ -65,7 +65,7 @@
                 <p class="text-sm">
                     <strong>Sending {{.Filtered}} emails will take multiple days.</strong>
                     To avoid email provider rate limits, Eraser sends up to {{.DailyLimit}} emails per day.
-                    Remaining emails will automatically continue when you restart the app the next day.
+                    The rest go out with the next automatic run (<a href="/settings#automation" class="underline">Settings &rarr; Automation</a>), or click Send all again the next day.
                 </p>
             </div>
         </div>
@@ -415,8 +415,8 @@ function showCompletionMessage(job) {
                     </svg>
                     <div>
                         <h3 class="font-semibold" style="color: var(--text-primary);">Daily Limit Reached</h3>
-                        <p class="text-sm mt-1">Sent ${job.sent} emails today. Remaining emails will continue tomorrow.</p>
-                        <p class="text-sm mt-2" style="color: var(--text-secondary);">${job.total - job.sent - job.failed} brokers will be sent automatically when you restart the app tomorrow.</p>
+                        <p class="text-sm mt-1">Sent ${job.sent} emails today.</p>
+                        <p class="text-sm mt-2" style="color: var(--text-secondary);">${job.total - job.sent - job.failed} brokers left. They go out with the next automatic run (<a href="/settings#automation" class="underline">Settings &rarr; Automation</a>), or click Send all again tomorrow.</p>
                     </div>
                 </div>
             </div>

@@ -791,7 +791,7 @@ func (s *Store) GetBrokerResponseByID(id int64, profileID string) (*BrokerRespon
 
 func (s *Store) FindBrokerResponseBySubject(profileID, brokerID, subject string) (*BrokerResponse, error) {
 	r, err := scanBrokerResponse(s.db.QueryRow(
-		`SELECT `+brokerResponseColsNoBody+` FROM broker_responses WHERE profile_id = ? AND broker_id = ? AND email_subject = ? LIMIT 1`,
+		`SELECT `+brokerResponseCols+` FROM broker_responses WHERE profile_id = ? AND broker_id = ? AND email_subject = ? LIMIT 1`,
 		normalizeProfileID(profileID), brokerID, subject))
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

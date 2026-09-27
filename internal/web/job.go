@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/google/uuid"
 )
 
 // JobStatus represents the status of a background job
@@ -227,7 +227,7 @@ func (jm *JobManager) createLocked(total int, profileID string) *Job {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	job := &Job{
-		ID:         uuid.New().String(),
+		ID:         rand.Text(),
 		ProfileID:  profileID,
 		Status:     JobStatusRunning,
 		Progress:   0,

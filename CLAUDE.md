@@ -35,4 +35,4 @@ See [docs/commands.md](docs/commands.md) for the full CLI reference.
 
 - **Acting on broker email replies** - the frequent one: classify the reply, make the matching `data/brokers.yaml` edit. [docs/broker-replies.md](docs/broker-replies.md).
 - **Keeping `data/brokers.yaml` honest** - liveness audit, dedup, growing the list from registries, and the "750+" count floor: [docs/auditing.md](docs/auditing.md).
-- **Re-sending** - brokers re-list you continuously. `./eraser send` is safe to re-run: it resumes where it left off (25-day per-broker cooldown, `daily_send_limit` cap). EU cadence and hand-sending are in [EU-NOTES.md](EU-NOTES.md).
+- **Re-sending** - brokers re-list you continuously. `./eraser send` is safe to re-run: it resumes where it left off (rounds capped at `daily_send_limit`/day; the next round starts 25 days after the last send of the previous one). EU cadence and hand-sending are in [EU-NOTES.md](EU-NOTES.md).

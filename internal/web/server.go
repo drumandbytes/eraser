@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -592,6 +593,16 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 	category = strings.ToLower(strings.TrimSpace(category))
 	region = strings.ToLower(strings.TrimSpace(region))
 	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
+	// On a history read error nothing already-sent counts as due: better to
+	// skip a round than to re-send everyone.
+	round := history.Round{Active: true}
+	if s.historyStore != nil && statusFilter == "eligible" {
+		if r, err := s.historyStore.CurrentRound(profileID, time.Now()); err == nil {
+			round = r
+		} else {
+			log.Printf("Warning: failed to read send round: %v", err)
+		}
+	}
 	includeSet, runExcludeSet := stringSet(includeIDs), stringSet(excludeIDs)
 
 	manualMode := false
@@ -661,7 +672,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 				continue
 			} else if statusFilter == "failed" && bws.Status != "failed" {
 				continue
-			} else if statusFilter == "eligible" && bws.Status == "sent" && time.Since(bws.lastSentAt) < history.ResendCooldown {
+			} else if statusFilter == "eligible" && !round.Due(brokerStatuses[b.ID], bws.Status != "never") {
 				continue
 			}
 		}

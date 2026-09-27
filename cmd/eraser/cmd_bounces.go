@@ -192,7 +192,7 @@ record once you're done acting on it (e.g. after fixing the broker's contact
 info in data/brokers.yaml). It flips that broker's most recent "sent" record
 to "failed", which:
 
-  - removes it from the 25-day resend cooldown, so the next 'eraser send'
+  - makes it due again in the current send round, so the next 'eraser send'
     retries it automatically (no need for --resend)
   - makes 'eraser status' reflect what actually happened, instead of
     claiming a delivery that didn't succeed

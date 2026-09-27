@@ -556,9 +556,56 @@ func (s *Store) ResolveProfileForBroker(brokerID string) (string, error) {
 	return normalizeProfileID(profileID.String), nil
 }
 
-// ResendCooldown: long enough that resuming a backlog across the daily cap
-// skips yesterday's brokers, short enough for the monthly re-run.
+// ResendCooldown is the wait between send rounds, counted from the last send
+// of the previous round.
 const ResendCooldown = 25 * 24 * time.Hour
+
+// Round is a profile's send round. A round goes out over as many days as
+// the daily cap needs; once every broker has a send in it, nothing is due
+// again until ResendCooldown after the round's last send.
+type Round struct {
+	Start  time.Time // first send of the round in progress
+	Active bool      // the latest send was less than ResendCooldown ago
+}
+
+// Due reports whether a broker still needs a send in the current round.
+// Never-sent and failed brokers always do.
+func (r Round) Due(st BrokerStatus, exists bool) bool {
+	if !exists || st.Status != StatusSent {
+		return true
+	}
+	return !r.Active || st.LastSent.Before(r.Start)
+}
+
+// CurrentRound finds the round in progress for a profile: walking successful
+// sends newest first, the round starts after the first gap of at least
+// ResendCooldown. If the latest send is itself that old, no round is active
+// and every broker is due.
+func (s *Store) CurrentRound(profileID string, now time.Time) (Round, error) {
+	rows, err := s.db.Query(
+		`SELECT sent_at FROM removal_requests WHERE profile_id = ? AND status = ? ORDER BY sent_at DESC`,
+		normalizeProfileID(profileID), string(StatusSent),
+	)
+	if err != nil {
+		return Round{}, fmt.Errorf("failed to read send history: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	var r Round
+	prev := now
+	for rows.Next() {
+		var t sql.NullTime
+		if err := rows.Scan(&t); err != nil {
+			return Round{}, fmt.Errorf("failed to read send history: %w", err)
+		}
+		if !t.Valid || prev.Sub(t.Time) >= ResendCooldown {
+			break
+		}
+		r = Round{Start: t.Time, Active: true}
+		prev = t.Time
+	}
+	return r, rows.Err()
+}
 
 // SortBySendPriority orders items never-sent first, then by oldest last send,
 // keeping the original order among ties. Senders truncate to the daily cap

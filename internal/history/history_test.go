@@ -640,3 +640,56 @@ func TestSortBySendPriority(t *testing.T) {
 		}
 	}
 }
+
+// 3 brokers, cap 2/day: day 0 sends a+b, day 1 sends c, then the round is
+// done and nothing is due until 25 days after day 1 - not after day 0.
+func TestCurrentRound(t *testing.T) {
+	s := newTestStore(t)
+	day0 := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
+	day := func(n int) time.Time { return day0.Add(time.Duration(n) * 24 * time.Hour) }
+	addRecord(t, s, "a", StatusSent, day(0))
+	addRecord(t, s, "b", StatusSent, day(0).Add(time.Minute))
+	addRecord(t, s, "c", StatusSent, day(1))
+
+	due := func(now time.Time) []string {
+		t.Helper()
+		r, err := s.CurrentRound("", now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		statuses, err := s.GetAllBrokerStatuses("")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var out []string
+		for _, id := range []string{"a", "b", "c", "new"} {
+			st, ok := statuses[id]
+			if r.Due(st, ok) {
+				out = append(out, id)
+			}
+		}
+		return out
+	}
+
+	check := func(name string, now time.Time, want ...string) {
+		t.Helper()
+		got := due(now)
+		if len(got) != len(want) {
+			t.Fatalf("%s: due %v, want %v", name, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("%s: due %v, want %v", name, got, want)
+			}
+		}
+	}
+
+	check("mid-round", day(1).Add(time.Hour), "new")
+	check("25d after round start, round ended day 1", day(25).Add(time.Hour), "new")
+	check("25d after round end", day(26).Add(time.Hour), "a", "b", "c", "new")
+
+	// Next round's first day covers a+b; c from the old round is still due.
+	addRecord(t, s, "a", StatusSent, day(26).Add(2*time.Hour))
+	addRecord(t, s, "b", StatusSent, day(26).Add(2*time.Hour+time.Minute))
+	check("next round, day 1 done", day(27), "c", "new")
+}

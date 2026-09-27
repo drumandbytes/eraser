@@ -17,6 +17,10 @@ func TestFilterBrokersByStatus(t *testing.T) {
 		"old":    {Status: history.StatusSent, LastSent: now.Add(-26 * 24 * time.Hour)},
 	}
 
+	// Round in progress since 2 days ago: "old" was sent in the previous
+	// round and is still due, "recent" already has its send this round.
+	round := history.Round{Start: now.Add(-2 * 24 * time.Hour), Active: true}
+
 	cases := []struct {
 		status string
 		want   []string
@@ -28,7 +32,7 @@ func TestFilterBrokersByStatus(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.status, func(t *testing.T) {
-			got := filterBrokersByStatus(brokers, statuses, tc.status, now)
+			got := filterBrokersByStatus(brokers, statuses, round, tc.status)
 			if len(got) != len(tc.want) {
 				t.Fatalf("got %+v, want %v", got, tc.want)
 			}

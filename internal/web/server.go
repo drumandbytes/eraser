@@ -40,6 +40,8 @@ const (
 	defaultSessionTTL = 30 * time.Minute
 )
 
+// RateLimiter caps requests per key in a sliding window. Keys are a fixed
+// handful of endpoint names, so the map never needs pruning.
 type RateLimiter struct {
 	mu       sync.Mutex
 	requests map[string][]time.Time
@@ -53,7 +55,6 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 		limit:    limit,
 		window:   window,
 	}
-	go rl.cleanupLoop()
 	return rl
 }
 
@@ -81,25 +82,6 @@ func (rl *RateLimiter) Allow(key string) bool {
 	}
 	rl.requests[key] = append(recent, now)
 	return true
-}
-
-func (rl *RateLimiter) cleanupLoop() {
-	ticker := time.NewTicker(time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		rl.mu.Lock()
-		windowStart := time.Now().Add(-rl.window)
-		for key, times := range rl.requests {
-			recent := rl.filterRecent(times, windowStart)
-			if len(recent) == 0 {
-				delete(rl.requests, key)
-			} else {
-				rl.requests[key] = recent
-			}
-		}
-		rl.mu.Unlock()
-	}
 }
 
 // Version is the build version shown in the web UI footer. main sets it from

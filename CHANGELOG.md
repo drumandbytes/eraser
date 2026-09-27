@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.0](https://github.com/drumandbytes/eraser/compare/v0.8.5...v0.9.0) (2026-09-27)
+
+
+### Features
+
+* **auto:** eraser auto + OS scheduler (launchd/systemd) ([#95](https://github.com/drumandbytes/eraser/issues/95)) ([1b0a304](https://github.com/drumandbytes/eraser/commit/1b0a3049da771a8e70e5b97f544bec456296342b))
+* **web:** automation settings + in-app scheduler ([#97](https://github.com/drumandbytes/eraser/issues/97)) ([c48885c](https://github.com/drumandbytes/eraser/commit/c48885cb285a628138182e3b87e5434558bb94a0))
+
+
+### Bug Fixes
+
+* **email:** send and record a real Message-ID header ([7251c39](https://github.com/drumandbytes/eraser/commit/7251c39fa39a571533f93b51064645ecbe6bc87d))
+* **inbox:** new replies from web scans and monitor --watch advance pipeline status ([7251c39](https://github.com/drumandbytes/eraser/commit/7251c39fa39a571533f93b51064645ecbe6bc87d))
+* **inbox:** web scans no longer archive unrelated INBOX messages ([7251c39](https://github.com/drumandbytes/eraser/commit/7251c39fa39a571533f93b51064645ecbe6bc87d))
+* **web:** scan, setup and send-status messages render with the app's styles ([7251c39](https://github.com/drumandbytes/eraser/commit/7251c39fa39a571533f93b51064645ecbe6bc87d))
+
 ## [0.8.5](https://github.com/drumandbytes/eraser/compare/v0.8.4...v0.8.5) (2026-09-27)
 
 

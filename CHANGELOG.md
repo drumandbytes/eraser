@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.5](https://github.com/drumandbytes/eraser/compare/v0.8.4...v0.8.5) (2026-09-27)
+
+
+### Bug Fixes
+
+* **send:** prioritize never/oldest-sent brokers under daily cap ([#93](https://github.com/drumandbytes/eraser/issues/93)) ([5d9760f](https://github.com/drumandbytes/eraser/commit/5d9760f23b07830cd53deffa315cc315a3351be0))
+
 ## [0.8.4](https://github.com/drumandbytes/eraser/compare/v0.8.3...v0.8.4) (2026-09-27)
 
 

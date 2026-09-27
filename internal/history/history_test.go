@@ -622,3 +622,21 @@ func TestProfileIsolation_UpdateBrokerResponseBody(t *testing.T) {
 		t.Errorf("expected body updated after same-profile call, got %+v", got)
 	}
 }
+
+func TestSortBySendPriority(t *testing.T) {
+	now := time.Now()
+	last := map[string]time.Time{
+		"recent": now.Add(-26 * 24 * time.Hour),
+		"oldest": now.Add(-90 * 24 * time.Hour),
+		"old":    now.Add(-40 * 24 * time.Hour),
+	}
+	ids := []string{"recent", "never1", "oldest", "never2", "old"}
+	SortBySendPriority(ids, func(id string) time.Time { return last[id] })
+
+	want := []string{"never1", "never2", "oldest", "old", "recent"}
+	for i := range want {
+		if ids[i] != want[i] {
+			t.Fatalf("got %v, want %v", ids, want)
+		}
+	}
+}

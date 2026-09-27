@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -553,6 +554,20 @@ func (s *Store) ResolveProfileForBroker(brokerID string) (string, error) {
 		return "", fmt.Errorf("failed to resolve profile for broker %q: %w", brokerID, err)
 	}
 	return normalizeProfileID(profileID.String), nil
+}
+
+// ResendCooldown: long enough that resuming a backlog across the daily cap
+// skips yesterday's brokers, short enough for the monthly re-run.
+const ResendCooldown = 25 * 24 * time.Hour
+
+// SortBySendPriority orders items never-sent first, then by oldest last send,
+// keeping the original order among ties. Senders truncate to the daily cap
+// after this, so runs spaced a cooldown or more apart still reach the tail of
+// the list instead of re-sending its head every time.
+func SortBySendPriority[T any](items []T, lastSent func(T) time.Time) {
+	sort.SliceStable(items, func(i, j int) bool {
+		return lastSent(items[i]).Before(lastSent(items[j]))
+	})
 }
 
 type BrokerStatus struct {

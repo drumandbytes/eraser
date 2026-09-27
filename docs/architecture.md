@@ -119,5 +119,5 @@ above the `<link>` in `layout.html`).
 2. Load brokers from `data/brokers.yaml`
 3. Filter by region and exclusions (`broker.Filter`)
 4. For each broker, render email template with profile + broker data
-5. Send via SMTP, capped at `options.daily_send_limit` per rolling 24h window (`send` and the web UI's job sender both read this same config value - keep them in sync, see [code-patterns.md](code-patterns.md#known-quirks) for the history)
+5. Send via SMTP, never-sent brokers first and then oldest last send (`history.SortBySendPriority`), capped at `options.daily_send_limit` per rolling 24h window (`send` and the web UI's job sender both read this same config value - keep them in sync, see [code-patterns.md](code-patterns.md#known-quirks) for the history)
 6. Record result in SQLite history, tagged with the active profile's ID; `send` skips brokers already successfully emailed in the last 25 days (per profile) so re-running is always safe

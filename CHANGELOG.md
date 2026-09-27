@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.4](https://github.com/drumandbytes/eraser/compare/v0.8.3...v0.8.4) (2026-09-27)
+
+
+### Performance Improvements
+
+* **inbox,history:** envelope-first IMAP fetch, SQLite WAL + busy_timeout ([#91](https://github.com/drumandbytes/eraser/issues/91)) ([06bd6ab](https://github.com/drumandbytes/eraser/commit/06bd6abed8e2e090692ebc35e12f455398894767))
+
 ## [0.8.3](https://github.com/drumandbytes/eraser/compare/v0.8.2...v0.8.3) (2026-09-26)
 
 

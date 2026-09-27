@@ -2,6 +2,7 @@ package history
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"net/url"
@@ -709,6 +710,26 @@ func (s *Store) AddBrokerResponse(resp *BrokerResponse) error {
 }
 
 // FindBrokerResponseBySubject finds an existing response by profile, broker_id and email_subject
+// AddBrokerResponseIfNew stores resp unless the same reply (profile,
+// broker, subject and received time) is already recorded, so repeated or
+// scheduled inbox scans over an overlapping window don't pile up duplicates.
+// inserted is false for a reply seen before.
+func (s *Store) AddBrokerResponseIfNew(resp *BrokerResponse) (inserted bool, err error) {
+	var id int64
+	err = s.db.QueryRow(
+		`SELECT id FROM broker_responses WHERE profile_id = ? AND broker_id = ? AND email_subject = ? AND received_at = ? LIMIT 1`,
+		normalizeProfileID(resp.ProfileID), resp.BrokerID, resp.EmailSubject, resp.ReceivedAt,
+	).Scan(&id)
+	switch {
+	case err == nil:
+		resp.ID = id
+		return false, nil
+	case !errors.Is(err, sql.ErrNoRows):
+		return false, fmt.Errorf("failed to check for existing broker response: %w", err)
+	}
+	return true, s.AddBrokerResponse(resp)
+}
+
 func (s *Store) GetBrokerResponseByID(id int64, profileID string) (*BrokerResponse, error) {
 	query := `SELECT id, profile_id, broker_id, broker_name, response_type, email_from, email_subject, email_body,
 		form_url, confirm_url, confidence, needs_review, received_at, processed_at, created_at

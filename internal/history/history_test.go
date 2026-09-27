@@ -640,3 +640,37 @@ func TestSortBySendPriority(t *testing.T) {
 		}
 	}
 }
+
+func TestAddBrokerResponseIfNew(t *testing.T) {
+	s := newTestStore(t)
+	// Envelope dates carry the sender's zone, not UTC.
+	received := time.Date(2026, 3, 4, 9, 30, 0, 0, time.FixedZone("CET", 3600))
+	resp := func(at time.Time) *BrokerResponse {
+		return &BrokerResponse{BrokerID: "acme", BrokerName: "Acme", ResponseType: "pending", EmailSubject: "Re: Data deletion request", ReceivedAt: at}
+	}
+
+	for i, tc := range []struct {
+		at   time.Time
+		want bool
+	}{
+		{received, true},
+		{received, false},                    // same reply, next scan
+		{received.Add(48 * time.Hour), true}, // same subject, later reply
+	} {
+		got, err := s.AddBrokerResponseIfNew(resp(tc.at))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != tc.want {
+			t.Fatalf("call %d: inserted = %v, want %v", i, got, tc.want)
+		}
+	}
+
+	all, err := s.GetAllBrokerResponses()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("stored %d responses, want 2", len(all))
+	}
+}

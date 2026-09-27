@@ -167,53 +167,79 @@ func (m *Monitor) fetchMessagesCtx(ctx context.Context, seqSet *imap.SeqSet, ite
 	}
 }
 
-// FetchRecentEmails fetches emails from the last N days
-func (m *Monitor) FetchRecentEmails(ctx context.Context, days int) ([]Email, error) {
+// fetchMatching fetches, from folder, the emails of the last N days that
+// keep accepts. It runs in two passes: envelopes for every message in the
+// window first (a few hundred bytes each), then full bodies only for the ones
+// keep accepted. Bodies are fetched with BODY.PEEK[], so scanning never marks
+// the user's mail as read.
+func (m *Monitor) fetchMatching(ctx context.Context, folder string, days int, keep func(Email) bool) ([]Email, error) {
 	if m.client == nil {
 		return nil, fmt.Errorf("not connected to IMAP server")
 	}
 
-	// Select the mailbox (usually INBOX)
-	mbox, err := m.client.Select(m.config.Folder, false)
+	mbox, err := m.client.Select(folder, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to select mailbox %s: %w", m.config.Folder, err)
+		return nil, fmt.Errorf("failed to select mailbox %s: %w", folder, err)
 	}
-
-	log.Printf("Mailbox %s has %d messages", m.config.Folder, mbox.Messages)
-
 	if mbox.Messages == 0 {
 		return nil, nil
 	}
 
-	// Search for emails from the last N days (use UID search)
 	since := time.Now().AddDate(0, 0, -days)
 	criteria := imap.NewSearchCriteria()
 	criteria.Since = since
 
 	uids, err := m.uidSearchCtx(ctx, criteria)
 	if err != nil {
-		return nil, fmt.Errorf("failed to search emails: %w", err)
+		return nil, fmt.Errorf("failed to search emails in %s: %w", folder, err)
 	}
-
-	log.Printf("Found %d emails since %s", len(uids), since.Format("2006-01-02"))
-
 	if len(uids) == 0 {
 		return nil, nil
 	}
 
-	seqSet := new(imap.SeqSet)
-	seqSet.AddNum(uids...)
-
-	section := &imap.BodySectionName{}
-	items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchFlags, imap.FetchUid, section.FetchItem()}
-
-	emails, err := m.fetchMessagesCtx(ctx, seqSet, items, section, len(uids))
+	// The body section isn't requested in pass 1, so parseMessage's GetBody
+	// finds nothing and returns header fields only.
+	section := &imap.BodySectionName{Peek: true}
+	envelopes, err := m.fetchBatched(ctx, uids, 500, []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid}, section)
 	if err != nil {
 		return nil, err
 	}
 
+	var matched []uint32
+	for _, e := range envelopes {
+		if keep(e) {
+			matched = append(matched, e.UID)
+		}
+	}
+	log.Printf("%s: %d of %d emails since %s match", folder, len(matched), len(uids), since.Format("2006-01-02"))
+
+	return m.fetchBatched(ctx, matched, 50, []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid, section.FetchItem()}, section)
+}
+
+// fetchBatched fetches uids in batches of size. A failed batch is logged and
+// skipped so one bad message doesn't sink the whole scan; a cancelled ctx
+// aborts.
+func (m *Monitor) fetchBatched(ctx context.Context, uids []uint32, size int, items []imap.FetchItem, section *imap.BodySectionName) ([]Email, error) {
+	var emails []Email
+	for i := 0; i < len(uids); i += size {
+		batch := uids[i:min(i+size, len(uids))]
+		seqSet := new(imap.SeqSet)
+		seqSet.AddNum(batch...)
+
+		batchEmails, err := m.fetchMessagesCtx(ctx, seqSet, items, section, len(batch))
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, err
+			}
+			log.Printf("Warning: error fetching batch: %v", err)
+			continue
+		}
+		emails = append(emails, batchEmails...)
+	}
 	return emails, nil
 }
+
+func fromBroker(e Email) bool { return e.BrokerID != "" }
 
 // parseMessage converts an IMAP message to our Email struct
 func (m *Monitor) parseMessage(msg *imap.Message, section *imap.BodySectionName) (*Email, error) {
@@ -285,148 +311,51 @@ func (m *Monitor) parseMessage(msg *imap.Message, section *imap.BodySectionName)
 
 // FetchBrokerEmails fetches only emails from known broker domains
 func (m *Monitor) FetchBrokerEmails(ctx context.Context, days int) ([]Email, error) {
-	allEmails, err := m.FetchRecentEmails(ctx, days)
-	if err != nil {
-		return nil, err
-	}
-
-	var brokerEmails []Email
-	for _, email := range allEmails {
-		if email.BrokerID != "" {
-			brokerEmails = append(brokerEmails, email)
-		}
-	}
-
-	log.Printf("Found %d emails from known brokers (out of %d total)", len(brokerEmails), len(allEmails))
-	return brokerEmails, nil
+	return m.fetchMatching(ctx, m.config.Folder, days, fromBroker)
 }
 
 // FetchBrokerEmailsFromFolder fetches broker emails from a specific folder
 func (m *Monitor) FetchBrokerEmailsFromFolder(ctx context.Context, folder string, days int) ([]Email, error) {
-	// Select the specified folder
-	mbox, err := m.client.Select(folder, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to select folder %s: %w", folder, err)
-	}
-	log.Printf("Folder %s has %d messages", folder, mbox.Messages)
-
-	if mbox.Messages == 0 {
-		return nil, nil
-	}
-
-	// Search for emails from the last N days
-	since := time.Now().AddDate(0, 0, -days)
-	criteria := imap.NewSearchCriteria()
-	criteria.Since = since
-
-	uids, err := m.uidSearchCtx(ctx, criteria)
-	if err != nil {
-		return nil, fmt.Errorf("failed to search emails in %s: %w", folder, err)
-	}
-
-	log.Printf("Found %d emails since %s in %s", len(uids), since.Format("2006-01-02"), folder)
-
-	if len(uids) == 0 {
-		return nil, nil
-	}
-
-	// Fetch emails in batches
-	var allEmails []Email
-	batchSize := 50
-	for i := 0; i < len(uids); i += batchSize {
-		end := i + batchSize
-		if end > len(uids) {
-			end = len(uids)
-		}
-
-		seqSet := new(imap.SeqSet)
-		for _, uid := range uids[i:end] {
-			seqSet.AddNum(uid)
-		}
-
-		section := &imap.BodySectionName{Peek: true}
-		items := []imap.FetchItem{imap.FetchEnvelope, imap.FetchUid, section.FetchItem()}
-
-		batchEmails, err := m.fetchMessagesCtx(ctx, seqSet, items, section, batchSize)
-		if err != nil {
-			if ctx.Err() != nil {
-				// ctx was canceled/timed out - abort the whole fetch rather
-				// than continuing to hammer a connection the caller has
-				// given up on.
-				return nil, err
-			}
-			log.Printf("Warning: error fetching batch: %v", err)
-			continue
-		}
-		allEmails = append(allEmails, batchEmails...)
-	}
-
-	// Filter to broker emails only
-	var brokerEmails []Email
-	for _, email := range allEmails {
-		if email.BrokerID != "" {
-			brokerEmails = append(brokerEmails, email)
-		}
-	}
-
-	log.Printf("Found %d emails from known brokers in %s (out of %d total)", len(brokerEmails), folder, len(allEmails))
-	return brokerEmails, nil
+	return m.fetchMatching(ctx, folder, days, fromBroker)
 }
 
-// FetchBounceEmails fetches emails that look like bounce/undeliverable notifications
-func (m *Monitor) FetchBounceEmails(ctx context.Context, days int) ([]Email, error) {
-	allEmails, err := m.FetchRecentEmails(ctx, days)
-	if err != nil {
-		return nil, err
-	}
-
-	// Bounce sender patterns
-	bounceSenders := []string{
+// Deliberately not the classifier's bounceSenders: that list includes
+// "noreply", which would pull every newsletter's body into a bounce scan.
+var (
+	bounceFetchSenders = []string{
 		"mailer-daemon", "postmaster", "mail delivery",
 		"mail delivery system", "mail delivery subsystem",
 		"mailerdaemon", "mailsystem",
 	}
-
-	// Bounce subject patterns
-	bounceSubjects := []string{
+	bounceFetchSubjects = []string{
 		"undeliverable", "delivery failed", "delivery status notification",
 		"returned mail", "mail delivery failed", "delivery failure",
 		"message not delivered", "could not be delivered",
 	}
+)
 
-	var bounceEmails []Email
-	for _, email := range allEmails {
-		fromLower := strings.ToLower(email.From)
-		fromNameLower := strings.ToLower(email.FromName)
-		subjectLower := strings.ToLower(email.Subject)
-
-		isBounce := false
-
-		// Check sender
-		for _, sender := range bounceSenders {
-			if strings.Contains(fromLower, sender) || strings.Contains(fromNameLower, sender) {
-				isBounce = true
-				break
-			}
-		}
-
-		// Check subject if not already identified as bounce
-		if !isBounce {
-			for _, pattern := range bounceSubjects {
-				if strings.Contains(subjectLower, pattern) {
-					isBounce = true
-					break
-				}
-			}
-		}
-
-		if isBounce {
-			bounceEmails = append(bounceEmails, email)
+// looksLikeBounce reports whether an email looks like a bounce/undeliverable
+// notification, judged from sender and subject only (both in the envelope).
+func looksLikeBounce(e Email) bool {
+	fromLower := strings.ToLower(e.From)
+	fromNameLower := strings.ToLower(e.FromName)
+	for _, sender := range bounceFetchSenders {
+		if strings.Contains(fromLower, sender) || strings.Contains(fromNameLower, sender) {
+			return true
 		}
 	}
+	subjectLower := strings.ToLower(e.Subject)
+	for _, pattern := range bounceFetchSubjects {
+		if strings.Contains(subjectLower, pattern) {
+			return true
+		}
+	}
+	return false
+}
 
-	log.Printf("Found %d bounce emails (out of %d total)", len(bounceEmails), len(allEmails))
-	return bounceEmails, nil
+// FetchBounceEmails fetches emails that look like bounce/undeliverable notifications
+func (m *Monitor) FetchBounceEmails(ctx context.Context, days int) ([]Email, error) {
+	return m.fetchMatching(ctx, m.config.Folder, days, looksLikeBounce)
 }
 
 // WatchForNewEmails monitors for new emails (blocking)
@@ -468,15 +397,12 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 				close(stop)
 				<-idleDone
 
-				emails, err := m.FetchRecentEmails(ctx, 1)
+				emails, err := m.FetchBrokerEmails(ctx, 1)
 				if err != nil {
 					log.Printf("Error fetching new email: %v", err)
-				} else if len(emails) > 0 {
-					for _, email := range emails {
-						if email.BrokerID != "" {
-							callback(email)
-						}
-					}
+				}
+				for _, email := range emails {
+					callback(email)
 				}
 
 				// Restart IDLE

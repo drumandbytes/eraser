@@ -424,3 +424,28 @@ func TestFetchMessagesCtxCancellation(t *testing.T) {
 // No end-to-end ArchiveEmails test: forcing the COPY+STORE+EXPUNGE fallback
 // needs a long, brittle scripted exchange, and deletedUIDsBesides is covered
 // above; the rest is straight-line log-and-continue.
+
+// fetchMatching only downloads bodies for mail the envelope pass keeps, so
+// these predicates must accept everything the old full-fetch-then-filter
+// callers kept.
+func TestEnvelopeFilters(t *testing.T) {
+	cases := []struct {
+		name         string
+		e            Email
+		broker, bnce bool
+	}{
+		{"broker reply", Email{From: "privacy@acme.com", BrokerID: "acme"}, true, false},
+		{"bounce by sender", Email{From: "MAILER-DAEMON@mx.example.org"}, false, true},
+		{"bounce by display name", Email{From: "x@example.org", FromName: "Mail Delivery Subsystem"}, false, true},
+		{"bounce by subject", Email{From: "x@example.org", Subject: "Undeliverable: Data deletion request"}, false, true},
+		{"unrelated", Email{From: "friend@example.org", Subject: "lunch?"}, false, false},
+	}
+	for _, c := range cases {
+		if got := fromBroker(c.e); got != c.broker {
+			t.Errorf("%s: fromBroker = %v, want %v", c.name, got, c.broker)
+		}
+		if got := looksLikeBounce(c.e); got != c.bnce {
+			t.Errorf("%s: looksLikeBounce = %v, want %v", c.name, got, c.bnce)
+		}
+	}
+}

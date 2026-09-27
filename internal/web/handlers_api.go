@@ -608,7 +608,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			emails, err := monitor.FetchRecentEmails(ctx, 30) // 30 days
+			emails, err := monitor.FetchBrokerEmails(ctx, 30)
 			if err != nil {
 				log.Printf("Warning: failed to fetch from INBOX: %v", err)
 			} else {
@@ -647,22 +647,16 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		for _, resp := range responses {
+		for i := range responses {
+			resp := &responses[i]
 			if resp.EmailBody != "" {
 				continue // Already has body
 			}
 			key := resp.BrokerID + "|" + resp.EmailSubject
 			if body, ok := emailBodies[key]; ok {
-				err := s.historyStore.UpdateBrokerResponseBody(resp.ID, resp.ProfileID, body)
-				if err == nil {
+				if err := s.historyStore.UpdateBrokerResponseBody(resp.ID, resp.ProfileID, body); err == nil {
 					bodiesUpdated++
-					// Update the in-memory response too for reclassification
-					for i := range responses {
-						if responses[i].ID == resp.ID {
-							responses[i].EmailBody = body
-							break
-						}
-					}
+					resp.EmailBody = body // in-memory too, for the reclassification below
 				}
 			}
 		}

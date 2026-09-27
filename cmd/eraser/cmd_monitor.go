@@ -107,11 +107,8 @@ func runMonitor(days int, once bool, watch bool) error {
 		return nil
 	}
 
-	// --watch blocks per inbox, so several inboxes need goroutines.
-	//
-	// ponytail: concurrent writes to history.Store without busy_timeout can
-	// hit SQLITE_BUSY under contention (rare: replies are infrequent). Add
-	// PRAGMA busy_timeout in history.NewStore if it shows up.
+	// --watch blocks per inbox, so several inboxes need goroutines. NewStore's
+	// WAL + busy_timeout makes their concurrent writes safe.
 	var wg sync.WaitGroup
 	errs := make([]error, len(inboxes))
 	for i, inboxCfg := range inboxes {

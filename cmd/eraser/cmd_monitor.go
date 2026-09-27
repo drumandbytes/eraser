@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/signal"
 	"sync"
 	"syscall"
@@ -80,16 +79,10 @@ func runMonitor(days int, once bool, watch bool) error {
 	}
 	defer func() { _ = store.Close() }()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		fmt.Println("\nShutting down...")
-		cancel()
-	}()
+	// NotifyContext (not a bare signal.Notify + goroutine) so the handler is
+	// released on return - `eraser auto` calls this once per cycle.
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
 	if len(inboxes) > 1 {
 		fmt.Printf("📬 Monitoring %d configured inboxes for broker responses (last %d days)...\n", len(inboxes), days)
@@ -175,6 +168,7 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 			ResponseType: string(classified.Type),
 			EmailFrom:    email.From,
 			EmailSubject: email.Subject,
+			EmailBody:    emailBody(email),
 			FormURL:      classified.FormURL,
 			ConfirmURL:   classified.ConfirmURL,
 			Confidence:   classified.Confidence,
@@ -182,8 +176,13 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 			ReceivedAt:   email.ReceivedAt,
 		}
 
-		if err := store.AddBrokerResponse(brokerResp); err != nil {
+		inserted, err := store.AddBrokerResponseIfNew(brokerResp)
+		if err != nil {
 			fmt.Printf("⚠️  Failed to store response: %v\n", err)
+		} else if !inserted {
+			// Seen on an earlier scan. Re-applying its pipeline status would
+			// undo progress made since (e.g. a form you've since filled).
+			continue
 		}
 
 		// Update pipeline status for the broker
@@ -275,13 +274,14 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 				ResponseType: string(classified.Type),
 				EmailFrom:    email.From,
 				EmailSubject: email.Subject,
+				EmailBody:    emailBody(email),
 				FormURL:      classified.FormURL,
 				ConfirmURL:   classified.ConfirmURL,
 				Confidence:   classified.Confidence,
 				NeedsReview:  classified.NeedsReview,
 				ReceivedAt:   email.ReceivedAt,
 			}
-			if err := store.AddBrokerResponse(brokerResp); err != nil {
+			if _, err := store.AddBrokerResponseIfNew(brokerResp); err != nil {
 				fmt.Printf("⚠️  Failed to store response: %v\n", err)
 			}
 		})
@@ -323,4 +323,13 @@ func printClassifiedResponse(r inbox.ClassifiedResponse) {
 	if r.NeedsReview {
 		fmt.Printf("   ⚠️  Confidence: %.0f%% - manual review recommended\n", r.Confidence*100)
 	}
+}
+
+// emailBody is the stored body: plain text, else HTML. Stored so later
+// reclassification doesn't need to fetch the mail again.
+func emailBody(e inbox.Email) string {
+	if e.Body != "" {
+		return e.Body
+	}
+	return e.HTMLBody
 }

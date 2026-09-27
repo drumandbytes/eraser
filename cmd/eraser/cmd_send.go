@@ -218,6 +218,7 @@ func runSend() error {
 
 	successCount := 0
 	failCount := 0
+	authFails := 0
 
 	for i, b := range brokers {
 		fmt.Printf("[%d/%d] %s (%s)\n", i+1, len(brokers), b.Name, b.Email)
@@ -272,15 +273,26 @@ func runSend() error {
 				record.MessageID = result.MessageID
 				fmt.Printf("  ✅ Sent successfully\n")
 				successCount++
+				authFails = 0
 			} else {
 				record.Status = history.StatusFailed
 				record.Error = result.Error.Error()
 				fmt.Printf("  ❌ Failed: %v\n", result.Error)
 				failCount++
+				if strings.Contains(strings.ToLower(record.Error), "auth") {
+					authFails++
+				}
 			}
 
 			if err := store.Add(record); err != nil {
 				fmt.Printf("  ⚠️  Failed to record history: %v\n", err)
+			}
+
+			// Same cutoff as the web job sender: a bad password or a provider
+			// block would otherwise mark every due broker failed, and failed
+			// brokers are retried on every run.
+			if authFails >= 3 {
+				return fmt.Errorf("stopped after %d consecutive authentication failures (%d sent, %d failed) - check your email settings", authFails, successCount, failCount)
 			}
 
 			// Rate limiting

@@ -25,6 +25,8 @@ go test ./...
 ./eraser update-brokers [--check]      # fetch the latest broker list (conditional; writes ~/.eraser/brokers.yaml)
 ./eraser guides [-o site/content] [--format md|html]  # generate opt-out guide pages + a JSON broker directory
 ./eraser monitor                       # IMAP inbox monitoring for broker replies
+./eraser auto [--once] [--every 6h]    # unattended cycle: send what's due (all profiles), then scan inboxes
+./eraser schedule install|remove|status  # have launchd/systemd run 'auto --once' every 6 hours
 ./eraser pipeline                      # which brokers need manual follow-up
 ./eraser export [-o file] [--format html|json] [--since 2026-01-01]  # evidence report for a DPA/noyb complaint
 ./eraser confirm                       # click confirmation links from broker emails
@@ -35,6 +37,8 @@ go test ./...
 ```
 
 The broker list is embedded in the binary. For the send-family commands (`send`, `draft`, `mark-sent`, `serve`) the resolution order is: `--brokers <path>` flag → `options.broker_file` → `options.broker_list: verified` (the smaller registry-sourced list, `data/brokers-verified.yaml`) → `~/.eraser/brokers.yaml` (written by `update-brokers`) → the embedded full list. `send --list full|verified` overrides `options.broker_list` per run. `send` also accepts repeatable or comma-separated `--broker`, `--region`, `--category`, and `--exclude` filters. `--status eligible` is the safe default (never sent, failed, or last success at least 25 days old); `never`, `failed`, and `all` are explicit alternatives. Other commands (`audit-brokers`, `guides`, `list-brokers`, reply processing) always act on the full list. `add-broker` and `cleanup-bounces` write to `./data/brokers.yaml` in a source checkout, or `~/.eraser/brokers.yaml` otherwise.
+
+`auto` runs one cycle per call with `--once`, or loops every `--every` (min 1h) in the foreground. `schedule install` writes a launchd agent (`~/Library/LaunchAgents/com.drumandbytes.eraser.auto.plist`, output in `auto.log` next to the config) or a systemd user timer (`eraser-auto.timer`, output in the journal) that runs `auto --once --config <abs path>` at 00/06/12/18:07; missed slots run on wake. Every 6 hours rather than daily because `daily_send_limit` is a rolling 24h window: a run exactly 24h after the last one would find the cap still used up. All modes share `auto.lock` in the config directory, so cycles never overlap, and write the last result to `auto-state.json` (shown by `schedule status`). The loop refuses to start while the OS job is installed. With `send_mode: manual`, cycles only scan the inbox.
 
 Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a global `--profile <id>` flag. It can be omitted entirely for the common single-profile setup; it's required once more than one profile is configured. See [multi-profile.md](multi-profile.md) for the full model.
 

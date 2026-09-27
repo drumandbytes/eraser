@@ -311,7 +311,7 @@ func (s *Server) handleAPIInboxScan(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if s.historyStore != nil {
-			if err := s.historyStore.AddBrokerResponse(brokerResp); err != nil {
+			if _, err := s.historyStore.AddBrokerResponseIfNew(brokerResp); err != nil {
 				// Don't let a DB write failure silently vanish while the
 				// in-memory counters below still report success - this is
 				// exactly what caused digisamroc/eraser#17 (Pipeline page

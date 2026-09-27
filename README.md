@@ -122,6 +122,8 @@ That's the password you'll use in Eraser's setup wizard. Your regular Gmail pass
 
 **Daily sending limits:** Gmail allows ~500 emails per day. Eraser caps itself at 450/day by default (`options.daily_send_limit`) and automatically resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
 
+**Automating it:** `eraser schedule install` has your OS run Eraser every 6 hours. Each run sends to whichever brokers are due (each broker is re-sent 25 days after its last request, within the daily cap) and checks your inbox for replies. Everything stays on your machine; `eraser schedule status` shows the last run, `eraser schedule remove` undoes it. Where there's no launchd/systemd, `eraser auto` does the same in the foreground.
+
 ### Prefer not to give any tool your email password?
 
 Choose **"Skip — I'll send the emails myself"** in the setup wizard (or `options.send_mode: manual` in the config, or pick option 2 in `eraser init`). Then Eraser never sends anything and needs no credentials:
@@ -181,6 +183,8 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser validate-brokers` | Structural check of a broker list (ids, names, regions, emails, URLs) |
 | `eraser update-brokers` | Fetch the latest broker list (the list ships inside the binary; this refreshes it) |
 | `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
+| `eraser schedule install` | Run sends + inbox checks automatically every 6 hours (launchd on macOS, systemd on Linux) |
+| `eraser auto` | Same cycle in the foreground, looping every 6 hours (Windows, containers) |
 | `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
 | `eraser export` | Write an evidence report (HTML/JSON) of every request and reply — for a DPA/noyb complaint |
 | `eraser confirm` | Click confirmation links found in broker emails |

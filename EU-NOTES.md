@@ -76,7 +76,7 @@ The README originally claimed eraser auto-chunks large sends across multiple day
 ./eraser send
 ```
 
-...repeatedly (same day or the next) until it reports nothing left to send - it resumes where it left off without double-emailing anyone. Flags: `--ignore-daily-limit` sends everything in one run regardless of the cap (only if your provider can actually handle that volume), `--resend` forces re-sending even to brokers within the 25-day cooldown (useful for a deliberate full re-run).
+...repeatedly (same day or the next) until it reports nothing left to send - or let `eraser schedule install` run it for you every 6 hours (see the README) - it resumes where it left off without double-emailing anyone. Flags: `--ignore-daily-limit` sends everything in one run regardless of the cap (only if your provider can actually handle that volume), `--resend` forces re-sending even to brokers within the 25-day cooldown (useful for a deliberate full re-run).
 
 ## Recurring maintenance
 

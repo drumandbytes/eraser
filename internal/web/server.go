@@ -89,20 +89,19 @@ func (rl *RateLimiter) Allow(key string) bool {
 var Version = "dev"
 
 type Server struct {
-	config         atomic.Pointer[config.Config]
-	configPath     string
-	brokerDB       *broker.BrokerDatabase
-	historyStore   *history.Store
-	tmplEngine     *emaTemplate.Engine
-	templates      map[string]*template.Template
-	httpServer     *http.Server
-	port           int
-	csrfKey        []byte
-	sessions       *SessionStore
-	rateLimiter    *RateLimiter
-	jobManager     *JobManager
-	jobPersistence *JobPersistence
-	dataDir        string // config directory: job state, schedule lock and state
+	config       atomic.Pointer[config.Config]
+	configPath   string
+	brokerDB     *broker.BrokerDatabase
+	historyStore *history.Store
+	tmplEngine   *emaTemplate.Engine
+	templates    map[string]*template.Template
+	httpServer   *http.Server
+	port         int
+	csrfKey      []byte
+	sessions     *SessionStore
+	rateLimiter  *RateLimiter
+	jobManager   *JobManager
+	dataDir      string // config directory: schedule lock and state
 
 	// In-app scheduler (scheduler.go). The OS hooks are fields so tests
 	// don't touch the real launchd/systemd setup.
@@ -129,20 +128,19 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 	}
 
 	s := &Server{
-		configPath:     configPath,
-		brokerDB:       brokerDB,
-		historyStore:   historyStore,
-		tmplEngine:     tmplEngine,
-		port:           port,
-		csrfKey:        csrfKey,
-		sessions:       NewSessionStore(defaultSessionTTL),
-		rateLimiter:    NewRateLimiter(defaultRateLimit, defaultRateWindow),
-		jobManager:     NewJobManager(),
-		jobPersistence: NewJobPersistence(dataDir),
-		dataDir:        dataDir,
-		osInstalled:    schedule.Installed,
-		installOS:      schedule.Install,
-		removeOS:       schedule.Remove,
+		configPath:   configPath,
+		brokerDB:     brokerDB,
+		historyStore: historyStore,
+		tmplEngine:   tmplEngine,
+		port:         port,
+		csrfKey:      csrfKey,
+		sessions:     NewSessionStore(defaultSessionTTL),
+		rateLimiter:  NewRateLimiter(defaultRateLimit, defaultRateWindow),
+		jobManager:   NewJobManager(),
+		dataDir:      dataDir,
+		osInstalled:  schedule.Installed,
+		installOS:    schedule.Install,
+		removeOS:     schedule.Remove,
 	}
 	s.config.Store(cfg)
 
@@ -310,9 +308,6 @@ func (s *Server) Start() error {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-
-	// Check for pending job and offer to resume
-	s.checkPendingJob()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	s.stopScheduler = cancel

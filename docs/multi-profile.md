@@ -94,7 +94,6 @@ just `inbox`.
 - `renderWithCSRF` injects `Profiles`/`ActiveProfile`/`CurrentPath` into every page's template data, so `layout.html`'s nav can render the switcher unconditionally without every handler wiring it manually
 - The switcher itself is a `<select>` inside a small auto-submitting `<form>` (desktop nav + mobile nav), only rendered when `len(.Profiles) > 1`
 - Background send jobs (`internal/web/job.go`) carry `ProfileID`; `JobManager.GetActive(profileID)` and `.Create(total, profileID)` are profile-scoped, so two profiles can have a send running concurrently without colliding on "job already active"
-- `PersistentJobState` (the on-restart job-resume format) also carries `ProfileID`, so a resumed job after a server restart is attributed correctly
 
 ## Adding a new per-profile data path
 

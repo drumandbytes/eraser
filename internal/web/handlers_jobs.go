@@ -10,121 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/email"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/go-chi/chi/v5"
 )
-
-// checkPendingJob resumes each profile's incomplete job; state is per
-// profile since two profiles can send concurrently.
-func (s *Server) checkPendingJob() {
-	cfg := s.getConfig()
-	if cfg == nil {
-		return
-	}
-	for _, p := range cfg.GetProfiles() {
-		s.checkPendingJobForProfile(p.ID)
-	}
-}
-
-func (s *Server) checkPendingJobForProfile(profileID string) {
-	state, err := s.jobPersistence.Load(profileID)
-	if err != nil {
-		log.Printf("Warning: failed to load pending job for profile %s: %v", profileID, err)
-		return
-	}
-
-	if state == nil || len(state.RemainingBrokers) == 0 {
-		return // No pending job
-	}
-
-	fmt.Printf("\nFound incomplete send job for profile %s: %d of %d brokers remaining\n", profileID, len(state.RemainingBrokers), state.Total)
-	fmt.Printf("Already sent: %d, failed: %d\n", state.Sent, state.Failed)
-
-	// Auto-resume the job
-	go s.resumePendingJob(state)
-}
-
-// resumePendingJob resumes processing of an incomplete job
-func (s *Server) resumePendingJob(state *PersistentJobState) {
-	// Wait a moment for the server to fully start
-	time.Sleep(2 * time.Second)
-
-	// jobs from before multi-profile have no ProfileID; resolve it up front so
-	// every Clear below targets the file Load read
-	profileID := state.ProfileID
-	if profileID == "" {
-		profileID = config.DefaultProfileID
-	}
-
-	cfg := s.getConfig()
-	if cfg == nil {
-		log.Printf("Cannot resume job: email not configured")
-		_ = s.jobPersistence.Clear(profileID)
-		return
-	}
-
-	activeProfile, err := cfg.GetProfile(profileID)
-	if err != nil {
-		if profiles := cfg.GetProfiles(); len(profiles) > 0 {
-			activeProfile = profiles[0]
-		}
-	}
-
-	emailCfg := cfg.EmailForProfile(activeProfile)
-	if emailCfg.Provider == "" {
-		log.Printf("Cannot resume job: email not configured")
-		_ = s.jobPersistence.Clear(profileID)
-		return
-	}
-
-	sender, err := email.NewSender(emailCfg)
-	if err != nil {
-		log.Printf("Cannot resume job: failed to create email sender: %v", err)
-		_ = s.jobPersistence.Clear(profileID)
-		return
-	}
-
-	brokerMap := make(map[string]broker.Broker)
-	for _, b := range s.brokerDB.Brokers {
-		brokerMap[b.ID] = b
-	}
-
-	// Anything sent since the job paused (an automatic run, the CLI, a
-	// "Send all" click) is no longer due; resending it would double-email.
-	var statuses map[string]history.BrokerStatus
-	if s.historyStore != nil {
-		statuses, _ = s.historyStore.GetAllBrokerStatuses(profileID)
-	}
-	var toSend []BrokerWithStatus
-	for _, id := range state.RemainingBrokers {
-		b, ok := brokerMap[id]
-		if !ok {
-			continue
-		}
-		if st, sent := statuses[id]; sent && st.Status == history.StatusSent && time.Since(st.LastSent) < history.ResendCooldown {
-			continue
-		}
-		toSend = append(toSend, BrokerWithStatus{Broker: b, Status: "never"})
-	}
-
-	if len(toSend) == 0 {
-		log.Printf("No valid brokers remaining in pending job")
-		_ = s.jobPersistence.Clear(profileID)
-		return
-	}
-
-	// Create a new job to continue processing, preserving the profile the
-	// original job was scoped to.
-	job := s.jobManager.Create(state.Total, profileID)
-	job.Update(state.Sent, state.Failed, "", "")
-
-	fmt.Printf("Resuming send job: %d brokers remaining...\n", len(toSend))
-
-	s.processSendJob(job, toSend, sender)
-}
 
 func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	// Rate limiting - prevent abuse of email sending
@@ -353,29 +243,6 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	brokerIDs := make([]string, len(toSend))
-	for i, b := range toSend {
-		brokerIDs[i] = b.ID
-	}
-
-	jobState := &PersistentJobState{
-		ID:               job.ID,
-		ProfileID:        activeProfile.ID,
-		Status:           job.GetStatus(),
-		Sent:             0,
-		Failed:           0,
-		Total:            len(toSend),
-		StartedAt:        job.StartedAt,
-		RemainingBrokers: brokerIDs,
-		Search:           search,
-		Category:         category,
-		Region:           region,
-		StatusFilter:     status,
-	}
-	if err := s.jobPersistence.Save(jobState); err != nil {
-		log.Printf("Warning: failed to save job state: %v", err)
-	}
-
 	go s.processSendJob(job, toSend, sender)
 
 	_ = json.NewEncoder(w).Encode(map[string]interface{}{
@@ -439,12 +306,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 		}
 	}
 
-	// Track remaining brokers for persistence
-	remaining := make([]string, len(toSend))
-	for i, b := range toSend {
-		remaining[i] = b.ID
-	}
-
 	for i, b := range toSend {
 		if job.IsCancelled() {
 			break
@@ -456,9 +317,9 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 			if s.inAppScheduling() || s.osInstalled() {
 				next = "Automation will send the rest once the limit frees up."
 			}
-			job.Pause(sent, fmt.Sprintf("Daily limit of %d emails reached. %d brokers remaining. %s", dailyLimit, len(remaining), next))
-			s.saveJobProgress(job, sent, failed, remaining)
-			log.Printf("Job paused: daily limit of %d reached (%d already sent today, %d this run), %d remaining", dailyLimit, alreadySentToday, sent, len(remaining))
+			left := len(toSend) - i
+			job.Pause(sent, fmt.Sprintf("Daily limit of %d emails reached. %d brokers remaining. %s", dailyLimit, left, next))
+			log.Printf("Job paused: daily limit of %d reached (%d already sent today, %d this run), %d remaining", dailyLimit, alreadySentToday, sent, left)
 			return
 		}
 
@@ -470,8 +331,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 		if err != nil {
 			failed++
 			job.Update(sent, failed, b.Name, b.ID)
-			remaining = remaining[1:]
-			s.saveJobProgress(job, sent, failed, remaining)
 			continue
 		}
 
@@ -519,8 +378,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 							log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
 						}
 					}
-					remaining = remaining[1:]
-					s.saveJobProgress(job, sent, failed, remaining)
 					job.StopWithError("auth", "Stopped due to repeated authentication failures. Your email provider may have rate-limited or blocked your account. Please check your email settings and try again later.")
 					log.Printf("Job stopped: repeated auth failures after %d sent, %d failed", sent, failed)
 					return
@@ -536,10 +393,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 
 		job.Update(sent, failed, b.Name, b.ID)
 
-		// Remove processed broker from remaining and save state
-		remaining = remaining[1:]
-		s.saveJobProgress(job, sent, failed, remaining)
-
 		// Rate limit delay (skip on last item)
 		if i < len(toSend)-1 && !job.IsCancelled() {
 			time.Sleep(time.Duration(rateLimitMs) * time.Millisecond)
@@ -547,26 +400,6 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 	}
 
 	job.Complete()
-	if err := s.jobPersistence.Clear(job.ProfileID); err != nil {
-		log.Printf("Warning: failed to clear job state: %v", err)
-	}
-}
-
-// saveJobProgress saves the current job progress to disk
-func (s *Server) saveJobProgress(job *Job, sent, failed int, remaining []string) {
-	state := &PersistentJobState{
-		ID:               job.ID,
-		ProfileID:        job.ProfileID,
-		Status:           job.GetStatus(),
-		Sent:             sent,
-		Failed:           failed,
-		Total:            job.Total,
-		StartedAt:        job.StartedAt,
-		RemainingBrokers: remaining,
-	}
-	if err := s.jobPersistence.Save(state); err != nil {
-		log.Printf("Warning: failed to save job progress: %v", err)
-	}
 }
 
 // handleAPIJobActive returns the currently running job (if any)

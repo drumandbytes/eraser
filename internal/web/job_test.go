@@ -2,8 +2,6 @@ package web
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 )
@@ -210,59 +208,5 @@ func TestCreateIfNoActiveIsRaceSafe(t *testing.T) {
 	}
 	if wins != 1 {
 		t.Fatalf("expected exactly 1 of %d concurrent CreateIfNoActive calls to win, got %d", attempts, wins)
-	}
-}
-
-// TestJobPersistencePerProfileFiles is the collision JobPersistence exists
-// to avoid: two profiles saving concurrently used to share one
-// pending_job.json, so the second Save silently overwrote the first and a
-// restart could only ever resume (or forget) whichever wrote last.
-func TestJobPersistencePerProfileFiles(t *testing.T) {
-	jp := NewJobPersistence(t.TempDir())
-
-	stateA := &PersistentJobState{ID: "job-a", ProfileID: "profile-a", Total: 3, RemainingBrokers: []string{"x"}}
-	stateB := &PersistentJobState{ID: "job-b", ProfileID: "profile-b", Total: 5, RemainingBrokers: []string{"y", "z"}}
-
-	if err := jp.Save(stateA); err != nil {
-		t.Fatalf("Save(profile-a): %v", err)
-	}
-	if err := jp.Save(stateB); err != nil {
-		t.Fatalf("Save(profile-b): %v", err)
-	}
-
-	gotA, err := jp.Load("profile-a")
-	if err != nil || gotA == nil || gotA.ID != "job-a" {
-		t.Fatalf("Load(profile-a) = %+v, %v, want job-a", gotA, err)
-	}
-	gotB, err := jp.Load("profile-b")
-	if err != nil || gotB == nil || gotB.ID != "job-b" {
-		t.Fatalf("Load(profile-b) = %+v, %v, want job-b", gotB, err)
-	}
-
-	// Clearing one profile's state doesn't touch the other's.
-	if err := jp.Clear("profile-a"); err != nil {
-		t.Fatalf("Clear(profile-a): %v", err)
-	}
-	if got, err := jp.Load("profile-a"); err != nil || got != nil {
-		t.Fatalf("Load(profile-a) after Clear = %+v, %v, want nil", got, err)
-	}
-	if got, err := jp.Load("profile-b"); err != nil || got == nil {
-		t.Fatalf("Load(profile-b) after clearing profile-a = %+v, %v, want job-b still present", got, err)
-	}
-}
-
-// The default profile must keep the legacy pending_job.json filename across upgrade.
-func TestJobPersistenceDefaultProfileUsesLegacyFilename(t *testing.T) {
-	dir := t.TempDir()
-	jp := NewJobPersistence(dir)
-
-	if err := jp.Save(&PersistentJobState{ID: "job-legacy", ProfileID: "default", Total: 1}); err != nil {
-		t.Fatalf("Save: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(dir, "pending_job.json")); err != nil {
-		t.Fatalf("expected legacy pending_job.json to exist: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(dir, "pending_job-default.json")); !os.IsNotExist(err) {
-		t.Fatalf("expected no pending_job-default.json, got err=%v", err)
 	}
 }

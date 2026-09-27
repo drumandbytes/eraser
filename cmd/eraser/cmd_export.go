@@ -303,7 +303,8 @@ func buildEvidenceReport(
 	for _, brokerID := range order {
 		reqs := byBroker[brokerID]
 		be := BrokerEvidence{BrokerID: brokerID}
-		if b := brokerDB.FindByID(brokerID); b != nil {
+		b := brokerDB.FindByID(brokerID)
+		if b != nil {
 			be.BrokerName = b.Name
 			be.BrokerEmail = b.Email
 			be.BrokerWebsite = b.Website
@@ -326,7 +327,7 @@ func buildEvidenceReport(
 				Manual:     req.SentMethod == "manual",
 				Error:      req.Error,
 			}
-			if b := brokerDB.FindByID(brokerID); b != nil {
+			if b != nil {
 				if email, err := engine.Render(req.Template, profile, *b); err == nil {
 					re.RenderedSubject = email.Subject
 					re.RenderedBody = email.Body

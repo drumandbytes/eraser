@@ -215,7 +215,9 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.historyStore != nil {
-		_ = s.historyStore.Add(record)
+		if err := s.historyStore.Add(record); err != nil {
+			log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
+		}
 	}
 
 	if result.Success {
@@ -510,7 +512,9 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 			if strings.Contains(strings.ToLower(errMsg), "auth") {
 				if job.RecordAuthFailure() {
 					if s.historyStore != nil {
-						_ = s.historyStore.Add(record)
+						if err := s.historyStore.Add(record); err != nil {
+							log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
+						}
 					}
 					remaining = remaining[1:]
 					s.saveJobProgress(job, sent, failed, remaining)
@@ -522,7 +526,9 @@ func (s *Server) processSendJob(job *Job, toSend []BrokerWithStatus, sender *ema
 		}
 
 		if s.historyStore != nil {
-			_ = s.historyStore.Add(record)
+			if err := s.historyStore.Add(record); err != nil {
+				log.Printf("Warning: failed to record send to %s in history: %v", record.BrokerID, err)
+			}
 		}
 
 		job.Update(sent, failed, b.Name, b.ID)

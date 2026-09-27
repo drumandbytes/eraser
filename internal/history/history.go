@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -134,17 +135,38 @@ func NewStore(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("failed to create history directory: %w", err)
 	}
 
-	db, err := sql.Open("sqlite", dbPath)
+	// The file holds personal data. sql.Open is lazy, so create it (or
+	// tighten an existing one) before SQLite first touches it; SQLite gives
+	// the -wal/-shm files the database file's mode.
+	f, err := os.OpenFile(dbPath, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("failed to create history database: %w", err)
+	}
+	_ = f.Close()
+	if err := os.Chmod(dbPath, 0600); err != nil {
+		return nil, fmt.Errorf("failed to restrict history database permissions: %w", err)
 	}
 
-	// sql.Open creates the file (if new) using the process umask, which can
-	// be more permissive than the 0700 directory suggests (e.g. 0644 under a
-	// default 022 umask). It holds personal data, so restrict it explicitly.
-	if err := os.Chmod(dbPath, 0600); err != nil && !os.IsNotExist(err) {
-		_ = db.Close()
-		return nil, fmt.Errorf("failed to restrict history database permissions: %w", err)
+	// WAL lets the web UI read while a send job or inbox scan writes, and
+	// busy_timeout makes a writer wait for the lock instead of failing with
+	// SQLITE_BUSY. synchronous(NORMAL) is safe under WAL and skips an fsync
+	// per autocommit insert.
+	// Built as an escaped file: URI so a '?' or '#' in the path isn't read
+	// as the start of the query. SQLite drops the leading '/' before a
+	// Windows drive letter.
+	uriPath := filepath.ToSlash(dbPath)
+	if !strings.HasPrefix(uriPath, "/") {
+		uriPath = "/" + uriPath
+	}
+	dsn := (&url.URL{
+		Scheme:   "file",
+		OmitHost: true,
+		Path:     uriPath,
+		RawQuery: "_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)&_pragma=synchronous(NORMAL)",
+	}).String()
+	db, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
 	store := &Store{db: db}
@@ -1047,13 +1069,13 @@ func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 	LEFT JOIN (
 		SELECT broker_id, profile_id, pipeline_status
 		FROM removal_requests
-		WHERE id IN (SELECT MAX(id) FROM removal_requests GROUP BY profile_id, broker_id)
+		WHERE id IN (SELECT MAX(id) FROM removal_requests WHERE profile_id = ? GROUP BY broker_id)
 	) rr ON br.broker_id = rr.broker_id AND rr.profile_id = br.profile_id
 	WHERE br.profile_id = ? AND br.form_url IS NOT NULL AND br.form_url != ''
 	ORDER BY br.created_at DESC
 	`
 
-	rows, err := s.db.Query(query, profileID)
+	rows, err := s.db.Query(query, profileID, profileID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query forms: %w", err)
 	}

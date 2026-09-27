@@ -109,13 +109,8 @@ func runMonitor(days int, once bool, watch bool) error {
 
 	// --watch blocks per inbox (each one waits for new mail indefinitely),
 	// so watching more than one inbox genuinely needs concurrency here.
-	//
-	// ponytail: this writes to the shared history.Store from multiple
-	// goroutines with no WAL/busy_timeout tuning, so concurrent inserts can
-	// occasionally hit SQLITE_BUSY under real contention (rare: broker
-	// replies are infrequent and NewStore's single *sql.DB already
-	// serializes at the connection-pool level, but not guaranteed). Add
-	// PRAGMA busy_timeout in history.NewStore if this shows up in practice.
+	// Concurrent writes to the shared store are safe: NewStore opens it in
+	// WAL mode with a busy_timeout.
 	var wg sync.WaitGroup
 	errs := make([]error, len(inboxes))
 	for i, inboxCfg := range inboxes {

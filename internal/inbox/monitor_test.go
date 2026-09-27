@@ -469,3 +469,28 @@ func TestFetchMessagesCtxCancellation(t *testing.T) {
 // unit level, it was left out here rather than force it; the code path is
 // still straight-line log-and-continue logic with no branching this test
 // suite doesn't already cover in isolation.
+
+// fetchMatching only downloads bodies for mail the envelope pass keeps, so
+// these predicates must accept everything the old full-fetch-then-filter
+// callers kept.
+func TestEnvelopeFilters(t *testing.T) {
+	cases := []struct {
+		name         string
+		e            Email
+		broker, bnce bool
+	}{
+		{"broker reply", Email{From: "privacy@acme.com", BrokerID: "acme"}, true, false},
+		{"bounce by sender", Email{From: "MAILER-DAEMON@mx.example.org"}, false, true},
+		{"bounce by display name", Email{From: "x@example.org", FromName: "Mail Delivery Subsystem"}, false, true},
+		{"bounce by subject", Email{From: "x@example.org", Subject: "Undeliverable: Data deletion request"}, false, true},
+		{"unrelated", Email{From: "friend@example.org", Subject: "lunch?"}, false, false},
+	}
+	for _, c := range cases {
+		if got := fromBroker(c.e); got != c.broker {
+			t.Errorf("%s: fromBroker = %v, want %v", c.name, got, c.broker)
+		}
+		if got := looksLikeBounce(c.e); got != c.bnce {
+			t.Errorf("%s: looksLikeBounce = %v, want %v", c.name, got, c.bnce)
+		}
+	}
+}

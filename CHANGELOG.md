@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/drumandbytes/eraser/compare/v0.9.0...v0.9.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **brokers:** route Narvar to DSAR form ([#100](https://github.com/drumandbytes/eraser/issues/100)) ([e51eaef](https://github.com/drumandbytes/eraser/commit/e51eaef5845f3853a217a47f3dd76eb4b760e63b))
+
 ## [0.9.0](https://github.com/drumandbytes/eraser/compare/v0.8.5...v0.9.0) (2026-09-27)
 
 

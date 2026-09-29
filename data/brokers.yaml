@@ -576,6 +576,14 @@ brokers:
       region: us
       category: marketing
       notes: Auto-reply requires their Data Request Form; legal@apollointeractive.com if the form can't be used (reply received 2026-08-20).
+    - id: narvar
+      name: Narvar, Inc.
+      email: ""
+      website: https://www.corp.narvar.com/
+      opt_out_url: https://narvar.my.onetrust.com/webform/04b3731f-2a9a-42ce-bd6b-106d4b4ec3bf/a7c944bf-3cec-4f00-9dc5-dea5bf2b6f4f
+      region: us
+      category: marketing
+      notes: 'legal@narvar.com auto-replied that email requests are not processed and will be deleted; use the DSAR tool above or call 866-528-0244 (reply received 2026-09-28).'
     - id: appscience
       name: Appscience
       email: privacy@appsci.io

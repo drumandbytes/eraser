@@ -25,8 +25,10 @@ type Provider struct {
 var Providers = []Provider{
 	{ID: "gmail", Name: "Gmail", SMTPHost: "smtp.gmail.com", SMTPPort: 465, IMAPHost: "imap.gmail.com", IMAPPort: 993,
 		HelpURL: "https://myaccount.google.com/apppasswords", Note: "Needs 2-Step Verification and a 16-character app password."},
-	{ID: "proton", Name: "Proton Mail (Bridge)", SMTPHost: "127.0.0.1", SMTPPort: 1025, IMAPHost: "127.0.0.1", IMAPPort: 1143,
-		HelpURL: "https://proton.me/mail/bridge", Note: "Requires Proton Mail Bridge running on this machine (paid plan). Use the password Bridge shows, not your Proton password."},
+	// Unverified: no maintainer has a Proton account to test Bridge against.
+	// Drop the label once a user confirms it works (mail-provider issue).
+	{ID: "proton", Name: "Proton Mail (Bridge, unverified)", SMTPHost: "127.0.0.1", SMTPPort: 1025, IMAPHost: "127.0.0.1", IMAPPort: 1143,
+		HelpURL: "https://proton.me/mail/bridge", Note: "Requires Proton Mail Bridge running on this machine (paid plan). Use the password Bridge shows, not your Proton password. Not yet tested by the maintainers - if it works (or doesn't) for you, please say so: https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml"},
 	{ID: "fastmail", Name: "Fastmail", SMTPHost: "smtp.fastmail.com", SMTPPort: 465, IMAPHost: "imap.fastmail.com", IMAPPort: 993,
 		HelpURL: "https://www.fastmail.help/", Note: "Create an app password with IMAP + SMTP access."},
 	{ID: "mailbox-org", Name: "mailbox.org", SMTPHost: "smtp.mailbox.org", SMTPPort: 465, IMAPHost: "imap.mailbox.org", IMAPPort: 993,

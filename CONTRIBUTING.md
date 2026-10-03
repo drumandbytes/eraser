@@ -56,6 +56,7 @@ Eraser talks plain SMTP (sending) and IMAP (reply monitoring) to any provider. T
 
 - There's no TLS setting: ports 465/993 use TLS from the start, any other port must offer STARTTLS. Hosts on localhost (bridges like Proton's) skip certificate verification.
 - Leave `IMAPHost` empty for send-only services (like Amazon SES); replies then go to a separate inbox.
+- If you can't test the preset with a real account, put "unverified" in its `Name` and ask for reports in its `Note`, as the Proton preset does. Remove the label once someone confirms it works.
 - Keep `custom` last. The CLI menu is numbered in slice order, so if you insert before an existing entry, update `cmd/eraser/mail_prompt_test.go`.
 - Add a row to the provider table in the README ("Setting Up Your Email Account").
 - Providers that only allow OAuth sign-in (e.g. Outlook.com) can't be a preset yet: there's no OAuth support.

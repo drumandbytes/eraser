@@ -113,7 +113,7 @@ Eraser sends removal requests from your own email account over SMTP, and can rea
 | Provider | What you need | Notes |
 |---|---|---|
 | Gmail | [App password](https://myaccount.google.com/apppasswords) (needs 2-Step Verification) | ~500 emails/day |
-| Proton Mail | [Proton Mail Bridge](https://proton.me/mail/bridge) running on the same machine, paid plan | Use the password Bridge shows. Bridge's self-signed certificate is accepted because it only listens on localhost |
+| Proton Mail (unverified) | [Proton Mail Bridge](https://proton.me/mail/bridge) running on the same machine, paid plan | Use the password Bridge shows. Bridge's self-signed certificate is accepted because it only listens on localhost. **Not yet tested by the maintainers** (no Proton account) - please [report whether it works](https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml) |
 | Fastmail | App password with IMAP + SMTP access | |
 | mailbox.org | Application password | |
 | Posteo | Your Posteo address and password | |

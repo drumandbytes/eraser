@@ -413,8 +413,10 @@ func TestJobLifecycleHelpers(t *testing.T) {
 		t.Fatal("new job not active or has no context")
 	}
 
-	if j.RecordAuthFailure() || j.RecordAuthFailure() {
-		t.Fatal("stopped before the third auth failure")
+	for i := 1; i <= 2; i++ {
+		if j.RecordAuthFailure() {
+			t.Fatalf("stopped after %d auth failure(s), want 3", i)
+		}
 	}
 	j.ResetAuthFailures()
 	if j.RecordAuthFailure() {

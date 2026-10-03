@@ -187,7 +187,7 @@ longer), and without inbox monitoring configured, nothing links it back to
 that history record automatically.
 
 If you've spotted a bounce yourself - by reading your inbox, or now that a
-Gmail connector lets an assistant read it for you - use this to correct the
+mail connector lets an assistant read it for you - use this to correct the
 record once you're done acting on it (e.g. after fixing the broker's contact
 info in data/brokers.yaml). It flips that broker's most recent "sent" record
 to "failed", which:

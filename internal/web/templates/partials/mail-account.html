@@ -1,0 +1,92 @@
+{{/* Mail account fields. Data: web.mailFormView. Picking a provider prefills
+     the server fields (script below); without JS the server falls back to
+     the preset when they're left empty. */}}
+<div class="space-y-4" id="mail-account">
+    <div>
+        <label for="mail_provider" class="label">Email provider</label>
+        <select name="mail_provider" id="mail_provider" class="input">
+            {{range .Providers}}
+            <option value="{{.ID}}" {{if eq .ID $.Provider}}selected{{end}}
+                data-smtp-host="{{.SMTPHost}}" data-smtp-port="{{if .SMTPPort}}{{.SMTPPort}}{{end}}"
+                data-imap-host="{{.IMAPHost}}" data-imap-port="{{if .IMAPPort}}{{.IMAPPort}}{{end}}"
+                data-note="{{.Note}}" data-help="{{.HelpURL}}">{{.Name}}</option>
+            {{end}}
+        </select>
+        <p class="mt-1 text-xs text-muted">
+            <span id="mail_provider_note">{{range .Providers}}{{if eq .ID $.Provider}}{{.Note}}{{end}}{{end}}</span>
+            <a id="mail_provider_help" href="{{range .Providers}}{{if eq .ID $.Provider}}{{.HelpURL}}{{end}}{{end}}" target="_blank" rel="noopener" class="text-accent hover:underline">Setup guide</a>
+        </p>
+        <p class="mt-1 text-xs text-muted">Missing your provider? <a href="https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml" target="_blank" rel="noopener" class="text-accent hover:underline">Request it</a> or use "Other".</p>
+    </div>
+
+    <div>
+        <label for="mail_address" class="label">Email address</label>
+        <input type="email" name="mail_address" id="mail_address" value="{{.Address}}"
+            class="input {{if .Errors.mail_address}}border-error{{end}}" placeholder="you@example.org">
+        {{if .Errors.mail_address}}<p class="mt-1 text-sm text-error">{{.Errors.mail_address}}</p>{{end}}
+    </div>
+
+    <div>
+        <label for="mail_password" class="label">App password</label>
+        <input type="password" name="mail_password" id="mail_password"
+            class="input {{if .Errors.mail_password}}border-error{{end}}"
+            placeholder="{{if .PasswordPlaceholder}}{{.PasswordPlaceholder}}{{else}}App, Bridge or SMTP password{{end}}">
+        {{if .Errors.mail_password}}<p class="mt-1 text-sm text-error">{{.Errors.mail_password}}</p>{{end}}
+        <p class="mt-1 text-xs text-muted">Use an app password from your provider, not your main account password.</p>
+    </div>
+
+    <details id="mail_server" {{if or (eq .Provider "custom") (eq .Provider "ses") .Errors.smtp_host .Errors.imap_host}}open{{end}}>
+        <summary class="text-sm text-muted cursor-pointer">Server settings</summary>
+        <div class="space-y-4 mt-3">
+            <div>
+                <label for="mail_username" class="label">Login username</label>
+                <input type="text" name="mail_username" id="mail_username" value="{{.Username}}" class="input"
+                    placeholder="Leave blank to use the email address" autocomplete="off">
+                <p class="mt-1 text-xs text-muted">Only if your provider's login differs from the address (e.g. Amazon SES SMTP credentials).</p>
+            </div>
+            {{if ne .Mode "imap"}}
+            <div class="flex gap-3">
+                <div class="flex-1">
+                    <label for="smtp_host" class="label">SMTP server</label>
+                    <input type="text" name="smtp_host" id="smtp_host" value="{{.SMTPHost}}" class="input {{if .Errors.smtp_host}}border-error{{end}}" placeholder="smtp.example.org">
+                </div>
+                <div class="w-24">
+                    <label for="smtp_port" class="label">Port</label>
+                    <input type="number" name="smtp_port" id="smtp_port" value="{{if .SMTPPort}}{{.SMTPPort}}{{end}}" class="input" placeholder="465">
+                </div>
+            </div>
+            {{if .Errors.smtp_host}}<p class="text-sm text-error">{{.Errors.smtp_host}}</p>{{end}}
+            {{end}}
+            {{if ne .Mode "smtp"}}
+            <div class="flex gap-3">
+                <div class="flex-1">
+                    <label for="imap_host" class="label">IMAP server</label>
+                    <input type="text" name="imap_host" id="imap_host" value="{{.IMAPHost}}" class="input {{if .Errors.imap_host}}border-error{{end}}" placeholder="imap.example.org">
+                </div>
+                <div class="w-24">
+                    <label for="imap_port" class="label">Port</label>
+                    <input type="number" name="imap_port" id="imap_port" value="{{if .IMAPPort}}{{.IMAPPort}}{{end}}" class="input" placeholder="993">
+                </div>
+            </div>
+            {{if .Errors.imap_host}}<p class="text-sm text-error">{{.Errors.imap_host}}</p>{{end}}
+            {{end}}
+            <p class="text-xs text-muted">Ports 465 (SMTP) and 993 (IMAP) use TLS directly; any other port must support STARTTLS. Eraser never logs in without encryption.</p>
+        </div>
+    </details>
+</div>
+<script>
+(() => {
+    const sel = document.getElementById('mail_provider');
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+    sel.addEventListener('change', () => {
+        const o = sel.selectedOptions[0].dataset;
+        set('smtp_host', o.smtpHost); set('smtp_port', o.smtpPort);
+        set('imap_host', o.imapHost); set('imap_port', o.imapPort);
+        document.getElementById('mail_provider_note').textContent = o.note;
+        const help = document.getElementById('mail_provider_help');
+        help.href = o.help; help.hidden = !o.help;
+        if (sel.value === 'custom' || sel.value === 'ses') document.getElementById('mail_server').open = true;
+    });
+    document.getElementById('mail_provider_help').hidden = !document.getElementById('mail_provider_help').getAttribute('href');
+})();
+</script>

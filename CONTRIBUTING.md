@@ -2,7 +2,8 @@
 
 Thanks for taking the time to contribute. The most helpful things:
 
-- **Adding brokers** — the database at `data/brokers.yaml` can always use more entries; broker contact details also go stale
+- **Adding brokers** — the database at `data/brokers.yaml` can always use more entries; broker contact details also go stale. Not up for a PR? [Report a broker](https://github.com/drumandbytes/eraser/issues/new?template=broker.yml) (new, changed, dead, or an unusual reply)
+- **Mail providers** — a preset for an email provider that isn't in the setup wizard yet, or a report that one doesn't work: [open a mail provider issue](https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml) or see [Adding a mail provider](#adding-a-mail-provider)
 - **Privacy authorities** — `data/authorities.yaml` isn't exhaustive and links move; corrections and additions welcome
 - **Template improvements** — better wording for removal requests
 - **Bug fixes** — found something broken? PRs welcome
@@ -43,6 +44,23 @@ go run ./cmd/eraser validate-brokers
 ```
 
 This checks ids, names, regions, emails, and URLs, and enforces a 700+ broker floor. If you're editing an entry in response to a broker's reply to an actual removal request, [docs/broker-replies.md](docs/broker-replies.md) has the classification table (which reply types need `email: ""`, a `notes:` line, or removing the entry entirely).
+
+## Adding a mail provider
+
+Eraser talks plain SMTP (sending) and IMAP (reply monitoring) to any provider. The setup wizard, `eraser init`, and `eraser profile` offer presets so users only type an address and an app password. Adding one is one entry in `Providers` in [`internal/config/providers.go`](internal/config/providers.go):
+
+```go
+{ID: "example", Name: "Example Mail", SMTPHost: "smtp.example.org", SMTPPort: 465, IMAPHost: "imap.example.org", IMAPPort: 993,
+	HelpURL: "https://example.org/help/app-passwords", Note: "Create an app password with SMTP + IMAP access."},
+```
+
+- There's no TLS setting: ports 465/993 use TLS from the start, any other port must offer STARTTLS. Hosts on localhost (bridges like Proton's) skip certificate verification.
+- Leave `IMAPHost` empty for send-only services (like Amazon SES); replies then go to a separate inbox.
+- Keep `custom` last. The CLI menu is numbered in slice order, so if you insert before an existing entry, update `cmd/eraser/mail_prompt_test.go`.
+- Add a row to the provider table in the README ("Setting Up Your Email Account").
+- Providers that only allow OAuth sign-in (e.g. Outlook.com) can't be a preset yet: there's no OAuth support.
+
+Before opening the PR, send a real test email with your own account from the web setup wizard's "Test Your Setup" step, and mention in the PR that you did.
 
 ## Commits and pull requests
 

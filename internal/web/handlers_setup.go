@@ -88,43 +88,16 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		emailCfg := config.Email{
-			Provider: "smtp",
-			From:     session.Profile.Email,
+		form := readMailForm(r)
+		if form.Password == "" && form.Username != "" && strings.EqualFold(form.Username, session.Email.SMTP.Username) {
+			form.Password = session.Email.SMTP.Password
 		}
-
-		errors := make(map[string]string)
-
-		emailCfg.SMTP.Host = strings.TrimSpace(r.FormValue("smtp_host"))
-		_, _ = fmt.Sscanf(r.FormValue("smtp_port"), "%d", &emailCfg.SMTP.Port)
-		emailCfg.SMTP.Username = strings.TrimSpace(r.FormValue("smtp_username"))
-		emailCfg.SMTP.Password = strings.TrimSpace(r.FormValue("smtp_password"))
-		emailCfg.SMTP.UseTLS = r.FormValue("smtp_tls") == "on"
-
-		if emailCfg.SMTP.Host == "" {
-			errors["smtp_host"] = "SMTP host is required"
-		}
-		if emailCfg.SMTP.Port == 0 {
-			errors["smtp_port"] = "SMTP port is required"
-		}
-		if emailCfg.SMTP.Username == "" {
-			errors["smtp_username"] = "Gmail address is required"
-		}
-		if emailCfg.SMTP.Password == "" {
-			errors["smtp_password"] = "App password is required"
-		}
-		// Enforce TLS when using authentication
-		if !emailCfg.SMTP.UseTLS && emailCfg.SMTP.Username != "" {
-			errors["smtp_tls"] = "TLS is required for Gmail"
-		}
-
-		if len(errors) > 0 {
+		if errors := form.validate("smtp", true); len(errors) > 0 {
 			data := map[string]interface{}{
-				"Title":   "Setup - Gmail",
+				"Title":   "Setup - Email",
 				"Step":    "email",
 				"Profile": session.Profile,
-				"Email":   emailCfg,
-				"Errors":  errors,
+				"Mail":    newMailFormView("smtp", form, errors),
 			}
 			s.renderWithCSRF(w, r, "setup/email.html", data)
 			return
@@ -132,25 +105,26 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 
 		// Store email config in secure server-side session
 		s.updateSession(r, func(sess *Session) {
-			sess.Email = emailCfg
+			sess.Email = form.emailConfig()
 			sess.Step = "test"
 		})
 		http.Redirect(w, r, "/setup/test", http.StatusFound)
 		return
 	}
 
-	emailCfg := session.Email
-	if emailCfg.SMTP.Host == "" {
-		emailCfg.SMTP.Host = "smtp.gmail.com"
-		emailCfg.SMTP.Port = 465
-		emailCfg.SMTP.UseTLS = true
+	form := mailFormFromConfig(session.Email, nil)
+	if form.Address == "" {
+		form.Address = session.Profile.Email
 	}
-
+	view := newMailFormView("smtp", form, nil)
+	if session.Email.SMTP.Password != "" {
+		view.PasswordPlaceholder = "Leave blank to keep the one you entered"
+	}
 	data := map[string]interface{}{
-		"Title":   "Setup - Gmail",
+		"Title":   "Setup - Email",
 		"Step":    "email",
 		"Profile": session.Profile,
-		"Email":   emailCfg,
+		"Mail":    view,
 	}
 	s.renderWithCSRF(w, r, "setup/email.html", data)
 }

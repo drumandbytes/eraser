@@ -56,7 +56,7 @@ func main() {
 requests to data brokers, helping you protect your privacy.
 
 It supports GDPR, CCPA, and generic removal request templates, and can
-send via Gmail SMTP.`,
+send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	}
 	// So a standalone binary (no LICENSE file alongside it) still points at
 	// the MIT terms it ships under.

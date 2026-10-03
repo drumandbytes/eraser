@@ -1,0 +1,68 @@
+name: Mail provider
+description: Request a provider preset, or report that one doesn't work
+labels: [mail-provider]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Eraser works with any provider that allows SMTP (sending) and IMAP (reply monitoring) with an app password. Most can already be used through **Other (custom SMTP/IMAP)** in setup. A preset just fills in the servers. Adding one yourself is a single entry: see [CONTRIBUTING.md](https://github.com/drumandbytes/eraser/blob/main/CONTRIBUTING.md#adding-a-mail-provider).
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What's this about?
+      options:
+        - Add a preset for a new provider
+        - An existing preset doesn't work
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: Provider
+      placeholder: e.g. Tuta, Zoho Mail, GMX, a self-hosted server
+    validations:
+      required: true
+  - type: input
+    id: smtp
+    attributes:
+      label: SMTP server and port
+      placeholder: smtp.example.org:465
+  - type: input
+    id: imap
+    attributes:
+      label: IMAP server and port
+      description: Leave blank if the provider has no IMAP access.
+      placeholder: imap.example.org:993
+  - type: dropdown
+    id: auth
+    attributes:
+      label: How do apps sign in?
+      options:
+        - App password
+        - Regular account password
+        - Local bridge app (like Proton Mail Bridge)
+        - OAuth only (no passwords for apps)
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: docs
+    attributes:
+      label: Provider's documentation
+      description: A link to the provider's SMTP/IMAP or app-password help page
+  - type: dropdown
+    id: custom
+    attributes:
+      label: Does it work with "Other (custom SMTP/IMAP)"?
+      options:
+        - "Yes"
+        - "No"
+        - Haven't tried
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Error or extra details
+      description: Error messages, sending limits you know of, anything unusual. Redact your address and never paste a password.
+      render: shell

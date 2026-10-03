@@ -222,7 +222,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 
 // defaultDailyLimit is used only if the config's daily_send_limit is unset -
 // config.Load already fills this in normally, so this is just a safety net.
-const defaultDailyLimit = 250 // Gmail/SMTP: stay well under 500/day
+const defaultDailyLimit = 250 // stay well under typical provider caps (Gmail ~500/day)
 
 // effectiveDailyLimit is the configured limit if positive, else the default.
 // Shared by the banner and processSendJob so they can't disagree.

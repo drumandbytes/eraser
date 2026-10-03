@@ -82,6 +82,12 @@ func sanitizeSMTPError(err error) error {
 	if strings.Contains(s, "certificate") {
 		return fmt.Errorf("TLS certificate error")
 	}
+	if strings.Contains(s, "connection refused") {
+		return fmt.Errorf("could not connect to the SMTP server (wrong host/port, or a local bridge like Proton Mail Bridge isn't running)")
+	}
+	if strings.Contains(s, "starttls") {
+		return fmt.Errorf("SMTP server does not support STARTTLS on this port")
+	}
 	return fmt.Errorf("SMTP error: check your configuration")
 }
 
@@ -108,12 +114,11 @@ func (s *SMTPSender) send(ctx context.Context, addr string, auth smtp.Auth, from
 		}
 	}()
 
+	// 465 is TLS from the first byte; any other port upgrades with STARTTLS.
+	implicit := useTLS && config.ImplicitTLS(s.config.Port)
 	smtpConn := conn
-	if useTLS {
-		tlsConn := tls.Client(conn, &tls.Config{
-			ServerName: s.config.Host,
-			MinVersion: tls.VersionTLS12,
-		})
+	if implicit {
+		tlsConn := tls.Client(conn, config.TLSFor(s.config.Host))
 		if err := tlsConn.HandshakeContext(ctx); err != nil {
 			_ = conn.Close()
 			return fmt.Errorf("TLS handshake failed: %w", err)
@@ -127,6 +132,16 @@ func (s *SMTPSender) send(ctx context.Context, addr string, auth smtp.Auth, from
 		return fmt.Errorf("SMTP client creation failed: %w", err)
 	}
 	defer func() { _ = client.Close() }()
+
+	if useTLS && !implicit {
+		// Required, never opportunistic: auth must not go out in plaintext.
+		if ok, _ := client.Extension("STARTTLS"); !ok {
+			return fmt.Errorf("server does not offer STARTTLS on port %d", s.config.Port)
+		}
+		if err := client.StartTLS(config.TLSFor(s.config.Host)); err != nil {
+			return fmt.Errorf("STARTTLS failed: %w", err)
+		}
+	}
 
 	if auth != nil {
 		if err := client.Auth(auth); err != nil {

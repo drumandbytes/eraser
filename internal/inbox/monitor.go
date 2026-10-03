@@ -85,9 +85,9 @@ func (m *Monitor) Connect(ctx context.Context) error {
 
 	log.Printf("Connecting to IMAP server %s...", addr)
 
-	c, err := client.DialTLS(addr, nil)
+	c, err := dialIMAP(addr, m.config.Server, m.config.Port)
 	if err != nil {
-		return fmt.Errorf("failed to connect to IMAP server: %w", err)
+		return err
 	}
 
 	log.Printf("Connected, logging in as %s...", m.config.Email)
@@ -100,6 +100,32 @@ func (m *Monitor) Connect(ctx context.Context) error {
 	m.client = c
 	log.Printf("Login successful")
 	return nil
+}
+
+// dialIMAP connects with TLS from the first byte on 993, STARTTLS on any
+// other port. Never falls back to plaintext: LOGIN sends the password.
+func dialIMAP(addr, host string, port int) (*client.Client, error) {
+	tlsCfg := config.TLSFor(host)
+	if config.ImplicitTLS(port) {
+		c, err := client.DialTLS(addr, tlsCfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to IMAP server: %w", err)
+		}
+		return c, nil
+	}
+	c, err := client.Dial(addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to IMAP server: %w", err)
+	}
+	if ok, err := c.SupportStartTLS(); err != nil || !ok {
+		_ = c.Logout()
+		return nil, fmt.Errorf("IMAP server on port %d does not offer STARTTLS", port)
+	}
+	if err := c.StartTLS(tlsCfg); err != nil {
+		_ = c.Logout()
+		return nil, fmt.Errorf("IMAP STARTTLS failed: %w", err)
+	}
+	return c, nil
 }
 
 // Disconnect closes the IMAP connection

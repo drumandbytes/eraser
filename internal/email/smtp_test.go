@@ -3,7 +3,10 @@ package email
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -97,12 +100,21 @@ func splitHostPortForTest(t *testing.T, addr string) (string, int) {
 // message and hands back its DATA.
 func recordingSMTPServer(t *testing.T) (addr string, data <-chan string) {
 	t.Helper()
+	addr, data, _ = startTLSSMTPServer(t, nil)
+	return addr, data
+}
+
+// startTLSSMTPServer is recordingSMTPServer that, given a cert, advertises
+// STARTTLS and AUTH. auth reports, per AUTH command, whether TLS was up.
+func startTLSSMTPServer(t *testing.T, cert *tls.Certificate) (addr string, data <-chan string, auth <-chan bool) {
+	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
 	t.Cleanup(func() { _ = ln.Close() })
 	out := make(chan string, 1)
+	authed := make(chan bool, 4)
 	go func() {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -111,6 +123,7 @@ func recordingSMTPServer(t *testing.T) (addr string, data <-chan string) {
 		defer func() { _ = conn.Close() }()
 		r := bufio.NewReader(conn)
 		reply := func(s string) { _, _ = conn.Write([]byte(s + "\r\n")) }
+		inTLS := false
 		reply("220 test")
 		for {
 			line, err := r.ReadString('\n')
@@ -118,8 +131,20 @@ func recordingSMTPServer(t *testing.T) (addr string, data <-chan string) {
 				return
 			}
 			switch cmd := strings.ToUpper(strings.TrimSpace(line)); {
+			case strings.HasPrefix(cmd, "EHLO") && cert != nil && !inTLS:
+				reply("250-test\r\n250 STARTTLS")
+			case strings.HasPrefix(cmd, "EHLO") && cert != nil:
+				reply("250-test\r\n250 AUTH PLAIN")
 			case strings.HasPrefix(cmd, "EHLO"), strings.HasPrefix(cmd, "HELO"):
 				reply("250 test")
+			case strings.HasPrefix(cmd, "STARTTLS"):
+				reply("220 go ahead")
+				conn = tls.Server(conn, &tls.Config{Certificates: []tls.Certificate{*cert}})
+				r = bufio.NewReader(conn)
+				inTLS = true
+			case strings.HasPrefix(cmd, "AUTH"):
+				authed <- inTLS
+				reply("235 ok")
 			case strings.HasPrefix(cmd, "DATA"):
 				reply("354 go ahead")
 				var b strings.Builder
@@ -140,7 +165,43 @@ func recordingSMTPServer(t *testing.T) (addr string, data <-chan string) {
 			}
 		}
 	}()
-	return ln.Addr().String(), out
+	return ln.Addr().String(), out, authed
+}
+
+// Any port but 465 must upgrade with STARTTLS before AUTH (iCloud 587, Proton
+// Bridge 1025). Loopback also skips verifying Bridge's self-signed cert.
+func TestSendUpgradesWithSTARTTLSOffPort465(t *testing.T) {
+	ts := httptest.NewTLSServer(http.NotFoundHandler())
+	t.Cleanup(ts.Close)
+	cert := ts.TLS.Certificates[0]
+	addr, data, auth := startTLSSMTPServer(t, &cert)
+	host, port := splitHostPortForTest(t, addr)
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: true, Username: "jane", Password: "pw"}, "jane@example.org")
+
+	res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "jane@example.org", Subject: "Erasure request", Body: "hi"})
+	if !res.Success {
+		t.Fatalf("send failed: %v", res.Error)
+	}
+	if !<-auth {
+		t.Fatal("AUTH was sent before STARTTLS")
+	}
+	<-data
+}
+
+// A server that doesn't offer STARTTLS must get no AUTH at all.
+func TestSendRefusesPlaintextAuthWithoutSTARTTLS(t *testing.T) {
+	addr, _, auth := startTLSSMTPServer(t, nil)
+	host, port := splitHostPortForTest(t, addr)
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: true, Username: "jane", Password: "pw"}, "jane@example.org")
+
+	if res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "jane@example.org", Subject: "x", Body: "hi"}); res.Success {
+		t.Fatal("send succeeded without STARTTLS")
+	}
+	select {
+	case <-auth:
+		t.Fatal("AUTH sent in plaintext")
+	default:
+	}
 }
 
 func TestSendRecordsTheMessageIDItSends(t *testing.T) {

@@ -55,3 +55,16 @@ func TestDescribe(t *testing.T) {
 		t.Errorf("Describe() = %q", got)
 	}
 }
+
+func TestDescribeWithoutAcronym(t *testing.T) {
+	a := Authority{Authority: "Data State Inspectorate", Website: "https://www.dvi.gov.lv"}
+	if got := a.Describe(); got != "Data State Inspectorate - https://www.dvi.gov.lv" {
+		t.Errorf("Describe = %q", got)
+	}
+	if ForCountry("  ") != nil || ForCountry("Atlantis") != nil {
+		t.Error("ForCountry matched nonsense")
+	}
+	if a := ForCountry("UK"); a == nil || a.Code != "GB" {
+		t.Errorf("UK alias = %+v", a)
+	}
+}

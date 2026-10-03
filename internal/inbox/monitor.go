@@ -396,7 +396,24 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 		return fmt.Errorf("failed to select mailbox: %w", err)
 	}
 
-	updates := make(chan client.Update)
+	// The client delivers unilateral responses (EXISTS after the SELECT in
+	// FetchBrokerEmails, for one) on Updates and blocks until they're read,
+	// so draining it here in the loop deadlocked on the first new mail. A
+	// separate reader keeps the connection moving and just flags new mail.
+	// ponytail: the drain goroutine lives as long as the connection; fine
+	// for one watch per Monitor.
+	updates := make(chan client.Update, 16)
+	newMail := make(chan struct{}, 1)
+	go func() {
+		for u := range updates {
+			if _, ok := u.(*client.MailboxUpdate); ok {
+				select {
+				case newMail <- struct{}{}:
+				default:
+				}
+			}
+		}
+	}()
 	m.client.Updates = updates
 
 	stop := make(chan struct{})
@@ -416,27 +433,31 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 			// this function returns, so the caller doesn't touch m.client
 			// concurrently with the IMAP connection still being in use
 			return ctx.Err()
-		case update := <-updates:
-			switch u := update.(type) {
-			case *client.MailboxUpdate:
-				log.Printf("New mail detected: %d messages", u.Mailbox.Messages)
-				close(stop)
-				<-idleDone
+		case <-newMail:
+			log.Printf("New mail detected")
+			close(stop)
+			<-idleDone
 
-				emails, err := m.FetchBrokerEmails(ctx, 1)
-				if err != nil {
-					log.Printf("Error fetching new email: %v", err)
-				}
-				for _, email := range emails {
-					callback(email)
-				}
-
-				// Restart IDLE
-				stop = make(chan struct{})
-				go func() {
-					idleDone <- m.client.Idle(stop, nil)
-				}()
+			emails, err := m.FetchBrokerEmails(ctx, 1)
+			if err != nil {
+				log.Printf("Error fetching new email: %v", err)
 			}
+			for _, email := range emails {
+				callback(email)
+			}
+
+			// The fetch's own SELECT reports EXISTS too; that's covered by
+			// the fetch just done, so don't let it bounce IDLE straight away.
+			select {
+			case <-newMail:
+			default:
+			}
+
+			// Restart IDLE
+			stop = make(chan struct{})
+			go func() {
+				idleDone <- m.client.Idle(stop, nil)
+			}()
 		case err := <-idleDone:
 			if err != nil {
 				return fmt.Errorf("IDLE error: %w", err)

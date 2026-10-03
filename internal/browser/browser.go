@@ -64,6 +64,10 @@ type FormResult struct {
 	FillErrors      []string // real (non-"not found") errors hit while filling fields, e.g. context timeouts
 }
 
+// extraAllocatorOptions is appended to every launch; tests use it to run
+// Chrome without its sandbox on CI runners that can't provide one.
+var extraAllocatorOptions []chromedp.ExecAllocatorOption
+
 // New creates a new Browser instance. allowedDomains restricts the hosts
 // NavigateAndFill is willing to navigate to and autofill with profile PII
 // (see matchesAllowedDomain); pass nil/empty to skip that check entirely
@@ -80,6 +84,7 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 	if cfg.Headless {
 		opts = append(opts, chromedp.Headless)
 	}
+	opts = append(opts, extraAllocatorOptions...)
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 
@@ -126,6 +131,15 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 			result.ErrorMessage = err.Error()
 			return result, err
 		}
+	}
+
+	// The first Run starts Chrome and ties it to that Run's context. Start it
+	// on the long-lived b.ctx: started on the per-call timeout context below,
+	// cancelling that at return closed the browser for every later call
+	// (`eraser fill --pending` fills several forms with one Browser).
+	if err := chromedp.Run(b.ctx); err != nil {
+		result.ErrorMessage = fmt.Sprintf("browser failed to start: %v", err)
+		return result, err
 	}
 
 	ctx, cancel := context.WithTimeout(b.ctx, b.config.Timeout)

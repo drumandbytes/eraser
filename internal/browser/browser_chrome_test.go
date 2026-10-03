@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -106,6 +107,15 @@ func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 	}
 }
 
+// Ubuntu 24.04 runners block the unprivileged user namespaces Chrome's
+// sandbox needs. The pages under test are local fixtures, so CI runs
+// without it.
+func init() {
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		extraAllocatorOptions = append(extraAllocatorOptions, chromedp.NoSandbox)
+	}
+}
+
 // requireChrome probes with a trivial navigation (Chrome launches lazily on the
 // first Run) and skips the test when no browser can start.
 func requireChrome(t *testing.T) *Browser {
@@ -120,10 +130,15 @@ func requireChrome(t *testing.T) *Browser {
 		t.Skipf("browser.New failed, skipping Chrome-dependent test: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
-	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate("about:blank")); err != nil {
+	// Start Chrome on b.ctx itself: cancelling the context of the first Run
+	// closes the browser.
+	if err := chromedp.Run(b.ctx, chromedp.Navigate("about:blank")); err != nil {
 		b.Close()
+		// GitHub's runners ship Chrome: there a missing browser is a broken
+		// setup, not a reason to quietly skip the browser tests.
+		if os.Getenv("GITHUB_ACTIONS") == "true" {
+			t.Fatalf("Chrome unavailable in CI: %v", err)
+		}
 		t.Skipf("no usable Chrome/Chromium binary in this environment, skipping: %v", err)
 	}
 

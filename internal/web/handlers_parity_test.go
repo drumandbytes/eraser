@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -114,5 +115,44 @@ func TestHandleSettingsBrokersUpdateReloadsList(t *testing.T) {
 	}
 	if got := len(s.brokers().Brokers); got != n {
 		t.Fatalf("server still uses %d brokers, want the downloaded %d", got, n)
+	}
+}
+
+// Same as `eraser add-broker`: saved to the user's own brokers file and live
+// in the running server's list straight away.
+func TestHandleBrokerNew(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	s := parityServer(t)
+
+	post := func(form url.Values) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(http.MethodPost, "/brokers/new", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rec := httptest.NewRecorder()
+		s.handleBrokerNew(rec, req)
+		return rec
+	}
+
+	for name, form := range map[string]url.Values{
+		"no contact":      {"name": {"Corner Shop"}, "region": {"eu"}},
+		"bad email":       {"name": {"Corner Shop"}, "email": {"not-an-email"}, "region": {"eu"}},
+		"bad url":         {"name": {"Corner Shop"}, "opt_out_url": {"example.com/optout"}, "region": {"eu"}},
+		"no name":         {"email": {"privacy@corner.example"}, "region": {"eu"}},
+		"already in list": {"name": {"Acme Data"}, "email": {"x@acme.example"}, "region": {"eu"}},
+	} {
+		if rec := post(form); rec.Code != http.StatusOK {
+			t.Errorf("%s: got %d, want the form re-rendered with an error", name, rec.Code)
+		}
+	}
+
+	rec := post(url.Values{"name": {"Corner Shop"}, "email": {"privacy@corner.example"}, "region": {"eu"}, "category": {"Marketing"}})
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/brokers?search=corner-shop" {
+		t.Fatalf("got %d -> %q: %s", rec.Code, rec.Header().Get("Location"), rec.Body.String())
+	}
+	if b := s.brokers().FindByID("corner-shop"); b == nil || b.Category != "marketing" {
+		t.Fatalf("not in the live list: %+v", b)
+	}
+	local, err := broker.LoadLocal()
+	if err != nil || local.FindByID("corner-shop") == nil {
+		t.Fatalf("not saved to %s (%v)", broker.LocalPath(), err)
 	}
 }

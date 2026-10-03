@@ -1,0 +1,65 @@
+{{define "content"}}
+<div class="min-h-[80vh] flex items-center justify-center py-8">
+    <div class="max-w-lg w-full fade-in-up">
+        <div class="card p-8">
+            <div class="text-center mb-8">
+                <h1 class="font-display text-2xl font-bold text-primary mb-2">Add a Broker</h1>
+                <p class="text-secondary">For a company that holds your data but isn't in the list. It's saved on this machine only, and updating the broker list never removes it.</p>
+            </div>
+
+            {{if index .Errors "_"}}
+            <div class="alert alert-error mb-6"><p class="text-sm">{{index .Errors "_"}}</p></div>
+            {{end}}
+
+            <form method="POST" action="/brokers/new" class="space-y-5">
+                {{.CSRFField}}
+                <div>
+                    <label for="name" class="label">Company name <span class="text-error">*</span></label>
+                    <input type="text" name="name" id="name" required value="{{.Broker.Name}}" class="input {{if .Errors.name}}border-error{{end}}" placeholder="Acme Data GmbH">
+                    {{if .Errors.name}}<p class="mt-1 text-sm text-error">{{.Errors.name}}</p>{{end}}
+                </div>
+                <div>
+                    <label for="email" class="label">Privacy / data-protection email</label>
+                    <input type="email" name="email" id="email" value="{{.Broker.Email}}" class="input {{if .Errors.email}}border-error{{end}}" placeholder="privacy@example.com">
+                    {{if .Errors.email}}<p class="mt-1 text-sm text-error">{{.Errors.email}}</p>{{end}}
+                    <p class="mt-1 text-xs text-muted">Usually in the company's privacy policy, often labelled "Data Protection Officer".</p>
+                </div>
+                <div>
+                    <label for="opt_out_url" class="label">Opt-out form URL</label>
+                    <input type="url" name="opt_out_url" id="opt_out_url" value="{{.Broker.OptOutURL}}" class="input {{if .Errors.opt_out_url}}border-error{{end}}" placeholder="https://example.com/privacy/request">
+                    {{if .Errors.opt_out_url}}<p class="mt-1 text-sm text-error">{{.Errors.opt_out_url}}</p>{{end}}
+                    <p class="mt-1 text-xs text-muted">At least one of the email and the opt-out form is needed.</p>
+                </div>
+                <div>
+                    <label for="website" class="label">Website</label>
+                    <input type="url" name="website" id="website" value="{{.Broker.Website}}" class="input {{if .Errors.website}}border-error{{end}}" placeholder="https://example.com">
+                    {{if .Errors.website}}<p class="mt-1 text-sm text-error">{{.Errors.website}}</p>{{end}}
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="region" class="label">Region</label>
+                        <select name="region" id="region" class="input">
+                            <option value="eu" {{if eq .Broker.Region "eu"}}selected{{end}}>EU</option>
+                            <option value="us" {{if eq .Broker.Region "us"}}selected{{end}}>US</option>
+                            <option value="global" {{if eq .Broker.Region "global"}}selected{{end}}>Global</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="category" class="label">Category</label>
+                        <input type="text" name="category" id="category" list="categories" value="{{.Broker.Category}}" class="input" placeholder="marketing">
+                        <datalist id="categories">{{range .Categories}}<option value="{{.}}">{{end}}</datalist>
+                    </div>
+                </div>
+                <p class="text-xs text-muted">Others would benefit too: <a href="https://github.com/drumandbytes/eraser/issues/new?template=broker.yml" target="_blank" rel="noopener" class="text-accent hover:underline">suggest it for the shared list</a>.</p>
+
+                <div class="flex items-center justify-between pt-4">
+                    <a href="/brokers" class="btn btn-ghost">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Add broker</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{end}}
+
+{{template "layout" .}}

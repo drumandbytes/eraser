@@ -112,20 +112,8 @@ func Validate(raw []byte, minCount int) (*BrokerDatabase, error) {
 			seen[strings.ToLower(id)] = i
 		}
 
-		if strings.TrimSpace(b.Name) == "" {
-			problems = append(problems, label+": missing name")
-		}
-		if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
-			problems = append(problems, fmt.Sprintf("%s: unknown region %q", label, b.Region))
-		}
-		if b.Email != "" && !looseEmailRe.MatchString(strings.TrimSpace(b.Email)) {
-			problems = append(problems, fmt.Sprintf("%s: implausible email %q", label, b.Email))
-		}
-		if b.OptOutURL != "" && !isValidURL(b.OptOutURL) {
-			problems = append(problems, fmt.Sprintf("%s: opt_out_url is not a valid http(s) URL: %q", label, b.OptOutURL))
-		}
-		if b.Website != "" && !isValidURL(b.Website) {
-			problems = append(problems, fmt.Sprintf("%s: website is not a valid http(s) URL: %q", label, b.Website))
+		for _, p := range b.Problems() {
+			problems = append(problems, label+": "+p)
 		}
 	}
 
@@ -133,6 +121,28 @@ func Validate(raw []byte, minCount int) (*BrokerDatabase, error) {
 		return &db, fmt.Errorf("broker database has %d problem(s):\n  - %s", len(problems), strings.Join(problems, "\n  - "))
 	}
 	return &db, nil
+}
+
+// Problems lists what's wrong with one entry's fields (not id uniqueness,
+// which needs the whole list). Shared by Validate and the add-broker paths.
+func (b Broker) Problems() []string {
+	var problems []string
+	if strings.TrimSpace(b.Name) == "" {
+		problems = append(problems, "missing name")
+	}
+	if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
+		problems = append(problems, fmt.Sprintf("unknown region %q", b.Region))
+	}
+	if b.Email != "" && !looseEmailRe.MatchString(strings.TrimSpace(b.Email)) {
+		problems = append(problems, fmt.Sprintf("implausible email %q", b.Email))
+	}
+	if b.OptOutURL != "" && !isValidURL(b.OptOutURL) {
+		problems = append(problems, fmt.Sprintf("opt_out_url is not a valid http(s) URL: %q", b.OptOutURL))
+	}
+	if b.Website != "" && !isValidURL(b.Website) {
+		problems = append(problems, fmt.Sprintf("website is not a valid http(s) URL: %q", b.Website))
+	}
+	return problems
 }
 
 // LoadFromFile parses a broker YAML file from an explicit path.
@@ -156,12 +166,19 @@ func UserBrokersPath() string {
 
 // Load resolves the broker database from, in order: overridePath (the
 // --brokers flag) when set, then ~/.eraser/brokers.yaml when it exists, then
-// the copy embedded in the binary. There is no implicit ./data or
+// the copy embedded in the binary. Except for an explicit --brokers file, the
+// user's own entries (LocalPath) are merged on top. There is no implicit ./data or
 // <exe-dir>/data scanning any more.
 func Load(overridePath string) (*BrokerDatabase, error) {
 	if overridePath != "" {
 		return LoadFromFile(overridePath)
 	}
+	return withLocal(loadPublished())
+}
+
+// loadPublished is the shared list without the user's own entries:
+// update-brokers' copy if there is one, else the embedded list.
+func loadPublished() (*BrokerDatabase, error) {
 	if p := UserBrokersPath(); p != "" {
 		if _, err := os.Stat(p); err == nil {
 			return LoadFromFile(p)
@@ -179,10 +196,10 @@ func LoadList(overridePath, configPath, listName string) (*BrokerDatabase, error
 		return LoadFromFile(overridePath)
 	}
 	if configPath != "" {
-		return LoadFromFile(configPath)
+		return withLocal(LoadFromFile(configPath))
 	}
 	if strings.EqualFold(listName, "verified") {
-		return Parse(data.BrokersVerifiedYAML)
+		return withLocal(Parse(data.BrokersVerifiedYAML))
 	}
 	return Load("")
 }
@@ -276,6 +293,17 @@ func (db *BrokerDatabase) Add(broker Broker) error {
 		return fmt.Errorf("broker with ID %q already exists", broker.ID)
 	}
 	db.Brokers = append(db.Brokers, broker)
+	return nil
+}
+
+// FindByName finds a broker by name, ignoring case and surrounding spaces.
+func (db *BrokerDatabase) FindByName(name string) *Broker {
+	name = strings.TrimSpace(name)
+	for i := range db.Brokers {
+		if strings.EqualFold(strings.TrimSpace(db.Brokers[i].Name), name) {
+			return &db.Brokers[i]
+		}
+	}
 	return nil
 }
 

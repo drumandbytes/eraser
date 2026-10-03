@@ -21,8 +21,9 @@ const DefaultUpdateURL = "https://raw.githubusercontent.com/drumandbytes/eraser/
 // available" and nothing was written.
 type UpdateResult struct {
 	Changed bool
-	Before  int // entries in the list in effect before the update
+	Before  int // entries in the published list before the update
 	Count   int // entries in the downloaded list (0 unless written)
+	Own     int // the user's own entries (LocalPath), kept across updates
 	Path    string
 }
 
@@ -30,9 +31,10 @@ func etagPath() string {
 	return filepath.Join(filepath.Dir(UserBrokersPath()), "brokers.etag")
 }
 
-// CurrentCount is the size of the list Load would use, 0 if it can't load.
+// CurrentCount is the size of the published list (without the user's own
+// entries), 0 if it can't load.
 func CurrentCount() int {
-	db, err := Load("")
+	db, err := loadPublished()
 	if err != nil {
 		return 0
 	}
@@ -44,6 +46,9 @@ func CurrentCount() int {
 // download never replaces the working copy.
 func Update(ctx context.Context, url string, checkOnly bool) (UpdateResult, error) {
 	res := UpdateResult{Before: CurrentCount(), Path: UserBrokersPath()}
+	if local, err := LoadLocal(); err == nil {
+		res.Own = len(local.Brokers)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

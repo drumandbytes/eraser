@@ -6,6 +6,7 @@
             <h1 class="font-display text-3xl font-bold text-primary">Data Brokers</h1>
             <p class="text-secondary mt-1">{{.Total}} brokers in database</p>
         </div>
+        <a href="/brokers/new" class="btn btn-secondary sm:ml-auto" title="Add a broker that's missing from the list - kept on your machine, safe from list updates">+ Add broker</a>
         {{if not .ManualMode}}
         <div class="flex flex-wrap gap-2">
             <button

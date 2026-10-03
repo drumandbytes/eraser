@@ -319,7 +319,7 @@
             <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)] mb-4">
                 <div>
                     <p class="text-sm text-muted">In use</p>
-                    <p class="text-secondary">{{.BrokerCount}} brokers</p>
+                    <p class="text-secondary">{{.BrokerCount}} brokers{{if .OwnBrokers}}, including {{.OwnBrokers}} you added (kept across updates){{end}}</p>
                 </div>
             </div>
             <p class="text-sm text-secondary mb-4">The list ships with Eraser and is updated in the public repository as brokers appear, move or shut down. Fetching it only downloads the list - nothing about you is sent.</p>

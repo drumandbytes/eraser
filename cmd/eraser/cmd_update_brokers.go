@@ -52,5 +52,8 @@ func runUpdateBrokers(url string, check bool) error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Printf("   %s\n", res.Path)
 	fmt.Printf("   %d entries (was %d)\n", res.Count, res.Before)
+	if res.Own > 0 {
+		fmt.Printf("   + %d of your own, kept (%s)\n", res.Own, broker.LocalPath())
+	}
 	return nil
 }

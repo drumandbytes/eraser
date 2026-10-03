@@ -31,13 +31,24 @@ func resolveProfile(cfg *config.Config) (config.NamedProfile, error) {
 // use broker.Load(brokerFile), which also has an embedded fallback. Order:
 // --brokers, then a local ./data/brokers.yaml checkout, then the per-user copy.
 func resolveBrokerWritePath() string {
-	if brokerFile != "" {
-		return brokerFile
-	}
-	if _, err := os.Stat("data/brokers.yaml"); err == nil {
-		return "data/brokers.yaml"
+	if p, ok := listFileWritePath(); ok {
+		return p
 	}
 	return broker.UserBrokersPath()
+}
+
+// listFileWritePath is the broker list file to edit in place when the user is
+// maintaining a list - an explicit --brokers file or a source checkout's
+// data/brokers.yaml. ok=false for an installed copy, whose own additions and
+// corrections belong in broker.LocalPath (update-brokers replaces the list).
+func listFileWritePath() (string, bool) {
+	if brokerFile != "" {
+		return brokerFile, true
+	}
+	if _, err := os.Stat("data/brokers.yaml"); err == nil {
+		return "data/brokers.yaml", true
+	}
+	return "", false
 }
 
 func resolveConfigPath() string {

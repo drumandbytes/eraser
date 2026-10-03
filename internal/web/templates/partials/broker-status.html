@@ -6,6 +6,13 @@
     <span class="status-dot status-dot-success"></span>
     Sent
 </span>
+{{/* same as `eraser mark-bounced`: the response swaps both status cells */}}
+<button class="text-xs text-muted hover:text-primary hover:underline ml-1"
+    hx-post="/api/brokers/{{.ID}}/mark-bounced"
+    hx-target="#status-{{.ID}}"
+    hx-swap="innerHTML"
+    hx-confirm="Mark the last request to this broker as bounced? It will be retried on the next send."
+    title="The email bounced: record it as failed so it's retried">bounced?</button>
 {{else if eq .Status "failed"}}
 <span class="badge badge-error">
     <span class="status-dot status-dot-error"></span>

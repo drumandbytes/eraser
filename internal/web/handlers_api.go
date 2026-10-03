@@ -31,7 +31,7 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{
 		"Brokers":      brokers,
 		"Filtered":     len(brokers),
-		"Total":        len(s.brokerDB.Brokers),
+		"Total":        len(s.brokers().Brokers),
 		"ShowExcluded": showExcluded,
 	})
 }
@@ -40,7 +40,7 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 // swap), so an active send refreshes one row instead of the 700+ row table.
 func (s *Server) handleAPIBrokerStatus(w http.ResponseWriter, r *http.Request) {
 	brokerID := chi.URLParam(r, "brokerID")
-	if s.brokerDB.FindByID(brokerID) == nil {
+	if s.brokers().FindByID(brokerID) == nil {
 		http.Error(w, "Broker not found", http.StatusNotFound)
 		return
 	}
@@ -73,7 +73,7 @@ func (s *Server) handleAPIIncludeBroker(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) setBrokerExcluded(w http.ResponseWriter, r *http.Request, exclude bool) {
 	brokerID := chi.URLParam(r, "brokerID")
-	b := s.brokerDB.FindByID(brokerID)
+	b := s.brokers().FindByID(brokerID)
 	if b == nil {
 		http.Error(w, "Broker not found", http.StatusNotFound)
 		return
@@ -243,7 +243,7 @@ func (s *Server) scanInbox(w http.ResponseWriter, r *http.Request, opt inbox.Sca
 		return
 	}
 	inboxCfg := s.getConfig().InboxForProfile(s.activeProfile(r))
-	monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
+	monitor := inbox.NewMonitor(inboxCfg, s.brokers().Brokers)
 
 	ctx, cancel := context.WithTimeout(r.Context(), timeout)
 	defer cancel()
@@ -329,7 +329,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 	if cfg != nil {
 		inboxes = cfg.ConfiguredInboxes()
 	}
-	if missingBodies > 0 && len(inboxes) > 0 && s.brokerDB != nil {
+	if missingBodies > 0 && len(inboxes) > 0 && s.brokers() != nil {
 		log.Printf("Found %d records missing email bodies, fetching from IMAP...", missingBodies)
 
 		// Fetch emails from both INBOX and archive folder, across every
@@ -337,7 +337,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 		var allEmails []inbox.Email
 
 		for _, inboxCfg := range inboxes {
-			monitor := inbox.NewMonitor(inboxCfg, s.brokerDB.Brokers)
+			monitor := inbox.NewMonitor(inboxCfg, s.brokers().Brokers)
 
 			ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 			if err := monitor.Connect(ctx); err != nil {

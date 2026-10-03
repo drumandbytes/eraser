@@ -36,7 +36,7 @@ func smokeServer(t *testing.T) *Server {
 	t.Cleanup(func() { _ = store.Close() })
 	s.historyStore = store
 
-	s.brokerDB.Brokers = []broker.Broker{
+	s.brokers().Brokers = []broker.Broker{
 		{ID: "spokeo", Name: "Spokeo", Email: "privacy@spokeo.com", Region: "us", Category: "people-search"},
 		{ID: "acme-eu", Name: "Acme EU", Email: "dpo@acme.example", Region: "eu", Category: "marketing"},
 		{ID: "noemail", Name: "No Email Broker", Region: "us", Category: "marketing", OptOutURL: "https://example.com/opt-out"},

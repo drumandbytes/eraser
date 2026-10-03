@@ -10,6 +10,7 @@ import (
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/evidence"
 	"github.com/drumandbytes/eraser/internal/history"
 	emailtmpl "github.com/drumandbytes/eraser/internal/template"
 )
@@ -58,7 +59,7 @@ func TestBuildEvidenceReport(t *testing.T) {
 			EmailFrom: "dpo@globex.example", EmailSubject: "Done", ReceivedAt: now.AddDate(0, 0, -1)},
 	}
 
-	rep := buildEvidenceReport(testProfile(), requests, responses, testBrokerDB(), engine, time.Time{}, now)
+	rep := evidence.Build(testProfile(), requests, responses, testBrokerDB(), engine, time.Time{}, now)
 
 	if rep.Subject.FullName != "Jane Doe" {
 		t.Errorf("subject name = %q", rep.Subject.FullName)
@@ -70,7 +71,7 @@ func TestBuildEvidenceReport(t *testing.T) {
 		t.Errorf("past deadline = %v, want [Acme Data]", rep.Summary.PastDeadline)
 	}
 
-	var acme, globex *BrokerEvidence
+	var acme, globex *evidence.BrokerEvidence
 	for i := range rep.Brokers {
 		switch rep.Brokers[i].BrokerID {
 		case "acme":
@@ -109,7 +110,7 @@ func TestBuildEvidenceReportSinceFilter(t *testing.T) {
 		{BrokerID: "acme", Template: "gdpr", Status: history.StatusSent, SentAt: now.AddDate(0, -6, 0)},
 		{BrokerID: "globex", Template: "gdpr", Status: history.StatusSent, SentAt: now.AddDate(0, 0, -2)},
 	}
-	rep := buildEvidenceReport(testProfile(), requests, nil, testBrokerDB(), engine, now.AddDate(0, -1, 0), now)
+	rep := evidence.Build(testProfile(), requests, nil, testBrokerDB(), engine, now.AddDate(0, -1, 0), now)
 	if rep.Summary.TotalRequests != 1 || rep.Summary.BrokersContacted != 1 {
 		t.Errorf("since filter not applied: %+v", rep.Summary)
 	}
@@ -195,7 +196,7 @@ options:
 	if strings.Contains(string(jsonData), "null") {
 		t.Errorf("export JSON contains null (empty lists must be []):\n%s", jsonData)
 	}
-	var rep EvidenceReport
+	var rep evidence.EvidenceReport
 	if err := json.Unmarshal(jsonData, &rep); err != nil {
 		t.Fatalf("json round-trip: %v", err)
 	}

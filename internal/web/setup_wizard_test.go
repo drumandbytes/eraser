@@ -27,7 +27,7 @@ func newWizardClient(t *testing.T) (*wizardClient, *Server) {
 
 	s := newTestServer(t, nil) // no config yet - fresh install
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
-	s.brokerDB.Brokers = []broker.Broker{{ID: "spokeo", Name: "Spokeo", Region: "us"}}
+	s.brokers().Brokers = []broker.Broker{{ID: "spokeo", Name: "Spokeo", Region: "us"}}
 
 	ts := httptest.NewServer(s.setupRouter())
 	t.Cleanup(ts.Close)

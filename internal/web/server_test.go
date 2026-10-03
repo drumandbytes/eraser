@@ -149,7 +149,7 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 	cfg.Options.ExcludedBrokers = []string{"spokeo"}
 	cfg.Options.ExcludedCategories = []string{"requires-id"}
 	s := newTestServer(t, cfg)
-	s.brokerDB.Brokers = []broker.Broker{
+	s.brokers().Brokers = []broker.Broker{
 		{ID: "spokeo", Name: "Spokeo", Region: "us", Category: "people-search"},
 		{ID: "altisource-holdings", Name: "Altisource Holdings, LLC", Region: "us", Category: "requires-id"},
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},
@@ -168,7 +168,7 @@ func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 	cfg.Options.ExcludedBrokers = []string{"spokeo"}
 	cfg.Options.ExcludedCategories = []string{"requires-id"}
 	s := newTestServer(t, cfg)
-	s.brokerDB.Brokers = []broker.Broker{
+	s.brokers().Brokers = []broker.Broker{
 		{ID: "spokeo", Name: "Spokeo", Region: "us", Category: "people-search"},
 		{ID: "altisource-holdings", Name: "Altisource Holdings, LLC", Region: "us", Category: "requires-id"},
 		{ID: "beenverified", Name: "BeenVerified", Region: "us", Category: "people-search"},

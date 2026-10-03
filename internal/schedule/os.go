@@ -24,6 +24,13 @@ const Interval = 6 * time.Hour
 // Every describes Interval for messages.
 const Every = "every 6 hours"
 
+// Seams for tests, so they never touch the real launchd/systemd setup.
+var (
+	execCommand = exec.Command
+	goos        = runtime.GOOS
+	executable  = os.Executable
+)
+
 // osSlots are the local hours the OS job fires at, on minute 7.
 var osSlots = []int{0, 6, 12, 18}
 
@@ -86,7 +93,7 @@ func NewJob(cfg *config.Config, configPath string) (Job, error) {
 // on PATH (e.g. Homebrew's symlink, which survives upgrades) when that's the
 // same binary as this one, and refuses a 'go run' temp build.
 func StableExecutable() (string, error) {
-	self, err := os.Executable()
+	self, err := executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to find the eraser binary: %w", err)
 	}
@@ -113,7 +120,7 @@ func StableExecutable() (string, error) {
 
 // Supported reports whether Install can set up an OS job on this platform.
 func Supported() bool {
-	return runtime.GOOS == "darwin" || runtime.GOOS == "linux"
+	return goos == "darwin" || goos == "linux"
 }
 
 func launchdPath() (string, error) {
@@ -137,14 +144,14 @@ func systemdDir() (string, error) {
 
 // unitFile is the file whose presence means the job is installed.
 func unitFile() (string, error) {
-	switch runtime.GOOS {
+	switch goos {
 	case "darwin":
 		return launchdPath()
 	case "linux":
 		dir, err := systemdDir()
 		return filepath.Join(dir, systemdUnit+".timer"), err
 	}
-	return "", fmt.Errorf("no OS scheduler support on %s", runtime.GOOS)
+	return "", fmt.Errorf("no OS scheduler support on %s", goos)
 }
 
 // Installed reports whether the OS job is set up. False on unsupported
@@ -160,7 +167,7 @@ func Installed() bool {
 
 // Install writes and loads the OS job, replacing any earlier one.
 func Install(j Job) error {
-	switch runtime.GOOS {
+	switch goos {
 	case "darwin":
 		path, err := launchdPath()
 		if err != nil {
@@ -170,7 +177,7 @@ func Install(j Job) error {
 			return err
 		}
 		domain := "gui/" + strconv.Itoa(os.Getuid())
-		_ = exec.Command("launchctl", "bootout", domain+"/"+launchdLabel).Run() // not loaded yet is fine
+		_ = execCommand("launchctl", "bootout", domain+"/"+launchdLabel).Run() // not loaded yet is fine
 		return run("launchctl", "bootstrap", domain, path)
 	case "linux":
 		dir, err := systemdDir()
@@ -189,26 +196,26 @@ func Install(j Job) error {
 		}
 		return run("systemctl", "--user", "enable", "--now", systemdUnit+".timer")
 	}
-	return fmt.Errorf("no OS scheduler support on %s", runtime.GOOS)
+	return fmt.Errorf("no OS scheduler support on %s", goos)
 }
 
 // Remove unloads and deletes the OS job. Removing a job that isn't
 // installed is not an error.
 func Remove() error {
-	switch runtime.GOOS {
+	switch goos {
 	case "darwin":
 		path, err := launchdPath()
 		if err != nil {
 			return err
 		}
-		_ = exec.Command("launchctl", "bootout", "gui/"+strconv.Itoa(os.Getuid())+"/"+launchdLabel).Run()
+		_ = execCommand("launchctl", "bootout", "gui/"+strconv.Itoa(os.Getuid())+"/"+launchdLabel).Run()
 		return removeFile(path)
 	case "linux":
 		dir, err := systemdDir()
 		if err != nil {
 			return err
 		}
-		_ = exec.Command("systemctl", "--user", "disable", "--now", systemdUnit+".timer").Run()
+		_ = execCommand("systemctl", "--user", "disable", "--now", systemdUnit+".timer").Run()
 		if err := removeFile(filepath.Join(dir, systemdUnit+".timer")); err != nil {
 			return err
 		}
@@ -217,7 +224,7 @@ func Remove() error {
 		}
 		return run("systemctl", "--user", "daemon-reload")
 	}
-	return fmt.Errorf("no OS scheduler support on %s", runtime.GOOS)
+	return fmt.Errorf("no OS scheduler support on %s", goos)
 }
 
 func renderPlist(j Job) string {
@@ -304,7 +311,7 @@ func removeFile(path string) error {
 }
 
 func run(name string, args ...string) error {
-	out, err := exec.Command(name, args...).CombinedOutput()
+	out, err := execCommand(name, args...).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s %s: %w: %s", name, strings.Join(args, " "), err, strings.TrimSpace(string(out)))
 	}

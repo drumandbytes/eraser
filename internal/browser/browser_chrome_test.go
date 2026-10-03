@@ -2,6 +2,7 @@ package browser
 
 import (
 	"context"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -124,6 +125,11 @@ func requireChrome(t *testing.T) *Browser {
 	defer cancel()
 	if err := chromedp.Run(ctx, chromedp.Navigate("about:blank")); err != nil {
 		b.Close()
+		// GitHub's runners ship Chrome: there a missing browser is a broken
+		// setup, not a reason to quietly skip the browser tests.
+		if os.Getenv("GITHUB_ACTIONS") == "true" {
+			t.Fatalf("Chrome unavailable in CI: %v", err)
+		}
 		t.Skipf("no usable Chrome/Chromium binary in this environment, skipping: %v", err)
 	}
 

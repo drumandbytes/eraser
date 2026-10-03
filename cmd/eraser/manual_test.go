@@ -23,25 +23,34 @@ func manualBrokerDB() *broker.BrokerDatabase {
 func TestSelectBrokers(t *testing.T) {
 	db := manualBrokerDB()
 
-	got, err := selectBrokers(db, []string{"acme", "globex"}, "", "")
+	got, err := selectBrokers(db, []string{"acme", "globex"}, nil, nil)
 	if err != nil || len(got) != 2 {
 		t.Fatalf("by id: %v, %d", err, len(got))
 	}
-	if _, err := selectBrokers(db, []string{"nope"}, "", ""); err == nil {
+	if _, err := selectBrokers(db, []string{"nope"}, nil, nil); err == nil {
 		t.Error("unknown id should error")
 	}
 
-	got, err = selectBrokers(db, nil, "eu", "")
+	got, err = selectBrokers(db, nil, []string{"eu"}, nil)
 	if err != nil || len(got) != 1 || got[0].ID != "globex" {
 		t.Fatalf("region filter: %v, %+v", err, got)
 	}
-	got, _ = selectBrokers(db, nil, "", "marketing")
+	got, _ = selectBrokers(db, nil, nil, []string{"marketing"})
 	if len(got) != 2 {
 		t.Fatalf("category filter got %d, want 2", len(got))
 	}
-	got, _ = selectBrokers(db, nil, "", "")
+	got, _ = selectBrokers(db, nil, nil, nil)
 	if len(got) != 3 {
 		t.Fatalf("no filter got %d, want all 3", len(got))
+	}
+	// several values OR together within a flag, AND across flags; case-insensitive
+	got, _ = selectBrokers(db, nil, []string{"EU", "us"}, []string{"people-search", "marketing"})
+	if len(got) != 3 {
+		t.Fatalf("multi-value filter got %d, want 3", len(got))
+	}
+	got, _ = selectBrokers(db, nil, []string{"us"}, []string{"marketing", "people-search"})
+	if len(got) != 2 {
+		t.Fatalf("region AND multi-category got %d, want 2", len(got))
 	}
 }
 
@@ -100,7 +109,7 @@ options:
 func TestRunDraftToDir(t *testing.T) {
 	writeManualFixtures(t)
 	out := t.TempDir()
-	if err := runDraft(nil, out, "", ""); err != nil {
+	if err := runDraft(nil, out, nil, nil); err != nil {
 		t.Fatalf("runDraft: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(out, "acme.eml")); err != nil {
@@ -115,7 +124,7 @@ func TestRunDraftToDir(t *testing.T) {
 func TestRunMarkSentRecordsManual(t *testing.T) {
 	cfgPath := writeManualFixtures(t)
 
-	if err := runMarkSent([]string{"acme"}, "", "", false); err != nil {
+	if err := runMarkSent([]string{"acme"}, nil, nil, false); err != nil {
 		t.Fatalf("runMarkSent: %v", err)
 	}
 
@@ -133,7 +142,7 @@ func TestRunMarkSentRecordsManual(t *testing.T) {
 	}
 
 	// dry-run writes nothing new.
-	if err := runMarkSent([]string{"acme"}, "", "", true); err != nil {
+	if err := runMarkSent([]string{"acme"}, nil, nil, true); err != nil {
 		t.Fatalf("dry-run: %v", err)
 	}
 	recs, _ = store.GetAllRequests(history.DefaultProfileID)

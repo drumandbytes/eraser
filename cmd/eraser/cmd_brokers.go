@@ -11,7 +11,8 @@ import (
 )
 
 func listBrokersCmd() *cobra.Command {
-	var region, category, search string
+	var regions, categories []string
+	var search string
 	var missingEmail bool
 
 	cmd := &cobra.Command{
@@ -19,12 +20,12 @@ func listBrokersCmd() *cobra.Command {
 		Short: "List all data brokers in the database",
 		Long:  "Show all data brokers that will receive removal requests.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runListBrokers(region, category, search, missingEmail)
+			return runListBrokers(regions, categories, search, missingEmail)
 		},
 	}
 
-	cmd.Flags().StringVar(&region, "region", "", "Only show brokers in this region (us, eu, or global)")
-	cmd.Flags().StringVar(&category, "category", "", "Only show brokers in this category")
+	cmd.Flags().StringSliceVar(&regions, "region", nil, "Only show brokers in these regions: us, eu, global (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&categories, "category", nil, "Only show brokers in these categories (comma-separated or repeated)")
 	cmd.Flags().StringVar(&search, "search", "", "Only show brokers whose name or ID contains this text")
 	cmd.Flags().BoolVar(&missingEmail, "missing-email", false, "Only show brokers with no email on file (need manual follow-up)")
 
@@ -42,24 +43,16 @@ func addBrokerCmd() *cobra.Command {
 	}
 }
 
-func runListBrokers(region, category, search string, missingEmail bool) error {
+func runListBrokers(regions, categories []string, search string, missingEmail bool) error {
 	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	region = strings.ToLower(strings.TrimSpace(region))
-	category = strings.ToLower(strings.TrimSpace(category))
 	search = strings.ToLower(strings.TrimSpace(search))
 
 	matched := make([]broker.Broker, 0, len(brokerDB.Brokers))
-	for _, b := range brokerDB.Brokers {
-		if region != "" && strings.ToLower(b.Region) != region {
-			continue
-		}
-		if category != "" && strings.ToLower(b.Category) != category {
-			continue
-		}
+	for _, b := range brokerDB.Select(nil, regions, categories, nil, nil) {
 		if search != "" && !strings.Contains(strings.ToLower(b.Name), search) && !strings.Contains(strings.ToLower(b.ID), search) {
 			continue
 		}
@@ -69,7 +62,7 @@ func runListBrokers(region, category, search string, missingEmail bool) error {
 		matched = append(matched, b)
 	}
 
-	if region != "" || category != "" || search != "" || missingEmail {
+	if len(regions) > 0 || len(categories) > 0 || search != "" || missingEmail {
 		fmt.Printf("📋 Data Brokers (%d of %d total match your filters)\n", len(matched), len(brokerDB.Brokers))
 	} else {
 		fmt.Printf("📋 Data Brokers (%d total)\n", len(matched))

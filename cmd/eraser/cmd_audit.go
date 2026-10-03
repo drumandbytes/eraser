@@ -78,7 +78,7 @@ func newAuditChecker(timeout time.Duration) *auditChecker {
 }
 
 func auditBrokersCmd() *cobra.Command {
-	var region, category string
+	var regions, categories []string
 	var timeoutSec int
 	var failOnDead, fix bool
 
@@ -107,14 +107,15 @@ check isn't treated as evidence the broker is gone.
 Examples:
   eraser audit-brokers
   eraser audit-brokers --region eu
+  eraser audit-brokers --region eu,global
   eraser audit-brokers --category people-search --timeout 15`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runAuditBrokers(region, category, time.Duration(timeoutSec)*time.Second, failOnDead, fix)
+			return runAuditBrokers(regions, categories, time.Duration(timeoutSec)*time.Second, failOnDead, fix)
 		},
 	}
 
-	cmd.Flags().StringVar(&region, "region", "", "Only audit brokers in this region")
-	cmd.Flags().StringVar(&category, "category", "", "Only audit brokers in this category")
+	cmd.Flags().StringSliceVar(&regions, "region", nil, "Only audit brokers in these regions: us, eu, global (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&categories, "category", nil, "Only audit brokers in these categories (comma-separated or repeated)")
 	cmd.Flags().IntVar(&timeoutSec, "timeout", 10, "Per-check timeout in seconds")
 	cmd.Flags().BoolVar(&failOnDead, "fail-on-dead", false, "Exit non-zero if any broker has a dead email domain or unreachable website (for scheduled CI)")
 	cmd.Flags().BoolVar(&fix, "fix", false, "Clear the email of every broker with a dead mail domain (keeps the row, adds a dated note) and save the broker file")
@@ -127,7 +128,7 @@ type auditResult struct {
 	verdict auditVerdict
 }
 
-func runAuditBrokers(region, category string, timeout time.Duration, failOnDead, fix bool) error {
+func runAuditBrokers(regions, categories []string, timeout time.Duration, failOnDead, fix bool) error {
 	var brokerDB *broker.BrokerDatabase
 	var writePath string
 	var err error
@@ -146,19 +147,7 @@ func runAuditBrokers(region, category string, timeout time.Duration, failOnDead,
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	region = strings.ToLower(strings.TrimSpace(region))
-	category = strings.ToLower(strings.TrimSpace(category))
-
-	var targets []broker.Broker
-	for _, b := range brokerDB.Brokers {
-		if region != "" && strings.ToLower(b.Region) != region {
-			continue
-		}
-		if category != "" && strings.ToLower(b.Category) != category {
-			continue
-		}
-		targets = append(targets, b)
-	}
+	targets := brokerDB.Select(nil, regions, categories, nil, nil)
 
 	fmt.Printf("🔍 Auditing %d broker(s)...\n", len(targets))
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")

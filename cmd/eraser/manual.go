@@ -12,7 +12,7 @@ import (
 
 // selectBrokers returns the brokers named in args (unknown IDs error), else all
 // matching the filters. Brokers without an email are kept; callers decide.
-func selectBrokers(db *broker.BrokerDatabase, args []string, region, category string) ([]broker.Broker, error) {
+func selectBrokers(db *broker.BrokerDatabase, args, regions, categories []string) ([]broker.Broker, error) {
 	if len(args) > 0 {
 		out := make([]broker.Broker, 0, len(args))
 		for _, id := range args {
@@ -25,19 +25,7 @@ func selectBrokers(db *broker.BrokerDatabase, args []string, region, category st
 		return out, nil
 	}
 
-	region = strings.ToLower(strings.TrimSpace(region))
-	category = strings.ToLower(strings.TrimSpace(category))
-	out := make([]broker.Broker, 0, len(db.Brokers))
-	for _, b := range db.Brokers {
-		if region != "" && strings.ToLower(b.Region) != region {
-			continue
-		}
-		if category != "" && strings.ToLower(b.Category) != category {
-			continue
-		}
-		out = append(out, b)
-	}
-	return out, nil
+	return db.Select(nil, regions, categories, nil, nil), nil
 }
 
 // formatEML wraps a rendered email as an RFC-822 message that a mail client

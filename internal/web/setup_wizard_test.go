@@ -206,6 +206,10 @@ func TestSetupWizardRerunKeepsExistingConfig(t *testing.T) {
 	existing := testConfig("default", "spouse")
 	existing.Inbox = config.InboxConfig{Enabled: true, Server: "imap.example.org", Port: 993, Email: "default@example.com", Password: "imap-pw"}
 	existing.Options.DailySendLimit = 120
+	// fields the wizard's form has no inputs for
+	existing.Profiles[0].NameVariants = []string{"Ada L."}
+	existing.Profiles[0].PreviousAddresses = []string{"1 Old Rd"}
+	existing.Profiles[0].DateOfBirth = "1815-12-10"
 	existing.Email = config.EmailConfig{From: "default@example.com", SMTP: config.SMTPConfig{Host: "smtp.gmail.com", Port: 465, Username: "default@example.com", Password: "old-pw"}}
 	s.config.Store(existing)
 
@@ -231,6 +235,9 @@ func TestSetupWizardRerunKeepsExistingConfig(t *testing.T) {
 	}
 	if len(saved.Profiles) != 2 || saved.PrimaryProfile().FirstName != "Ada" {
 		t.Errorf("profiles = %+v, want default updated and spouse kept", saved.Profiles)
+	}
+	if p := saved.PrimaryProfile(); len(p.NameVariants) != 1 || len(p.PreviousAddresses) != 1 || p.DateOfBirth != "1815-12-10" {
+		t.Errorf("fields without form inputs were erased: %+v", p.Profile)
 	}
 	if saved.Inbox.Server != "imap.example.org" || saved.Options.DailySendLimit != 120 {
 		t.Errorf("inbox/options lost: %+v %+v", saved.Inbox, saved.Options)

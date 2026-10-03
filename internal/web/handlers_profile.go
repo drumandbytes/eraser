@@ -74,6 +74,16 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 	return profile, errors
 }
 
+// applyProfileForm copies the fields the web profile form has inputs for onto
+// p, keeping the rest (name variants, other emails/phones, previous
+// addresses, date of birth): rebuilding the profile from the form silently
+// erased them on every save.
+func applyProfileForm(p, form config.Profile) config.Profile {
+	p.FirstName, p.MiddleName, p.LastName, p.Email = form.FirstName, form.MiddleName, form.LastName, form.Email
+	p.Address, p.City, p.State, p.ZipCode, p.Country, p.Phone = form.Address, form.City, form.State, form.ZipCode, form.Country, form.Phone
+	return p
+}
+
 // buildMailOverrideFromForm parses the optional dedicated account
 // (partials/mail-account.html), like promptMailOverride in the CLI. Blank
 // address = no override (also how one is removed). A blank password keeps the
@@ -214,7 +224,7 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 		updated := append([]config.NamedProfile(nil), cfg.GetProfiles()...)
 		for i, p := range updated {
 			if strings.EqualFold(p.ID, existing.ID) {
-				updated[i].Profile = profile
+				updated[i].Profile = applyProfileForm(p.Profile, profile)
 				updated[i].Mail = mail
 			}
 		}

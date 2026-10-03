@@ -97,6 +97,50 @@
                     placeholder="+1 (555) 123-4567">
             </div>
         </div>
+
+        <div>
+            <label for="date_of_birth" class="label">Date of Birth</label>
+            <input type="date" name="date_of_birth" id="date_of_birth"
+                value="{{.Profile.DateOfBirth}}"
+                class="input {{if .Errors.date_of_birth}}border-error{{end}}">
+            {{if .Errors.date_of_birth}}<p class="mt-1 text-sm text-error">{{.Errors.date_of_birth}}</p>{{end}}
+        </div>
+    </div>
+</div>
+
+<!-- Other identities: what a broker may have indexed you under instead -->
+<div class="pt-6 border-t border-[var(--border)]">
+    <p class="text-sm text-muted mb-1">Optional: other names, addresses and contacts</p>
+    <p class="text-xs text-muted mb-4">Brokers often hold records under an old address, a maiden name or a spelling without diacritics. One per line.</p>
+
+    <div class="space-y-4">
+        <div>
+            <label for="name_variants" class="label">Other Names</label>
+            <textarea name="name_variants" id="name_variants" rows="2" class="input"
+                placeholder="Jane D.&#10;Jane Smith">{{range .Profile.NameVariants}}{{.}}
+{{end}}</textarea>
+        </div>
+        <div>
+            <label for="additional_emails" class="label">Other Email Addresses</label>
+            <textarea name="additional_emails" id="additional_emails" rows="2"
+                class="input {{if .Errors.additional_emails}}border-error{{end}}"
+                placeholder="old.address@example.com">{{range .Profile.AdditionalEmails}}{{.}}
+{{end}}</textarea>
+            {{if .Errors.additional_emails}}<p class="mt-1 text-sm text-error">{{.Errors.additional_emails}}</p>{{end}}
+        </div>
+        <div>
+            <label for="additional_phones" class="label">Other Phone Numbers</label>
+            <textarea name="additional_phones" id="additional_phones" rows="2" class="input"
+                placeholder="+1 (555) 987-6543">{{range .Profile.AdditionalPhones}}{{.}}
+{{end}}</textarea>
+        </div>
+        <div>
+            <label for="previous_addresses" class="label">Previous Addresses</label>
+            <textarea name="previous_addresses" id="previous_addresses" rows="2" class="input"
+                placeholder="456 Old Street, San Francisco, CA">{{range .Profile.PreviousAddresses}}{{.}}
+{{end}}</textarea>
+            <p class="mt-1 text-xs text-muted">From roughly the last 5-7 years. A partial address still helps.</p>
+        </div>
     </div>
 </div>
 

@@ -423,29 +423,55 @@ func TestHandleSettingsProfileNewSESOverrideHasNoInbox(t *testing.T) {
 	}
 }
 
-// The edit form has no inputs for name variants, other emails/phones,
-// previous addresses or date of birth; saving it must not erase them.
-func TestHandleSettingsProfileEditKeepsFieldsWithoutInputs(t *testing.T) {
+// The edit form shows and saves the identity fields brokers match on: saved
+// values prefill the form, one-per-line textareas round-trip, and a bad
+// date of birth is rejected.
+func TestHandleSettingsProfileEditRoundTripsIdentityFields(t *testing.T) {
 	cfg := testConfig("default", "spouse")
 	cfg.Profiles[1].NameVariants = []string{"Sp. Ouse"}
-	cfg.Profiles[1].AdditionalEmails = []string{"old@example.com"}
-	cfg.Profiles[1].AdditionalPhones = []string{"+371 2000 0000"}
-	cfg.Profiles[1].PreviousAddresses = []string{"1 Old Rd"}
-	cfg.Profiles[1].DateOfBirth = "1990-01-01"
+	cfg.Profiles[1].PreviousAddresses = []string{"1 Old Rd, Riga"}
 	s := newTestServer(t, cfg)
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 
-	form := url.Values{"first_name": {"New"}, "last_name": {"Name"}, "email": {"spouse@example.com"}}
-	req := withURLParam(httptest.NewRequest(http.MethodPost, "/settings/profiles/spouse/edit", strings.NewReader(form.Encode())), "profileID", "spouse")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	rec := httptest.NewRecorder()
-	s.handleSettingsProfileEdit(rec, req)
-	if rec.Code != http.StatusSeeOther {
-		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	get := httptest.NewRecorder()
+	s.handleSettingsProfileEdit(get, withURLParam(httptest.NewRequest(http.MethodGet, "/settings/profiles/spouse/edit", nil), "profileID", "spouse"))
+	if body := get.Body.String(); !strings.Contains(body, "Sp. Ouse") || !strings.Contains(body, "1 Old Rd, Riga") {
+		t.Fatal("edit form isn't prefilled with saved identity fields")
 	}
 
+	post := func(form url.Values) *httptest.ResponseRecorder {
+		req := withURLParam(httptest.NewRequest(http.MethodPost, "/settings/profiles/spouse/edit", strings.NewReader(form.Encode())), "profileID", "spouse")
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rec := httptest.NewRecorder()
+		s.handleSettingsProfileEdit(rec, req)
+		return rec
+	}
+	base := url.Values{"first_name": {"New"}, "last_name": {"Name"}, "email": {"spouse@example.com"}}
+
+	bad := url.Values{"date_of_birth": {"10/12/1990"}, "additional_emails": {"not-an-email"}}
+	for k, v := range base {
+		bad[k] = v
+	}
+	if rec := post(bad); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "YYYY-MM-DD") {
+		t.Fatalf("bad date/email should re-render with errors, got %d", rec.Code)
+	}
+
+	good := url.Values{
+		"name_variants":      {"Sp. Ouse\r\n\r\n  S. Ouse  \r\n"},
+		"additional_emails":  {"old@example.com"},
+		"additional_phones":  {"+371 2000 0000"},
+		"previous_addresses": {"1 Old Rd, Riga\n2 Older St, Tartu"},
+		"date_of_birth":      {"1990-01-01"},
+	}
+	for k, v := range base {
+		good[k] = v
+	}
+	if rec := post(good); rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	}
 	p, _ := s.getConfig().GetProfile("spouse")
-	if p.FirstName != "New" || len(p.NameVariants) != 1 || len(p.AdditionalEmails) != 1 || len(p.AdditionalPhones) != 1 || len(p.PreviousAddresses) != 1 || p.DateOfBirth != "1990-01-01" {
-		t.Errorf("edit erased fields it has no inputs for: %+v", p.Profile)
+	if strings.Join(p.NameVariants, "|") != "Sp. Ouse|S. Ouse" || len(p.PreviousAddresses) != 2 ||
+		len(p.AdditionalEmails) != 1 || len(p.AdditionalPhones) != 1 || p.DateOfBirth != "1990-01-01" {
+		t.Errorf("identity fields not saved as entered: %+v", p.Profile)
 	}
 }

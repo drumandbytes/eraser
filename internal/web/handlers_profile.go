@@ -1,8 +1,10 @@
 package web
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/email"
@@ -57,6 +59,12 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 		ZipCode:    strings.TrimSpace(r.FormValue("zip_code")),
 		Country:    strings.TrimSpace(r.FormValue("country")),
 		Phone:      strings.TrimSpace(r.FormValue("phone")),
+
+		DateOfBirth:       strings.TrimSpace(r.FormValue("date_of_birth")),
+		NameVariants:      formLines(r, "name_variants"),
+		AdditionalEmails:  formLines(r, "additional_emails"),
+		AdditionalPhones:  formLines(r, "additional_phones"),
+		PreviousAddresses: formLines(r, "previous_addresses"),
 	}
 
 	errors := make(map[string]string)
@@ -71,16 +79,40 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 	} else if err := email.ValidateEmail(profile.Email); err != nil {
 		errors["email"] = "Please enter a valid email address"
 	}
+	if profile.DateOfBirth != "" {
+		if _, err := time.Parse("2006-01-02", profile.DateOfBirth); err != nil {
+			errors["date_of_birth"] = "Use the format YYYY-MM-DD"
+		}
+	}
+	for _, e := range profile.AdditionalEmails {
+		if email.ValidateEmail(e) != nil {
+			errors["additional_emails"] = fmt.Sprintf("%q isn't a valid email address", e)
+			break
+		}
+	}
 	return profile, errors
 }
 
+// formLines splits a one-entry-per-line textarea, dropping blank lines. Lines,
+// not commas: previous addresses contain commas.
+func formLines(r *http.Request, name string) []string {
+	var out []string
+	for _, line := range strings.Split(r.FormValue(name), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			out = append(out, line)
+		}
+	}
+	return out
+}
+
 // applyProfileForm copies the fields the web profile form has inputs for onto
-// p, keeping the rest (name variants, other emails/phones, previous
-// addresses, date of birth): rebuilding the profile from the form silently
-// erased them on every save.
+// p. Explicit rather than p = form, so a Profile field added later without a
+// form input survives a save instead of being silently erased (#115).
 func applyProfileForm(p, form config.Profile) config.Profile {
 	p.FirstName, p.MiddleName, p.LastName, p.Email = form.FirstName, form.MiddleName, form.LastName, form.Email
 	p.Address, p.City, p.State, p.ZipCode, p.Country, p.Phone = form.Address, form.City, form.State, form.ZipCode, form.Country, form.Phone
+	p.DateOfBirth, p.NameVariants, p.AdditionalEmails = form.DateOfBirth, form.NameVariants, form.AdditionalEmails
+	p.AdditionalPhones, p.PreviousAddresses = form.AdditionalPhones, form.PreviousAddresses
 	return p
 }
 

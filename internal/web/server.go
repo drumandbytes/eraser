@@ -380,6 +380,8 @@ func (s *Server) setupRouter() *chi.Mux {
 	// Routes
 	r.Get("/", s.handleDashboard)
 	r.Get("/brokers", s.handleBrokers)
+	r.Get("/brokers/new", s.handleBrokerNew)
+	r.Post("/brokers/new", s.handleBrokerNew)
 	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
 	r.Get("/export", s.handleExport)

@@ -59,8 +59,13 @@ func runCleanupBounces(remove bool, days int) error {
 		return fmt.Errorf("inbox monitoring not configured. Run 'eraser init' to set up")
 	}
 
-	brokerPath := resolveBrokerWritePath()
-	brokerDB, err := broker.LoadFromFile(brokerPath)
+	brokerPath, maintaining := listFileWritePath()
+	var brokerDB *broker.BrokerDatabase
+	if maintaining {
+		brokerDB, err = broker.LoadFromFile(brokerPath)
+	} else {
+		brokerDB, err = broker.Load("") // corrections go to broker.LocalPath, below
+	}
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
@@ -155,14 +160,23 @@ func runCleanupBounces(remove bool, days int) error {
 
 	cleared := 0
 	for _, bb := range bouncedBrokers {
-		if brokerDB.MarkEmailUnreachable(bb.email, bb.subject) != nil {
-			fmt.Printf("✓ Cleared %s (%s)\n", bb.broker.Name, bb.email)
-			cleared++
+		b := brokerDB.MarkEmailUnreachable(bb.email, bb.subject)
+		if b == nil {
+			continue
 		}
+		if !maintaining {
+			if err := broker.SaveLocal(*b); err != nil {
+				return fmt.Errorf("failed to save %s: %w", b.ID, err)
+			}
+		}
+		fmt.Printf("✓ Cleared %s (%s)\n", bb.broker.Name, bb.email)
+		cleared++
 	}
 
-	if err := brokerDB.SaveWithBackup(brokerPath); err != nil {
-		return fmt.Errorf("failed to save broker database: %w", err)
+	if maintaining {
+		if err := brokerDB.SaveWithBackup(brokerPath); err != nil {
+			return fmt.Errorf("failed to save broker database: %w", err)
+		}
 	}
 
 	fmt.Println()

@@ -101,15 +101,38 @@ func runAddBroker() error {
 	b := broker.Broker{}
 
 	b.Name = prompt(reader, "Broker name: ")
-	b.ID = strings.ToLower(strings.ReplaceAll(b.Name, " ", "-"))
+	b.ID = broker.NewID(b.Name)
 	b.Email = prompt(reader, "Privacy/removal email: ")
 	b.Website = prompt(reader, "Website (optional): ")
 	b.OptOutURL = prompt(reader, "Opt-out URL (optional): ")
 	b.Region = prompt(reader, "Region (us/eu/global): ")
 	b.Category = prompt(reader, "Category (people-search/marketing/background-check): ")
 
-	// Load existing brokers (add-broker writes back, so it needs a real path).
-	brokerPath := resolveBrokerWritePath()
+	if b.ID == "" {
+		return fmt.Errorf("broker name is required")
+	}
+	if problems := b.Problems(); len(problems) > 0 {
+		return fmt.Errorf("invalid broker: %s", strings.Join(problems, "; "))
+	}
+
+	brokerPath, maintaining := listFileWritePath()
+	if !maintaining {
+		// installed copy: your own entries file, which update-brokers never touches
+		current, err := broker.Load("")
+		if err != nil {
+			return fmt.Errorf("failed to load brokers: %w", err)
+		}
+		if current.FindByID(b.ID) != nil || current.FindByName(b.Name) != nil {
+			return fmt.Errorf("%q is already in the broker list", b.Name)
+		}
+		if err := broker.SaveLocal(b); err != nil {
+			return fmt.Errorf("failed to save: %w", err)
+		}
+		fmt.Println()
+		fmt.Printf("✅ Added %s to your own brokers (%s)\n", b.Name, broker.LocalPath())
+		fmt.Println("   Others would benefit too: https://github.com/drumandbytes/eraser/issues/new?template=broker.yml")
+		return nil
+	}
 
 	var brokerDB *broker.BrokerDatabase
 	if _, err := os.Stat(brokerPath); os.IsNotExist(err) {

@@ -107,6 +107,7 @@ From the dashboard, you can:
 - Mark a sent request as bounced, so it's retried on the next send
 - Download an evidence report of every request and reply (History → Export evidence) for a complaint to your data protection authority
 - Fetch the latest broker list (Settings → Broker List)
+- Add a broker that's missing from the list (Brokers → + Add broker) - kept on your machine and never removed by a list update
 
 That's it. The whole process takes about 10 minutes to set up, and then Eraser handles the rest.
 

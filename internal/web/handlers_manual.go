@@ -3,9 +3,11 @@ package web
 import (
 	"html/template"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
+	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/go-chi/chi/v5"
 )
@@ -110,4 +112,67 @@ func (s *Server) handleAPIMarkBounced(w http.ResponseWriter, r *http.Request) {
 	}
 	// re-render from history: "failed", or unchanged if there was no sent record
 	s.handleAPIBrokerStatus(w, r)
+}
+
+// handleBrokerNew is `eraser add-broker`: the entry goes to the user's own
+// brokers file (broker.LocalPath), which update-brokers never touches.
+func (s *Server) handleBrokerNew(w http.ResponseWriter, r *http.Request) {
+	render := func(b broker.Broker, errors map[string]string) {
+		s.renderWithCSRF(w, r, "brokers/new.html", map[string]interface{}{
+			"Title":      "Add Broker",
+			"Broker":     b,
+			"Errors":     errors,
+			"Categories": s.getUniqueCategories(),
+		})
+	}
+	if r.Method != http.MethodPost {
+		render(broker.Broker{Region: "eu"}, map[string]string{})
+		return
+	}
+	limitFormBody(w, r)
+	b := broker.Broker{
+		Name:      strings.TrimSpace(r.FormValue("name")),
+		Email:     strings.TrimSpace(r.FormValue("email")),
+		OptOutURL: strings.TrimSpace(r.FormValue("opt_out_url")),
+		Website:   strings.TrimSpace(r.FormValue("website")),
+		Region:    strings.TrimSpace(r.FormValue("region")),
+		Category:  strings.ToLower(strings.TrimSpace(r.FormValue("category"))),
+	}
+	b.ID = broker.NewID(b.Name)
+
+	errors := map[string]string{}
+	if b.ID == "" {
+		errors["name"] = "Company name is required"
+	} else if s.brokers().FindByID(b.ID) != nil || s.brokers().FindByName(b.Name) != nil {
+		errors["name"] = "A broker with this name is already in the list"
+	}
+	if b.Email == "" && b.OptOutURL == "" {
+		errors["email"] = "Give a privacy email or an opt-out form URL"
+	}
+	for _, p := range b.Problems() {
+		switch {
+		case strings.Contains(p, "email"):
+			errors["email"] = "That doesn't look like an email address"
+		case strings.Contains(p, "opt_out_url"):
+			errors["opt_out_url"] = "Use a full http(s):// address"
+		case strings.Contains(p, "website"):
+			errors["website"] = "Use a full http(s):// address"
+		case strings.Contains(p, "region"):
+			errors["_"] = "Pick a region"
+		}
+	}
+	if len(errors) > 0 {
+		render(b, errors)
+		return
+	}
+
+	if err := broker.SaveLocal(b); err != nil {
+		render(b, map[string]string{"_": "Failed to save: " + err.Error()})
+		return
+	}
+	if err := s.reloadBrokers(); err != nil {
+		render(b, map[string]string{"_": "Saved, but reloading the list failed: " + err.Error()})
+		return
+	}
+	http.Redirect(w, r, "/brokers?search="+url.QueryEscape(b.ID), http.StatusSeeOther)
 }

@@ -192,6 +192,7 @@ func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra ma
 		"Automation":  s.automationView(),
 		"InboxForm":   inboxFormView(cfg),
 		"BrokerCount": len(s.brokers().Brokers),
+		"OwnBrokers":  ownBrokerCount(),
 	}
 	for k, v := range extra {
 		data[k] = v
@@ -234,18 +235,19 @@ func (s *Server) handleSettingsBrokersUpdate(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	if err := s.reloadBrokers(); err != nil {
+		s.renderBrokersMessage(w, r, "Downloaded, but reloading failed: "+err.Error(), false)
+		return
+	}
 	var opts config.Options
 	if cfg := s.getConfig(); cfg != nil {
 		opts = cfg.Options
 	}
-	db, err := broker.LoadList(s.BrokerOverride, opts.BrokerFile, opts.BrokerList)
-	if err != nil {
-		s.renderBrokersMessage(w, r, "Downloaded, but reloading failed: "+err.Error(), false)
-		return
-	}
-	s.brokerDB.Store(db)
 
 	msg := fmt.Sprintf("Broker list updated: %d entries (was %d).", res.Count, res.Before)
+	if res.Own > 0 {
+		msg += fmt.Sprintf(" Your %d own broker(s) are kept.", res.Own)
+	}
 	if s.BrokerOverride != "" || opts.BrokerFile != "" || strings.EqualFold(opts.BrokerList, "verified") {
 		msg += " Your setup sends to a different list (--brokers, broker_file or the verified list), so the brokers used for sending didn't change."
 	}
@@ -257,4 +259,27 @@ func (s *Server) renderBrokersMessage(w http.ResponseWriter, r *http.Request, me
 		"BrokersMessage": message,
 		"BrokersSuccess": success,
 	})
+}
+
+// reloadBrokers re-resolves the broker list the way serve did at startup
+// (including the user's own entries) and swaps it in.
+func (s *Server) reloadBrokers() error {
+	var opts config.Options
+	if cfg := s.getConfig(); cfg != nil {
+		opts = cfg.Options
+	}
+	db, err := broker.LoadList(s.BrokerOverride, opts.BrokerFile, opts.BrokerList)
+	if err != nil {
+		return err
+	}
+	s.brokerDB.Store(db)
+	return nil
+}
+
+func ownBrokerCount() int {
+	local, err := broker.LoadLocal()
+	if err != nil {
+		return 0
+	}
+	return len(local.Brokers)
 }

@@ -173,7 +173,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		noneMsg := "No pending brokers to send to."
 		if status == "failed" {
 			noneMsg = "No failed brokers to retry."
-		} else if status != "" && status != "pending" {
+		} else if status != "eligible" {
 			noneMsg = fmt.Sprintf("No brokers matching status %q to send to.", status)
 		}
 		w.WriteHeader(http.StatusBadRequest)

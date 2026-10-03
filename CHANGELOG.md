@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/drumandbytes/eraser/compare/v0.10.0...v0.11.0) (2026-10-03)
+
+
+### Features
+
+* **config:** settle the config format before 1.0 ([#108](https://github.com/drumandbytes/eraser/issues/108)) ([fdd9915](https://github.com/drumandbytes/eraser/commit/fdd991571cc4194b28616ef9dae61381bfd63118))
+
+
+### Bug Fixes
+
+* **cli:** 1.0 readiness fixes and stability policy ([#110](https://github.com/drumandbytes/eraser/issues/110)) ([cfc279c](https://github.com/drumandbytes/eraser/commit/cfc279c3c1776e859b00fd18265d62fa9e64c0ac))
+
 ## [0.10.0](https://github.com/drumandbytes/eraser/compare/v0.9.2...v0.10.0) (2026-10-03)
 
 

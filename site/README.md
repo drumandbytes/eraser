@@ -1,6 +1,6 @@
 # site/
 
-The docs site — [eraser.drumandbytes.dev](https://eraser.drumandbytes.dev),
+The docs site — [eraser.drumandbytes.dev](https://eraser.drumandbytes.dev/?ref=eraser-site-readme),
 built with [Hugo](https://gohugo.io) and deployed to Cloudflare Pages by
 `.github/workflows/deploy.yaml` on every push to `main` that touches the broker
 data, `site/`, or the guide generator.

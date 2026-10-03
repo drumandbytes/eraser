@@ -39,6 +39,8 @@ Requires inbox configuration in config.yaml with IMAP settings.`,
 	cmd.Flags().IntVar(&days, "days", 7, "Number of days to look back for emails")
 	cmd.Flags().BoolVar(&once, "once", false, "Check inbox once and exit (don't watch for new emails)")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Continuously watch for new emails")
+	// one scan is already the default; kept so existing scripts don't break
+	_ = cmd.Flags().MarkDeprecated("once", "a single scan is the default; drop the flag")
 
 	return cmd
 }

@@ -43,7 +43,7 @@ go test ./...
 go run ./cmd/eraser validate-brokers
 ```
 
-This checks ids, names, regions, emails, and URLs, and enforces a 700+ broker floor. If you're editing an entry in response to a broker's reply to an actual removal request, [docs/broker-replies.md](docs/broker-replies.md) has the classification table (which reply types need `email: ""`, a `notes:` line, or removing the entry entirely).
+This checks ids, names, regions, emails, and URLs, and rejects a list with fewer than 200 entries (a sign it was truncated). If you're editing an entry in response to a broker's reply to an actual removal request, [docs/broker-replies.md](docs/broker-replies.md) has the classification table (which reply types need `email: ""`, a `notes:` line, or removing the entry entirely).
 
 ## Adding a mail provider
 

@@ -8,7 +8,7 @@ Most installs only ever need one profile - the one set up by `eraser init`. Ever
 
 This was designed so a single-profile install needs zero changes:
 
-- **Config**: `config.Load`/`Save` move a legacy top-level `profile:` block (pre-0.10) into `profiles:` as `id: default`, so old configs keep working and are rewritten in the current shape on the next save. `Config.GetProfiles()` still wraps an in-memory `Config.Profile` the same way.
+- **Config**: `config.Load`/`Save` move a legacy top-level `profile:` block (pre-0.11) into `profiles:` as `id: default`, so old configs keep working and are rewritten in the current shape on the next save. `Config.GetProfiles()` still wraps an in-memory `Config.Profile` the same way.
 - **History**: a new `profile_id TEXT NOT NULL DEFAULT 'default'` column was added to `removal_requests`, `broker_responses`, and `pending_tasks` via `ALTER TABLE ... ADD COLUMN ... DEFAULT`, which auto-backfills every pre-existing row to `"default"` - no manual migration step. `internal/history/history_test.go`'s `TestMigrationBackfillsExistingRowsToDefaultProfile` verifies this directly by creating a legacy pre-migration table and confirming old rows survive.
 
 ## Config model (`internal/config/config.go`)

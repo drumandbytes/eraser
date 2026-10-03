@@ -34,8 +34,10 @@ func guidesCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "guides",
-		Short: "Generate opt-out guide pages from the broker list",
+		Use: "guides",
+		// maintainer tool for the project website; not part of the stable CLI
+		Hidden: true,
+		Short:  "Generate opt-out guide pages from the broker list",
 		Long: `Write a "how to opt out of <broker>" page for each people-search /
 background-check / financial / device-ID broker, plus a JSON directory of the
 whole list. Feeds the documentation site.

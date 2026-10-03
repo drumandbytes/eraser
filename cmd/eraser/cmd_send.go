@@ -83,6 +83,33 @@ func filterBrokersByStatus(brokers []broker.Broker, statuses map[string]history.
 	return filtered
 }
 
+func countWithEmail(brokers []broker.Broker) int {
+	n := 0
+	for _, b := range brokers {
+		if strings.TrimSpace(b.Email) != "" {
+			n++
+		}
+	}
+	return n
+}
+
+// capSends keeps brokers up to the n-th one with an email. Email-less brokers
+// are only skipped with a note, so they mustn't use up the daily budget: they
+// never get a history row, sort first on every run, and would otherwise eat
+// the same slots each time.
+func capSends(brokers []broker.Broker, n int) []broker.Broker {
+	for i, b := range brokers {
+		if strings.TrimSpace(b.Email) == "" {
+			continue
+		}
+		if n == 0 {
+			return brokers[:i]
+		}
+		n--
+	}
+	return brokers
+}
+
 func runSend() error {
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
@@ -180,10 +207,10 @@ func runSend() error {
 				sentLast24h, cfg.Options.DailySendLimit)
 			return nil
 		}
-		if budget < len(brokers) {
+		if sendable := countWithEmail(brokers); budget < sendable {
 			fmt.Printf("📅 Daily send limit: sending %d of %d remaining brokers (%d already sent in the last 24h, cap is %d). Re-run later or tomorrow for the rest.\n",
-				budget, len(brokers), sentLast24h, cfg.Options.DailySendLimit)
-			brokers = brokers[:budget]
+				budget, sendable, sentLast24h, cfg.Options.DailySendLimit)
+			brokers = capSends(brokers, budget)
 		}
 	}
 

@@ -16,6 +16,9 @@ import (
 // second implementation here) keeps one send/scan path, one lock and one
 // state file for every mode.
 
+// cycleExecutable is the binary a cycle re-runs; tests swap it for a stub.
+var cycleExecutable = os.Executable
+
 // runScheduler checks once a minute whether a cycle is due, until ctx ends.
 func (s *Server) runScheduler(ctx context.Context) {
 	t := time.NewTicker(time.Minute)
@@ -71,7 +74,7 @@ func (s *Server) startCycle() bool {
 			s.cycleRunning = false
 			s.cycleMu.Unlock()
 		}()
-		exe, err := os.Executable()
+		exe, err := cycleExecutable()
 		if err != nil {
 			log.Printf("Automatic run: can't find the eraser binary: %v", err)
 			return

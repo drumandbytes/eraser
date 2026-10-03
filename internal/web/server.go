@@ -89,19 +89,23 @@ func (rl *RateLimiter) Allow(key string) bool {
 var Version = "dev"
 
 type Server struct {
-	config       atomic.Pointer[config.Config]
-	configPath   string
-	brokerDB     *broker.BrokerDatabase
-	historyStore *history.Store
-	tmplEngine   *emaTemplate.Engine
-	templates    map[string]*template.Template
-	httpServer   *http.Server
-	port         int
-	csrfKey      []byte
-	sessions     *SessionStore
-	rateLimiter  *RateLimiter
-	jobManager   *JobManager
-	dataDir      string // config directory: schedule lock and state
+	config     atomic.Pointer[config.Config]
+	configPath string
+	brokerDB   atomic.Pointer[broker.BrokerDatabase] // swapped by the "update broker list" action; read via brokers()
+	// BrokerOverride is serve's --brokers flag, so a reload resolves the list
+	// the same way startup did.
+	BrokerOverride  string
+	brokerUpdateURL string // broker.DefaultUpdateURL; tests point it at a local server
+	historyStore    *history.Store
+	tmplEngine      *emaTemplate.Engine
+	templates       map[string]*template.Template
+	httpServer      *http.Server
+	port            int
+	csrfKey         []byte
+	sessions        *SessionStore
+	rateLimiter     *RateLimiter
+	jobManager      *JobManager
+	dataDir         string // config directory: schedule lock and state
 
 	// In-app scheduler (scheduler.go). The OS hooks are fields so tests
 	// don't touch the real launchd/systemd setup.
@@ -129,7 +133,6 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 
 	s := &Server{
 		configPath:   configPath,
-		brokerDB:     brokerDB,
 		historyStore: historyStore,
 		tmplEngine:   tmplEngine,
 		port:         port,
@@ -158,7 +161,14 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 		return nil, fmt.Errorf("failed to parse templates: %w", err)
 	}
 	s.templates = tmpl
+	s.brokerDB.Store(brokerDB)
+	s.brokerUpdateURL = broker.DefaultUpdateURL
 	return s, nil
+}
+
+// brokers returns the current broker list; see getConfig for why it's atomic.
+func (s *Server) brokers() *broker.BrokerDatabase {
+	return s.brokerDB.Load()
 }
 
 // getConfig returns the current config. It's an atomic.Pointer because
@@ -372,9 +382,11 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/brokers", s.handleBrokers)
 	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
+	r.Get("/export", s.handleExport)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
 	r.Post("/settings/automation", s.handleSettingsAutomation)
+	r.Post("/settings/brokers/update", s.handleSettingsBrokersUpdate)
 	r.Get("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Post("/settings/profiles/new", s.handleSettingsProfileNew)
 	r.Get("/settings/profiles/{profileID}/edit", s.handleSettingsProfileEdit)
@@ -409,6 +421,7 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Post("/brokers/{brokerID}/exclude", s.handleAPIExcludeBroker)
 		r.Post("/brokers/{brokerID}/include", s.handleAPIIncludeBroker)
 		r.Post("/brokers/{brokerID}/mark-sent", s.handleAPIMarkSent)
+		r.Post("/brokers/{brokerID}/mark-bounced", s.handleAPIMarkBounced)
 		r.Delete("/history/failed", s.handleAPIDeleteFailed)
 		r.Delete("/history", s.handleAPIDeleteAllHistory)
 		r.Post("/send/{brokerID}", s.handleAPISendOne)
@@ -610,7 +623,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 	}
 
 	var result []BrokerWithStatus
-	for _, b := range s.brokerDB.Brokers {
+	for _, b := range s.brokers().Brokers {
 		id := strings.ToLower(b.ID)
 		if len(includeSet) > 0 && !includeSet[id] {
 			continue
@@ -685,7 +698,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 func (s *Server) getUniqueValues(getter func(broker.Broker) string) []string {
 	seen := make(map[string]bool)
 	var vals []string
-	for _, b := range s.brokerDB.Brokers {
+	for _, b := range s.brokers().Brokers {
 		if v := getter(b); v != "" && !seen[v] {
 			seen[v] = true
 			vals = append(vals, v)
@@ -704,7 +717,7 @@ func (s *Server) getUniqueRegions() []string {
 
 func (s *Server) getStats(profileID string) Stats {
 	stats := Stats{
-		TotalBrokers: len(s.brokerDB.Brokers),
+		TotalBrokers: len(s.brokers().Brokers),
 	}
 
 	if s.historyStore != nil {

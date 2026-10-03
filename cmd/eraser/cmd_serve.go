@@ -78,6 +78,7 @@ func runServe(port int) error {
 	if err != nil {
 		return fmt.Errorf("failed to create web server: %w", err)
 	}
+	server.BrokerOverride = brokerFile
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)

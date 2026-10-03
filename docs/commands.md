@@ -44,6 +44,8 @@ The web UI's Settings → Automation card does the same without a terminal: inst
 
 Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a global `--profile <id>` flag. It can be omitted entirely for the common single-profile setup; it's required once more than one profile is configured. See [multi-profile.md](multi-profile.md) for the full model.
 
+Web UI equivalents for the per-profile commands: `export` → History → Export evidence (HTML or JSON); `mark-bounced` → the "bounced?" link next to a Sent status on Brokers; `update-brokers` → Settings → Broker List (also reloads the running server's list). Broker-list maintenance (`add-broker`, `audit-brokers`, `validate-brokers`, `cleanup-bounces`, `guides`) and browser automation (`fill`, `confirm`) stay CLI-only.
+
 ## Configuration
 
 Which of these keys and commands are covered by the 1.x compatibility promise: [stability.md](stability.md).

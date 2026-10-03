@@ -27,6 +27,7 @@ eraser/
 │   │                            # confirmation-link clicking, shared broker-domain allowlist
 │   │                            # validation (domain.go)
 │   ├── config/config.go        # User configuration (profile(s), email, options, inbox, pipeline)
+│   ├── evidence/evidence.go    # evidence report (requests, replies, deadlines, DPA) for `export` and the web download
 │   ├── email/
 │   │   ├── sender.go            # NewSender (SMTP only), address validation
 │   │   ├── removal.go           # SendRemoval: render + send + history record, shared by CLI and web

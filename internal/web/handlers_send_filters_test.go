@@ -12,7 +12,7 @@ import (
 
 func TestGetBrokersWithStatusRecipientFilters(t *testing.T) {
 	s := newTestServer(t, testConfig())
-	s.brokerDB.Brokers = []broker.Broker{
+	s.brokers().Brokers = []broker.Broker{
 		{ID: "alpha", Name: "Alpha", Email: "privacy@alpha.example", Region: "us", Category: "marketing"},
 		{ID: "beta", Name: "Beta", Email: "privacy@beta.example", Region: "eu", Category: "people-search"},
 		{ID: "noemail", Name: "No Email", Region: "eu", Category: "people-search"},
@@ -28,7 +28,7 @@ func TestHandleAPISendAllRejectsUnknownBrokerID(t *testing.T) {
 	cfg := testConfig()
 	cfg.Email.SMTP.Host = "smtp.example.com"
 	s := newTestServer(t, cfg)
-	s.brokerDB.Brokers = []broker.Broker{{ID: "alpha", Name: "Alpha", Email: "privacy@alpha.example", Region: "us"}}
+	s.brokers().Brokers = []broker.Broker{{ID: "alpha", Name: "Alpha", Email: "privacy@alpha.example", Region: "us"}}
 
 	form := url.Values{"broker_ids": {"missing"}}
 	req := httptest.NewRequest(http.MethodPost, "/api/send-all", strings.NewReader(form.Encode()))

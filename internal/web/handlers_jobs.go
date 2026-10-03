@@ -26,7 +26,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 
 	brokerID := chi.URLParam(r, "brokerID")
 
-	br := s.brokerDB.FindByID(brokerID)
+	br := s.brokers().FindByID(brokerID)
 	if br == nil {
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`<span class="text-error">Broker not found</span>`))
@@ -151,7 +151,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Status must be eligible, never, failed, or all."})
 		return
 	}
-	if unknown := s.brokerDB.UnknownIDs(includeIDs); len(unknown) > 0 {
+	if unknown := s.brokers().UnknownIDs(includeIDs); len(unknown) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unknown broker IDs: " + strings.Join(unknown, ", ")})
 		return

@@ -306,6 +306,32 @@
             {{end}}
         </div>
 
+        <!-- Broker List Section: same as `eraser update-brokers` -->
+        <div class="card p-6" id="broker-list">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
+                    <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                </div>
+                <h2 class="font-display text-lg font-semibold text-primary">Broker List</h2>
+            </div>
+            <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)] mb-4">
+                <div>
+                    <p class="text-sm text-muted">In use</p>
+                    <p class="text-secondary">{{.BrokerCount}} brokers</p>
+                </div>
+            </div>
+            <p class="text-sm text-secondary mb-4">The list ships with Eraser and is updated in the public repository as brokers appear, move or shut down. Fetching it only downloads the list - nothing about you is sent.</p>
+            <form method="POST" action="/settings/brokers/update">
+                {{.CSRFField}}
+                <button type="submit" class="btn btn-secondary w-full">Check for broker list updates</button>
+            </form>
+            {{if .BrokersMessage}}
+            <div class="mt-4 alert {{if .BrokersSuccess}}alert-success{{else}}alert-error{{end}}">{{.BrokersMessage}}</div>
+            {{end}}
+        </div>
+
         <!-- Danger Zone -->
         <div class="card p-6" style="border-color: rgba(239, 68, 68, 0.3);">
             <div class="flex items-center gap-3 mb-6">

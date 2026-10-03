@@ -19,10 +19,10 @@ func manualTestServer(t *testing.T) *Server {
 		Options: config.Options{Template: "gdpr", SendMode: "manual"},
 	})
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
-	s.brokerDB = &broker.BrokerDatabase{Brokers: []broker.Broker{
+	s.brokerDB.Store(&broker.BrokerDatabase{Brokers: []broker.Broker{
 		{ID: "acme", Name: "Acme Data", Email: "privacy@acme.example", Region: "us", Category: "people-search"},
 		{ID: "noemail", Name: "No Email Co", Region: "us", Category: "marketing"},
-	}}
+	}})
 	store, err := history.NewStore(filepath.Join(t.TempDir(), "history.db"))
 	if err != nil {
 		t.Fatalf("NewStore: %v", err)
@@ -140,9 +140,9 @@ func TestBrokerEmailPageUsesProfileMailOverrideFrom(t *testing.T) {
 		Options: config.Options{Template: "gdpr", SendMode: "manual"},
 	})
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
-	s.brokerDB = &broker.BrokerDatabase{Brokers: []broker.Broker{
+	s.brokerDB.Store(&broker.BrokerDatabase{Brokers: []broker.Broker{
 		{ID: "acme", Name: "Acme Data", Email: "privacy@acme.example", Region: "us", Category: "people-search"},
-	}}
+	}})
 
 	req := httptest.NewRequest(http.MethodGet, "/brokers/acme/email", nil)
 	req = withURLParam(req, "brokerID", "acme")

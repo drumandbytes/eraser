@@ -1,19 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
-	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/spf13/cobra"
 )
-
-const defaultBrokersURL = "https://raw.githubusercontent.com/drumandbytes/eraser/main/data/brokers.yaml"
 
 func updateBrokersCmd() *cobra.Command {
 	var (
@@ -35,84 +29,28 @@ The app itself is not updated - only the broker list. Never runs automatically.`
 		},
 	}
 
-	cmd.Flags().StringVar(&url, "url", defaultBrokersURL, "source URL for brokers.yaml")
+	cmd.Flags().StringVar(&url, "url", broker.DefaultUpdateURL, "source URL for brokers.yaml")
 	cmd.Flags().BoolVar(&check, "check", false, "only report whether an update is available (exit 1 if so); write nothing")
 
 	return cmd
 }
 
-func brokersETagPath() string {
-	return filepath.Join(filepath.Dir(broker.UserBrokersPath()), "brokers.etag")
-}
-
-func currentBrokerCount() int {
-	db, err := broker.Load("")
-	if err != nil {
-		return 0
-	}
-	return len(db.Brokers)
-}
-
 func runUpdateBrokers(url string, check bool) error {
-	etagPath := brokersETagPath()
-	savedETag, _ := os.ReadFile(etagPath)
-
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	res, err := broker.Update(context.Background(), url, check)
 	if err != nil {
-		return fmt.Errorf("bad URL: %w", err)
+		return err
 	}
-	if len(savedETag) > 0 {
-		req.Header.Set("If-None-Match", strings.TrimSpace(string(savedETag)))
-	}
-	req.Header.Set("User-Agent", "eraser-update-brokers")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	switch resp.StatusCode {
-	case http.StatusNotModified:
-		fmt.Printf("✓ Broker list is up to date (%d entries).\n", currentBrokerCount())
+	if !res.Changed {
+		fmt.Printf("✓ Broker list is up to date (%d entries).\n", res.Before)
 		return nil
-	case http.StatusOK:
-		// handled below
-	default:
-		return fmt.Errorf("unexpected response: %s", resp.Status)
 	}
-
 	if check {
 		fmt.Println("⬆️  A newer broker list is available. Run `eraser update-brokers` to fetch it.")
 		os.Exit(1)
-		return nil
 	}
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
-	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
-	}
-	db, err := broker.Validate(body, broker.MinSaneBrokerCount)
-	if err != nil {
-		return fmt.Errorf("refusing to replace the local copy - %w", err)
-	}
-
-	before := currentBrokerCount()
-	target := broker.UserBrokersPath()
-	if err := os.MkdirAll(filepath.Dir(target), 0o700); err != nil {
-		return fmt.Errorf("failed to create %s: %w", filepath.Dir(target), err)
-	}
-	if err := os.WriteFile(target, body, 0o644); err != nil {
-		return fmt.Errorf("failed to write %s: %w", target, err)
-	}
-	if etag := resp.Header.Get("ETag"); etag != "" {
-		_ = os.WriteFile(etagPath, []byte(etag), 0o644)
-	}
-
 	fmt.Println("⬇️  Broker list updated")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Printf("   %s\n", target)
-	fmt.Printf("   %d entries (was %d)\n", len(db.Brokers), before)
+	fmt.Printf("   %s\n", res.Path)
+	fmt.Printf("   %d entries (was %d)\n", res.Count, res.Before)
 	return nil
 }

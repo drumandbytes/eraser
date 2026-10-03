@@ -36,7 +36,7 @@ func TestHandleAPIExcludeThenIncludeBrokerRoundTrips(t *testing.T) {
 	cfg := testConfig()
 	s := newTestServer(t, cfg)
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
-	s.brokerDB.Brokers = []broker.Broker{
+	s.brokers().Brokers = []broker.Broker{
 		{ID: "spokeo", Name: "Spokeo", Email: "privacy@spokeo.com"},
 	}
 

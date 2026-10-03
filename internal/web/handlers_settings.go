@@ -1,10 +1,13 @@
 package web
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/schedule"
 )
@@ -184,10 +187,11 @@ func (s *Server) renderSettingsWithMessage(w http.ResponseWriter, r *http.Reques
 func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra map[string]interface{}) {
 	cfg := s.getConfig()
 	data := map[string]interface{}{
-		"Title":      "Settings",
-		"Config":     cfg,
-		"Automation": s.automationView(),
-		"InboxForm":  inboxFormView(cfg),
+		"Title":       "Settings",
+		"Config":      cfg,
+		"Automation":  s.automationView(),
+		"InboxForm":   inboxFormView(cfg),
+		"BrokerCount": len(s.brokers().Brokers),
 	}
 	for k, v := range extra {
 		data[k] = v
@@ -213,4 +217,44 @@ func inboxFormView(cfg *config.Config) mailFormView {
 		v.PasswordPlaceholder = "Leave blank to keep current"
 	}
 	return v
+}
+
+// handleSettingsBrokersUpdate is `eraser update-brokers`: fetch the published
+// list into ~/.eraser/brokers.yaml, then reload the list this server uses.
+func (s *Server) handleSettingsBrokersUpdate(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)
+	defer cancel()
+	res, err := broker.Update(ctx, s.brokerUpdateURL, false)
+	if err != nil {
+		s.renderBrokersMessage(w, r, "Update failed: "+err.Error(), false)
+		return
+	}
+	if !res.Changed {
+		s.renderBrokersMessage(w, r, "The broker list is already up to date.", true)
+		return
+	}
+
+	var opts config.Options
+	if cfg := s.getConfig(); cfg != nil {
+		opts = cfg.Options
+	}
+	db, err := broker.LoadList(s.BrokerOverride, opts.BrokerFile, opts.BrokerList)
+	if err != nil {
+		s.renderBrokersMessage(w, r, "Downloaded, but reloading failed: "+err.Error(), false)
+		return
+	}
+	s.brokerDB.Store(db)
+
+	msg := fmt.Sprintf("Broker list updated: %d entries (was %d).", res.Count, res.Before)
+	if s.BrokerOverride != "" || opts.BrokerFile != "" || strings.EqualFold(opts.BrokerList, "verified") {
+		msg += " Your setup sends to a different list (--brokers, broker_file or the verified list), so the brokers used for sending didn't change."
+	}
+	s.renderBrokersMessage(w, r, msg, true)
+}
+
+func (s *Server) renderBrokersMessage(w http.ResponseWriter, r *http.Request, message string, success bool) {
+	s.renderSettings(w, r, map[string]interface{}{
+		"BrokersMessage": message,
+		"BrokersSuccess": success,
+	})
 }

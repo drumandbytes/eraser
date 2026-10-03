@@ -21,7 +21,7 @@ func (s *Server) configuredTemplate() string {
 // user can copy it, open it in their mail client, and mark it sent.
 func (s *Server) handleBrokerEmail(w http.ResponseWriter, r *http.Request) {
 	brokerID := chi.URLParam(r, "brokerID")
-	b := s.brokerDB.FindByID(brokerID)
+	b := s.brokers().FindByID(brokerID)
 	if b == nil {
 		http.NotFound(w, r)
 		return
@@ -60,7 +60,7 @@ func (s *Server) handleBrokerEmail(w http.ResponseWriter, r *http.Request) {
 // refreshed status badge (mirrors the exclude/include HTMX handlers).
 func (s *Server) handleAPIMarkSent(w http.ResponseWriter, r *http.Request) {
 	brokerID := chi.URLParam(r, "brokerID")
-	b := s.brokerDB.FindByID(brokerID)
+	b := s.brokers().FindByID(brokerID)
 	if b == nil {
 		http.Error(w, "Broker not found", http.StatusNotFound)
 		return
@@ -89,4 +89,25 @@ func (s *Server) handleAPIMarkSent(w http.ResponseWriter, r *http.Request) {
 		"ID":     b.ID,
 		"Status": "sent",
 	})
+}
+
+// handleAPIMarkBounced is `eraser mark-bounced` for one broker: flips the
+// active profile's latest "sent" record to failed so the next send retries it.
+func (s *Server) handleAPIMarkBounced(w http.ResponseWriter, r *http.Request) {
+	brokerID := chi.URLParam(r, "brokerID")
+	b := s.brokers().FindByID(brokerID)
+	if b == nil {
+		http.Error(w, "Broker not found", http.StatusNotFound)
+		return
+	}
+	if s.historyStore == nil {
+		http.Error(w, "History database not available", http.StatusInternalServerError)
+		return
+	}
+	if _, err := s.historyStore.MarkFailed(s.activeProfile(r).ID, b.ID, "bounced - manually confirmed"); err != nil {
+		http.Error(w, "Failed to record: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// re-render from history: "failed", or unchanged if there was no sent record
+	s.handleAPIBrokerStatus(w, r)
 }

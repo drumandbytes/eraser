@@ -104,6 +104,9 @@ From the dashboard, you can:
 - Send requests one at a time or in bulk
 - Track which requests have been sent and their status
 - Exclude a broker from sends with one click (and bring it back later) - useful for a broker you'd rather skip, e.g. one that demands ID verification
+- Mark a sent request as bounced, so it's retried on the next send
+- Download an evidence report of every request and reply (History → Export evidence) for a complaint to your data protection authority
+- Fetch the latest broker list (Settings → Broker List)
 
 That's it. The whole process takes about 10 minutes to set up, and then Eraser handles the rest.
 

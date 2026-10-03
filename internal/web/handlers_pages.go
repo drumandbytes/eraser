@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
+	"github.com/drumandbytes/eraser/internal/evidence"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/go-chi/chi/v5"
 )
@@ -23,7 +25,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{
 		"Title":         "Dashboard",
 		"Profile":       active.Profile,
-		"BrokerCount":   len(s.brokerDB.Brokers),
+		"BrokerCount":   len(s.brokers().Brokers),
 		"RecentHistory": s.getRecentHistory(active.ID, 10),
 		"Stats":         s.getStats(active.ID),
 		"PipelineStats": s.getPipelineStats(active.ID),
@@ -55,7 +57,7 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 		"Status":       status,
 		"MissingEmail": missingEmail,
 		"ShowExcluded": showExcluded,
-		"Total":        len(s.brokerDB.Brokers),
+		"Total":        len(s.brokers().Brokers),
 		"Filtered":     len(brokers),
 		"DailyLimit":   dailyLimit,
 		"ManualMode":   s.getConfig() != nil && s.getConfig().IsManualSend(),
@@ -455,4 +457,60 @@ func (s *Server) handleTaskHelper(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.renderWithCSRF(w, r, "task-helper.html", data)
+}
+
+// handleExport downloads the active profile's evidence report, the same one
+// `eraser export` writes (?format=html|json, optional ?since=YYYY-MM-DD).
+func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "html"
+	}
+	if format != "html" && format != "json" {
+		http.Error(w, "format must be html or json", http.StatusBadRequest)
+		return
+	}
+	var since time.Time
+	if v := r.URL.Query().Get("since"); v != "" {
+		t, err := time.Parse("2006-01-02", v)
+		if err != nil {
+			http.Error(w, "since must be YYYY-MM-DD", http.StatusBadRequest)
+			return
+		}
+		since = t
+	}
+	if s.historyStore == nil {
+		http.Error(w, "History database not available", http.StatusInternalServerError)
+		return
+	}
+
+	profile := s.activeProfile(r)
+	requests, err := s.historyStore.GetAllRequests(profile.ID)
+	if err != nil {
+		http.Error(w, "Failed to read requests: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	responses, err := s.historyStore.GetBrokerResponsesForExport(profile.ID)
+	if err != nil {
+		http.Error(w, "Failed to read responses: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	now := time.Now()
+	report := evidence.Build(profile.Profile, requests, responses, s.brokers(), s.tmplEngine, since, now)
+
+	var data []byte
+	contentType := "text/html; charset=utf-8"
+	if format == "json" {
+		data, err = json.MarshalIndent(report, "", "  ")
+		contentType = "application/json"
+	} else {
+		data, err = evidence.RenderHTML(report)
+	}
+	if err != nil {
+		http.Error(w, "Failed to render report: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="eraser-evidence-%s-%s.%s"`, profile.ID, now.Format("2006-01-02"), format))
+	_, _ = w.Write(data)
 }

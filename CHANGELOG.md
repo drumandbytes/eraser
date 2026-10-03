@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.1](https://github.com/drumandbytes/eraser/compare/v0.11.0...v0.11.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **release:** clear Gatekeeper quarantine in the Homebrew cask ([#112](https://github.com/drumandbytes/eraser/issues/112)) ([1f7c6b6](https://github.com/drumandbytes/eraser/commit/1f7c6b62397f26386573b7b9c607244b78036df9))
+* **web:** empty provider dropdown on the setup profile step ([#113](https://github.com/drumandbytes/eraser/issues/113)) ([759b1ef](https://github.com/drumandbytes/eraser/commit/759b1eff33c5a791dfc34ccd6810e29c874974e4))
+
 ## [0.11.0](https://github.com/drumandbytes/eraser/compare/v0.10.0...v0.11.0) (2026-10-03)
 
 

@@ -107,6 +107,15 @@ func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 	}
 }
 
+// Ubuntu 24.04 runners block the unprivileged user namespaces Chrome's
+// sandbox needs. The pages under test are local fixtures, so CI runs
+// without it.
+func init() {
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		extraAllocatorOptions = append(extraAllocatorOptions, chromedp.NoSandbox)
+	}
+}
+
 // requireChrome probes with a trivial navigation (Chrome launches lazily on the
 // first Run) and skips the test when no browser can start.
 func requireChrome(t *testing.T) *Browser {

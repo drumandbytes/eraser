@@ -64,6 +64,10 @@ type FormResult struct {
 	FillErrors      []string // real (non-"not found") errors hit while filling fields, e.g. context timeouts
 }
 
+// extraAllocatorOptions is appended to every launch; tests use it to run
+// Chrome without its sandbox on CI runners that can't provide one.
+var extraAllocatorOptions []chromedp.ExecAllocatorOption
+
 // New creates a new Browser instance. allowedDomains restricts the hosts
 // NavigateAndFill is willing to navigate to and autofill with profile PII
 // (see matchesAllowedDomain); pass nil/empty to skip that check entirely
@@ -80,6 +84,7 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 	if cfg.Headless {
 		opts = append(opts, chromedp.Headless)
 	}
+	opts = append(opts, extraAllocatorOptions...)
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 

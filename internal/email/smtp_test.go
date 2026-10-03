@@ -44,7 +44,7 @@ func TestSendRespectsContextDeadline(t *testing.T) {
 	addr := hangingSMTPServer(t)
 	host, port := splitHostPortForTest(t, addr)
 
-	sender := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: false}, "from@example.com")
+	sender := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: new(false)}, "from@example.com")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
@@ -66,7 +66,7 @@ func TestSendRespectsContextCancellation(t *testing.T) {
 	addr := hangingSMTPServer(t)
 	host, port := splitHostPortForTest(t, addr)
 
-	sender := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: false}, "from@example.com")
+	sender := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: new(false)}, "from@example.com")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	time.AfterFunc(200*time.Millisecond, cancel)
@@ -176,7 +176,7 @@ func TestSendUpgradesWithSTARTTLSOffPort465(t *testing.T) {
 	cert := ts.TLS.Certificates[0]
 	addr, data, auth := startTLSSMTPServer(t, &cert)
 	host, port := splitHostPortForTest(t, addr)
-	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: true, Username: "jane", Password: "pw"}, "jane@example.org")
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, Username: "jane", Password: "pw"}, "jane@example.org")
 
 	res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "jane@example.org", Subject: "Erasure request", Body: "hi"})
 	if !res.Success {
@@ -192,7 +192,7 @@ func TestSendUpgradesWithSTARTTLSOffPort465(t *testing.T) {
 func TestSendRefusesPlaintextAuthWithoutSTARTTLS(t *testing.T) {
 	addr, _, auth := startTLSSMTPServer(t, nil)
 	host, port := splitHostPortForTest(t, addr)
-	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: true, Username: "jane", Password: "pw"}, "jane@example.org")
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, Username: "jane", Password: "pw"}, "jane@example.org")
 
 	if res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "jane@example.org", Subject: "x", Body: "hi"}); res.Success {
 		t.Fatal("send succeeded without STARTTLS")
@@ -208,7 +208,7 @@ func TestSendRecordsTheMessageIDItSends(t *testing.T) {
 	addr, data := recordingSMTPServer(t)
 	host, portStr, _ := net.SplitHostPort(addr)
 	port, _ := strconv.Atoi(portStr)
-	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port}, "Jane Doe <jane@example.org>")
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: new(false)}, "Jane Doe <jane@example.org>")
 
 	res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "Jane Doe <jane@example.org>", Subject: "Erasure request", Body: "hi"})
 	if !res.Success {

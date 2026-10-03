@@ -97,7 +97,7 @@ func TestSettingsAutomationInstallRefusesInvalidConfig(t *testing.T) {
 
 func TestSendAllRefusedWhileCycleRuns(t *testing.T) {
 	cfg := testConfig()
-	cfg.Email = config.EmailConfig{Provider: "smtp", From: "test@example.com", SMTP: config.SMTPConfig{Host: "smtp.example.com", Port: 465, Username: "u", Password: "p", UseTLS: true}}
+	cfg.Email = config.EmailConfig{From: "test@example.com", SMTP: config.SMTPConfig{Host: "smtp.example.com", Port: 465, Username: "u", Password: "p"}}
 	s := newTestServer(t, cfg)
 	s.brokerDB = &broker.BrokerDatabase{Brokers: []broker.Broker{{ID: "acme", Name: "Acme", Email: "privacy@acme.example", Region: "eu"}}}
 	release, ok, err := schedule.TryLock(s.dataDir)

@@ -40,6 +40,16 @@ var Providers = []Provider{
 	{ID: "custom", Name: "Other (custom SMTP/IMAP)", Note: "Any provider with SMTP and IMAP access. Port 465/993 use TLS directly; other ports use STARTTLS."},
 }
 
+func providerIDsWithIMAP() []string {
+	var ids []string
+	for _, p := range Providers {
+		if p.IMAPHost != "" {
+			ids = append(ids, p.ID)
+		}
+	}
+	return ids
+}
+
 // ProviderByID returns the preset with that id, or false.
 func ProviderByID(id string) (Provider, bool) {
 	for _, p := range Providers {

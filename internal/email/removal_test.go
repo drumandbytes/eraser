@@ -24,7 +24,7 @@ func TestSendRemoval(t *testing.T) {
 	addr, data := recordingSMTPServer(t)
 	host, portStr, _ := net.SplitHostPort(addr)
 	port, _ := strconv.Atoi(portStr)
-	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port}, "jane@example.org")
+	s := NewSMTPSender(config.SMTPConfig{Host: host, Port: port, UseTLS: new(false)}, "jane@example.org")
 
 	rec, err := SendRemoval(context.Background(), s, eng, "gdpr", np, "jane@example.org", b)
 	if err != nil {

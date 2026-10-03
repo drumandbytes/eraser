@@ -42,7 +42,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 
 	activeProfile := s.activeProfile(r)
 	emailCfg := cfg.EmailForProfile(activeProfile)
-	if emailCfg.Provider == "" {
+	if !emailCfg.Configured() {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`<span class="text-error">Email not configured. <a href="/setup" class="underline">Configure now</a></span>`))
 		return
@@ -125,7 +125,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	emailCfg := cfg.EmailForProfile(activeProfile)
-	if emailCfg.Provider == "" {
+	if !emailCfg.Configured() {
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "Email not configured. Please configure email settings first."})
 		return

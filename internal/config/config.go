@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
@@ -33,9 +34,10 @@ func checkFilePermissions(path string) error {
 }
 
 type Config struct {
-	// Profile is the legacy single-profile block, wrapped by GetProfiles as
-	// "default". Ignored once Profiles is non-empty.
-	Profile Profile `yaml:"profile"`
+	// Profile is the pre-0.10 single-profile block. Load/Save move it into
+	// Profiles as "default", so nothing writes it any more; read profiles via
+	// GetProfiles/GetProfile.
+	Profile Profile `yaml:"profile,omitempty"`
 	// Profiles tracks removal requests for several people against the same
 	// brokers, mail account and options; history is kept per profile
 	// (profile_id). Takes precedence over Profile.
@@ -120,13 +122,45 @@ func (c *Config) ConfiguredInboxes() []InboxConfig {
 // history rows are attributed to after the profile_id migration.
 const DefaultProfileID = "default"
 
-// GetProfiles returns every profile; with no profiles: list, the legacy
-// profile: block as a single "default" profile.
+// GetProfiles returns every profile. The legacy profile: fallback only
+// matters for configs built in memory; Load/Save normalize it away.
 func (c *Config) GetProfiles() []NamedProfile {
 	if len(c.Profiles) > 0 {
 		return c.Profiles
 	}
 	return []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
+}
+
+// PrimaryProfile is the "default" profile if there is one, else the first:
+// the one `eraser init` edits and fresh-profile forms prefill from.
+func (c *Config) PrimaryProfile() NamedProfile {
+	profiles := c.GetProfiles()
+	for _, p := range profiles {
+		if strings.EqualFold(p.ID, DefaultProfileID) {
+			return p
+		}
+	}
+	return profiles[0]
+}
+
+// HasProfile reports whether setup has stored anyone's details yet.
+func (c *Config) HasProfile() bool {
+	for _, p := range c.GetProfiles() {
+		if p.FirstName != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeProfiles moves a legacy profile: block into profiles: as
+// "default". With both present the legacy block was already ignored by
+// GetProfiles; it's kept as-is rather than silently dropped.
+func (c *Config) normalizeProfiles() {
+	if len(c.Profiles) == 0 && !reflect.ValueOf(c.Profile).IsZero() {
+		c.Profiles = []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
+		c.Profile = Profile{}
+	}
 }
 
 // GetProfile resolves a profile by ID. Empty id works only when exactly one
@@ -189,20 +223,18 @@ func SlugifyProfileID(firstName, lastName string, existing []NamedProfile) strin
 // InboxConfig holds IMAP settings for monitoring broker responses
 type InboxConfig struct {
 	Enabled       bool   `yaml:"enabled"`
-	Provider      string `yaml:"provider"`       // preset id from Providers, or "imap"/"custom"
-	Server        string `yaml:"server"`         // e.g., "imap.fastmail.com"
-	Port          int    `yaml:"port"`           // 993 = implicit TLS, anything else = STARTTLS
-	Email         string `yaml:"email"`          // Email address to monitor
-	Password      string `yaml:"password"`       // App password (not main password)
-	Folder        string `yaml:"folder"`         // Folder to monitor (default: "INBOX")
-	AutoArchive   bool   `yaml:"auto_archive"`   // Automatically move processed emails to archive folder
-	ArchiveFolder string `yaml:"archive_folder"` // Folder to archive emails to (default: "Eraser")
+	Provider      string `yaml:"provider,omitempty"` // preset id (see Providers) that fills Server/Port; optional when they're set
+	Server        string `yaml:"server"`             // e.g., "imap.fastmail.com"
+	Port          int    `yaml:"port"`               // 993 = implicit TLS, anything else = STARTTLS
+	Email         string `yaml:"email"`              // Email address to monitor
+	Password      string `yaml:"password"`           // App password (not main password)
+	Folder        string `yaml:"folder"`             // Folder to monitor (default: "INBOX")
+	AutoArchive   bool   `yaml:"auto_archive"`       // Automatically move processed emails to archive folder
+	ArchiveFolder string `yaml:"archive_folder"`     // Folder to archive emails to (default: "Eraser")
 }
 
 // Pipeline holds settings for the automation pipeline
 type Pipeline struct {
-	AutoConfirm   bool `yaml:"auto_confirm"`    // Auto-click confirmation links
-	AutoFillForms bool `yaml:"auto_fill_forms"` // Enable browser automation for forms
 	// BrowserHeadless is a pointer so an explicit false survives loading (a
 	// plain bool was forced back to true). Read it via Headless().
 	BrowserHeadless   *bool `yaml:"browser_headless,omitempty"`
@@ -255,9 +287,16 @@ func (p Profile) FullName() string {
 }
 
 type EmailConfig struct {
-	Provider string     `yaml:"provider"`
+	// Provider is optional and only "smtp" is accepted - SMTP is the only
+	// transport. Kept so pre-0.10 configs (which all say "smtp") still load.
+	Provider string     `yaml:"provider,omitempty"`
 	From     string     `yaml:"from"`
 	SMTP     SMTPConfig `yaml:"smtp,omitempty"`
+}
+
+// Configured reports whether a sending account is set up at all.
+func (e EmailConfig) Configured() bool {
+	return e.SMTP.Host != ""
 }
 
 type Email = EmailConfig
@@ -267,7 +306,15 @@ type SMTPConfig struct {
 	Port     int    `yaml:"port"`
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
-	UseTLS   bool   `yaml:"use_tls"`
+	// UseTLS defaults to true; the mode follows the port (465 implicit TLS,
+	// anything else STARTTLS). false is only for an unauthenticated local
+	// relay. Read it via TLS().
+	UseTLS *bool `yaml:"use_tls,omitempty"`
+}
+
+// TLS returns the effective use_tls, true unless explicitly turned off.
+func (s SMTPConfig) TLS() bool {
+	return s.UseTLS == nil || *s.UseTLS
 }
 
 type Options struct {
@@ -278,7 +325,7 @@ type Options struct {
 	//                 record with `eraser mark-sent` / "Mark sent". No email:
 	//                 block needed; for users who won't share mailbox credentials.
 	SendMode    string `yaml:"send_mode,omitempty"`
-	DryRun      bool   `yaml:"dry_run"`
+	DryRun      bool   `yaml:"dry_run,omitempty"`
 	RateLimitMs int    `yaml:"rate_limit_ms"`
 	// DailySendLimit caps sends per rolling 24h to stay under provider limits
 	// (Gmail ~500/day). 0 = 450. Bypass with --ignore-daily-limit.
@@ -291,7 +338,7 @@ type Options struct {
 	// the config equivalent of the global --brokers flag (which still wins).
 	// Takes precedence over BrokerList.
 	BrokerFile      string   `yaml:"broker_file,omitempty"`
-	Regions         []string `yaml:"regions"`
+	Regions         []string `yaml:"regions,omitempty"`
 	ExcludedBrokers []string `yaml:"excluded_brokers,omitempty"`
 	// ExcludedCategories skips brokers by category (case-insensitive), e.g.
 	// "requires-id" for brokers that demand an ID document.
@@ -334,6 +381,7 @@ func Load(path string) (*Config, error) {
 		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
+	cfg.normalizeProfiles()
 	applyInboxDefaults(&cfg.Inbox)
 	for i := range cfg.Profiles {
 		if cfg.Profiles[i].Mail != nil && cfg.Profiles[i].Mail.Inbox != nil {
@@ -379,7 +427,9 @@ func Save(path string, cfg *Config) error {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	data, err := yaml.Marshal(cfg)
+	out := *cfg // normalize a copy: cfg may be the live config others read
+	out.normalizeProfiles()
+	data, err := yaml.Marshal(&out)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config: %w", err)
 	}
@@ -421,20 +471,20 @@ func (c *Config) Validate() error {
 }
 
 func validateEmailConfig(e EmailConfig) error {
-	if e.Provider == "" {
-		return fmt.Errorf("email: provider is required (or set options.send_mode: manual)")
+	if e.Provider != "" && e.Provider != "smtp" {
+		return fmt.Errorf("email: unknown provider %q (only smtp is supported; the line can be removed)", e.Provider)
+	}
+	if !e.Configured() {
+		return fmt.Errorf("email.smtp: host is required (or set options.send_mode: manual)")
 	}
 	if e.From == "" {
 		return fmt.Errorf("email: from address is required")
 	}
-	if e.Provider != "smtp" {
-		return fmt.Errorf("email: unknown provider %q (only smtp is supported)", e.Provider)
-	}
-	if e.SMTP.Host == "" {
-		return fmt.Errorf("email.smtp: host is required")
-	}
 	if e.SMTP.Port == 0 {
 		return fmt.Errorf("email.smtp: port is required")
+	}
+	if !e.SMTP.TLS() && e.SMTP.Username != "" {
+		return fmt.Errorf("email.smtp: use_tls: false can't be combined with a username (passwords are never sent unencrypted)")
 	}
 	return nil
 }
@@ -461,7 +511,10 @@ func validateInboxConfig(inbox InboxConfig) error {
 		return fmt.Errorf("inbox: password (app password) is required")
 	}
 	if inbox.Server == "" {
-		return fmt.Errorf("inbox: IMAP server is required")
+		if inbox.Provider != "" {
+			return fmt.Errorf("inbox: unknown provider %q - set server and port, or use one of: %s", inbox.Provider, strings.Join(providerIDsWithIMAP(), ", "))
+		}
+		return fmt.Errorf("inbox: server is required (or a provider preset: %s)", strings.Join(providerIDsWithIMAP(), ", "))
 	}
 	if inbox.Port == 0 {
 		return fmt.Errorf("inbox: IMAP port is required")

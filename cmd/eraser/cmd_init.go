@@ -52,37 +52,40 @@ func runInit() error {
 	}
 
 	cfg := &config.Config{}
+	// init edits the primary ("default") profile; others come from `eraser profile`.
+	prev := existing.PrimaryProfile()
+	var me config.Profile
 
 	// Profile
 	fmt.Println("📋 Personal Information (used in removal requests)")
 	fmt.Println()
 
-	cfg.Profile.FirstName = promptWithDefault(reader, "First name", existing.Profile.FirstName)
-	cfg.Profile.MiddleName = promptWithDefault(reader, "Middle name (optional)", existing.Profile.MiddleName)
-	cfg.Profile.LastName = promptWithDefault(reader, "Last name", existing.Profile.LastName)
+	me.FirstName = promptWithDefault(reader, "First name", prev.FirstName)
+	me.MiddleName = promptWithDefault(reader, "Middle name (optional)", prev.MiddleName)
+	me.LastName = promptWithDefault(reader, "Last name", prev.LastName)
 	nameVariants := promptWithDefault(reader,
 		"Other spellings of your name brokers might have, e.g. without diacritics - comma separated (optional)",
-		strings.Join(existing.Profile.NameVariants, ", "))
-	cfg.Profile.NameVariants = splitAndTrim(nameVariants)
-	cfg.Profile.Email = promptWithDefault(reader, "Email address", existing.Profile.Email)
+		strings.Join(prev.NameVariants, ", "))
+	me.NameVariants = splitAndTrim(nameVariants)
+	me.Email = promptWithDefault(reader, "Email address", prev.Email)
 	otherEmails := promptWithDefault(reader,
 		"Other email addresses you've used over the years - comma separated (optional)",
-		strings.Join(existing.Profile.AdditionalEmails, ", "))
-	cfg.Profile.AdditionalEmails = splitAndTrim(otherEmails)
-	cfg.Profile.Address = promptWithDefault(reader, "Street address (optional)", existing.Profile.Address)
-	cfg.Profile.City = promptWithDefault(reader, "City (optional)", existing.Profile.City)
-	cfg.Profile.State = promptWithDefault(reader, "State/Province (optional)", existing.Profile.State)
-	cfg.Profile.ZipCode = promptWithDefault(reader, "ZIP/Postal code (optional)", existing.Profile.ZipCode)
-	cfg.Profile.Country = promptWithDefault(reader, "Country (optional)", existing.Profile.Country)
+		strings.Join(prev.AdditionalEmails, ", "))
+	me.AdditionalEmails = splitAndTrim(otherEmails)
+	me.Address = promptWithDefault(reader, "Street address (optional)", prev.Address)
+	me.City = promptWithDefault(reader, "City (optional)", prev.City)
+	me.State = promptWithDefault(reader, "State/Province (optional)", prev.State)
+	me.ZipCode = promptWithDefault(reader, "ZIP/Postal code (optional)", prev.ZipCode)
+	me.Country = promptWithDefault(reader, "Country (optional)", prev.Country)
 	prevAddresses := promptWithDefault(reader,
 		"Previous address(es) from the last 5-7 years, if different - semicolon separated (optional)",
-		strings.Join(existing.Profile.PreviousAddresses, "; "))
-	cfg.Profile.PreviousAddresses = splitAndTrimBy(prevAddresses, ";")
-	cfg.Profile.Phone = promptWithDefault(reader, "Phone number (optional)", existing.Profile.Phone)
+		strings.Join(prev.PreviousAddresses, "; "))
+	me.PreviousAddresses = splitAndTrimBy(prevAddresses, ";")
+	me.Phone = promptWithDefault(reader, "Phone number (optional)", prev.Phone)
 	otherPhones := promptWithDefault(reader,
 		"Other phone numbers you've used - comma separated (optional)",
-		strings.Join(existing.Profile.AdditionalPhones, ", "))
-	cfg.Profile.AdditionalPhones = splitAndTrim(otherPhones)
+		strings.Join(prev.AdditionalPhones, ", "))
+	me.AdditionalPhones = splitAndTrim(otherPhones)
 
 	fmt.Println()
 	fmt.Println("📧 Sending")
@@ -106,7 +109,7 @@ func runInit() error {
 		fmt.Println()
 		fmt.Println("Sending account (any provider with SMTP access):")
 		// Reply monitoring (inbox:) is carried over below, set up via Settings or config.yaml.
-		cfg.Email, _ = promptMailAccount(reader, cfg.Profile.Email, existing.Email)
+		cfg.Email, _ = promptMailAccount(reader, me.Email, existing.Email)
 	}
 
 	fmt.Println()
@@ -141,13 +144,12 @@ func runInit() error {
 	cfg.Inbox = existing.Inbox
 	cfg.Pipeline = existing.Pipeline
 
-	// keep profiles added via `profile add`; sync any "default" entry with the
-	// primary fields just entered
-	cfg.Profiles = make([]config.NamedProfile, len(existing.Profiles))
-	copy(cfg.Profiles, existing.Profiles)
+	// keep profiles added via `profile add` (and the primary one's mail
+	// override); only the primary profile's fields were just entered
+	cfg.Profiles = append([]config.NamedProfile(nil), existing.GetProfiles()...)
 	for i := range cfg.Profiles {
-		if strings.EqualFold(cfg.Profiles[i].ID, config.DefaultProfileID) {
-			cfg.Profiles[i].Profile = cfg.Profile
+		if strings.EqualFold(cfg.Profiles[i].ID, prev.ID) {
+			cfg.Profiles[i].Profile = me
 		}
 	}
 

@@ -14,7 +14,7 @@ import (
 
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
-	if cfg == nil || cfg.Profile.FirstName == "" && len(cfg.Profiles) == 0 {
+	if cfg == nil || !cfg.HasProfile() {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
@@ -150,7 +150,7 @@ func (s *Server) getPipelineStats(profileID string) PipelineStats {
 
 func (s *Server) handlePipeline(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
-	if cfg == nil || cfg.Profile.FirstName == "" && len(cfg.Profiles) == 0 {
+	if cfg == nil || !cfg.HasProfile() {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
@@ -255,7 +255,7 @@ func (s *Server) handleFormSkip(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
-	if cfg == nil || cfg.Profile.FirstName == "" && len(cfg.Profiles) == 0 {
+	if cfg == nil || !cfg.HasProfile() {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}

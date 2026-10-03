@@ -52,14 +52,14 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 	message.WriteString(msg.Body)
 
 	var auth smtp.Auth
-	if s.config.UseTLS {
+	if s.config.TLS() {
 		auth = smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
 	} else if s.config.Username != "" {
 		return Result{Success: false, Error: fmt.Errorf("SMTP auth requires TLS")}
 	}
 
 	var err error
-	if s.config.UseTLS {
+	if s.config.TLS() {
 		err = s.send(ctx, addr, auth, msg.From, msg.To, []byte(message.String()), true)
 	} else {
 		err = s.send(ctx, addr, nil, msg.From, msg.To, []byte(message.String()), false)

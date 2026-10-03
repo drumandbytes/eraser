@@ -156,9 +156,9 @@ func TestHandleSettingsProfileEditUnknownIDReturns404(t *testing.T) {
 	}
 }
 
-func TestHandleSettingsProfileEditLegacySingleProfileWritesBackToProfileBlock(t *testing.T) {
-	// No profiles: list configured - just the legacy top-level profile:
-	// block, synthesized as the "default" profile by GetProfiles().
+func TestHandleSettingsProfileEditPromotesLegacyProfileBlock(t *testing.T) {
+	// Legacy top-level profile: block only (an in-memory config; Load would
+	// already have normalized it). Editing writes it as profiles: [default].
 	s := newTestServer(t, testConfig())
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 
@@ -177,11 +177,11 @@ func TestHandleSettingsProfileEditLegacySingleProfileWritesBackToProfileBlock(t 
 	}
 
 	cfg := s.getConfig()
-	if len(cfg.Profiles) != 0 {
-		t.Errorf("expected editing the legacy default profile to stay in single-profile mode (no profiles: list), got %+v", cfg.Profiles)
+	if len(cfg.Profiles) != 1 || cfg.Profiles[0].ID != config.DefaultProfileID || cfg.Profiles[0].FirstName != "New" || cfg.Profiles[0].Email != "new@example.com" {
+		t.Errorf("expected profiles: [default] with the edit, got %+v", cfg.Profiles)
 	}
-	if cfg.Profile.FirstName != "New" || cfg.Profile.Email != "new@example.com" {
-		t.Errorf("expected legacy profile: block to be updated, got %+v", cfg.Profile)
+	if cfg.Profile.FirstName != "" {
+		t.Errorf("expected the legacy profile: block cleared, got %+v", cfg.Profile)
 	}
 }
 
@@ -258,7 +258,6 @@ func profileWithMailOverride() *config.Config {
 				SMTP: config.SMTPConfig{
 					Host:     "smtp.gmail.com",
 					Port:     465,
-					UseTLS:   true,
 					Username: "spouse@gmail.com",
 					Password: "original-app-password",
 				},

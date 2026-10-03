@@ -62,7 +62,11 @@ release:
   mode: keep-existing
 
 # macOS: brew install drumandbytes/homebrew-tap/eraser
-# (Homebrew strips the Gatekeeper quarantine on cask install, so no xattr dance.)
+# The binary is unsigned and Homebrew keeps the Gatekeeper quarantine on cask
+# installs (brew trust doesn't clear it), so the post-install hook removes it.
+# Integrity still comes from the cask's sha256 check.
+# ponytail: xattr hook; Developer ID signing + notarization if we get an
+# Apple developer account.
 homebrew_casks:
   - name: eraser
     repository:
@@ -76,6 +80,12 @@ homebrew_casks:
     commit_author:
       name: dnb-robot[bot]
       email: 4773076+dnb-robot[bot]@users.noreply.github.com
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/eraser"]
+          end
     caveats: |
       Config lives at ~/.eraser/config.yaml. Start with:
         eraser serve      # web UI at http://localhost:8080

@@ -46,9 +46,10 @@ brew install --cask drumandbytes/tap/eraser
 ```
 
 Homebrew 6+ asks you to trust a third-party tap once — if it does, run
-`brew trust drumandbytes/tap` and re-run the install. On macOS this also clears
-the Gatekeeper quarantine (no `xattr` step). If `brew` on your Linux setup
-doesn't do casks, use the tarball below.
+`brew trust drumandbytes/tap` and re-run the install. The cask removes macOS's
+Gatekeeper quarantine from the (unsigned) binary after install, so there's no
+"Open Anyway" step. If `brew` on your Linux setup doesn't do casks, use the
+tarball below.
 
 **Prebuilt binary:** grab your OS's file from the
 [Releases page](https://github.com/drumandbytes/eraser/releases) — the broker

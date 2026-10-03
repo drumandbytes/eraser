@@ -111,8 +111,8 @@ func TestSetupWizardManualPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("config not written: %v", err)
 	}
-	if saved.Profile.FirstName != "Ada" || saved.Profile.Email != "ada@example.com" {
-		t.Errorf("saved profile wrong: %+v", saved.Profile)
+	if p := saved.PrimaryProfile(); p.ID != config.DefaultProfileID || p.FirstName != "Ada" || p.Email != "ada@example.com" || len(saved.Profiles) != 1 {
+		t.Errorf("saved profiles wrong: %+v", saved.Profiles)
 	}
 	if !saved.IsManualSend() {
 		t.Errorf("expected manual send mode, got %q", saved.Options.SendMode)
@@ -196,4 +196,46 @@ func readBody(t *testing.T, resp *http.Response) string {
 		t.Fatalf("read body: %v", err)
 	}
 	return string(b)
+}
+
+// Settings -> "Edit Email Settings" re-runs the wizard on an existing install.
+// Finishing it must change only the primary profile and the sending account,
+// not drop other profiles, the inbox or tuned options.
+func TestSetupWizardRerunKeepsExistingConfig(t *testing.T) {
+	c, s := newWizardClient(t)
+	existing := testConfig("default", "spouse")
+	existing.Inbox = config.InboxConfig{Enabled: true, Server: "imap.example.org", Port: 993, Email: "default@example.com", Password: "imap-pw"}
+	existing.Options.DailySendLimit = 120
+	existing.Email = config.EmailConfig{From: "default@example.com", SMTP: config.SMTPConfig{Host: "smtp.gmail.com", Port: 465, Username: "default@example.com", Password: "old-pw"}}
+	s.config.Store(existing)
+
+	if body := c.get("/setup/profile"); !strings.Contains(body, `value="default@example.com"`) {
+		t.Fatal("profile step not prefilled from the saved primary profile")
+	}
+	c.post("/setup/profile", url.Values{"first_name": {"Ada"}, "last_name": {"Lovelace"}, "email": {"default@example.com"}})
+	c.get("/setup/email")
+	resp := c.post("/setup/email", url.Values{
+		"mail_provider": {"fastmail"},
+		"mail_address":  {"default@example.com"},
+		"mail_password": {"new-pw"},
+	})
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("email POST: got %d\n%s", resp.StatusCode, readBody(t, resp))
+	}
+	readBody(t, resp)
+	c.get("/setup/complete")
+
+	saved, err := config.Load(s.configPath)
+	if err != nil {
+		t.Fatalf("config not written: %v", err)
+	}
+	if len(saved.Profiles) != 2 || saved.PrimaryProfile().FirstName != "Ada" {
+		t.Errorf("profiles = %+v, want default updated and spouse kept", saved.Profiles)
+	}
+	if saved.Inbox.Server != "imap.example.org" || saved.Options.DailySendLimit != 120 {
+		t.Errorf("inbox/options lost: %+v %+v", saved.Inbox, saved.Options)
+	}
+	if saved.Email.SMTP.Host != "smtp.fastmail.com" || saved.Email.SMTP.Password != "new-pw" {
+		t.Errorf("email not updated: %+v", saved.Email)
+	}
 }

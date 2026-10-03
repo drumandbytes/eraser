@@ -8,16 +8,14 @@ Most installs only ever need one profile - the one set up by `eraser init`. Ever
 
 This was designed so a single-profile install needs zero changes:
 
-- **Config**: `Config.GetProfiles()` returns `Config.Profiles` if that list is non-empty; otherwise it wraps the legacy top-level `Config.Profile` field as a single profile with `ID: "default"`. A config with no `profiles:` key behaves exactly as before.
+- **Config**: `config.Load`/`Save` move a legacy top-level `profile:` block (pre-0.10) into `profiles:` as `id: default`, so old configs keep working and are rewritten in the current shape on the next save. `Config.GetProfiles()` still wraps an in-memory `Config.Profile` the same way.
 - **History**: a new `profile_id TEXT NOT NULL DEFAULT 'default'` column was added to `removal_requests`, `broker_responses`, and `pending_tasks` via `ALTER TABLE ... ADD COLUMN ... DEFAULT`, which auto-backfills every pre-existing row to `"default"` - no manual migration step. `internal/history/history_test.go`'s `TestMigrationBackfillsExistingRowsToDefaultProfile` verifies this directly by creating a legacy pre-migration table and confirming old rows survive.
 
 ## Config model (`internal/config/config.go`)
 
 ```yaml
-profile:              # legacy/primary profile - always present
-  first_name: ...
-profiles:              # optional - once present, this list wins over `profile` above
-  - id: default
+profiles:
+  - id: default        # the primary profile, created by `eraser init` / web setup
     first_name: ...
   - id: spouse
     first_name: ...
@@ -25,6 +23,7 @@ profiles:              # optional - once present, this list wins over `profile` 
 
 - `NamedProfile` = `ID string` + inlined `Profile`
 - `Config.GetProfiles() []NamedProfile` - the resolved list (see above)
+- `Config.PrimaryProfile() NamedProfile` - the `default` entry, else the first; what `eraser init` edits
 - `Config.GetProfile(id string) (NamedProfile, error)` - resolves one profile:
   - `id == ""` with exactly one configured profile → that profile
   - `id == ""` with more than one configured → error listing available IDs (this is what makes `--profile` "required if ambiguous")
@@ -54,14 +53,12 @@ profiles:
     first_name: ...
     mail:
       email:              # overrides the shared email: block for this profile's sends
-        provider: smtp
         from: spouse@example.org
         smtp:
           host: smtp.fastmail.com
           port: 465
           username: spouse@example.org
           password: app-password
-          use_tls: true
       inbox:               # overrides the shared inbox: block for this profile's replies
         enabled: true
         provider: fastmail # preset id fills server/port; or set server + port

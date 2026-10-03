@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -305,5 +306,90 @@ func TestLoadFillsInboxServerFromProviderPreset(t *testing.T) {
 	}
 	if cfg.Inbox.Server != "127.0.0.1" || cfg.Inbox.Port != 1143 {
 		t.Errorf("proton inbox = %s:%d, want 127.0.0.1:1143", cfg.Inbox.Server, cfg.Inbox.Port)
+	}
+}
+
+// A pre-0.10 config: legacy profile: block, provider: smtp, explicit use_tls,
+// inbox provider without server, and since-removed pipeline keys.
+const legacyConfig = `
+profile:
+  first_name: Jane
+  last_name: Doe
+  email: jane@example.org
+email:
+  provider: smtp
+  from: jane@example.org
+  smtp:
+    host: smtp.gmail.com
+    port: 465
+    username: jane@example.org
+    password: x
+    use_tls: true
+options:
+  template: gdpr
+  dry_run: false
+  regions: []
+inbox:
+  enabled: true
+  provider: gmail
+  email: jane@example.org
+  password: x
+pipeline:
+  auto_confirm: false
+  auto_fill_forms: false
+  browser_timeout_sec: 30
+`
+
+func TestLegacyConfigLoadsAndSavesInCurrentFormat(t *testing.T) {
+	cfg, err := Load(writeTestConfig(t, legacyConfig))
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if p := cfg.PrimaryProfile(); p.ID != DefaultProfileID || p.FirstName != "Jane" || len(cfg.Profiles) != 1 {
+		t.Fatalf("legacy profile: not moved into profiles: %+v", cfg.Profiles)
+	}
+	if cfg.Inbox.Server != "imap.gmail.com" || !cfg.Email.SMTP.TLS() {
+		t.Fatalf("inbox/tls defaults lost: %+v %+v", cfg.Inbox, cfg.Email.SMTP)
+	}
+
+	path := filepath.Join(t.TempDir(), "saved.yaml")
+	if err := Save(path, cfg); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	raw, _ := os.ReadFile(path)
+	for _, gone := range []string{"\nprofile:", "auto_confirm", "auto_fill_forms", "dry_run", "regions"} {
+		if strings.Contains(string(raw), gone) {
+			t.Errorf("saved config still has %q:\n%s", gone, raw)
+		}
+	}
+	again, err := Load(path)
+	if err != nil || again.PrimaryProfile().Email != "jane@example.org" || again.Email.SMTP.Host != "smtp.gmail.com" {
+		t.Fatalf("round trip lost data: %v %+v", err, again)
+	}
+}
+
+// The minimal current-format config: no provider:, no use_tls.
+func TestMinimalEmailConfigDefaultsToTLS(t *testing.T) {
+	e := EmailConfig{From: "a@example.org", SMTP: SMTPConfig{Host: "smtp.example.org", Port: 587, Username: "a", Password: "p"}}
+	if err := validateEmailConfig(e); err != nil || !e.SMTP.TLS() {
+		t.Fatalf("validate = %v, TLS = %v", err, e.SMTP.TLS())
+	}
+	e.SMTP.UseTLS = new(false)
+	if err := validateEmailConfig(e); err == nil {
+		t.Fatal("use_tls: false with a username must be rejected")
+	}
+	e.Provider = "sendgrid"
+	if err := validateEmailConfig(e); err == nil || !strings.Contains(err.Error(), "only smtp") {
+		t.Fatalf("unknown provider: %v", err)
+	}
+}
+
+func TestValidateInboxNamesUnknownProvider(t *testing.T) {
+	err := validateInboxConfig(InboxConfig{Enabled: true, Provider: "outlok", Email: "a@b.c", Password: "p", Port: 993})
+	if err == nil || !strings.Contains(err.Error(), `"outlok"`) {
+		t.Fatalf("got %v", err)
 	}
 }

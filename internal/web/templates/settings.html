@@ -75,7 +75,7 @@
                         <p class="text-secondary">{{.Config.Email.From}}</p>
                     </div>
                 </div>
-                {{if eq .Config.Email.Provider "smtp"}}
+                {{if .Config.Email.Configured}}
                 <div class="flex items-start justify-between py-3">
                     <div>
                         <p class="text-sm text-muted">SMTP Server</p>

@@ -191,19 +191,13 @@ func runProfileEdit(id string) error {
 	updated.Phone = promptWithDefault(reader, "Phone number (optional)", existing.Phone)
 	updated.Mail = promptMailOverride(reader, existing.Mail)
 
-	if len(cfg.Profiles) > 0 {
-		for i, p := range cfg.Profiles {
-			if strings.EqualFold(p.ID, existing.ID) {
-				cfg.Profiles[i] = updated
-				break
-			}
+	profiles := append([]config.NamedProfile(nil), cfg.GetProfiles()...)
+	for i, p := range profiles {
+		if strings.EqualFold(p.ID, existing.ID) {
+			profiles[i] = updated
 		}
-	} else {
-		// Legacy single-profile mode (no profiles: list yet) - write back to
-		// the top-level profile: block rather than promoting to a profiles:
-		// list just because it was edited.
-		cfg.Profile = updated.Profile
 	}
+	cfg.Profiles, cfg.Profile = profiles, config.Profile{}
 
 	if err := config.Save(configPath, cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)

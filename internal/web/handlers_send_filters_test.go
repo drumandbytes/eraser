@@ -26,7 +26,7 @@ func TestGetBrokersWithStatusRecipientFilters(t *testing.T) {
 
 func TestHandleAPISendAllRejectsUnknownBrokerID(t *testing.T) {
 	cfg := testConfig()
-	cfg.Email.Provider = "smtp"
+	cfg.Email.SMTP.Host = "smtp.example.com"
 	s := newTestServer(t, cfg)
 	s.brokerDB.Brokers = []broker.Broker{{ID: "alpha", Name: "Alpha", Email: "privacy@alpha.example", Region: "us"}}
 

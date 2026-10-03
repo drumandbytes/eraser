@@ -204,26 +204,26 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 Your config lives at `~/.eraser/config.yaml`. Here's the full schema:
 
 ```yaml
-profile:
-  first_name: Jane
-  last_name: Doe
-  email: jane@example.com
-  # Optional but helps brokers find your records
-  address: "123 Main Street"
-  city: "San Francisco"
-  state: "CA"
-  zip_code: "94102"
-  country: "USA"
-  phone: "+1-555-123-4567"
-  date_of_birth: "1990-01-15"
-  # Optional: other identities/addresses brokers may have indexed you under
-  # additional_emails: [old-address@example.com]
-  # name_variants: [Jane D.]
-  # previous_addresses: ["456 Old Street, San Francisco, CA"]
-  # additional_phones: ["+1-555-987-6543"]
+profiles:
+  - id: default
+    first_name: Jane
+    last_name: Doe
+    email: jane@example.com
+    # Optional but helps brokers find your records
+    address: "123 Main Street"
+    city: "San Francisco"
+    state: "CA"
+    zip_code: "94102"
+    country: "USA"
+    phone: "+1-555-123-4567"
+    date_of_birth: "1990-01-15"
+    # Optional: other identities/addresses brokers may have indexed you under
+    # additional_emails: [old-address@example.com]
+    # name_variants: [Jane D.]
+    # previous_addresses: ["456 Old Street, San Francisco, CA"]
+    # additional_phones: ["+1-555-987-6543"]
 
 email:
-  provider: smtp
   from: jane@example.org
 
   smtp:
@@ -231,7 +231,6 @@ email:
     port: 465                # 465 = TLS, any other port = STARTTLS
     username: jane@example.org
     password: your-app-password
-    use_tls: true
 
 options:
   template: generic  # or "gdpr" or "ccpa"

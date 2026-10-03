@@ -58,6 +58,9 @@ func (s *Server) handleSetupProfile(w http.ResponseWriter, r *http.Request) {
 	if session != nil {
 		profile = session.Profile
 	}
+	if cfg := s.getConfig(); profile.FirstName == "" && cfg != nil && cfg.HasProfile() {
+		profile = cfg.PrimaryProfile().Profile // re-running setup: start from what's saved
+	}
 	data := map[string]interface{}{
 		"Title":   "Setup - Profile",
 		"Step":    "profile",
@@ -74,6 +77,12 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// prefill and keep-blank-password from the saved account when re-running
+	prev := session.Email
+	if cfg := s.getConfig(); !prev.Configured() && cfg != nil {
+		prev = cfg.Email
+	}
+
 	if r.Method == "POST" {
 		limitFormBody(w, r)
 
@@ -81,7 +90,6 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		if r.FormValue("manual") == "1" {
 			s.updateSession(r, func(sess *Session) {
 				sess.ManualSend = true
-				sess.Email = config.Email{Provider: "manual"} // sentinel so the complete step's guard passes
 				sess.Step = "complete"
 			})
 			http.Redirect(w, r, "/setup/complete", http.StatusFound)
@@ -89,8 +97,8 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		}
 
 		form := readMailForm(r)
-		if form.Password == "" && form.Username != "" && strings.EqualFold(form.Username, session.Email.SMTP.Username) {
-			form.Password = session.Email.SMTP.Password
+		if form.Password == "" && form.Username != "" && strings.EqualFold(form.Username, prev.SMTP.Username) {
+			form.Password = prev.SMTP.Password
 		}
 		if errors := form.validate("smtp", true); len(errors) > 0 {
 			data := map[string]interface{}{
@@ -112,12 +120,12 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := mailFormFromConfig(session.Email, nil)
+	form := mailFormFromConfig(prev, nil)
 	if form.Address == "" {
 		form.Address = session.Profile.Email
 	}
 	view := newMailFormView("smtp", form, nil)
-	if session.Email.SMTP.Password != "" {
+	if prev.SMTP.Password != "" {
 		view.PasswordPlaceholder = "Leave blank to keep the one you entered"
 	}
 	data := map[string]interface{}{
@@ -136,7 +144,7 @@ func (s *Server) handleSetupTest(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/setup/profile", http.StatusFound)
 		return
 	}
-	if session.Email.Provider == "" {
+	if !session.Email.Configured() {
 		http.Redirect(w, r, "/setup/email", http.StatusFound)
 		return
 	}
@@ -153,7 +161,7 @@ func (s *Server) handleSetupTest(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 	session := s.getSession(r)
 
-	if session == nil || session.Email.Provider == "" {
+	if session == nil || !session.Email.Configured() {
 		w.WriteHeader(http.StatusBadRequest)
 		_, _ = w.Write([]byte(`<div class="text-error">Email not configured. Please go back to the email step.</div>`))
 		return
@@ -223,28 +231,41 @@ Eraser`, session.Profile.FirstName),
 func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 	session := s.getSession(r)
 
-	if session == nil || session.Profile.FirstName == "" || session.Email.Provider == "" {
+	if session == nil || session.Profile.FirstName == "" || (!session.Email.Configured() && !session.ManualSend) {
 		http.Redirect(w, r, "/setup", http.StatusFound)
 		return
 	}
 
-	opts := config.Options{
-		// This fork is customized for GDPR Article 17 use (see EU-NOTES.md) -
-		// default fresh setups to gdpr, not upstream's US/CCPA-oriented
-		// "generic". Matches the CLI's `init` default.
-		Template:    "gdpr",
-		RateLimitMs: 2000,
-	}
-	emailCfg := session.Email
-	if session.ManualSend {
-		opts.SendMode = "manual"
-		emailCfg = config.Email{}
-	}
-
+	// Re-running the wizard (Settings -> Edit Email Settings) updates the
+	// existing config: only the primary profile, email and send mode change;
+	// other profiles, inbox, options and schedule are kept.
 	cfg := &config.Config{
-		Profile: session.Profile,
-		Email:   emailCfg,
-		Options: opts,
+		Profiles: []config.NamedProfile{{ID: config.DefaultProfileID, Profile: session.Profile}},
+		Options: config.Options{
+			// This fork is customized for GDPR Article 17 use (see EU-NOTES.md) -
+			// default fresh setups to gdpr, not upstream's US/CCPA-oriented
+			// "generic". Matches the CLI's `init` default.
+			Template:    "gdpr",
+			RateLimitMs: 2000,
+		},
+	}
+	if cur := s.getConfig(); cur != nil && cur.HasProfile() {
+		updated := *cur
+		primary := cur.PrimaryProfile().ID
+		updated.Profiles = append([]config.NamedProfile(nil), cur.GetProfiles()...)
+		for i := range updated.Profiles {
+			if updated.Profiles[i].ID == primary {
+				updated.Profiles[i].Profile = session.Profile
+			}
+		}
+		updated.Profile = config.Profile{}
+		cfg = &updated
+	}
+	cfg.Email = session.Email
+	cfg.Options.SendMode = ""
+	if session.ManualSend {
+		cfg.Options.SendMode = "manual"
+		cfg.Email = config.Email{}
 	}
 
 	if err := config.Save(s.configPath, cfg); err != nil {

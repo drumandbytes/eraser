@@ -201,7 +201,7 @@ func inboxFormView(cfg *config.Config) mailFormView {
 	if cfg == nil {
 		return newMailFormView("imap", mailForm{}, nil)
 	}
-	f := mailForm{Address: cfg.Profile.Email, Provider: config.ProviderIDForHosts(cfg.Email.SMTP.Host, "")}
+	f := mailForm{Address: cfg.PrimaryProfile().Email, Provider: config.ProviderIDForHosts(cfg.Email.SMTP.Host, "")}
 	if in := cfg.Inbox; in.Email != "" {
 		f = mailForm{Address: in.Email, Username: in.Email, IMAPHost: in.Server, IMAPPort: in.Port}
 		if _, ok := config.ProviderByID(in.Provider); ok {

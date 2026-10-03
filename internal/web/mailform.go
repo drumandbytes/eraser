@@ -67,14 +67,12 @@ func mailFormFromConfig(e config.EmailConfig, in *config.InboxConfig) mailForm {
 
 func (f mailForm) emailConfig() config.EmailConfig {
 	return config.EmailConfig{
-		Provider: "smtp",
-		From:     f.Address,
+		From: f.Address,
 		SMTP: config.SMTPConfig{
 			Host:     f.SMTPHost,
 			Port:     f.SMTPPort,
 			Username: f.Username,
 			Password: f.Password,
-			UseTLS:   true, // 465 implicit TLS, any other port STARTTLS
 		},
 	}
 }
@@ -86,7 +84,7 @@ func (f mailForm) inboxConfig() *config.InboxConfig {
 	}
 	inbox := &config.InboxConfig{
 		Enabled:  true,
-		Provider: f.Provider,
+		Provider: presetID(f.Provider),
 		Server:   f.IMAPHost,
 		Port:     f.IMAPPort,
 		Email:    f.Username,
@@ -152,4 +150,13 @@ func (f mailForm) validate(mode string, requirePassword bool) map[string]string 
 		errors["imap_host"] = "IMAP server and port are required (this provider has no inbox access)"
 	}
 	return errors
+}
+
+// presetID drops "custom" (and unknown ids) so the saved inbox only names a
+// real preset.
+func presetID(id string) string {
+	if p, ok := config.ProviderByID(id); ok && p.IMAPHost != "" {
+		return p.ID
+	}
+	return ""
 }

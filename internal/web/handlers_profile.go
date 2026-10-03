@@ -211,28 +211,14 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 		}
 
 		newCfg := *cfg
-		if len(cfg.Profiles) > 0 {
-			updated := make([]config.NamedProfile, len(cfg.Profiles))
-			copy(updated, cfg.Profiles)
-			found := false
-			for i, p := range updated {
-				if strings.EqualFold(p.ID, existing.ID) {
-					updated[i].Profile = profile
-					updated[i].Mail = mail
-					found = true
-					break
-				}
+		updated := append([]config.NamedProfile(nil), cfg.GetProfiles()...)
+		for i, p := range updated {
+			if strings.EqualFold(p.ID, existing.ID) {
+				updated[i].Profile = profile
+				updated[i].Mail = mail
 			}
-			if !found {
-				http.Error(w, "Profile not found", http.StatusNotFound)
-				return
-			}
-			newCfg.Profiles = updated
-		} else {
-			// legacy single profile: write back to profile:, no promotion to a
-			// list; a mail override doesn't apply here
-			newCfg.Profile = profile
 		}
+		newCfg.Profiles, newCfg.Profile = updated, config.Profile{}
 
 		if err := config.Save(s.configPath, &newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{

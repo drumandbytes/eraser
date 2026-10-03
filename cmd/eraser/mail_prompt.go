@@ -62,14 +62,17 @@ func promptMailAccount(reader *bufio.Reader, defaultAddr string, existing config
 	password := promptSecretWithDefault(reader, "  App password", existing.SMTP.Password)
 
 	e := config.EmailConfig{
-		Provider: "smtp",
-		From:     addr,
-		SMTP:     config.SMTPConfig{Host: smtpHost, Port: smtpPort, Username: user, Password: password, UseTLS: true},
+		From: addr,
+		SMTP: config.SMTPConfig{Host: smtpHost, Port: smtpPort, Username: user, Password: password},
 	}
 	if imapHost == "" {
 		return e, nil
 	}
-	inbox := &config.InboxConfig{Enabled: true, Provider: p.ID, Server: imapHost, Port: imapPort, Email: user, Password: password}
+	provider := p.ID
+	if provider == "custom" {
+		provider = ""
+	}
+	inbox := &config.InboxConfig{Enabled: true, Provider: provider, Server: imapHost, Port: imapPort, Email: user, Password: password}
 	config.ApplyInboxDefaults(inbox)
 	return e, inbox
 }

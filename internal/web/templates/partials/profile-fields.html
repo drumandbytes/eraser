@@ -100,11 +100,14 @@
     </div>
 </div>
 
-<!-- Dedicated Email Account -->
+<!-- Dedicated Email Account: profile add/edit only. The setup wizard reuses
+     these fields without .Mail; its email account is the next step. -->
+{{if .Mail}}
 <div class="pt-6 border-t border-[var(--border)]">
     <p class="text-sm text-muted mb-1">Optional: dedicated email account</p>
     <p class="text-xs text-muted mb-4">By default this profile sends and gets its replies monitored through the account configured in <a href="/settings" class="text-accent hover:underline">Settings</a>. Give it its own account instead if you'd rather each profile send from (and get replies to) a different address - leave the address blank to use the shared account.</p>
 
     {{template "partials/mail-account.html" .Mail}}
 </div>
+{{end}}
 {{end}}

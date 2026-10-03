@@ -239,3 +239,17 @@ func TestSetupWizardRerunKeepsExistingConfig(t *testing.T) {
 		t.Errorf("email not updated: %+v", saved.Email)
 	}
 }
+
+// The wizard's profile step reuses the profile fields but has no mail-account
+// data (the account is the next step): the section must not render there as
+// an empty provider dropdown.
+func TestSetupProfileStepHasNoEmptyMailSection(t *testing.T) {
+	c, _ := newWizardClient(t)
+	if body := c.get("/setup/profile"); strings.Contains(body, `name="mail_provider"`) {
+		t.Error("setup profile step renders the dedicated mail-account section")
+	}
+	c.post("/setup/profile", url.Values{"first_name": {"Ada"}, "last_name": {"Lovelace"}, "email": {"ada@example.com"}})
+	if body := c.get("/setup/email"); !strings.Contains(body, `<option value="fastmail"`) {
+		t.Error("setup email step lost its provider options")
+	}
+}

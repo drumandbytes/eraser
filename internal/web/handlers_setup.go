@@ -26,7 +26,6 @@ func (s *Server) handleSetupProfile(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "POST" {
 		limitFormBody(w, r)
 		profile, errors := buildProfileFromForm(r)
-		profile.DateOfBirth = strings.TrimSpace(r.FormValue("dob"))
 
 		if len(errors) > 0 {
 			data := map[string]interface{}{
@@ -126,7 +125,7 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 	}
 	view := newMailFormView("smtp", form, nil)
 	if prev.SMTP.Password != "" {
-		view.PasswordPlaceholder = "Leave blank to keep the one you entered"
+		view.PasswordPlaceholder = "Leave blank to keep the current password"
 	}
 	data := map[string]interface{}{
 		"Title":   "Setup - Email",
@@ -255,7 +254,7 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		updated.Profiles = append([]config.NamedProfile(nil), cur.GetProfiles()...)
 		for i := range updated.Profiles {
 			if updated.Profiles[i].ID == primary {
-				updated.Profiles[i].Profile = session.Profile
+				updated.Profiles[i].Profile = applyProfileForm(updated.Profiles[i].Profile, session.Profile)
 			}
 		}
 		updated.Profile = config.Profile{}

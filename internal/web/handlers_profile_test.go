@@ -422,3 +422,30 @@ func TestHandleSettingsProfileNewSESOverrideHasNoInbox(t *testing.T) {
 		t.Errorf("expected no inbox override for send-only SES, got %+v", m.Inbox)
 	}
 }
+
+// The edit form has no inputs for name variants, other emails/phones,
+// previous addresses or date of birth; saving it must not erase them.
+func TestHandleSettingsProfileEditKeepsFieldsWithoutInputs(t *testing.T) {
+	cfg := testConfig("default", "spouse")
+	cfg.Profiles[1].NameVariants = []string{"Sp. Ouse"}
+	cfg.Profiles[1].AdditionalEmails = []string{"old@example.com"}
+	cfg.Profiles[1].AdditionalPhones = []string{"+371 2000 0000"}
+	cfg.Profiles[1].PreviousAddresses = []string{"1 Old Rd"}
+	cfg.Profiles[1].DateOfBirth = "1990-01-01"
+	s := newTestServer(t, cfg)
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	form := url.Values{"first_name": {"New"}, "last_name": {"Name"}, "email": {"spouse@example.com"}}
+	req := withURLParam(httptest.NewRequest(http.MethodPost, "/settings/profiles/spouse/edit", strings.NewReader(form.Encode())), "profileID", "spouse")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileEdit(rec, req)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303, got %d: %s", rec.Code, rec.Body.String())
+	}
+
+	p, _ := s.getConfig().GetProfile("spouse")
+	if p.FirstName != "New" || len(p.NameVariants) != 1 || len(p.AdditionalEmails) != 1 || len(p.AdditionalPhones) != 1 || len(p.PreviousAddresses) != 1 || p.DateOfBirth != "1990-01-01" {
+		t.Errorf("edit erased fields it has no inputs for: %+v", p.Profile)
+	}
+}

@@ -54,7 +54,7 @@ func runInit() error {
 	cfg := &config.Config{}
 	// init edits the primary ("default") profile; others come from `eraser profile`.
 	prev := existing.PrimaryProfile()
-	var me config.Profile
+	me := prev.Profile // start from what's saved so fields init doesn't ask about (date_of_birth) survive
 
 	// Profile
 	fmt.Println("📋 Personal Information (used in removal requests)")

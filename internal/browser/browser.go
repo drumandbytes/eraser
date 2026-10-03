@@ -133,6 +133,15 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		}
 	}
 
+	// The first Run starts Chrome and ties it to that Run's context. Start it
+	// on the long-lived b.ctx: started on the per-call timeout context below,
+	// cancelling that at return closed the browser for every later call
+	// (`eraser fill --pending` fills several forms with one Browser).
+	if err := chromedp.Run(b.ctx); err != nil {
+		result.ErrorMessage = fmt.Sprintf("browser failed to start: %v", err)
+		return result, err
+	}
+
 	ctx, cancel := context.WithTimeout(b.ctx, b.config.Timeout)
 	defer cancel()
 

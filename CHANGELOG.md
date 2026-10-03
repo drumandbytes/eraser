@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.2](https://github.com/drumandbytes/eraser/compare/v0.9.1...v0.9.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* **brokers:** place-exchange needs MAID, not email ([#104](https://github.com/drumandbytes/eraser/issues/104)) ([6d3f91c](https://github.com/drumandbytes/eraser/commit/6d3f91c7a384b420b90c6fa56818e0a6267505b4))
+
 ## [0.9.1](https://github.com/drumandbytes/eraser/compare/v0.9.0...v0.9.1) (2026-09-29)
 
 

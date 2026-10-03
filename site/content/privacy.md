@@ -20,24 +20,24 @@ built, and you can check it in the source.
 
 ## This website
 
-The site is static pages hosted on GitHub Pages, with one third-party script:
-Cloudflare Web Analytics.
+The site is static pages served by Cloudflare Pages. Cloudflare sits in front
+of it and keeps two kinds of aggregate counts:
 
-It records aggregate page views — which pages get visited, roughly how many
-times, and referrers. It sets **no cookies**, uses no cross-site identifier, and
-builds no profile of you. There's no way for us to single you out in it, which
-is also why there's no cookie banner to click through.
+- **Page views** (Cloudflare Web Analytics) — which pages get visited, roughly
+  how many times, and referrers.
+- **Referrals** — which site or link sent a visit: the referring site's name (or
+  a short tag we add to our own links) and the page path, without the query
+  string. Kept for three months.
 
-Two processors are involved in serving you this page:
+Neither sets **cookies**, uses a cross-site identifier, or stores your IP
+address. There's no way for us to single you out in them, which is also why
+there's no cookie banner to click through.
+
+One processor is involved in serving you this page:
 
 | Who | What they see | Why |
 | --- | --- | --- |
-| GitHub (Pages) | Your IP address, as any web server does | Serving the site |
-| Cloudflare | Your IP address, transiently, for the analytics beacon | Aggregate visitor counts |
-
-Cloudflare is not in front of this site — the DNS record is unproxied, so GitHub
-serves you directly. Cloudflare only receives the analytics beacon your browser
-sends.
+| Cloudflare | Your IP address and request headers, as any web server does | Serving the site, aggregate visitor counts |
 
 ## Lawful basis
 

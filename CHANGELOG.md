@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/drumandbytes/eraser/compare/v1.0.0...v1.1.0) (2026-10-03)
+
+
+### Features
+
+* **cli:** multi-value --region/--category on draft, mark-sent, list-brokers, audit-brokers ([#121](https://github.com/drumandbytes/eraser/issues/121)) ([3c98f4f](https://github.com/drumandbytes/eraser/commit/3c98f4fe7b7398ce1dae35481e547e2d58d1dfad))
+* **web:** edit name variants, other emails/phones, previous addresses and date of birth ([#122](https://github.com/drumandbytes/eraser/issues/122)) ([d102181](https://github.com/drumandbytes/eraser/commit/d1021810bd6dd031f1a86c8fdf25c9f930df87e8))
+
 ## [1.0.0](https://github.com/drumandbytes/eraser/compare/v0.11.2...v1.0.0) (2026-10-03)
 
 

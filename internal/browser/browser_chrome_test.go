@@ -130,9 +130,9 @@ func requireChrome(t *testing.T) *Browser {
 		t.Skipf("browser.New failed, skipping Chrome-dependent test: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(b.ctx, 10*time.Second)
-	defer cancel()
-	if err := chromedp.Run(ctx, chromedp.Navigate("about:blank")); err != nil {
+	// Start Chrome on b.ctx itself: cancelling the context of the first Run
+	// closes the browser.
+	if err := chromedp.Run(b.ctx, chromedp.Navigate("about:blank")); err != nil {
 		b.Close()
 		// GitHub's runners ship Chrome: there a missing browser is a broken
 		// setup, not a reason to quietly skip the browser tests.

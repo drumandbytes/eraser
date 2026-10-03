@@ -106,6 +106,18 @@ func TestNavigateAndFillSubmitsForm(t *testing.T) {
 	}
 }
 
+// One Browser fills several forms in a row, as `eraser fill --pending` does.
+func TestNavigateAndFillReusesBrowser(t *testing.T) {
+	b := chromeBrowser(t, chromeConfig(t))
+	for i := 0; i < 2; i++ {
+		site := newOptOutSite(t, optOutForm)
+		res, err := b.NavigateAndFill(site.URL, "acme", true)
+		if err != nil || !res.Success {
+			t.Fatalf("fill #%d: %+v, %v", i+1, res, err)
+		}
+	}
+}
+
 func TestNavigateAndFillWithoutSubmit(t *testing.T) {
 	b := chromeBrowser(t, chromeConfig(t))
 	site := newOptOutSite(t, optOutForm)
@@ -149,8 +161,10 @@ func TestNavigateAndFillBlockingCaptcha(t *testing.T) {
 	}
 }
 
+// The reCAPTCHA appears once the email is typed, so it's a form-level
+// CAPTCHA rather than a gate in front of the form.
 const captchaForm = `<html><body><form method="post" action="/">
-<input name="email"><div class="g-recaptcha" data-sitekey="x"></div>
+<input name="email" oninput="if(!document.querySelector('.g-recaptcha')){var d=document.createElement('div');d.className='g-recaptcha';this.form.appendChild(d)}">
 <button type="submit">Submit</button></form></body></html>`
 
 func TestNavigateAndFillFormCaptcha(t *testing.T) {

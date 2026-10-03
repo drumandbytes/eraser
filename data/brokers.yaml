@@ -3479,7 +3479,8 @@ brokers:
       category: marketing
     - id: place-exchange
       name: Place Exchange, Inc.
-      email: privacy@placeexchange.com
+      email: ""
+      notes: 'MAID-only database (2026-10-03): replied that they hold no name/email/phone/address; deletion/suppression requires a mobile advertising ID (IDFA/GAID) submitted via Opt-Out form or privacy@placeexchange.com.'
       website: https://www.placeexchange.com/
       opt_out_url: https://www.placeexchange.com/do-not-sell-my-information
       region: us

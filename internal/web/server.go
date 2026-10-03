@@ -190,6 +190,7 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		"formatDate": func(t time.Time) string {
 			return t.Format("Jan 2, 2006")
 		},
+		"providerName": config.ProviderName,
 		"add": func(a, b int) int {
 			return a + b
 		},

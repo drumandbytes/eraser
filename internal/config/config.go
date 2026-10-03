@@ -189,9 +189,9 @@ func SlugifyProfileID(firstName, lastName string, existing []NamedProfile) strin
 // InboxConfig holds IMAP settings for monitoring broker responses
 type InboxConfig struct {
 	Enabled       bool   `yaml:"enabled"`
-	Provider      string `yaml:"provider"`       // "gmail", "outlook", "imap"
-	Server        string `yaml:"server"`         // e.g., "imap.gmail.com"
-	Port          int    `yaml:"port"`           // e.g., 993
+	Provider      string `yaml:"provider"`       // preset id from Providers, or "imap"/"custom"
+	Server        string `yaml:"server"`         // e.g., "imap.fastmail.com"
+	Port          int    `yaml:"port"`           // 993 = implicit TLS, anything else = STARTTLS
 	Email         string `yaml:"email"`          // Email address to monitor
 	Password      string `yaml:"password"`       // App password (not main password)
 	Folder        string `yaml:"folder"`         // Folder to monitor (default: "INBOX")
@@ -360,15 +360,19 @@ func applyInboxDefaults(inbox *InboxConfig) {
 	if inbox.ArchiveFolder == "" {
 		inbox.ArchiveFolder = "Eraser"
 	}
-	if inbox.Provider == "gmail" && inbox.Server == "" {
-		inbox.Server = "imap.gmail.com"
-		inbox.Port = 993
+	if inbox.Server != "" {
+		return
 	}
-	if inbox.Provider == "outlook" && inbox.Server == "" {
-		inbox.Server = "outlook.office365.com"
-		inbox.Port = 993
+	if p, ok := ProviderByID(inbox.Provider); ok && p.IMAPHost != "" {
+		inbox.Server, inbox.Port = p.IMAPHost, p.IMAPPort
+	} else if inbox.Provider == "outlook" { // pre-preset configs; Microsoft has since dropped basic auth
+		inbox.Server, inbox.Port = "outlook.office365.com", 993
 	}
 }
+
+// ApplyInboxDefaults is applyInboxDefaults for configs edited at runtime
+// (Load's defaults only run at startup).
+func ApplyInboxDefaults(inbox *InboxConfig) { applyInboxDefaults(inbox) }
 
 func Save(path string, cfg *Config) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {

@@ -1,0 +1,55 @@
+name: Data broker
+description: Add a broker, or report one whose details changed, went dead, or replied unusually
+labels: [broker]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prefer a PR? `eraser add-broker` writes the entry and `eraser validate-brokers` checks it (see [CONTRIBUTING.md](https://github.com/drumandbytes/eraser/blob/main/CONTRIBUTING.md#adding-or-updating-a-broker)). Responding to a broker's reply? [docs/broker-replies.md](https://github.com/drumandbytes/eraser/blob/main/docs/broker-replies.md) explains what each reply type means.
+        **Redact your personal data** (name, address, email, case numbers) from anything you paste.
+  - type: dropdown
+    id: change
+    attributes:
+      label: What kind of change?
+      options:
+        - Add a new broker
+        - Contact details changed (new privacy email, form, or website)
+        - Broker is dead / email bounces / domain gone
+        - Broker replied and the entry should change (e.g. form required, not applicable, wants ID)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Broker name (and id, if it's already in the list)
+      placeholder: Example Data GmbH (example-data)
+    validations:
+      required: true
+  - type: input
+    id: website
+    attributes:
+      label: Website
+      placeholder: https://example.com
+  - type: input
+    id: email
+    attributes:
+      label: Privacy / data-protection email or opt-out form
+      placeholder: privacy@example.com or https://example.com/privacy/request
+  - type: input
+    id: region
+    attributes:
+      label: Region(s) it covers
+      placeholder: eu, de, us, global
+  - type: input
+    id: category
+    attributes:
+      label: Category
+      placeholder: people-search, marketing, financial-b2b, ...
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Where the details come from - the broker's privacy policy, a bounce, or the (redacted) reply text.
+    validations:
+      required: true

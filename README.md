@@ -32,7 +32,7 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 ### What You'll Need
 
 1. **Go** installed on your computer ([download here](https://go.dev/dl/))
-2. A **Gmail account** to send emails from (with an App Password—setup instructions below)
+2. An **email account** to send from: Gmail, Proton Mail (via Bridge), Fastmail, mailbox.org, Posteo, iCloud, Amazon SES, or any provider with SMTP access (setup instructions below)
 
 ### Getting Started
 
@@ -106,21 +106,28 @@ From the dashboard, you can:
 
 That's it. The whole process takes about 10 minutes to set up, and then Eraser handles the rest.
 
-### Setting Up Gmail
+### Setting Up Your Email Account
 
-Eraser uses your Gmail account to send removal requests. You'll need to create an "App Password" (Google doesn't allow third-party apps to use your regular password).
+Eraser sends removal requests from your own email account over SMTP, and can read replies over IMAP. Pick your provider in the setup wizard (or `eraser init`) and it fills in the servers. You only enter your address and an **app password**, a separate password your provider generates for apps like Eraser. Never use your main account password.
 
-**One-time setup (takes 2 minutes):**
+| Provider | What you need | Notes |
+|---|---|---|
+| Gmail | [App password](https://myaccount.google.com/apppasswords) (needs 2-Step Verification) | ~500 emails/day |
+| Proton Mail | [Proton Mail Bridge](https://proton.me/mail/bridge) running on the same machine, paid plan | Use the password Bridge shows. Bridge's self-signed certificate is accepted because it only listens on localhost |
+| Fastmail | App password with IMAP + SMTP access | |
+| mailbox.org | Application password | |
+| Posteo | Your Posteo address and password | |
+| iCloud Mail | App-specific password | SMTP is on port 587 (STARTTLS) |
+| Amazon SES | SES SMTP credentials; the From address/domain verified in SES | Send-only: set up reply monitoring on a separate mailbox. Change the region in the SMTP host if yours isn't `eu-west-1` |
+| Anything else | Choose "Other" and enter the SMTP (and optionally IMAP) server | |
 
-1. Go to your [Google Account](https://myaccount.google.com)
-2. Enable **2-Factor Authentication** if you haven't already (Security → 2-Step Verification)
-3. Go to [App Passwords](https://myaccount.google.com/apppasswords)
-4. Select "Mail" and your device, then click "Generate"
-5. Copy the 16-character password (looks like `xxxx xxxx xxxx xxxx`)
+**TLS:** ports 465 (SMTP) and 993 (IMAP) use TLS from the start. Any other port must support STARTTLS. Eraser never sends your password without encryption.
 
-That's the password you'll use in Eraser's setup wizard. Your regular Gmail password won't work.
+**Outlook.com / Hotmail** isn't a preset: Microsoft turned off app-password (basic) authentication for consumer accounts, and Eraser doesn't support OAuth sign-in yet. Microsoft 365 work accounts whose admin enabled SMTP AUTH can try "Other" with `smtp.office365.com:587`.
 
-**Daily sending limits:** Gmail allows ~500 emails per day. Eraser caps itself at 450/day by default (`options.daily_send_limit`) and automatically resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
+Your provider isn't listed or doesn't work? [Open a mail provider issue](https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml), or add it yourself (see [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-mail-provider)).
+
+**Daily sending limits:** Eraser caps itself at 450 emails per rolling 24 hours by default (`options.daily_send_limit`), just under Gmail's ~500/day. Other providers have different (sometimes lower) caps, so check yours and lower the limit if needed. Eraser resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
 
 **Automating it:** `eraser schedule install` has your OS run Eraser every 6 hours. Each run sends to whichever brokers are due (each broker is re-sent 25 days after its last request, within the daily cap) and checks your inbox for replies. Everything stays on your machine; `eraser schedule status` shows the last run, `eraser schedule remove` undoes it. The web UI's **Settings → Automation** card does all of this with buttons, including a "run while this app is open" option for systems without launchd/systemd; on the CLI, `eraser auto` loops in the foreground instead.
 
@@ -217,19 +224,19 @@ profile:
 
 email:
   provider: smtp
-  from: jane@gmail.com
+  from: jane@example.org
 
   smtp:
-    host: smtp.gmail.com
-    port: 465
-    username: jane@gmail.com
-    password: your-16-char-app-password  # From Google App Passwords
+    host: smtp.fastmail.com  # see "Setting Up Your Email Account" for other providers
+    port: 465                # 465 = TLS, any other port = STARTTLS
+    username: jane@example.org
+    password: your-app-password
     use_tls: true
 
 options:
   template: generic  # or "gdpr" or "ccpa"
   rate_limit_ms: 2000  # delay between emails
-  daily_send_limit: 450  # cap per rolling 24h window (Gmail's limit is ~500/day)
+  daily_send_limit: 450  # cap per rolling 24h window; keep it under your provider's daily limit
 
   # Optional: only target specific regions
   # regions:
@@ -250,9 +257,9 @@ options:
 # Optional: monitor your inbox for broker replies (used by `eraser monitor`)
 # inbox:
 #   enabled: true
-#   provider: gmail
-#   email: jane@gmail.com
-#   password: your-16-char-app-password
+#   provider: fastmail  # gmail, proton, fastmail, mailbox-org, posteo, icloud - or drop it and set server + port
+#   email: jane@example.org
+#   password: your-app-password
 ```
 
 ### Email Templates
@@ -325,7 +332,7 @@ domains automatically and opens a PR for review.
 ## Security Notes
 
 - **Your config file contains personal data.** Don't commit it to git. The file is created with restricted permissions (readable only by you).
-- **Use app passwords, not your real password.** For Gmail, this is required. For other providers, it's still a good idea.
+- **Use app passwords, not your real password.** Most providers require one for SMTP/IMAP access; where they don't, it's still a good idea.
 - **Consider using a dedicated email.** This keeps your removal request activity separate from your main inbox.
 
 ---

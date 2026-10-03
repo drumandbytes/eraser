@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
@@ -9,12 +10,7 @@ import (
 )
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
-	data := map[string]interface{}{
-		"Title":      "Settings",
-		"Config":     s.getConfig(),
-		"Automation": s.automationView(),
-	}
-	s.renderWithCSRF(w, r, "settings.html", data)
+	s.renderSettings(w, r, nil)
 }
 
 // automationView is what the Settings "Automation" card shows.
@@ -129,12 +125,7 @@ func (s *Server) handleSettingsAutomation(w http.ResponseWriter, r *http.Request
 func (s *Server) renderAutomationMessage(w http.ResponseWriter, r *http.Request, message string, success bool) {
 	v := s.automationView()
 	v.Message, v.Success = message, success
-	data := map[string]interface{}{
-		"Title":      "Settings",
-		"Config":     s.getConfig(),
-		"Automation": v,
-	}
-	s.renderWithCSRF(w, r, "settings.html", data)
+	s.renderSettings(w, r, map[string]interface{}{"Automation": v})
 }
 
 func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
@@ -144,43 +135,32 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := r.FormValue("inbox_email")
-	password := r.FormValue("inbox_password")
-
-	if email == "" || password == "" {
-		s.renderSettingsWithMessage(w, r, "Email and password are required", false)
-		return
-	}
-
-	// Update config with inbox settings. Load-copy-mutate-store rather than
-	// mutating the struct returned by getConfig() in place - a concurrent
-	// reader (another handler, or a background send-job goroutine) may be
-	// holding that exact pointer.
 	cfg := s.getConfig()
 	if cfg == nil {
 		cfg = &config.Config{}
 	}
-	newCfg := *cfg
+	form := readMailForm(r)
+	if form.Password == "" && strings.EqualFold(form.Username, cfg.Inbox.Email) {
+		form.Password = cfg.Inbox.Password
+	}
+	errors := form.validate("imap", true)
+	if len(errors) > 0 {
+		s.renderSettings(w, r, map[string]interface{}{
+			"InboxMessage": "Please fix the highlighted fields",
+			"InboxSuccess": false,
+			"InboxForm":    newMailFormView("imap", form, errors),
+		})
+		return
+	}
 
-	// start from the existing inbox so a hand-configured provider keeps its
-	// server/port/archive; this form only sets email and password
-	inbox := newCfg.Inbox
-	inbox.Enabled = true
-	inbox.Email = email
-	inbox.Password = password
-	// Set Gmail server/port explicitly: this goes straight into the live
-	// config, and config.Load's defaults only apply at startup (else "dial tcp :0").
-	if inbox.Provider == "" || inbox.Provider == "gmail" {
-		inbox.Provider = "gmail"
-		inbox.Server = "imap.gmail.com"
-		inbox.Port = 993
-	}
-	if inbox.Folder == "" {
-		inbox.Folder = "INBOX"
-	}
-	if inbox.ArchiveFolder == "" {
-		inbox.ArchiveFolder = "Eraser"
-	}
+	// Load-copy-mutate-store rather than mutating the struct returned by
+	// getConfig() in place - a concurrent reader (another handler, or a
+	// background send-job goroutine) may be holding that exact pointer.
+	newCfg := *cfg
+	inbox := *form.inboxConfig()
+	// keep hand-tuned folder settings; this form only sets the account
+	inbox.Folder, inbox.AutoArchive, inbox.ArchiveFolder = cfg.Inbox.Folder, cfg.Inbox.AutoArchive, cfg.Inbox.ArchiveFolder
+	config.ApplyInboxDefaults(&inbox)
 	newCfg.Inbox = inbox
 
 	if err := config.Save(s.configPath, &newCfg); err != nil {
@@ -194,12 +174,43 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderSettingsWithMessage(w http.ResponseWriter, r *http.Request, message string, success bool) {
-	data := map[string]interface{}{
-		"Title":        "Settings",
-		"Config":       s.getConfig(),
-		"Automation":   s.automationView(),
+	s.renderSettings(w, r, map[string]interface{}{
 		"InboxMessage": message,
 		"InboxSuccess": success,
+	})
+}
+
+// renderSettings renders settings.html with the shared page data plus extra.
+func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra map[string]interface{}) {
+	cfg := s.getConfig()
+	data := map[string]interface{}{
+		"Title":      "Settings",
+		"Config":     cfg,
+		"Automation": s.automationView(),
+		"InboxForm":  inboxFormView(cfg),
+	}
+	for k, v := range extra {
+		data[k] = v
 	}
 	s.renderWithCSRF(w, r, "settings.html", data)
+}
+
+// inboxFormView prefills the inbox form from the saved inbox, else from the
+// sending account (same provider, profile address).
+func inboxFormView(cfg *config.Config) mailFormView {
+	if cfg == nil {
+		return newMailFormView("imap", mailForm{}, nil)
+	}
+	f := mailForm{Address: cfg.Profile.Email, Provider: config.ProviderIDForHosts(cfg.Email.SMTP.Host, "")}
+	if in := cfg.Inbox; in.Email != "" {
+		f = mailForm{Address: in.Email, Username: in.Email, IMAPHost: in.Server, IMAPPort: in.Port}
+		if _, ok := config.ProviderByID(in.Provider); ok {
+			f.Provider = in.Provider
+		}
+	}
+	v := newMailFormView("imap", f, nil)
+	if cfg.Inbox.Password != "" {
+		v.PasswordPlaceholder = "Leave blank to keep current"
+	}
+	return v
 }

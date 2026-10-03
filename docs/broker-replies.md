@@ -11,7 +11,7 @@ it pulls broker-domain mail over IMAP, classifies each one
 (`eraser pipeline` shows what still needs a human). Reading the inbox by hand is
 the same job without the database writes.
 
-Per-request status (sent, acknowledged, confirmed, overdue) lives in Gmail and the
+Per-request status (sent, acknowledged, confirmed, overdue) lives in your mailbox and the
 SQLite history - not in this repo. Only facts about the *broker itself* go in
 `data/brokers.yaml`. See [EU-NOTES.md](../EU-NOTES.md) for why there's no
 review-status file here.

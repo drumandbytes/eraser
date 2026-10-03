@@ -4,15 +4,21 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
+
+	"github.com/drumandbytes/eraser/internal/config"
 	gomail "github.com/emersion/go-message/mail"
 )
 
@@ -447,5 +453,59 @@ func TestEnvelopeFilters(t *testing.T) {
 		if got := looksLikeBounce(c.e); got != c.bnce {
 			t.Errorf("%s: looksLikeBounce = %v, want %v", c.name, got, c.bnce)
 		}
+	}
+}
+
+// Off port 993 (Proton Bridge 1143), Connect must STARTTLS before LOGIN.
+func TestConnectUpgradesWithSTARTTLSBeforeLogin(t *testing.T) {
+	ts := httptest.NewTLSServer(http.NotFoundHandler())
+	t.Cleanup(ts.Close)
+	loginOverTLS := make(chan bool, 1)
+	addr := fakeIMAPServer(t, func(conn net.Conn, br *bufio.Reader) error {
+		inTLS := false
+		if err := writeLines(conn, "* OK [CAPABILITY IMAP4rev1 STARTTLS] ready"); err != nil {
+			return err
+		}
+		for {
+			tag, rest, err := readCommandLine(br)
+			if err != nil {
+				return err
+			}
+			switch cmd := strings.ToUpper(strings.Fields(rest)[0]); cmd {
+			case "CAPABILITY":
+				caps := "IMAP4rev1 STARTTLS"
+				if inTLS {
+					caps = "IMAP4rev1 AUTH=PLAIN"
+				}
+				err = writeLines(conn, "* CAPABILITY "+caps, tag+" OK done")
+			case "STARTTLS":
+				if err = writeLines(conn, tag+" OK begin"); err != nil {
+					return err
+				}
+				tlsConn := tls.Server(conn, &tls.Config{Certificates: ts.TLS.Certificates})
+				if err = tlsConn.Handshake(); err != nil {
+					return err
+				}
+				conn, br, inTLS = tlsConn, bufio.NewReader(tlsConn), true
+			case "LOGIN":
+				loginOverTLS <- inTLS
+				return writeLines(conn, tag+" OK logged in")
+			default:
+				err = writeLines(conn, tag+" BAD unexpected "+cmd)
+			}
+			if err != nil {
+				return err
+			}
+		}
+	})
+	host, portStr, _ := net.SplitHostPort(addr)
+	port, _ := strconv.Atoi(portStr)
+
+	m := NewMonitor(config.InboxConfig{Server: host, Port: port, Email: "jane@example.org", Password: "pw"}, nil)
+	if err := m.Connect(context.Background()); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	if !<-loginOverTLS {
+		t.Fatal("LOGIN sent before STARTTLS")
 	}
 }

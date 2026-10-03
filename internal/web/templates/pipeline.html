@@ -114,12 +114,12 @@
             </div>
             <div>
                 <h3 class="font-semibold text-primary mb-1">Inbox Monitoring Not Configured</h3>
-                <p class="text-secondary text-sm mb-3">To automatically track broker responses, configure inbox monitoring in your settings.</p>
-                <p class="text-muted text-xs">Add the following to your config.yaml:</p>
+                <p class="text-secondary text-sm mb-3">To automatically track broker responses, <a href="/settings" class="text-accent hover:underline">configure inbox monitoring in Settings</a>.</p>
+                <p class="text-muted text-xs">Or add the following to your config.yaml (provider: gmail, proton, fastmail, mailbox-org, posteo, icloud, or set server/port):</p>
                 <pre class="mt-2 p-3 rounded text-xs overflow-x-auto" style="background: var(--bg-elevated);">inbox:
   enabled: true
-  provider: gmail
-  email: your-email@gmail.com
+  provider: fastmail
+  email: you@example.org
   password: your-app-password</pre>
             </div>
         </div>

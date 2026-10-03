@@ -34,21 +34,22 @@ profile:
   date_of_birth: "1990-01-15"  # Format: YYYY-MM-DD
 
 email:
-  # Email provider: "smtp" or "sendgrid"
+  # Only "smtp" is supported (or set options.send_mode: manual)
   provider: smtp
   from: john.doe@example.com
 
-  # SMTP configuration (for Gmail, Outlook, etc.)
+  # Any SMTP provider. Presets the setup wizard knows (host:port):
+  #   Gmail smtp.gmail.com:465, Proton Bridge 127.0.0.1:1025, Fastmail
+  #   smtp.fastmail.com:465, mailbox.org smtp.mailbox.org:465, Posteo
+  #   posteo.de:465, iCloud smtp.mail.me.com:587, Amazon SES
+  #   email-smtp.<region>.amazonaws.com:465 (username = SES SMTP user).
+  # Port 465 uses TLS from the start; any other port requires STARTTLS.
   smtp:
-    host: smtp.gmail.com
+    host: smtp.fastmail.com
     port: 465
-    username: john.doe@gmail.com
+    username: john.doe@example.com
     password: your-app-password  # Use app password, not your regular password!
     use_tls: true
-
-  # SendGrid configuration (alternative to SMTP)
-  # sendgrid:
-  #   api_key: SG.xxxxxxxxxxxxxxxxxxxx
 
 options:
   # Template to use: "gdpr", "ccpa", or "generic"
@@ -68,7 +69,7 @@ options:
 
   # Max emails `send` will dispatch per rolling 24h window, to stay under
   # your provider's daily sending cap. Gmail's is ~500/day for a regular
-  # account - default here (450) leaves headroom. Brokers already emailed
+  # account - default here (450) leaves headroom; other providers differ. Brokers already emailed
   # in the last 25 days are skipped automatically, so re-running `send` on
   # a large broker list resumes where it left off without double-emailing.
   # Override per-run with --ignore-daily-limit or --resend.

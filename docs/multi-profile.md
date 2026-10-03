@@ -55,27 +55,28 @@ profiles:
     mail:
       email:              # overrides the shared email: block for this profile's sends
         provider: smtp
-        from: spouse@gmail.com
+        from: spouse@example.org
         smtp:
-          host: smtp.gmail.com
+          host: smtp.fastmail.com
           port: 465
-          username: spouse@gmail.com
+          username: spouse@example.org
           password: app-password
           use_tls: true
       inbox:               # overrides the shared inbox: block for this profile's replies
         enabled: true
-        provider: gmail
-        email: spouse@gmail.com
+        provider: fastmail # preset id fills server/port; or set server + port
+        email: spouse@example.org
         password: app-password
 ```
 
 Either field can be set independently - a profile can override just `email`
 (send from its own account, still share the default inbox for replies) or
-just `inbox`.
+just `inbox`. Send-only providers (Amazon SES) get only `email`, so their
+replies fall back to the shared inbox.
 
 - `Config.EmailForProfile(p NamedProfile) EmailConfig` / `Config.InboxForProfile(p NamedProfile) InboxConfig` - resolve the effective config for one profile (its `mail.email`/`mail.inbox` override if set, otherwise the shared top-level block). Every send call site (CLI `send`, the web UI's send-one/send-all/resume-job paths) goes through `EmailForProfile` instead of reading `Config.Email` directly.
 - `Config.ConfiguredInboxes() []InboxConfig` - every distinct enabled inbox across all profiles, deduplicated by email address. `eraser monitor` scans each one in turn (concurrently, only under `--watch`, since each watch blocks); the web UI's inbox scan/rescan/reclassify only cover the active profile's own inbox (`InboxForProfile`) per request - run `eraser monitor` for full multi-inbox coverage.
-- `eraser profile add`/`profile edit` prompt (Gmail-only, like `eraser init`'s SMTP step) to optionally set/change/remove a profile's `mail` override. The web UI's "add/edit profile" forms don't expose this yet - like several other advanced `Options` fields, it's config.yaml/CLI-only for now.
+- `eraser profile add`/`profile edit` (CLI `promptMailAccount`) and the web UI's add/edit profile forms (`partials/mail-account.html`, `internal/web/mailform.go`) set/change/remove a profile's `mail` override with the same provider presets as setup (`config.Providers`).
 - `Config.Validate()` validates a profile's `mail.email` override with the same rules as the shared `email:` block.
 
 ## CLI (`cmd/eraser/`)

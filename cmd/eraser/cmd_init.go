@@ -87,7 +87,7 @@ func runInit() error {
 	fmt.Println()
 	fmt.Println("📧 Sending")
 	fmt.Println()
-	fmt.Println("  1. Eraser sends the removal emails for you (needs a Gmail app password)")
+	fmt.Println("  1. Eraser sends the removal emails for you (needs an app password from your email provider)")
 	fmt.Println("  2. Manual - Eraser renders the emails, you send them from your own")
 	fmt.Println("     mail client and record them with 'eraser mark-sent' (no credentials)")
 	fmt.Println()
@@ -103,18 +103,10 @@ func runInit() error {
 		cfg.Options.SendMode = "manual"
 		cfg.Email = config.EmailConfig{}
 	} else {
-		cfg.Email.Provider = "smtp"
-		cfg.Email.From = cfg.Profile.Email
-
 		fmt.Println()
-		fmt.Println("Gmail SMTP Configuration:")
-		fmt.Println("  (See https://support.google.com/accounts/answer/185833 for app password setup)")
-		fmt.Println()
-		cfg.Email.SMTP.Host = "smtp.gmail.com"
-		cfg.Email.SMTP.Port = 465
-		cfg.Email.SMTP.UseTLS = true
-		cfg.Email.SMTP.Username = promptWithDefault(reader, "  Gmail address", existing.Email.SMTP.Username)
-		cfg.Email.SMTP.Password = promptSecretWithDefault(reader, "  App password (16-character code)", existing.Email.SMTP.Password)
+		fmt.Println("Sending account (any provider with SMTP access):")
+		// Reply monitoring (inbox:) is carried over below, set up via Settings or config.yaml.
+		cfg.Email, _ = promptMailAccount(reader, cfg.Profile.Email, existing.Email)
 	}
 
 	fmt.Println()

@@ -260,9 +260,8 @@ func runProfileRemove(id string) error {
 	return nil
 }
 
-// promptMailOverride optionally sets a dedicated Gmail app-password account
-// (SMTP + IMAP) for one profile. Other providers need a hand-edited `mail:`
-// block (docs/multi-profile.md). nil = share the top-level blocks.
+// promptMailOverride optionally sets a dedicated account (SMTP + IMAP, any
+// provider preset) for one profile. nil = share the top-level blocks.
 func promptMailOverride(reader *bufio.Reader, existing *config.MailConfig) *config.MailConfig {
 	fmt.Println()
 	existingAddr := ""
@@ -282,32 +281,17 @@ func promptMailOverride(reader *bufio.Reader, existing *config.MailConfig) *conf
 		// Anything else (including "change") falls through to re-entering it below.
 	} else {
 		answer := strings.ToLower(strings.TrimSpace(prompt(reader,
-			"Use a separate Gmail account for this profile's sends and reply monitoring, instead of the shared one? (y/N): ")))
+			"Use a separate email account for this profile's sends and reply monitoring, instead of the shared one? (y/N): ")))
 		if !strings.HasPrefix(answer, "y") {
 			return nil
 		}
 	}
 
-	addr := prompt(reader, "  Gmail address: ")
-	password := promptSecretWithDefault(reader, "  App password (16-character code)", "")
-
-	return &config.MailConfig{
-		Email: &config.EmailConfig{
-			Provider: "smtp",
-			From:     addr,
-			SMTP: config.SMTPConfig{
-				Host:     "smtp.gmail.com",
-				Port:     465,
-				UseTLS:   true,
-				Username: addr,
-				Password: password,
-			},
-		},
-		Inbox: &config.InboxConfig{
-			Enabled:  true,
-			Provider: "gmail",
-			Email:    addr,
-			Password: password,
-		},
+	var prev config.EmailConfig
+	if existing != nil && existing.Email != nil {
+		prev = *existing.Email
 	}
+	e, inbox := promptMailAccount(reader, "", prev)
+	// SES and IMAP-less custom accounts are send-only: replies stay on the shared inbox.
+	return &config.MailConfig{Email: &e, Inbox: inbox}
 }

@@ -296,3 +296,14 @@ email:
 		t.Fatal("Validate() = nil, want an error for the spouse profile's incomplete mail.email override (missing smtp host/port)")
 	}
 }
+
+func TestLoadFillsInboxServerFromProviderPreset(t *testing.T) {
+	path := writeTestConfig(t, minimalConfig+"inbox:\n  enabled: true\n  provider: proton\n  email: test@example.com\n  password: x\n")
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Inbox.Server != "127.0.0.1" || cfg.Inbox.Port != 1143 {
+		t.Errorf("proton inbox = %s:%d, want 127.0.0.1:1143", cfg.Inbox.Server, cfg.Inbox.Port)
+	}
+}

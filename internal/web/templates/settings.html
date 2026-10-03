@@ -65,7 +65,7 @@
                 <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
                     <div>
                         <p class="text-sm text-muted">Provider</p>
-                        <p class="text-primary font-medium">Gmail SMTP</p>
+                        <p class="text-primary font-medium">{{if .Config.IsManualSend}}Manual (you send){{else}}{{providerName .Config.Email.SMTP.Host}}{{end}}</p>
                     </div>
                     <span class="badge badge-success">Active</span>
                 </div>
@@ -129,8 +129,8 @@
                 </div>
                 <div class="flex items-start justify-between py-3">
                     <div>
-                        <p class="text-sm text-muted">Provider</p>
-                        <p class="text-secondary">{{if eq .Config.Inbox.Provider "gmail"}}Gmail IMAP{{else}}{{.Config.Inbox.Provider}}{{end}}</p>
+                        <p class="text-sm text-muted">IMAP Server</p>
+                        <p class="text-secondary">{{.Config.Inbox.Server}}:{{.Config.Inbox.Port}}</p>
                     </div>
                 </div>
             </div>
@@ -151,32 +151,7 @@
             <form id="inbox-form" method="POST" action="/settings/inbox" class="{{if and .Config .Config.Inbox .Config.Inbox.Enabled}}hidden {{end}}space-y-4 mt-4">
                 {{.CSRFField}}
 
-                <div class="p-4 rounded-xl" style="background: rgba(234, 179, 8, 0.1);">
-                    <h3 class="font-medium text-warning mb-2">Gmail Setup Instructions</h3>
-                    <ol class="text-sm text-secondary space-y-1 list-decimal list-inside">
-                        <li>Enable 2-Step Verification in your Google Account</li>
-                        <li>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-accent hover:underline">App Passwords</a></li>
-                        <li>Create a new app password for "Mail"</li>
-                        <li>Enable IMAP in Gmail: Settings → See all settings → Forwarding and POP/IMAP</li>
-                    </ol>
-                </div>
-
-                <div>
-                    <label for="inbox_email" class="label">Gmail Address</label>
-                    <input type="email" name="inbox_email" id="inbox_email"
-                        value="{{if and .Config .Config.Inbox}}{{.Config.Inbox.Email}}{{else if .Config}}{{.Config.Profile.Email}}{{end}}"
-                        class="input"
-                        placeholder="you@gmail.com">
-                </div>
-
-                <div>
-                    <label for="inbox_password" class="label">App Password</label>
-                    <input type="password" name="inbox_password" id="inbox_password"
-                        value="{{if and .Config .Config.Inbox}}{{.Config.Inbox.Password}}{{end}}"
-                        class="input"
-                        placeholder="xxxx xxxx xxxx xxxx">
-                    <p class="text-xs text-muted mt-1">Your 16-character Google App Password (not your regular password)</p>
-                </div>
+                {{template "partials/mail-account.html" .InboxForm}}
 
                 <div class="flex items-center gap-3 pt-2">
                     <button type="submit" class="btn btn-primary flex-1">

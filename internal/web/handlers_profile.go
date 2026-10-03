@@ -75,53 +75,45 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 }
 
 // buildMailOverrideFromForm parses the optional dedicated account
-// (mail_email/mail_password), like promptMailOverride in the CLI. Blank email =
-// no override (also how one is removed). A blank password keeps the stored one
-// unless the address changed.
-func buildMailOverrideFromForm(r *http.Request, existingAddr, existingPassword string) (*config.MailConfig, map[string]string) {
-	addr := strings.TrimSpace(r.FormValue("mail_email"))
-	password := r.FormValue("mail_password")
-
-	errors := make(map[string]string)
-	if addr == "" {
-		if password != "" {
-			errors["mail_email"] = "Enter the Gmail address this app password belongs to"
+// (partials/mail-account.html), like promptMailOverride in the CLI. Blank
+// address = no override (also how one is removed). A blank password keeps the
+// stored one unless the login changed. Send-only providers (SES) get no inbox
+// override, so replies fall back to the shared inbox.
+func buildMailOverrideFromForm(r *http.Request, existing *config.MailConfig) (*config.MailConfig, mailFormView, map[string]string) {
+	form := readMailForm(r)
+	if form.Address == "" {
+		errors := map[string]string{}
+		if form.Password != "" {
+			errors["mail_address"] = "Enter the address this password belongs to"
 		}
-		return nil, errors
+		return nil, newMailFormView("both", form, errors), errors
 	}
-
-	if err := email.ValidateEmail(addr); err != nil {
-		errors["mail_email"] = "Please enter a valid email address"
+	if existing != nil && existing.Email != nil {
+		if form.SMTPHost == "" { // no provider posted: keep the saved servers
+			saved := mailFormFromConfig(*existing.Email, existing.Inbox)
+			form.SMTPHost, form.SMTPPort, form.IMAPHost, form.IMAPPort = saved.SMTPHost, saved.SMTPPort, saved.IMAPHost, saved.IMAPPort
+		}
+		if form.Password == "" && strings.EqualFold(form.Username, existing.Email.SMTP.Username) {
+			form.Password = existing.Email.SMTP.Password
+		}
 	}
-	if password == "" && existingAddr != "" && strings.EqualFold(addr, existingAddr) {
-		password = existingPassword
-	}
-	if password == "" {
-		errors["mail_password"] = "App password is required"
-	}
+	errors := form.validate("both", true)
+	view := newMailFormView("both", form, errors)
 	if len(errors) > 0 {
-		return nil, errors
+		return nil, view, errors
 	}
+	e := form.emailConfig()
+	return &config.MailConfig{Email: &e, Inbox: form.inboxConfig()}, view, errors
+}
 
-	return &config.MailConfig{
-		Email: &config.EmailConfig{
-			Provider: "smtp",
-			From:     addr,
-			SMTP: config.SMTPConfig{
-				Host:     "smtp.gmail.com",
-				Port:     465,
-				UseTLS:   true,
-				Username: addr,
-				Password: password,
-			},
-		},
-		Inbox: &config.InboxConfig{
-			Enabled:  true,
-			Provider: "gmail",
-			Email:    addr,
-			Password: password,
-		},
-	}, errors
+// mailOverrideView prefills the dedicated-account fields from a saved override.
+func mailOverrideView(m *config.MailConfig) mailFormView {
+	if m == nil || m.Email == nil {
+		return newMailFormView("both", mailForm{}, nil)
+	}
+	v := newMailFormView("both", mailFormFromConfig(*m.Email, m.Inbox), nil)
+	v.PasswordPlaceholder = "Leave blank to keep current"
+	return v
 }
 
 // handleSettingsProfileNew adds another named profile, with optional dedicated
@@ -130,17 +122,17 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 	if r.Method == "POST" {
 		limitFormBody(w, r)
 		profile, errors := buildProfileFromForm(r)
-		mail, mailErrors := buildMailOverrideFromForm(r, "", "")
+		mail, mailView, mailErrors := buildMailOverrideFromForm(r, nil)
 		for k, v := range mailErrors {
 			errors[k] = v
 		}
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
-				"Title":     "Add Profile",
-				"Profile":   profile,
-				"Errors":    errors,
-				"MailEmail": r.FormValue("mail_email"),
+				"Title":   "Add Profile",
+				"Profile": profile,
+				"Errors":  errors,
+				"Mail":    mailView,
 			})
 			return
 		}
@@ -159,10 +151,10 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 
 		if err := config.Save(s.configPath, &newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
-				"Title":     "Add Profile",
-				"Profile":   profile,
-				"Errors":    map[string]string{"_": "Failed to save configuration: " + err.Error()},
-				"MailEmail": r.FormValue("mail_email"),
+				"Title":   "Add Profile",
+				"Profile": profile,
+				"Errors":  map[string]string{"_": "Failed to save configuration: " + err.Error()},
+				"Mail":    mailView,
 			})
 			return
 		}
@@ -173,10 +165,10 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 	}
 
 	s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
-		"Title":     "Add Profile",
-		"Profile":   config.Profile{},
-		"Errors":    map[string]string{},
-		"MailEmail": "",
+		"Title":   "Add Profile",
+		"Profile": config.Profile{},
+		"Errors":  map[string]string{},
+		"Mail":    mailOverrideView(nil),
 	})
 }
 
@@ -196,28 +188,24 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	existingMailAddr, existingMailPassword := "", ""
-	if existing.Mail != nil && existing.Mail.Email != nil {
-		existingMailAddr = existing.Mail.Email.From
-		existingMailPassword = existing.Mail.Email.SMTP.Password
-	}
-
 	if r.Method == "POST" {
 		limitFormBody(w, r)
 		profile, errors := buildProfileFromForm(r)
-		mail, mailErrors := buildMailOverrideFromForm(r, existingMailAddr, existingMailPassword)
+		mail, mailView, mailErrors := buildMailOverrideFromForm(r, existing.Mail)
+		if existing.Mail != nil {
+			mailView.PasswordPlaceholder = "Leave blank to keep current"
+		}
 		for k, v := range mailErrors {
 			errors[k] = v
 		}
 
 		if len(errors) > 0 {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
-				"Title":          "Edit Profile",
-				"ProfileID":      id,
-				"Profile":        profile,
-				"Errors":         errors,
-				"MailEmail":      r.FormValue("mail_email"),
-				"MailConfigured": existingMailAddr != "",
+				"Title":     "Edit Profile",
+				"ProfileID": id,
+				"Profile":   profile,
+				"Errors":    errors,
+				"Mail":      mailView,
 			})
 			return
 		}
@@ -248,12 +236,11 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 
 		if err := config.Save(s.configPath, &newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
-				"Title":          "Edit Profile",
-				"ProfileID":      id,
-				"Profile":        profile,
-				"Errors":         map[string]string{"_": "Failed to save configuration: " + err.Error()},
-				"MailEmail":      r.FormValue("mail_email"),
-				"MailConfigured": existingMailAddr != "",
+				"Title":     "Edit Profile",
+				"ProfileID": id,
+				"Profile":   profile,
+				"Errors":    map[string]string{"_": "Failed to save configuration: " + err.Error()},
+				"Mail":      mailView,
 			})
 			return
 		}
@@ -264,12 +251,11 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 	}
 
 	s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
-		"Title":          "Edit Profile",
-		"ProfileID":      existing.ID,
-		"Profile":        existing.Profile,
-		"Errors":         map[string]string{},
-		"MailEmail":      existingMailAddr,
-		"MailConfigured": existingMailAddr != "",
+		"Title":     "Edit Profile",
+		"ProfileID": existing.ID,
+		"Profile":   existing.Profile,
+		"Errors":    map[string]string{},
+		"Mail":      mailOverrideView(existing.Mail),
 	})
 }
 

@@ -193,7 +193,8 @@ func TestHandleSettingsProfileNewWithMailOverride(t *testing.T) {
 		"first_name":    {"Anna"},
 		"last_name":     {"Popena"},
 		"email":         {"anna@example.com"},
-		"mail_email":    {"anna@gmail.com"},
+		"mail_provider": {"gmail"},
+		"mail_address":  {"anna@gmail.com"},
 		"mail_password": {"app-password"},
 	}
 	req := httptest.NewRequest(http.MethodPost, "/settings/profiles/new", strings.NewReader(form.Encode()))
@@ -220,10 +221,10 @@ func TestHandleSettingsProfileNewMailOverrideRequiresPassword(t *testing.T) {
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 
 	form := url.Values{
-		"first_name": {"Anna"},
-		"last_name":  {"Popena"},
-		"email":      {"anna@example.com"},
-		"mail_email": {"anna@gmail.com"}, // no mail_password
+		"first_name":   {"Anna"},
+		"last_name":    {"Popena"},
+		"email":        {"anna@example.com"},
+		"mail_address": {"anna@gmail.com"}, // no mail_password
 	}
 	req := httptest.NewRequest(http.MethodPost, "/settings/profiles/new", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -233,7 +234,7 @@ func TestHandleSettingsProfileNewMailOverrideRequiresPassword(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected 200 (re-render with errors), got %d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "App password is required") {
+	if !strings.Contains(rec.Body.String(), "Password is required") {
 		t.Errorf("expected an app-password validation error, got: %s", rec.Body.String())
 	}
 	if len(s.getConfig().GetProfiles()) != 1 {
@@ -278,10 +279,10 @@ func TestHandleSettingsProfileEditKeepsMailPasswordWhenBlank(t *testing.T) {
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 
 	form := url.Values{
-		"first_name": {"Test"},
-		"last_name":  {"spouse"},
-		"email":      {"spouse@example.com"},
-		"mail_email": {"spouse@gmail.com"}, // unchanged address, blank password
+		"first_name":   {"Test"},
+		"last_name":    {"spouse"},
+		"email":        {"spouse@example.com"},
+		"mail_address": {"spouse@gmail.com"}, // unchanged address, blank password
 	}
 	req := withURLParam(httptest.NewRequest(http.MethodPost, "/settings/profiles/spouse/edit", strings.NewReader(form.Encode())), "profileID", "spouse")
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -298,6 +299,9 @@ func TestHandleSettingsProfileEditKeepsMailPasswordWhenBlank(t *testing.T) {
 	}
 	if spouse.Mail == nil || spouse.Mail.Email == nil || spouse.Mail.Email.SMTP.Password != "original-app-password" {
 		t.Errorf("expected the original app password to be kept when the field was left blank, got %+v", spouse.Mail)
+	}
+	if spouse.Mail.Inbox == nil || spouse.Mail.Inbox.Server != "imap.gmail.com" {
+		t.Errorf("expected the inbox override to survive the edit, got %+v", spouse.Mail.Inbox)
 	}
 }
 
@@ -384,5 +388,38 @@ func TestHandleSettingsProfileDeleteClearsActiveProfileCookie(t *testing.T) {
 	}
 	if !cleared {
 		t.Error("expected the active-profile cookie to be cleared after deleting the profile it pointed to")
+	}
+}
+
+// SES is send-only: the override gets SMTP but no inbox, so replies fall back
+// to the shared inbox instead of an IMAP block with no server.
+func TestHandleSettingsProfileNewSESOverrideHasNoInbox(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	form := url.Values{
+		"first_name":    {"Anna"},
+		"last_name":     {"Popena"},
+		"email":         {"anna@example.com"},
+		"mail_provider": {"ses"},
+		"mail_address":  {"anna@example.com"},
+		"mail_username": {"AKIAEXAMPLE"},
+		"mail_password": {"smtp-secret"},
+	}
+	req := httptest.NewRequest(http.MethodPost, "/settings/profiles/new", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	s.handleSettingsProfileNew(rec, req)
+
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("expected 303 redirect, got %d: %s", rec.Code, rec.Body.String())
+	}
+	profiles := s.getConfig().GetProfiles()
+	m := profiles[len(profiles)-1].Mail
+	if m == nil || m.Email == nil || m.Email.SMTP.Username != "AKIAEXAMPLE" || m.Email.From != "anna@example.com" || !strings.HasSuffix(m.Email.SMTP.Host, ".amazonaws.com") {
+		t.Fatalf("expected an SES SMTP override, got %+v", m)
+	}
+	if m.Inbox != nil {
+		t.Errorf("expected no inbox override for send-only SES, got %+v", m.Inbox)
 	}
 }

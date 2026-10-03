@@ -14,9 +14,9 @@ import (
 
 func draftCmd() *cobra.Command {
 	var (
-		output   string
-		region   string
-		category string
+		output     string
+		regions    []string
+		categories []string
 	)
 
 	cmd := &cobra.Command{
@@ -33,20 +33,21 @@ into Mail.app / Thunderbird / Outlook, already addressed.
 Examples:
   eraser draft spokeo                 # print Spokeo's email
   eraser draft --region eu -o ./out   # one .eml per EU broker
+  eraser draft --region eu,global --category people-search -o ./out
   eraser draft -o ./out               # one .eml per broker`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDraft(args, output, region, category)
+			return runDraft(args, output, regions, categories)
 		},
 	}
 
 	cmd.Flags().StringVarP(&output, "output", "o", "", "write one .eml file per broker into this directory")
-	cmd.Flags().StringVar(&region, "region", "", "only brokers in this region (us, eu, global)")
-	cmd.Flags().StringVar(&category, "category", "", "only brokers in this category")
+	cmd.Flags().StringSliceVar(&regions, "region", nil, "only brokers in these regions: us, eu, global (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&categories, "category", nil, "only brokers in these categories (comma-separated or repeated)")
 
 	return cmd
 }
 
-func runDraft(args []string, output, region, category string) error {
+func runDraft(args []string, output string, regions, categories []string) error {
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
@@ -60,7 +61,7 @@ func runDraft(args []string, output, region, category string) error {
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
-	brokers, err := selectBrokers(brokerDB, args, region, category)
+	brokers, err := selectBrokers(brokerDB, args, regions, categories)
 	if err != nil {
 		return err
 	}

@@ -11,9 +11,9 @@ import (
 
 func markSentCmd() *cobra.Command {
 	var (
-		region   string
-		category string
-		dryRun   bool
+		regions    []string
+		categories []string
+		dryRun     bool
 	)
 
 	cmd := &cobra.Command{
@@ -29,21 +29,22 @@ Re-running is harmless - it just adds another row (same as re-sending).
 Examples:
   eraser mark-sent spokeo beenverified
   eraser mark-sent --region eu
+  eraser mark-sent --region eu,global
   eraser mark-sent --category people-search --dry-run`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMarkSent(args, region, category, dryRun)
+			return runMarkSent(args, regions, categories, dryRun)
 		},
 	}
 
-	cmd.Flags().StringVar(&region, "region", "", "mark every broker in this region (us, eu, global)")
-	cmd.Flags().StringVar(&category, "category", "", "mark every broker in this category")
+	cmd.Flags().StringSliceVar(&regions, "region", nil, "mark every broker in these regions: us, eu, global (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&categories, "category", nil, "mark every broker in these categories (comma-separated or repeated)")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "list what would be recorded without writing")
 
 	return cmd
 }
 
-func runMarkSent(args []string, region, category string, dryRun bool) error {
-	if len(args) == 0 && region == "" && category == "" {
+func runMarkSent(args, regions, categories []string, dryRun bool) error {
+	if len(args) == 0 && len(regions) == 0 && len(categories) == 0 {
 		return fmt.Errorf("give one or more broker ids, or a --region / --category filter")
 	}
 
@@ -60,7 +61,7 @@ func runMarkSent(args []string, region, category string, dryRun bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
-	brokers, err := selectBrokers(brokerDB, args, region, category)
+	brokers, err := selectBrokers(brokerDB, args, regions, categories)
 	if err != nil {
 		return err
 	}

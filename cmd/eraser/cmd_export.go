@@ -302,7 +302,8 @@ func buildEvidenceReport(
 	pastDeadlineSet := map[string]bool{}
 	for _, brokerID := range order {
 		reqs := byBroker[brokerID]
-		be := BrokerEvidence{BrokerID: brokerID}
+		// empty slices, not nil: JSON consumers get [] rather than null
+		be := BrokerEvidence{BrokerID: brokerID, Requests: []RequestEvidence{}, Responses: []ResponseEvidence{}}
 		b := brokerDB.FindByID(brokerID)
 		if b != nil {
 			be.BrokerName = b.Name

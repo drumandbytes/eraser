@@ -64,7 +64,7 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.eraser/config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&brokerFile, "brokers", "", "broker database file (default is ./data/brokers.yaml)")
+	rootCmd.PersistentFlags().StringVar(&brokerFile, "brokers", "", "broker list file (default: ~/.eraser/brokers.yaml if `update-brokers` has written one, else the list built into the binary)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "Profile ID to operate as (default: the only configured profile; required if you've configured more than one via 'eraser profile add')")
 
 	rootCmd.AddCommand(initCmd())

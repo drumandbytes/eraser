@@ -309,7 +309,7 @@ func TestLoadFillsInboxServerFromProviderPreset(t *testing.T) {
 	}
 }
 
-// A pre-0.10 config: legacy profile: block, provider: smtp, explicit use_tls,
+// A pre-0.11 config: legacy profile: block, provider: smtp, explicit use_tls,
 // inbox provider without server, and since-removed pipeline keys.
 const legacyConfig = `
 profile:

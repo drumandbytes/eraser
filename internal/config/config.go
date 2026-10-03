@@ -34,7 +34,7 @@ func checkFilePermissions(path string) error {
 }
 
 type Config struct {
-	// Profile is the pre-0.10 single-profile block. Load/Save move it into
+	// Profile is the pre-0.11 single-profile block. Load/Save move it into
 	// Profiles as "default", so nothing writes it any more; read profiles via
 	// GetProfiles/GetProfile.
 	Profile Profile `yaml:"profile,omitempty"`
@@ -288,7 +288,7 @@ func (p Profile) FullName() string {
 
 type EmailConfig struct {
 	// Provider is optional and only "smtp" is accepted - SMTP is the only
-	// transport. Kept so pre-0.10 configs (which all say "smtp") still load.
+	// transport. Kept so pre-0.11 configs (which all say "smtp") still load.
 	Provider string     `yaml:"provider,omitempty"`
 	From     string     `yaml:"from"`
 	SMTP     SMTPConfig `yaml:"smtp,omitempty"`
@@ -330,7 +330,7 @@ type Options struct {
 	// DailySendLimit caps sends per rolling 24h to stay under provider limits
 	// (Gmail ~500/day). 0 = 450. Bypass with --ignore-daily-limit.
 	DailySendLimit int `yaml:"daily_send_limit,omitempty"`
-	// BrokerList: "" / "full" (~750 entries, default) or "verified"
+	// BrokerList: "" / "full" (~720 entries, default) or "verified"
 	// (data/brokers-verified.yaml). Overridden by `send --list`; ignored when
 	// BrokerFile or --brokers is set.
 	BrokerList string `yaml:"broker_list,omitempty"`

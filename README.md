@@ -196,6 +196,7 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser export` | Write an evidence report (HTML/JSON) of every request and reply — for a DPA/noyb complaint |
 | `eraser confirm` | Click confirmation links found in broker emails |
 | `eraser fill` | Fill opt-out forms via browser automation |
+| `eraser profile add` / `list` / `edit` / `remove` | Manage extra profiles, e.g. a household member ([details](docs/multi-profile.md)) |
 | `eraser serve` | Start web interface |
 | `eraser serve -p 3000` | Web interface on custom port |
 

@@ -192,6 +192,9 @@ options:
 	if err != nil {
 		t.Fatal(err)
 	}
+	if strings.Contains(string(jsonData), "null") {
+		t.Errorf("export JSON contains null (empty lists must be []):\n%s", jsonData)
+	}
 	var rep EvidenceReport
 	if err := json.Unmarshal(jsonData, &rep); err != nil {
 		t.Fatalf("json round-trip: %v", err)

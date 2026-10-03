@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.2](https://github.com/drumandbytes/eraser/compare/v0.11.1...v0.11.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* **web:** profile saves no longer erase fields the form doesn't show ([#115](https://github.com/drumandbytes/eraser/issues/115)) ([d8edbd7](https://github.com/drumandbytes/eraser/commit/d8edbd7cc3ba2e6ff8f22a98d593ef6b72670d04))
+
 ## [0.11.1](https://github.com/drumandbytes/eraser/compare/v0.11.0...v0.11.1) (2026-10-03)
 
 

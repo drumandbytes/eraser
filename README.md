@@ -31,7 +31,7 @@ If you're not comfortable with command-line tools, Eraser has a visual interface
 
 ### What You'll Need
 
-1. **Go** installed on your computer ([download here](https://go.dev/dl/))
+1. **Eraser itself**: install with Homebrew, or download the file for your OS from [Releases](https://github.com/drumandbytes/eraser/releases). No Go needed, unless you want to build from source.
 2. An **email account** to send from: Gmail, Proton Mail (via Bridge), Fastmail, mailbox.org, Posteo, iCloud, Amazon SES, or any provider with SMTP access (setup instructions below)
 
 ### Getting Started

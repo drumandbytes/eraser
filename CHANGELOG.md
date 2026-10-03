@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/drumandbytes/eraser/compare/v1.1.0...v1.2.0) (2026-10-03)
+
+
+### Features
+
+* **web:** export evidence, mark bounced and update the broker list ([#124](https://github.com/drumandbytes/eraser/issues/124)) ([b1bfbe3](https://github.com/drumandbytes/eraser/commit/b1bfbe34ca54aef672bff4f4c75047567aca14e3))
+
+
+### Bug Fixes
+
+* **brokers:** keep your own broker entries across list updates; add them from the web ([#126](https://github.com/drumandbytes/eraser/issues/126)) ([1d7147d](https://github.com/drumandbytes/eraser/commit/1d7147d0beda302d1e9eead3d54bc2a0fbaf3e4c))
+
 ## [1.1.0](https://github.com/drumandbytes/eraser/compare/v1.0.0...v1.1.0) (2026-10-03)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/drumandbytes/eraser/compare/v1.2.1...v1.2.2) (2026-10-03)
+
+
+### Bug Fixes
+
+* **browser:** eraser fill no longer fails every form after the first ([150eced](https://github.com/drumandbytes/eraser/commit/150ecedfe4a3db188cab3252f9f782f9dc1a0f36))
+
 ## [1.2.1](https://github.com/drumandbytes/eraser/compare/v1.2.0...v1.2.1) (2026-10-03)
 
 

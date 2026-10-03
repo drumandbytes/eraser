@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/drumandbytes/eraser/compare/v0.9.2...v0.10.0) (2026-10-03)
+
+
+### Features
+
+* **email:** provider presets + STARTTLS for non-Gmail accounts ([#106](https://github.com/drumandbytes/eraser/issues/106)) ([d04a680](https://github.com/drumandbytes/eraser/commit/d04a6809672dac7f86c5b5e1e73c81fa15ebe914))
+
 ## [0.9.2](https://github.com/drumandbytes/eraser/compare/v0.9.1...v0.9.2) (2026-10-03)
 
 

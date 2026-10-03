@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/drumandbytes/eraser/compare/v0.11.2...v1.0.0) (2026-10-03)
+
+
+### Miscellaneous Chores
+
+* release 1.0.0 ([#117](https://github.com/drumandbytes/eraser/issues/117)) ([0d2c3ef](https://github.com/drumandbytes/eraser/commit/0d2c3ef2a83ec388c87a1f1c157b7db73c9cd2cb))
+
 ## [0.11.2](https://github.com/drumandbytes/eraser/compare/v0.11.1...v0.11.2) (2026-10-03)
 
 

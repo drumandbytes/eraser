@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/drumandbytes/eraser/compare/v1.2.0...v1.2.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **inbox:** monitor --watch no longer hangs on the first new email ([924828f](https://github.com/drumandbytes/eraser/commit/924828f0722df09b712fba034e908c2d40b95b2a))
+* **web:** show "No pending brokers" when a default Send all has nothing to send ([fbecae4](https://github.com/drumandbytes/eraser/commit/fbecae4cf5267693e06602e27dfda751fbabb30a))
+
 ## [1.2.0](https://github.com/drumandbytes/eraser/compare/v1.1.0...v1.2.0) (2026-10-03)
 
 

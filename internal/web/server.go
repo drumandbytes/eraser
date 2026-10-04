@@ -112,6 +112,8 @@ type Server struct {
 	cycleMu       sync.Mutex
 	cycleRunning  bool
 	stopScheduler context.CancelFunc
+	lifeMu        sync.Mutex // httpServer, stopScheduler, shutDown
+	shutDown      bool
 	osInstalled   func() bool
 	installOS     func(schedule.Job) error
 	removeOS      func() error
@@ -321,6 +323,13 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 func (s *Server) Start() error {
 	router := s.setupRouter()
 
+	// lifeMu: serve's Ctrl+C handler may call Shutdown before or while this
+	// runs; it used to read httpServer unsynchronised (nil = panic).
+	s.lifeMu.Lock()
+	if s.shutDown {
+		s.lifeMu.Unlock()
+		return nil
+	}
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf("127.0.0.1:%d", s.port),
 		Handler:      router,
@@ -328,31 +337,44 @@ func (s *Server) Start() error {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	s.stopScheduler = cancel
-	go s.runScheduler(ctx)
+	srv := s.httpServer
+	s.lifeMu.Unlock()
 
-	go func() {
-		time.Sleep(500 * time.Millisecond)
-		url := fmt.Sprintf("http://localhost:%d", s.port)
-		openBrowser(url)
-	}()
+	// Listen before opening the browser, so it opens only once there's a
+	// server to load (it used to open after a blind 500ms, even on a
+	// taken port).
+	ln, err := net.Listen("tcp", srv.Addr)
+	if err != nil {
+		cancel()
+		return fmt.Errorf("server error: %w", err)
+	}
+
+	go s.runScheduler(ctx)
+	go OpenBrowser(fmt.Sprintf("http://localhost:%d", s.port))
 
 	fmt.Printf("Starting Eraser web UI at http://localhost:%d\n", s.port)
 	fmt.Println("Press Ctrl+C to stop")
 
-	if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("server error: %w", err)
 	}
 
 	return nil
 }
 
-// Shutdown gracefully shuts down the server
+// Shutdown gracefully shuts down the server. Before Start it just makes
+// Start return straight away.
 func (s *Server) Shutdown(ctx context.Context) error {
+	s.lifeMu.Lock()
+	defer s.lifeMu.Unlock()
+	s.shutDown = true
 	if s.stopScheduler != nil {
 		s.stopScheduler()
+	}
+	if s.httpServer == nil {
+		return nil
 	}
 	return s.httpServer.Shutdown(ctx)
 }
@@ -509,26 +531,24 @@ func securityHeaders(next http.Handler) http.Handler {
 	})
 }
 
-// openBrowser opens the default browser to the specified URL
-func openBrowser(url string) {
-	var cmd string
-	var args []string
-
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = "open"
-		args = []string{url}
-	case "linux":
-		cmd = "xdg-open"
-		args = []string{url}
-	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start", url}
-	default:
-		return
+// OpenBrowser opens url in the default browser; tests replace it.
+var OpenBrowser = func(url string) {
+	if cmd, args := browserCommand(runtime.GOOS, url); cmd != "" {
+		_ = exec.Command(cmd, args...).Start()
 	}
+}
 
-	_ = exec.Command(cmd, args...).Start()
+// browserCommand is the command that opens url on goos ("" = unsupported).
+func browserCommand(goos, url string) (string, []string) {
+	switch goos {
+	case "darwin":
+		return "open", []string{url}
+	case "linux":
+		return "xdg-open", []string{url}
+	case "windows":
+		return "cmd", []string{"/c", "start", url}
+	}
+	return "", nil
 }
 
 // activeProfileCookie holds the web UI's profile choice. Not HttpOnly/Secure:

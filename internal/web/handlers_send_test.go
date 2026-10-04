@@ -1,117 +1,26 @@
 package web
 
 import (
-	"bufio"
 	"encoding/json"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/email"
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/smtptest"
 )
 
-// fakeRelay is plaintext SMTP. reject -> 550 on RCPT; authFail -> 535 on
-// MAIL FROM, like a provider that locked the account.
-type fakeRelay struct {
-	addr     string
-	mu       sync.Mutex
-	reject   map[string]bool
-	authFail bool
-	rcpts    []string
-}
-
-func newFakeRelay(t *testing.T) *fakeRelay {
-	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("listen: %v", err)
-	}
-	t.Cleanup(func() { _ = ln.Close() })
-	f := &fakeRelay{addr: ln.Addr().String(), reject: map[string]bool{}}
-	go func() {
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			go f.serve(conn)
-		}
-	}()
-	return f
-}
-
-func (f *fakeRelay) serve(conn net.Conn) {
-	defer func() { _ = conn.Close() }()
-	r := bufio.NewReader(conn)
-	reply := func(s string) { _, _ = conn.Write([]byte(s + "\r\n")) }
-	reply("220 fake")
-	for {
-		line, err := r.ReadString('\n')
-		if err != nil {
-			return
-		}
-		cmd := strings.TrimSpace(line)
-		upper := strings.ToUpper(cmd)
-		f.mu.Lock()
-		authFail, reject := f.authFail, f.reject
-		f.mu.Unlock()
-		switch {
-		case strings.HasPrefix(upper, "MAIL") && authFail:
-			reply("535 5.7.8 authentication failed")
-		case strings.HasPrefix(upper, "RCPT"):
-			to := strings.Trim(cmd[strings.Index(cmd, ":")+1:], "<> ")
-			if reject[to] {
-				reply("550 no such user")
-				continue
-			}
-			f.mu.Lock()
-			f.rcpts = append(f.rcpts, to)
-			f.mu.Unlock()
-			reply("250 ok")
-		case strings.HasPrefix(upper, "DATA"):
-			reply("354 go ahead")
-			for {
-				l, err := r.ReadString('\n')
-				if err != nil {
-					return
-				}
-				if l == ".\r\n" {
-					break
-				}
-			}
-			reply("250 queued")
-		case strings.HasPrefix(upper, "QUIT"):
-			reply("221 bye")
-			return
-		default:
-			reply("250 ok")
-		}
-	}
-}
-
-func (f *fakeRelay) recipients() []string {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return append([]string(nil), f.rcpts...)
-}
-
 // sendServer is smokeServer with email pointed at relay (plaintext, no auth).
-func sendServer(t *testing.T, relay *fakeRelay) *Server {
+func sendServer(t *testing.T, relay *smtptest.Relay) *Server {
 	t.Helper()
 	s := smokeServer(t)
-	host, portStr, _ := net.SplitHostPort(relay.addr)
-	port, _ := strconv.Atoi(portStr)
-	noTLS := false
 	cfg := *s.getConfig()
-	cfg.Email = config.EmailConfig{From: "test@example.com", SMTP: config.SMTPConfig{Host: host, Port: port, UseTLS: &noTLS}}
+	cfg.Email = relay.Email("test@example.com")
 	cfg.Options.Template = "gdpr"
 	cfg.Options.RateLimitMs = 1
 	s.config.Store(&cfg)
@@ -141,14 +50,14 @@ func post(t *testing.T, s *Server, target string, form url.Values) *httptest.Res
 }
 
 func TestSendOneDeliversAndRecords(t *testing.T) {
-	relay := newFakeRelay(t)
+	relay := smtptest.Start(t)
 	s := sendServer(t, relay)
 
 	rec := post(t, s, "/api/send/spokeo", nil)
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Sent") {
 		t.Fatalf("send: %d %s", rec.Code, rec.Body.String())
 	}
-	if got := relay.recipients(); len(got) != 1 || got[0] != "privacy@spokeo.com" {
+	if got := relay.Recipients(); len(got) != 1 || got[0] != "privacy@spokeo.com" {
 		t.Errorf("relay got %v", got)
 	}
 	recs, _ := s.historyStore.GetRecentRequests("default", 10)
@@ -158,8 +67,8 @@ func TestSendOneDeliversAndRecords(t *testing.T) {
 }
 
 func TestSendOneRecordsRejectedRecipient(t *testing.T) {
-	relay := newFakeRelay(t)
-	relay.reject["privacy@spokeo.com"] = true
+	relay := smtptest.Start(t)
+	relay.Reject("privacy@spokeo.com", true)
 	s := sendServer(t, relay)
 
 	rec := post(t, s, "/api/send/spokeo", nil)
@@ -173,7 +82,7 @@ func TestSendOneRecordsRejectedRecipient(t *testing.T) {
 }
 
 func TestSendOneRefusals(t *testing.T) {
-	relay := newFakeRelay(t)
+	relay := smtptest.Start(t)
 	cases := []struct {
 		name, target string
 		mutate       func(s *Server)
@@ -216,13 +125,13 @@ func TestSendOneRefusals(t *testing.T) {
 			}
 		})
 	}
-	if got := relay.recipients(); len(got) != 0 {
+	if got := relay.Recipients(); len(got) != 0 {
 		t.Errorf("a refused send reached the relay: %v", got)
 	}
 }
 
 func TestSendOneRateLimited(t *testing.T) {
-	s := sendServer(t, newFakeRelay(t))
+	s := sendServer(t, smtptest.Start(t))
 	s.rateLimiter = NewRateLimiter(0, time.Minute)
 	if rec := post(t, s, "/api/send/spokeo", nil); rec.Code != http.StatusTooManyRequests {
 		t.Errorf("status = %d, want 429", rec.Code)
@@ -242,8 +151,8 @@ func decodeJSON(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 }
 
 func TestSendAllRunsJobToCompletion(t *testing.T) {
-	relay := newFakeRelay(t)
-	relay.reject["dpo@acme.example"] = true
+	relay := smtptest.Start(t)
+	relay.Reject("dpo@acme.example", true)
 	s := sendServer(t, relay)
 
 	rec := post(t, s, "/api/send-all", nil)
@@ -275,7 +184,7 @@ func TestSendAllRunsJobToCompletion(t *testing.T) {
 }
 
 func TestSendAllRefusals(t *testing.T) {
-	relay := newFakeRelay(t)
+	relay := smtptest.Start(t)
 	cases := []struct {
 		name   string
 		form   url.Values
@@ -317,7 +226,7 @@ func TestSendAllRefusals(t *testing.T) {
 			}
 		})
 	}
-	if got := relay.recipients(); len(got) != 0 {
+	if got := relay.Recipients(); len(got) != 0 {
 		t.Errorf("a refused batch reached the relay: %v", got)
 	}
 }
@@ -333,8 +242,8 @@ func brokersToSend(s *Server, ids ...string) []BrokerWithStatus {
 // Three consecutive auth failures mean the provider has locked the account:
 // stop rather than burn through the rest of the list.
 func TestProcessSendJobStopsOnRepeatedAuthFailures(t *testing.T) {
-	relay := newFakeRelay(t)
-	relay.authFail = true
+	relay := smtptest.Start(t)
+	relay.FailAuth()
 	s := sendServer(t, relay)
 	s.brokers().Brokers = append(s.brokers().Brokers,
 		s.brokers().Brokers[0], s.brokers().Brokers[0], s.brokers().Brokers[0])
@@ -354,7 +263,7 @@ func TestProcessSendJobStopsOnRepeatedAuthFailures(t *testing.T) {
 // A job whose profile was deleted mid-flight falls back to the first
 // profile rather than crashing; a cancelled job sends nothing.
 func TestProcessSendJobProfileFallbackAndCancel(t *testing.T) {
-	relay := newFakeRelay(t)
+	relay := smtptest.Start(t)
 	s := sendServer(t, relay)
 	sender, _ := email.NewSender(s.getConfig().Email)
 
@@ -370,14 +279,14 @@ func TestProcessSendJobProfileFallbackAndCancel(t *testing.T) {
 	cancelled := s.jobManager.Create(1, "default")
 	cancelled.Cancel()
 	s.processSendJob(cancelled, brokersToSend(s, "acme-eu"), sender)
-	if got := relay.recipients(); len(got) != 1 {
+	if got := relay.Recipients(); len(got) != 1 {
 		t.Errorf("cancelled job still sent: %v", got)
 	}
 }
 
 // A template error skips the broker as failed without recording anything.
 func TestProcessSendJobTemplateError(t *testing.T) {
-	s := sendServer(t, newFakeRelay(t))
+	s := sendServer(t, smtptest.Start(t))
 	c := *s.getConfig()
 	c.Options.Template = "nope"
 	s.config.Store(&c)

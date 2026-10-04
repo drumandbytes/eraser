@@ -1,56 +1,23 @@
 package web
 
 import (
-	"fmt"
-	"net"
 	"net/http"
-	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
-	"time"
-
-	"github.com/emersion/go-imap/backend/memory"
-	"github.com/emersion/go-imap/server"
 
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/imaptest"
 )
 
-type quietLog struct{}
-
-func (quietLog) Printf(string, ...interface{}) {}
-func (quietLog) Println(...interface{})        {}
-
-// imapServer serves go-imap's in-memory backend over STARTTLS on loopback
-// with the given (from, subject, body) messages in INBOX.
+// imapServer serves INBOX with the given (from, subject, body) messages.
 func imapServer(t *testing.T, mails ...[3]string) config.InboxConfig {
 	t.Helper()
-	be := memory.New()
-	u, _ := be.Login(nil, "username", "password")
-	mb, _ := u.GetMailbox("INBOX")
-	for i, m := range mails {
-		msg := fmt.Sprintf("From: %s\r\nTo: test@example.com\r\nSubject: %s\r\nDate: %s\r\nMessage-ID: <%d@t>\r\nContent-Type: text/plain\r\n\r\n%s",
-			m[0], m[1], time.Now().Format(time.RFC1123Z), i, m[2])
-		if err := mb.(*memory.Mailbox).CreateMessage(nil, time.Now(), strings.NewReader(msg)); err != nil {
-			t.Fatal(err)
-		}
+	srv := imaptest.Start(t, false)
+	for _, m := range mails {
+		srv.Deliver(t, "INBOX", m[0], m[1], m[2])
 	}
-	ts := httptest.NewTLSServer(http.NotFoundHandler())
-	t.Cleanup(ts.Close)
-	srv := server.New(be)
-	srv.TLSConfig = ts.TLS.Clone()
-	srv.ErrorLog = quietLog{}
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() { _ = srv.Serve(ln) }()
-	t.Cleanup(func() { _ = srv.Close() })
-	_, portStr, _ := net.SplitHostPort(ln.Addr().String())
-	port, _ := strconv.Atoi(portStr)
-	return config.InboxConfig{Enabled: true, Server: "127.0.0.1", Port: port, Email: "username", Password: "password",
-		Folder: "INBOX", ArchiveFolder: "Eraser"}
+	return srv.Inbox
 }
 
 func withInbox(t *testing.T, in config.InboxConfig) *Server {

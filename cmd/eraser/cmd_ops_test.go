@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,57 +12,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/emersion/go-imap"
-	"github.com/emersion/go-imap/backend"
-	"github.com/emersion/go-imap/backend/memory"
-	"github.com/emersion/go-imap/server"
-
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/imaptest"
 	"github.com/drumandbytes/eraser/internal/schedule"
+	"github.com/drumandbytes/eraser/internal/smtptest"
 )
 
-// imapInbox serves go-imap's in-memory backend over STARTTLS on loopback
-// (TLS verification is skipped for loopback) and returns the inbox: YAML.
+// imapInbox serves INBOX with the given (from, subject, body) messages and
+// returns its inbox: YAML.
 func imapInbox(t *testing.T, mails ...[3]string) string {
 	t.Helper()
-	be := memory.New()
-	u, _ := be.Login(nil, "username", "password")
-	mb, _ := u.GetMailbox("INBOX")
-	for i, m := range mails {
-		msg := fmt.Sprintf("From: %s\r\nTo: jane@example.com\r\nSubject: %s\r\nDate: %s\r\nMessage-ID: <%d@t>\r\nContent-Type: text/plain\r\n\r\n%s",
-			m[0], m[1], time.Now().Format(time.RFC1123Z), i, m[2])
-		if err := mb.(*memory.Mailbox).CreateMessage(nil, time.Now(), strings.NewReader(msg)); err != nil {
-			t.Fatal(err)
-		}
+	srv := imaptest.Start(t, false)
+	for _, m := range mails {
+		srv.Deliver(t, "INBOX", m[0], m[1], m[2])
 	}
-	ts := httptest.NewTLSServer(http.NotFoundHandler())
-	t.Cleanup(ts.Close)
-	srv := server.New(anyUser{be})
-	srv.TLSConfig = ts.TLS.Clone()
-	srv.ErrorLog = quietLog{}
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() { _ = srv.Serve(ln) }()
-	t.Cleanup(func() { _ = srv.Close() })
-	_, port, _ := net.SplitHostPort(ln.Addr().String())
-	return "inbox:\n  enabled: true\n  server: 127.0.0.1\n  port: " + port + "\n  email: username\n  password: password\n"
+	return "inbox:\n  enabled: true\n  server: 127.0.0.1\n  port: " + strconv.Itoa(srv.Inbox.Port) + "\n  email: username\n  password: password\n"
 }
-
-// anyUser lets any login name in with the memory backend's password, so
-// two profiles' inboxes can have different addresses.
-type anyUser struct{ *memory.Backend }
-
-func (b anyUser) Login(ci *imap.ConnInfo, _, pass string) (backend.User, error) {
-	return b.Backend.Login(ci, "username", pass)
-}
-
-type quietLog struct{}
-
-func (quietLog) Printf(string, ...interface{}) {}
-func (quietLog) Println(...interface{})        {}
 
 func addSent(t *testing.T, e *cliEnv, profile, brokerID, email string) {
 	t.Helper()
@@ -79,7 +44,7 @@ func addSent(t *testing.T, e *cliEnv, profile, brokerID, email string) {
 }
 
 func TestMonitor(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	inboxYAML := imapInbox(t,
 		[3]string{"privacy@acme.example", "Re: Erasure request", "We have deleted your personal data from our systems."},
 		[3]string{"dpo@globex.example", "Your request", "Please complete our opt-out form at https://globex.example/optout"},
@@ -408,7 +373,7 @@ func TestScheduleStatusAndInstall(t *testing.T) {
 }
 
 func TestAutoOnce(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	e := newCLIEnv(t, relayConfig(rl, imapInbox(t, [3]string{"privacy@acme.example", "Re: request", "We deleted your data."})))
 	t.Setenv("XPC_SERVICE_NAME", "")
 	t.Setenv("INVOCATION_ID", "")

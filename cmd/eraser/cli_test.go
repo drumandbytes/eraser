@@ -1,15 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/smtptest"
 )
 
 // cliEnv is an isolated install: a temp HOME, a config file and a small
@@ -115,95 +114,8 @@ func mustContain(t *testing.T, out string, wants ...string) {
 	}
 }
 
-// relay is a plaintext SMTP server for send tests; recipients in reject get
-// a 550.
-type relay struct {
-	host     string
-	port     int
-	mu       sync.Mutex
-	got      []string
-	reject   map[string]bool
-	authFail bool
-}
-
-func newRelay(t *testing.T) *relay {
-	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = ln.Close() })
-	host, portStr, _ := net.SplitHostPort(ln.Addr().String())
-	port, _ := strconv.Atoi(portStr)
-	rl := &relay{host: host, port: port, reject: map[string]bool{}}
-	go func() {
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				return
-			}
-			go rl.serve(conn)
-		}
-	}()
-	return rl
-}
-
-func (rl *relay) serve(conn net.Conn) {
-	defer func() { _ = conn.Close() }()
-	r := bufio.NewReader(conn)
-	reply := func(s string) { _, _ = conn.Write([]byte(s + "\r\n")) }
-	reply("220 test")
-	for {
-		line, err := r.ReadString('\n')
-		if err != nil {
-			return
-		}
-		cmd := strings.TrimSpace(line)
-		rl.mu.Lock()
-		authFail := rl.authFail
-		rl.mu.Unlock()
-		switch up := strings.ToUpper(cmd); {
-		case strings.HasPrefix(up, "MAIL") && authFail:
-			reply("535 5.7.8 authentication failed")
-		case strings.HasPrefix(up, "RCPT"):
-			to := strings.Trim(cmd[strings.Index(cmd, ":")+1:], "<> ")
-			rl.mu.Lock()
-			rejected := rl.reject[to]
-			if !rejected {
-				rl.got = append(rl.got, to)
-			}
-			rl.mu.Unlock()
-			if rejected {
-				reply("550 no such user")
-			} else {
-				reply("250 ok")
-			}
-		case strings.HasPrefix(up, "DATA"):
-			reply("354 go ahead")
-			for {
-				l, err := r.ReadString('\n')
-				if err != nil || l == ".\r\n" {
-					break
-				}
-			}
-			reply("250 queued")
-		case strings.HasPrefix(up, "QUIT"):
-			reply("221 bye")
-			return
-		default:
-			reply("250 ok")
-		}
-	}
-}
-
-func (rl *relay) recipients() []string {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-	return append([]string(nil), rl.got...)
-}
-
 // relayConfig is a valid single-profile config sending through rl.
-func relayConfig(rl *relay, extra string) string {
+func relayConfig(rl *smtptest.Relay, extra string) string {
 	return `profiles:
   - id: default
     first_name: Jane
@@ -213,8 +125,8 @@ func relayConfig(rl *relay, extra string) string {
 email:
   from: jane@example.com
   smtp:
-    host: ` + rl.host + `
-    port: ` + strconv.Itoa(rl.port) + `
+    host: ` + rl.Host + `
+    port: ` + strconv.Itoa(rl.Port) + `
     use_tls: false
 options:
   template: gdpr

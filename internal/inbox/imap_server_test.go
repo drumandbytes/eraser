@@ -3,134 +3,37 @@ package inbox
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"net"
-	"net/http"
-	"net/http/httptest"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/emersion/go-imap"
-	"github.com/emersion/go-imap/backend"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/imaptest"
 )
 
-// testBackend is go-imap's in-memory backend, optionally with MOVE (the
-// memory backend has none, so ArchiveEmails falls back to COPY+EXPUNGE).
-type testBackend struct {
-	*memory.Backend
-	move bool
-}
-
-func (b *testBackend) Login(ci *imap.ConnInfo, user, pass string) (backend.User, error) {
-	u, err := b.Backend.Login(ci, user, pass)
-	if err != nil || !b.move {
-		return u, err
-	}
-	return moveUser{u}, nil
-}
-
-type moveUser struct{ backend.User }
-
-func (u moveUser) GetMailbox(name string) (backend.Mailbox, error) {
-	mb, err := u.User.GetMailbox(name)
-	if err != nil {
-		return nil, err
-	}
-	return moveMailbox{mb}, nil
-}
-
-type moveMailbox struct{ backend.Mailbox }
-
-func (m moveMailbox) MoveMessages(uid bool, seq *imap.SeqSet, dest string) error {
-	if err := m.CopyMessages(uid, seq, dest); err != nil {
-		return err
-	}
-	if err := m.UpdateMessagesFlags(uid, seq, imap.AddFlags, []string{imap.DeletedFlag}); err != nil {
-		return err
-	}
-	return m.Expunge()
-}
-
 type imapFixture struct {
+	*imaptest.Server
 	cfg     config.InboxConfig
-	be      *testBackend
 	brokers []broker.Broker
 }
 
-// newIMAPFixture serves the backend over STARTTLS on a loopback port (TLS
-// verification is skipped for loopback, see config.TLSFor).
 func newIMAPFixture(t *testing.T, move bool) *imapFixture {
 	t.Helper()
-	be := &testBackend{Backend: memory.New(), move: move}
-	ts := httptest.NewTLSServer(http.NotFoundHandler())
-	t.Cleanup(ts.Close)
-
-	srv := server.New(be)
-	srv.TLSConfig = ts.TLS.Clone()
-	srv.ErrorLog = discardLogger{}
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	go func() { _ = srv.Serve(ln) }()
-	t.Cleanup(func() { _ = srv.Close() })
-
-	_, portStr, _ := net.SplitHostPort(ln.Addr().String())
-	port, _ := strconv.Atoi(portStr)
-	return &imapFixture{
-		be: be,
-		cfg: config.InboxConfig{Enabled: true, Server: "127.0.0.1", Port: port,
-			Email: "username", Password: "password", Folder: "INBOX", ArchiveFolder: "Eraser"},
-		brokers: []broker.Broker{
-			{ID: "acme", Name: "Acme", Email: "privacy@acme.example"},
-			{ID: "globex", Name: "Globex", Website: "https://www.globex.example/privacy"},
-		},
-	}
-}
-
-type discardLogger struct{}
-
-func (discardLogger) Printf(string, ...interface{}) {}
-func (discardLogger) Println(...interface{})        {}
-
-func (f *imapFixture) mailbox(t *testing.T, name string) backend.Mailbox {
-	t.Helper()
-	u, err := f.be.Backend.Login(nil, "username", "password")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := u.GetMailbox(name); err != nil {
-		if err := u.CreateMailbox(name); err != nil {
-			t.Fatal(err)
-		}
-	}
-	mb, err := u.GetMailbox(name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return mb
-}
-
-func (f *imapFixture) deliver(t *testing.T, folder, from, subject, body string) {
-	t.Helper()
-	msg := fmt.Sprintf("From: %s\r\nTo: username@example.com\r\nSubject: %s\r\nDate: %s\r\nMessage-ID: <%d@test>\r\nContent-Type: text/plain\r\n\r\n%s",
-		from, subject, time.Now().Format(time.RFC1123Z), time.Now().UnixNano(), body)
-	if err := f.mailbox(t, folder).(*memory.Mailbox).CreateMessage(nil, time.Now(), strings.NewReader(msg)); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func (f *imapFixture) count(t *testing.T, folder string) int {
-	t.Helper()
-	return len(f.mailbox(t, folder).(*memory.Mailbox).Messages)
+	srv := imaptest.Start(t, move)
+	return &imapFixture{Server: srv, cfg: srv.Inbox, brokers: []broker.Broker{
+		{ID: "acme", Name: "Acme", Email: "privacy@acme.example"},
+		{ID: "globex", Name: "Globex", Website: "https://www.globex.example/privacy"},
+	}}
 }
 
 func (f *imapFixture) connect(t *testing.T) *Monitor {
@@ -164,7 +67,7 @@ func TestConnectErrors(t *testing.T) {
 func TestConnectRefusesPlaintextServer(t *testing.T) {
 	srv := server.New(memory.New())
 	srv.AllowInsecureAuth = true
-	srv.ErrorLog = discardLogger{}
+	srv.ErrorLog = log.New(io.Discard, "", 0)
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -182,10 +85,10 @@ func TestConnectRefusesPlaintextServer(t *testing.T) {
 
 func TestFetchBrokerAndBounceEmails(t *testing.T) {
 	f := newIMAPFixture(t, false)
-	f.deliver(t, "INBOX", "Acme Privacy <privacy@acme.example>", "Re: Erasure request", "Your data has been deleted.")
-	f.deliver(t, "INBOX", "dpo@globex.example", "Your request", "Please use our form.")
-	f.deliver(t, "INBOX", "friend@example.com", "Lunch?", "Tomorrow?")
-	f.deliver(t, "INBOX", "Mail Delivery Subsystem <mailer-daemon@googlemail.com>", "Delivery Status Notification (Failure)",
+	f.Deliver(t, "INBOX", "Acme Privacy <privacy@acme.example>", "Re: Erasure request", "Your data has been deleted.")
+	f.Deliver(t, "INBOX", "dpo@globex.example", "Your request", "Please use our form.")
+	f.Deliver(t, "INBOX", "friend@example.com", "Lunch?", "Tomorrow?")
+	f.Deliver(t, "INBOX", "Mail Delivery Subsystem <mailer-daemon@googlemail.com>", "Delivery Status Notification (Failure)",
 		"Delivery to the following recipient failed permanently: gone@deadbroker.example")
 	m := f.connect(t)
 
@@ -215,7 +118,7 @@ func TestFetchBrokerAndBounceEmails(t *testing.T) {
 	if _, err := m.FetchBrokerEmailsFromFolder(context.Background(), "Nope", 7); err == nil {
 		t.Error("fetching a missing folder should fail")
 	}
-	f.mailbox(t, "Empty")
+	f.Mailbox(t, "Empty")
 	if got, err := m.FetchBrokerEmailsFromFolder(context.Background(), "Empty", 7); err != nil || got != nil {
 		t.Errorf("empty folder = %v, %v", got, err)
 	}
@@ -247,9 +150,7 @@ func TestEnsureFolderExists(t *testing.T) {
 	if err := m.EnsureFolderExists("eraser"); err != nil { // case-insensitive match, no duplicate
 		t.Fatal(err)
 	}
-	u, _ := f.be.Backend.Login(nil, "username", "password")
-	boxes, _ := u.ListMailboxes(false)
-	if len(boxes) != 2 {
+	if boxes := f.MailboxNames(t); len(boxes) != 2 {
 		t.Errorf("mailboxes = %d, want INBOX + Eraser", len(boxes))
 	}
 }
@@ -261,9 +162,9 @@ func TestScanAndStoreArchives(t *testing.T) {
 		t.Run(fmt.Sprintf("move=%v", move), func(t *testing.T) {
 			f := newIMAPFixture(t, move)
 			f.cfg.AutoArchive = true
-			f.deliver(t, "INBOX", "privacy@acme.example", "Re: Erasure request", "We have deleted your personal data from our systems.")
-			f.deliver(t, "INBOX", "dpo@globex.example", "Action required", "Please complete our opt-out form at https://www.globex.example/optout")
-			before := f.count(t, "INBOX")
+			f.Deliver(t, "INBOX", "privacy@acme.example", "Re: Erasure request", "We have deleted your personal data from our systems.")
+			f.Deliver(t, "INBOX", "dpo@globex.example", "Action required", "Please complete our opt-out form at https://www.globex.example/optout")
+			before := f.Count(t, "INBOX")
 			m := f.connect(t)
 
 			store, err := history.NewStore(filepath.Join(t.TempDir(), "history.db"))
@@ -283,8 +184,8 @@ func TestScanAndStoreArchives(t *testing.T) {
 			if res.Summary.Total != 2 || len(res.New) != 2 || res.Archived != 2 || res.Summary.Success != 1 || res.Summary.FormRequired != 1 {
 				t.Fatalf("result = %+v", res)
 			}
-			if f.count(t, "INBOX") != before-2 || f.count(t, "Eraser") != 2 {
-				t.Errorf("INBOX %d (was %d), Eraser %d", f.count(t, "INBOX"), before, f.count(t, "Eraser"))
+			if f.Count(t, "INBOX") != before-2 || f.Count(t, "Eraser") != 2 {
+				t.Errorf("INBOX %d (was %d), Eraser %d", f.Count(t, "INBOX"), before, f.Count(t, "Eraser"))
 			}
 			if jane, _ := store.GetBrokerResponses("jane", "", false, 10); len(jane) != 1 || jane[0].BrokerID != "acme" {
 				t.Errorf("acme reply not attributed to jane: %+v", jane)

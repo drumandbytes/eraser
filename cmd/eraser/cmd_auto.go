@@ -79,18 +79,25 @@ func runAutoLoop(every time.Duration) error {
 		}
 		fmt.Printf("Next cycle at %s\n", time.Now().Add(every).Format("2006-01-02 15:04"))
 
-		// Signals are caught only while waiting. During a cycle Ctrl+C keeps
-		// its default and kills the process: that's safe mid-send (history is
-		// written per broker, the OS drops the lock) and doesn't make the
-		// user wait out a 15-minute send.
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-		select {
-		case <-ctx.Done():
-			stop()
+		if waitForNextCycle(every) {
 			return nil
-		case <-time.After(every):
-			stop()
 		}
+	}
+}
+
+// waitForNextCycle sleeps for every and reports whether the user asked to
+// stop. Signals are caught only while waiting: during a cycle Ctrl+C keeps
+// its default and kills the process, which is safe mid-send (history is
+// written per broker, the OS drops the lock) and doesn't make the user wait
+// out a 15-minute send. A var so tests can end the loop.
+var waitForNextCycle = func(every time.Duration) (stop bool) {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		return true
+	case <-time.After(every):
+		return false
 	}
 }
 

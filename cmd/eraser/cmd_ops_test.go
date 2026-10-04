@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/emersion/go-imap"
+	"github.com/emersion/go-imap/backend"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 
@@ -37,7 +39,7 @@ func imapInbox(t *testing.T, mails ...[3]string) string {
 	}
 	ts := httptest.NewTLSServer(http.NotFoundHandler())
 	t.Cleanup(ts.Close)
-	srv := server.New(be)
+	srv := server.New(anyUser{be})
 	srv.TLSConfig = ts.TLS.Clone()
 	srv.ErrorLog = quietLog{}
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -48,6 +50,14 @@ func imapInbox(t *testing.T, mails ...[3]string) string {
 	t.Cleanup(func() { _ = srv.Close() })
 	_, port, _ := net.SplitHostPort(ln.Addr().String())
 	return "inbox:\n  enabled: true\n  server: 127.0.0.1\n  port: " + port + "\n  email: username\n  password: password\n"
+}
+
+// anyUser lets any login name in with the memory backend's password, so
+// two profiles' inboxes can have different addresses.
+type anyUser struct{ *memory.Backend }
+
+func (b anyUser) Login(ci *imap.ConnInfo, _, pass string) (backend.User, error) {
+	return b.Backend.Login(ci, "username", pass)
 }
 
 type quietLog struct{}

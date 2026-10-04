@@ -58,7 +58,9 @@ func resolveConfigPath() string {
 	return config.DefaultConfigPath()
 }
 
-func main() {
+// newRootCmd builds the CLI; each call binds the flag globals afresh, so
+// tests can run several commands in one process.
+func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:     "eraser",
 		Version: version,
@@ -101,7 +103,11 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	rootCmd.AddCommand(autoCmd())
 	rootCmd.AddCommand(scheduleCmd())
 
-	if err := rootCmd.Execute(); err != nil {
+	return rootCmd
+}
+
+func main() {
+	if err := newRootCmd().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -38,5 +39,24 @@ func TestFilterBrokersByStatus(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// Email-less brokers sort first (never sent) but must not use up budget.
+func TestCapSendsIgnoresEmaillessBrokers(t *testing.T) {
+	brokers := []broker.Broker{{ID: "n1"}, {ID: "a", Email: "a@x"}, {ID: "n2"}, {ID: "b", Email: "b@x"}, {ID: "c", Email: "c@x"}}
+	got := capSends(brokers, 2)
+	var ids []string
+	for _, b := range got {
+		ids = append(ids, b.ID)
+	}
+	if strings.Join(ids, ",") != "n1,a,n2,b" {
+		t.Errorf("capSends = %v, want n1,a,n2,b", ids)
+	}
+	if n := countWithEmail(brokers); n != 3 {
+		t.Errorf("countWithEmail = %d", n)
+	}
+	if len(capSends(brokers, 5)) != 5 {
+		t.Error("budget above the list size trimmed it")
 	}
 }

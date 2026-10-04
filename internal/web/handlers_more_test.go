@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/schedule"
+	"github.com/drumandbytes/eraser/internal/smtptest"
 )
 
 // sessionRequest builds a request carrying a wizard session set up by fill.
@@ -38,13 +38,6 @@ func serve(s *Server, req *http.Request) *httptest.ResponseRecorder {
 	rec := httptest.NewRecorder()
 	s.setupRouter().ServeHTTP(rec, req)
 	return rec
-}
-
-func relayEmail(relay *fakeRelay) config.Email {
-	host, portStr, _ := strings.Cut(relay.addr, ":")
-	port, _ := strconv.Atoi(portStr)
-	noTLS := false
-	return config.Email{From: "test@example.com", SMTP: config.SMTPConfig{Host: host, Port: port, UseTLS: &noTLS}}
 }
 
 func TestSetupTestPage(t *testing.T) {
@@ -72,7 +65,7 @@ func TestSetupTestPage(t *testing.T) {
 }
 
 func TestSetupTestSend(t *testing.T) {
-	relay := newFakeRelay(t)
+	relay := smtptest.Start(t)
 	s := newTestServer(t, nil)
 	profile := config.Profile{FirstName: "Test", LastName: "User", Email: "me@example.com"}
 	withEmail := func(e config.Email) func(*Session) {
@@ -87,7 +80,7 @@ func TestSetupTestSend(t *testing.T) {
 	}{
 		{"no session", nil, http.StatusBadRequest, "Email not configured"},
 		{"bad provider", withEmail(config.Email{Provider: "fax", SMTP: config.SMTPConfig{Host: "x"}}), http.StatusOK, "Configuration error"},
-		{"delivered", withEmail(relayEmail(relay)), http.StatusOK, "Test email sent"},
+		{"delivered", withEmail(relay.Email("test@example.com")), http.StatusOK, "Test email sent"},
 	}
 	for _, c := range cases {
 		rec := serve(s, sessionRequest(t, s, http.MethodPost, "/setup/test/send", c.fill))
@@ -95,12 +88,12 @@ func TestSetupTestSend(t *testing.T) {
 			t.Errorf("%s: %d %s", c.name, rec.Code, rec.Body.String())
 		}
 	}
-	if got := relay.recipients(); len(got) != 1 || got[0] != "me@example.com" {
+	if got := relay.Recipients(); len(got) != 1 || got[0] != "me@example.com" {
 		t.Errorf("test email went to %v, want the profile address", got)
 	}
 
-	relay.reject["me@example.com"] = true
-	rec := serve(s, sessionRequest(t, s, http.MethodPost, "/setup/test/send", withEmail(relayEmail(relay))))
+	relay.Reject("me@example.com", true)
+	rec := serve(s, sessionRequest(t, s, http.MethodPost, "/setup/test/send", withEmail(relay.Email("test@example.com"))))
 	if !strings.Contains(rec.Body.String(), "Test failed") {
 		t.Errorf("rejected: %s", rec.Body.String())
 	}

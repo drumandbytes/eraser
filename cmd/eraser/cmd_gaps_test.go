@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,6 +22,7 @@ import (
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/inbox"
 	"github.com/drumandbytes/eraser/internal/schedule"
+	"github.com/drumandbytes/eraser/internal/smtptest"
 	"github.com/drumandbytes/eraser/internal/web"
 )
 
@@ -44,9 +47,7 @@ func TestCommandSetupErrors(t *testing.T) {
 		}
 	}
 
-	rl := newRelay(t)
-	two := newCLIEnv(t, relayConfig(rl, "")+"  - id: x\n")
-	_ = two
+	rl := smtptest.Start(t)
 	multi := newCLIEnv(t, manualConfig)
 	for _, args := range [][]string{{"send"}, {"export", "-o", "x"}, {"fill", "--url", "x"}, {"confirm", "--url", "x"}, {"draft", "acme"}, {"mark-sent", "acme"}} {
 		if _, err := multi.run(t, "", args...); err == nil || !strings.Contains(err.Error(), "multiple profiles") {
@@ -71,7 +72,7 @@ func TestCommandSetupErrors(t *testing.T) {
 }
 
 func TestSendOutputBranches(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	cfg := strings.Replace(relayConfig(rl, ""), "profiles:\n", "profiles:\n  - id: spouse\n    first_name: John\n    last_name: Doe\n    email: john@example.com\n", 1)
 	e := newCLIEnv(t, cfg)
 	if err := os.WriteFile(e.brokersPath, []byte(testBrokersYAML+"  - {id: formonly, name: Form Only, opt_out_url: https://form.example/optout, region: eu}\n"), 0o600); err != nil {
@@ -227,7 +228,7 @@ func TestAutoLoopAndModes(t *testing.T) {
 	waits := 0
 	waitForNextCycle = func(time.Duration) bool { waits++; return waits >= 2 }
 
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	e := newCLIEnv(t, relayConfig(rl, ""))
 	t.Setenv("ERASER_AUTO_MODE", "")
 	t.Setenv("INVOCATION_ID", "")
@@ -275,7 +276,7 @@ func TestAutoLoopAndModes(t *testing.T) {
 }
 
 func TestAutoCycleFailures(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 
 	blocker := filepath.Join(t.TempDir(), "file")
 	_ = os.WriteFile(blocker, nil, 0o600)
@@ -332,7 +333,7 @@ func TestMonitorExtras(t *testing.T) {
 	mustContain(t, out, "Monitoring 2 configured inboxes", "Archived 1 emails")
 
 	for typ, icon := range map[inbox.ResponseType]string{inbox.ResponsePending: "⏳", inbox.ResponseRejected: "❌", inbox.ResponseUnknown: "❓", inbox.ResponseConfirmationRequired: "🔗"} {
-		got, _ := captureStdout(t, func() {
+		got := captureStdout(t, func() {
 			printClassifiedResponse(inbox.ClassifiedResponse{Type: typ, Email: &inbox.Email{BrokerName: "X"}, ConfirmURL: "https://x.example/c", NeedsReview: true})
 		})
 		if !strings.Contains(got, icon) {
@@ -341,7 +342,7 @@ func TestMonitorExtras(t *testing.T) {
 	}
 }
 
-func captureStdout(t *testing.T, fn func()) (string, error) {
+func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()
 	r, w, err := os.Pipe()
 	if err != nil {
@@ -352,16 +353,8 @@ func captureStdout(t *testing.T, fn func()) (string, error) {
 	fn()
 	os.Stdout = orig
 	_ = w.Close()
-	var b strings.Builder
-	buf := make([]byte, 4096)
-	for {
-		n, err := r.Read(buf)
-		b.Write(buf[:n])
-		if err != nil {
-			break
-		}
-	}
-	return b.String(), nil
+	out, _ := io.ReadAll(r)
+	return string(out)
 }
 
 // serve runs until Ctrl+C, then shuts down cleanly.
@@ -407,9 +400,10 @@ func TestServeUntilInterrupted(t *testing.T) {
 
 func freeTCPPort(t *testing.T) int {
 	t.Helper()
-	srv := httptest.NewServer(http.NotFoundHandler())
-	port := srv.Listener.Addr().(interface{ String() string }).String()
-	srv.Close()
-	n, _ := strconv.Atoi(port[strings.LastIndex(port, ":")+1:])
-	return n
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = ln.Close() }()
+	return ln.Addr().(*net.TCPAddr).Port
 }

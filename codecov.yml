@@ -1,8 +1,10 @@
 # Coverage of the code that ships. scripts/ is a maintainer import tool,
-# data/ is embedded YAML.
+# data/ is embedded YAML, *test/ are test-only helper packages.
 ignore:
   - "scripts/**"
   - "data/**"
+  - "internal/imaptest/**"
+  - "internal/smtptest/**"
 
 coverage:
   status:

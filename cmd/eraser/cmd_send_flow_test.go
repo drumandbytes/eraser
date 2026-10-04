@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/smtptest"
 )
 
 func stats(t *testing.T, e *cliEnv, profile string) (total, sent, failed int) {
@@ -21,7 +22,7 @@ func stats(t *testing.T, e *cliEnv, profile string) (total, sent, failed int) {
 }
 
 func TestSendDryRunAndReal(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	e := newCLIEnv(t, relayConfig(rl, ""))
 
 	out, err := e.run(t, "", "send", "--dry-run")
@@ -29,22 +30,22 @@ func TestSendDryRunAndReal(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustContain(t, out, "DRY RUN MODE", "Would send: GDPR Data Erasure Request", "No email on file - see notes", "Dry run complete: 2 brokers")
-	if len(rl.recipients()) != 0 {
+	if len(rl.Recipients()) != 0 {
 		t.Fatal("dry run sent mail")
 	}
 
-	rl.reject["dpo@globex.example"] = true
+	rl.Reject("dpo@globex.example", true)
 	out, err = e.run(t, "", "send")
 	if err != nil {
 		t.Fatal(err)
 	}
 	mustContain(t, out, "Sent successfully", "Failed:", "Complete: 1 sent, 1 failed")
-	if got := rl.recipients(); len(got) != 1 || got[0] != "privacy@acme.example" {
+	if got := rl.Recipients(); len(got) != 1 || got[0] != "privacy@acme.example" {
 		t.Errorf("relay got %v", got)
 	}
 
 	// Only the failed broker is retried.
-	delete(rl.reject, "dpo@globex.example")
+	rl.Reject("dpo@globex.example", false)
 	out, _ = e.run(t, "", "send", "--status", "failed")
 	mustContain(t, out, "Processing 1 brokers", "Complete: 1 sent, 0 failed")
 	if _, sent, failed := stats(t, e, "default"); sent != 2 || failed != 1 {
@@ -58,7 +59,7 @@ func TestSendDryRunAndReal(t *testing.T) {
 }
 
 func TestSendFiltersAndRefusals(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	e := newCLIEnv(t, relayConfig(rl, ""))
 	cases := []struct {
 		args []string
@@ -84,13 +85,13 @@ func TestSendFiltersAndRefusals(t *testing.T) {
 	if _, err := noEmail.run(t, "", "send"); err == nil || !strings.Contains(err.Error(), "invalid config") {
 		t.Errorf("send without email config: %v", err)
 	}
-	if len(rl.recipients()) != 0 {
+	if len(rl.Recipients()) != 0 {
 		t.Error("a refused send reached the relay")
 	}
 }
 
 func TestSendDailyLimit(t *testing.T) {
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	e := newCLIEnv(t, relayConfig(rl, "  daily_send_limit: 1\n"))
 	out, _ := e.run(t, "", "send")
 	mustContain(t, out, "sending 1 of 2 remaining brokers", "Complete: 1 sent")
@@ -98,14 +99,14 @@ func TestSendDailyLimit(t *testing.T) {
 	mustContain(t, out, "Daily send limit reached (1/1")
 	out, _ = e.run(t, "", "send", "--ignore-daily-limit")
 	mustContain(t, out, "Complete: 1 sent")
-	if len(rl.recipients()) != 2 {
-		t.Errorf("relay got %v", rl.recipients())
+	if len(rl.Recipients()) != 2 {
+		t.Errorf("relay got %v", rl.Recipients())
 	}
 }
 
 func TestSendStopsOnRepeatedAuthFailures(t *testing.T) {
-	rl := newRelay(t)
-	rl.authFail = true
+	rl := smtptest.Start(t)
+	rl.FailAuth()
 	e := newCLIEnv(t, relayConfig(rl, ""))
 	var list strings.Builder
 	list.WriteString("brokers:\n")
@@ -140,11 +141,11 @@ func TestSendManual(t *testing.T) {
 	out, _ = e.run(t, lines("n", "n", "q"), "--profile", "spouse", "send", "--broker", "globex,noemail,acme")
 	mustContain(t, out, "Recorded 0 as sent, 2 left")
 	// --manual on a sending config never touches SMTP either.
-	rl := newRelay(t)
+	rl := smtptest.Start(t)
 	smtp := newCLIEnv(t, relayConfig(rl, ""))
 	out, _ = smtp.run(t, lines("s", "s", "n"), "send", "--manual")
 	mustContain(t, out, "Recorded 2 as sent")
-	if len(rl.recipients()) != 0 {
+	if len(rl.Recipients()) != 0 {
 		t.Error("manual mode sent mail")
 	}
 }

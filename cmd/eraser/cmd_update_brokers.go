@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/spf13/cobra"
@@ -35,6 +35,9 @@ The app itself is not updated - only the broker list. Never runs automatically.`
 	return cmd
 }
 
+// errUpdateAvailable is --check's "update available" result: exit 1.
+var errUpdateAvailable = errors.New("broker list update available")
+
 func runUpdateBrokers(url string, check bool) error {
 	res, err := broker.Update(context.Background(), url, check)
 	if err != nil {
@@ -46,7 +49,7 @@ func runUpdateBrokers(url string, check bool) error {
 	}
 	if check {
 		fmt.Println("⬆️  A newer broker list is available. Run `eraser update-brokers` to fetch it.")
-		os.Exit(1)
+		return errUpdateAvailable // main exits 1 (stability.md)
 	}
 	fmt.Println("⬇️  Broker list updated")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")

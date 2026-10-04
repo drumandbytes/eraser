@@ -1,6 +1,7 @@
 package browser
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -205,5 +206,16 @@ func TestNavigateAndFillUnreachable(t *testing.T) {
 	}
 	if res, err := b.NavigateAndFill("http://[::1", "acme", true); err == nil || !strings.Contains(res.ErrorMessage, "invalid URL") {
 		t.Errorf("bad URL: %+v, %v", res, err)
+	}
+}
+
+// A dead browser context is an error, not "no CAPTCHA".
+func TestDetectCaptchaContextError(t *testing.T) {
+	b := requireChrome(t)
+	defer b.Close()
+	ctx, cancel := context.WithCancel(b.ctx)
+	cancel()
+	if _, err := b.detectCaptcha(ctx); err == nil {
+		t.Error("detectCaptcha on a cancelled context returned no error")
 	}
 }

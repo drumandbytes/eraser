@@ -16,6 +16,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// formBrowser is what runFill needs from browser.Browser; tests stub it so
+// the CLI's result handling runs without Chrome.
+type formBrowser interface {
+	NavigateAndFill(url, brokerID string, autoSubmit bool) (*browser.FormResult, error)
+	Close()
+}
+
+var newFormBrowser = func(cfg browser.BrowserConfig, p *config.Profile, domains []string) (formBrowser, error) {
+	return browser.New(cfg, p, domains)
+}
+
 func fillCmd() *cobra.Command {
 	var brokerID string
 	var formURL string
@@ -147,7 +158,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		}
 	}
 
-	b, err := browser.New(browserCfg, &activeProfile.Profile, brokerDomains)
+	b, err := newFormBrowser(browserCfg, &activeProfile.Profile, brokerDomains)
 	if err != nil {
 		return fmt.Errorf("failed to create browser: %w", err)
 	}

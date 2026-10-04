@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.4](https://github.com/drumandbytes/eraser/compare/v1.2.3...v1.2.4) (2026-10-04)
+
+
+### Bug Fixes
+
+* **web:** open the browser only once serve is listening; no panic on an early Ctrl+C ([a47f0e4](https://github.com/drumandbytes/eraser/commit/a47f0e48bf4a03a77030784ea836afef711bb504))
+
 ## [1.2.3](https://github.com/drumandbytes/eraser/compare/v1.2.2...v1.2.3) (2026-10-04)
 
 

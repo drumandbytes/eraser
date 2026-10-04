@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/drumandbytes/eraser/compare/v1.2.2...v1.2.3) (2026-10-04)
+
+
+### Bug Fixes
+
+* **send:** the daily cap no longer counts brokers that have no email ([90cf4a5](https://github.com/drumandbytes/eraser/commit/90cf4a5489aef4cf80e361de2b9a31557d7f6193))
+
 ## [1.2.2](https://github.com/drumandbytes/eraser/compare/v1.2.1...v1.2.2) (2026-10-03)
 
 

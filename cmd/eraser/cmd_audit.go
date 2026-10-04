@@ -40,6 +40,10 @@ type auditChecker struct {
 const auditUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
 	"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
 
+// auditCheckerFor builds the checker runAuditBrokers uses; tests swap in a
+// stub so they don't hit DNS or the network.
+var auditCheckerFor = newAuditChecker
+
 func newAuditChecker(timeout time.Duration) *auditChecker {
 	client := &http.Client{
 		Timeout: timeout,
@@ -152,7 +156,7 @@ func runAuditBrokers(regions, categories []string, timeout time.Duration, failOn
 	fmt.Printf("🔍 Auditing %d broker(s)...\n", len(targets))
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-	results := auditConcurrently(targets, newAuditChecker(timeout), 20)
+	results := auditConcurrently(targets, auditCheckerFor(timeout), 20)
 	printAuditResults(results)
 
 	if fix {

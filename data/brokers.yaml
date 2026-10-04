@@ -25,7 +25,7 @@ brokers:
       name: Intelius
       email: privacy@intelius.com
       website: https://www.intelius.com
-      opt_out_url: https://www.intelius.com/privacy-center/
+      opt_out_url: https://app.intelius.com/privacy-center/
       region: us
       category: people-search
       notes: 'Second INTELIUS LLC entry (mailer-unsubscribe variant) merged into this one on 2026-09-12. Intelius LLC also owns/operates ZabaSearch and US Search - requests via the Intelius Privacy Center cover those brands.'
@@ -62,21 +62,21 @@ brokers:
       name: Instant Checkmate
       email: privacy@instantcheckmate.com
       website: https://www.instantcheckmate.com
-      opt_out_url: https://www.instantcheckmate.com/privacy-center/
+      opt_out_url: https://app.instantcheckmate.com/privacy-center/
       region: us
       category: people-search
     - id: truthfinder
       name: TruthFinder
       email: privacy@truthfinder.com
       website: https://www.truthfinder.com
-      opt_out_url: https://www.truthfinder.com/privacy-center/
+      opt_out_url: https://app.truthfinder.com/privacy-center/
       region: us
       category: people-search
     - id: mylife
       name: MyLife
       email: privacy@mylife.com
       website: https://www.mylife.com
-      opt_out_url: https://www.mylife.com/ccpa/index.pubview
+      opt_out_url: https://www.mylife.com/privacyrequest
       region: us
       category: people-search
       notes: Insightbridge LLC is MyLife.com's registered owner/operator (same entity for privacy-request purposes) - the separate insightbridge entry was merged into this one.
@@ -99,14 +99,14 @@ brokers:
       email: ""
       notes: Email privacy@addresses.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.addresses.com
-      opt_out_url: https://www.addresses.com/optout.php
+      opt_out_url: https://app.intelius.com/privacy-center/
       region: us
       category: people-search
     - id: advancedbackgroundchecks
       name: AdvancedBackgroundChecks
       email: privacy@advancedbackgroundchecks.com
       website: https://www.advancedbackgroundchecks.com
-      opt_out_url: https://www.advancedbackgroundchecks.com/removal
+      opt_out_url: https://www.advancedbackgroundchecks.com/opt-out
       region: us
       category: background-check
     - id: publicrecords360
@@ -135,10 +135,9 @@ brokers:
       name: Epsilon Data Management
       email: privacy@epsilon.com
       website: https://www.epsilon.com
-      opt_out_url: https://www.epsilon.com/privacy/consumer-preference-center
       region: global
       category: marketing
-      notes: 'Second EPSILON DATA MANAGEMENT LLC entry (legal.epsilon.com/dsr DSR portal, region us) merged into this one on 2026-09-12 - same company; the DSR portal is an alternate channel.'
+      notes: 'Second EPSILON DATA MANAGEMENT LLC entry (legal.epsilon.com/dsr DSR portal, region us) merged into this one on 2026-09-12 - same company; the DSR portal is an alternate channel. Opt-out URL https://www.epsilon.com/privacy/consumer-preference-center returns 404 (2026-10-04) - cleared, needs a current form.'
     - id: experian-marketing
       name: Experian Marketing Services
       email: privacy@experian.com
@@ -151,7 +150,7 @@ brokers:
       name: Equifax Marketing Services
       email: UKDPO@equifax.com
       website: https://www.equifax.com
-      opt_out_url: https://www.equifax.com/personal/education/identity/opt-out-prescreen/
+      notes: 'Opt-out URL https://www.equifax.com/personal/education/identity/opt-out-prescreen/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: global
       category: marketing
     - id: transunion-marketing
@@ -165,7 +164,7 @@ brokers:
       name: LexisNexis Risk Solutions
       email: privacy.information.mgr@lexisnexis.com
       website: https://risk.lexisnexis.com
-      opt_out_url: https://optout.lexisnexis.com
+      opt_out_url: https://consumer.risk.lexisnexis.com/opt
       region: global
       category: background-check
     - id: corelogic
@@ -186,7 +185,7 @@ brokers:
       name: LiveRamp
       email: privacy@liveramp.com
       website: https://liveramp.com
-      opt_out_url: https://liveramp.com/opt_out/
+      opt_out_url: https://liveramp.com/privacy
       region: global
       category: marketing
     - id: lotame
@@ -228,7 +227,7 @@ brokers:
       name: Nuwber
       email: support@nuwber.com
       website: https://nuwber.com
-      opt_out_url: https://nuwber.com/removal/link
+      notes: 'Opt-out URL https://nuwber.com/removal/link domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       region: us
       category: people-search
     - id: peoplesmart
@@ -242,7 +241,7 @@ brokers:
       name: NeighborWho
       email: privacy@neighborwho.com
       website: https://neighborwho.com
-      opt_out_url: https://neighborwho.com/remove
+      opt_out_url: https://www.neighborwho.com/svc/optout/search/optouts
       region: us
       category: people-search
     - id: centeda
@@ -256,7 +255,7 @@ brokers:
       name: 01Advertising Inc.
       email: privacy@01advertising.com
       website: https://www.01advertising.com/
-      opt_out_url: https://app.termly.io/notify/d1321341-0e82-4d8c-afaf-c4940d46c171
+      opt_out_url: https://app.termly.io/dsar/d1321341-0e82-4d8c-afaf-c4940d46c171
       region: us
       category: marketing
     - id: 180-by-two
@@ -284,9 +283,8 @@ brokers:
     - id: 4eyesai
       name: 4Eyes.Ai, Inc.
       email: ""
-      notes: Email privacy@4-eyes.ai hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
+      notes: 'Email privacy@4-eyes.ai hard-bounced (2026-08-23) - recipient server rejected all delivery attempts. Opt-out URL https://www.4-eyes.ai/privacy-policy?cord_section=privacy_options_dns returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.4-eyes.ai/
-      opt_out_url: https://www.4-eyes.ai/privacy-policy?cord_section=privacy_options_dns
       region: us
       category: marketing
     - id: 4legalleads
@@ -341,7 +339,7 @@ brokers:
       name: Activimpact, LLC
       email: privacy@activimpact.ai
       website: https://www.activimpact.ai/
-      opt_out_url: https://www.activimpact.ai/dsar?hsLang=en
+      opt_out_url: https://activimpact.ai/dsar
       region: us
       category: marketing
     - id: acuant
@@ -361,7 +359,7 @@ brokers:
       email: ""
       notes: 'AdAdapted''s opt-out policy: "does not store or receive email address, only the mobile advertising identifier - requests cannot be processed without one."'
       website: https://www.adadapted.com/
-      opt_out_url: https://www.adadapted.com/legal/do-not-sell
+      opt_out_url: https://adadapted.com/do-not-sell/
       region: us
       category: device-id-only
     - id: address-clearing-house
@@ -390,7 +388,7 @@ brokers:
       name: Adsquare GmbH
       email: legal@adsquare.com
       website: https://www.adsquare.com/
-      opt_out_url: https://adsquare.com/privacy/us_privacy_supplement/#goto-contact-us
+      notes: 'Opt-out URL https://adsquare.com/privacy/us_privacy_supplement/#goto-contact-us returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: advantage-credit
@@ -445,7 +443,7 @@ brokers:
       name: AIS Portfolio Services LLC
       email: arsllc@aisinfo.com
       website: https://www.aisinfo.com/
-      opt_out_url: https://www.aisinfo.com/privacy?hsLang=en#california-privacy-rights
+      opt_out_url: https://aisinfo.com/privacy
       region: us
       category: marketing
     - id: alc
@@ -497,10 +495,9 @@ brokers:
       name: Altair Data Resources, Inc.
       email: privacy@altairdata.com
       website: https://www.altairdata.com/
-      opt_out_url: https://www.altairdata.com/altair-consumer-info/
       region: us
       category: marketing
-      notes: The email on file (privacy@altairci.com) is the wrong domain - altairdata.com is Altair's actual domain (matches their website) and privacy@altairdata.com is where their real auto-reply came from. They also mentioned updating their opt-out automation; a manual-request portal is available at https://datacloudhome.atlassian.net/servicedesk/customer/portal/12 if this address doesn't get a response (reply received 2026-08-20).
+      notes: 'The email on file (privacy@altairci.com) is the wrong domain - altairdata.com is Altair''s actual domain (matches their website) and privacy@altairdata.com is where their real auto-reply came from. They also mentioned updating their opt-out automation; a manual-request portal is available at https://datacloudhome.atlassian.net/servicedesk/customer/portal/12 if this address doesn''t get a response (reply received 2026-08-20). Opt-out URL https://www.altairdata.com/altair-consumer-info/ returns 404 (2026-10-04) - cleared, needs a current form.'
     - id: altisource-holdings
       name: Altisource Holdings, LLC
       email: privacy@altisource.com
@@ -544,13 +541,12 @@ brokers:
       website: 'https://verinext.com/'
       region: us
       category: marketing
-      opt_out_url: 'https://verinext.com/contact/'
-      notes: 'Anexinet merged into Verinext (2022); anexinet.com contact was dead. Updated 2026-08-20.'
+      notes: 'Anexinet merged into Verinext (2022); anexinet.com contact was dead. Updated 2026-08-20. Opt-out URL https://verinext.com/contact/ now redirects to https://verinext.com/contact-404/ (2026-10-04) - cleared, needs a current form.'
     - id: anne-lewis-strategies
       name: Anne Lewis Strategies, LLC
       email: info@missionwired.com
       website: https://www.missionwired.com/
-      opt_out_url: https://optout.networkadvertising.org/?c=1
+      opt_out_url: https://thenai.org/how-to-opt-out/
       region: us
       category: marketing
     - id: anteriad
@@ -588,7 +584,7 @@ brokers:
       name: Appscience
       email: privacy@appsci.io
       website: https://www.appsci.io/
-      opt_out_url: https://appsci.io/do-not-sell-my-info
+      opt_out_url: https://www.appscience.ai/do-not-sell-my-info
       region: us
       category: marketing
     - id: aristotle-international
@@ -617,7 +613,7 @@ brokers:
       name: AMERICAN SPIRIT DATA SOLUTIONS LLC
       email: privacy@aspire-north.com
       website: https://www.aspire-north.com/
-      opt_out_url: https://www.aspire-north.com/do-not-sell-my-personal-information--out-out-request-form.html
+      notes: 'Opt-out URL https://www.aspire-north.com/do-not-sell-my-personal-information--out-out-request-form.html returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: asset-international
@@ -666,21 +662,21 @@ brokers:
       name: Audience Acuity LLC
       email: privacy@audienceacuity.com
       website: https://www.audienceacuity.com/
-      opt_out_url: https://www.audienceacuity.com/opt-out-of-database
+      opt_out_url: https://optout.audienceacuity.com
       region: us
       category: marketing
     - id: audiencerate
       name: Audiencerate Ltd
       email: gl@audiencerate.com
       website: https://www.audiencerate.com/
-      opt_out_url: https://www.audiencerate.com/optout
+      notes: 'Opt-out URL https://www.audiencerate.com/optout returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: predictive-pop
       name: PREDICTIVE POP Inc
       email: shane@audigent.com
       website: https://www.audigent.com/
-      opt_out_url: https://www.audigent.com/?optout=1
+      opt_out_url: https://audigent.com/?optout=1
       region: us
       category: marketing
     - id: automotive-mastermind
@@ -701,7 +697,7 @@ brokers:
       name: All Web Leads, Inc
       email: onlineops@awl.com
       website: https://www.allwebleads.com/
-      opt_out_url: https://dnc.allwebleads.com/Unsubscribe
+      notes: 'Opt-out URL https://dnc.allwebleads.com/Unsubscribe now redirects to https://dnc.allwebleads.com/Exit/NoThanks (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: 33-mile-radius
@@ -807,7 +803,7 @@ brokers:
       name: Bliss Point Media, Inc.
       email: privacy@blisspointmedia.com
       website: https://www.blisspointmedia.com/
-      opt_out_url: https://www.blisspointmedia.com/privacy
+      notes: 'Opt-out URL https://www.blisspointmedia.com/privacy domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: blis-usa
@@ -828,7 +824,7 @@ brokers:
       name: Blue Hill Marketing Solutions, Inc.
       email: khuntoon@liftengine.com
       website: https://www.liftbasedata.com/
-      opt_out_url: https://www.liftbasedata.com/request-to-know/
+      opt_out_url: https://www.liftbasedata.com/your-privacy-choices/
       region: us
       category: marketing
     - id: bombora
@@ -890,21 +886,21 @@ brokers:
       name: Business.Com
       email: customercare@business.com
       website: https://www.business.com/
-      opt_out_url: https://www.business.com/optout/
+      opt_out_url: https://compliance.centerfield.com/v1/
       region: us
       category: marketing
     - id: buxton-company
       name: Buxton Company, LLC
       email: mthomas@buxtonco.com
       website: https://www.buxtonco.com/
-      opt_out_url: https://www.buxtonco.com/privacy/opt-out
+      opt_out_url: https://www.audiense.com/legal/privacy-opt-out/
       region: us
       category: marketing
     - id: buyerlink
       name: Buyerlink Inc.
       email: legal@buyerlink.com
       website: https://www.buyerlink.com/
-      opt_out_url: https://www.buyerlink.com/do-not-sell-or-share-my-personal-information
+      notes: 'Opt-out URL https://www.buyerlink.com/do-not-sell-or-share-my-personal-information now redirects to https://www.buyerlink.co/ (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: bv-insights
@@ -918,7 +914,7 @@ brokers:
       name: Cadent, LLC
       email: cmarcos@cadent.tv
       website: https://www.cadent.tv/
-      opt_out_url: https://cadent.tv/your-privacy-choices/
+      opt_out_url: https://www.cadent.com/your-privacy-choices
       region: us
       category: marketing
     - id: captify-technologies
@@ -940,7 +936,7 @@ brokers:
       name: CARDLYTICS Inc
       email: legalnotices@cardlytics.com
       website: https://www.bridg.com/
-      opt_out_url: https://datagrail.cardlytics.com/
+      notes: 'Opt-out URL https://datagrail.cardlytics.com/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: careerbuilder
@@ -949,7 +945,7 @@ brokers:
       website: https://www.careerbuilder.com/
       region: us
       category: marketing
-      opt_out_url: 'https://www.careerbuilder.com/privacy'
+      opt_out_url: https://www.careerbuilder.com/privacy/
       notes: 'privacy@careerbuilder.com bounced; no working email found. CareerBuilder privacy requests now route through Monster''s web form. Updated 2026-08-20.'
     - id: car-market-solutions
       name: Car Market Solutions LLC
@@ -984,10 +980,9 @@ brokers:
       name: Catalyze Ai, Inc
       email: ""
       website: https://www.catalyzeai.com/
-      opt_out_url: https://www.catalyzeai.com/opt-out
       region: us
       category: marketing
-      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker. Opt-out URL https://www.catalyzeai.com/opt-out returns 404 (2026-10-04) - cleared, needs a current form.'
     - id: cdk-global
       name: CDK Global, LLC
       email: james.kinzer@cdk.com
@@ -1040,15 +1035,14 @@ brokers:
       name: Civis Analytics, Inc
       email: ""
       website: https://www.civisanalytics.com/
-      opt_out_url: https://www.civisanalytics.com/privacy-policy/supplemental-privacy-notice/
       region: us
       category: marketing
-      notes: dataprotection@civisanalytics.com replied that they cannot process requests until this form is completed (reply received 2026-08-20).
+      notes: 'dataprotection@civisanalytics.com replied that they cannot process requests until this form is completed (reply received 2026-08-20). Opt-out URL https://www.civisanalytics.com/privacy-policy/supplemental-privacy-notice/ returns 404 (2026-10-04) - cleared, needs a current form.'
     - id: civitech
       name: Civitech
       email: jake.london@civitech.io
       website: https://www.civitech.io/
-      opt_out_url: https://www.civitech.io/privacy-policy/#section5
+      opt_out_url: https://civitech.io/privacy-policy/
       region: us
       category: marketing
     - id: claritas
@@ -1119,14 +1113,14 @@ brokers:
       name: Complementics
       email: hello@complementics.com
       website: https://www.complementics.com/
-      opt_out_url: https://www.complementics.com/optout-donotsell
+      opt_out_url: https://complementics.com/optout-donotsell
       region: us
       category: marketing
     - id: complete-mailing-lists
       name: Complete Mailing Lists
       email: ewoolf@completemailinglists.com
       website: https://www.completemailinglists.com/
-      opt_out_url: https://www.completemailinglists.com/node/3697
+      notes: 'Opt-out URL https://www.completemailinglists.com/node/3697 returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: complete-medical-lists
@@ -1146,9 +1140,8 @@ brokers:
     - id: connect-computer
       name: Connect Computer LLC
       email: ""
-      notes: Email support@calltruth.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
+      notes: 'Email support@calltruth.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed). Opt-out URL https://www.calltruth.com/opt_out.php domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.calltruth.com/
-      opt_out_url: https://www.calltruth.com/opt_out.php
       region: us
       category: marketing
     - id: connected-investors
@@ -1162,10 +1155,9 @@ brokers:
       name: Connext Digital, LLC
       email: ""
       website: https://www.connextdigital.com/
-      opt_out_url: https://www.connextdigital.com/opt-out/
       region: us
       category: marketing
-      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
+      notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker. Opt-out URL https://www.connextdigital.com/opt-out/ returns 404 (2026-10-04) - cleared, needs a current form.'
     - id: consider
       name: Consider, Inc.
       email: ralph@consider.com
@@ -1206,7 +1198,7 @@ brokers:
       name: Converge Direct, LLC.
       email: contracts@convergedirect.com
       website: https://www.convergemarketing.com/
-      opt_out_url: https://www.convergemarketing.com/infoform/?rpgn=&rpurl=
+      opt_out_url: https://my.datasubject.com/FMy59nP1cQ/53694
       region: us
       category: marketing
     - id: convex-labs
@@ -1242,7 +1234,7 @@ brokers:
       name: CRISIL Irevna US LLC
       email: privacy1@crisil.com
       website: https://www.greenwich.com/
-      opt_out_url: https://www.crisil.com/content/crisilcom/en/home/crisil-privacy-notice/do-not-sell-my-personal-information.html
+      opt_out_url: https://www.crisil.com/en/home/crisil-privacy-notice/do-not-sell-my-personal-information.html
       region: us
       category: requires-id
       notes: 'Added 2026-09-14: replied to GDPR erasure request demanding proof of identity (passport, ID card, driving licence, or employee ID) before proceeding - not supplying ID.'
@@ -1271,7 +1263,7 @@ brokers:
       name: Cuebiq Group, LLC
       email: privacy@cuebiq.com
       website: https://www.cuebiq.com/
-      opt_out_url: https://www.cuebiq.com/privacypolicy/
+      opt_out_url: https://cuebiq.com/privacy-policy/
       region: us
       category: marketing
     - id: cybba
@@ -1285,7 +1277,7 @@ brokers:
       name: Cyndx Networks LLC
       email: privacy@cyndx.com
       website: https://www.cyndx.com/
-      opt_out_url: https://www.cyndx.com/california-do-not-track/
+      notes: 'Opt-out URL https://www.cyndx.com/california-do-not-track/ now redirects to https://cyndx.com/ (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: data-axle
@@ -1306,7 +1298,7 @@ brokers:
       name: Datadelivers LLC
       email: supplier@datadelivers.com
       website: https://www.datadelivers.com/
-      opt_out_url: https://datadelivers.com/unsubscribe/
+      notes: 'Opt-out URL https://datadelivers.com/unsubscribe/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: datadojo-cdp
@@ -1344,7 +1336,7 @@ brokers:
       name: DATAMENTORS LLC
       email: privacy@porchgroupmedia.com
       website: https://www.porchgroupmedia.com/
-      opt_out_url: https://www.porchgroupmedia.com/inbound/do-not-sell-my-personal-information/
+      opt_out_url: https://datarightsrequest.porchgroupmedia.com/
       region: us
       category: marketing
     - id: deluxe
@@ -1358,7 +1350,7 @@ brokers:
       name: DATA PARTNERS Inc
       email: info@datapartners.com
       website: https://www.datapartners.com/
-      opt_out_url: https://datapartners.com/donotsellmyinformation
+      opt_out_url: https://www.datapartners.com/donotsellmyinformation/
       region: us
       category: marketing
     - id: dataskip
@@ -1412,7 +1404,7 @@ brokers:
       name: DECISIONLINKS LLC
       email: support@decisionlinks.com
       website: https://www.decisionlinks.com/
-      opt_out_url: https://www.decisionlinks.com/opt-out
+      opt_out_url: https://www.decisionlinks.com/legal-pages/opt-out
       region: us
       category: marketing
     - id: deep-root-analytics
@@ -1445,21 +1437,21 @@ brokers:
       name: Demand Science Group, LLC
       email: dataprivacy@demandscience.com
       website: https://www.demandscience.com/
-      opt_out_url: https://demandscience.com/privacy-policy-ccpa/
+      opt_out_url: https://demandscience.com/privacy-policy/
       region: us
       category: marketing
     - id: demyst-data
       name: Demyst Data, Ltd
       email: privacy@demystdata.com
       website: https://www.demyst.com/
-      opt_out_url: https://www.demystdata.com/data-subject-action-request
+      opt_out_url: https://demyst.com/data-subject-action-request
       region: us
       category: marketing
     - id: diablo-media
       name: Diablo Media
       email: data@diablomedia.com
       website: https://www.diablomedia.com/
-      opt_out_url: https://diablomedia.com/privacy-request/
+      opt_out_url: https://www.diablomedia.com/privacy-request/
       region: us
       category: marketing
     - id: dice-career-solutions
@@ -1495,7 +1487,7 @@ brokers:
       name: DIGITAL SEGMENT LLC
       email: info@digitalsegment.com
       website: https://www.digitalsegment.com/
-      opt_out_url: https://www.digitalsegment.com/about/consumer-opt-out/
+      notes: 'Opt-out URL https://www.digitalsegment.com/about/consumer-opt-out/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: digital-viking-media
@@ -1515,7 +1507,7 @@ brokers:
       name: Disco Technology Inc.
       email: privacy@disconetwork.com
       website: https://www.disconetwork.com/
-      opt_out_url: https://support.disconetwork.com/hc/en-us/articles/4418121857819-CCPA-on-Disco#h_01GZPTPA4SPX26NA7E7HP5KHYS
+      opt_out_url: https://support.disconetwork.com/hc/en-us/articles/4418121857819-Notice-of-Right-to-Opt-Out-of-Sale-and-Sharing-Targeted-Advertising
       region: us
       category: marketing
     - id: distribution-processing-center
@@ -1554,14 +1546,14 @@ brokers:
       name: Dstillery, Inc
       email: privacy@dstillery.com
       website: https://www.dstillery.com/
-      opt_out_url: https://www.dstillery.com/
+      opt_out_url: https://dstillery.com/
       region: us
       category: marketing
     - id: dt-client-services
       name: DT Client Services, LLC
       email: legal@thedatatrust.com
       website: https://www.thedatatrust.com/
-      opt_out_url: https://thedatatrust.com/do-not-sell-my-personal-information/
+      opt_out_url: https://thedatatrust.com/privacy-policy/
       region: us
       category: marketing
     - id: dtn
@@ -1587,7 +1579,7 @@ brokers:
       name: ECONOMIC MODELING LLC
       email: legal@lightcast.io
       website: https://www.lightcast.io/
-      opt_out_url: https://lightcast.io/privacy-request
+      opt_out_url: https://lightcast.io/legal/privacy-request
       region: us
       category: marketing
       notes: 'Rebranded as Lightcast; use the privacy request form at opt_out_url instead of email - form is the required removal path per user.'
@@ -1595,7 +1587,7 @@ brokers:
       name: Edvisors Network, Inc.
       email: ""
       website: https://www.edvisors.com/
-      opt_out_url: https://www.edvisors.com/third-party-opt-out/
+      opt_out_url: https://www.edvisors.com/your-privacy-choices/
       region: us
       category: marketing
       notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
@@ -1637,7 +1629,7 @@ brokers:
       name: EL Toro.Com, LLC
       email: privacy@eltoro.com
       website: https://www.eltoro.com/
-      opt_out_url: https://www.eltoro.com/do-not-sell-my-personal-information/
+      opt_out_url: https://eltoro.com/do-not-sell-my-personal-information/
       region: us
       category: marketing
     - id: email-marketing-services
@@ -1673,7 +1665,7 @@ brokers:
       name: ENIGMA TECHNOLOGIES Inc
       email: privacy@enigma.com
       website: https://www.enigma.com/
-      opt_out_url: https://www.enigma.com/company/do-not-share-or-sell-my-personal-information
+      opt_out_url: https://www.enigma.com/legal/do-not-sell
       region: us
       category: marketing
     - id: eprodirect
@@ -1687,14 +1679,14 @@ brokers:
       name: Equimine
       email: privacyinquiry@propstream.com
       website: https://www.propstream.com/
-      opt_out_url: https://www.propstream.com/privacy-request
+      opt_out_url: https://privacyportal.onetrust.com/webform/23dbbccc-a76c-4410-a68e-f247d70e566c/7d013624-d2db-430a-9265-3112f7c4177c
       region: us
       category: marketing
     - id: erepublic
       name: Erepublic LLC
       email: privacy@erepublic.com
       website: https://www.erepublic.com/
-      opt_out_url: https://erepublic.secure.force.com/PrivacyRequest/
+      notes: 'Opt-out URL https://erepublic.secure.force.com/PrivacyRequest/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: evorra
@@ -1744,7 +1736,7 @@ brokers:
       name: Factori Technologies LLC
       email: privacy@factori.ai
       website: https://www.factori.ai/
-      opt_out_url: https://www.factori.ai/do-not-sell-my-information/
+      opt_out_url: https://factori.ai/do-not-sell-my-information/
       region: us
       category: marketing
     - id: fair-screen
@@ -1765,28 +1757,28 @@ brokers:
       name: Faraday, Inc.
       email: privacy@faraday.ai
       website: https://www.faraday.io/
-      opt_out_url: https://www.faraday.io/privacy-options
+      opt_out_url: https://faraday.ai/privacy-options
       region: us
       category: marketing
     - id: fideo-intelligence
       name: Fideo Intelligence, Inc.
       email: ""
       website: https://www.fideo.ai/
-      opt_out_url: https://app.fideo.ai/your-privacy-choices/
+      opt_out_url: https://app.fideo.ai/your-privacy-choices
       region: us
       category: marketing
     - id: fifty-technology
       name: Fifty Technology Ltd
       email: privacy@fifty.io
       website: https://www.fifty.io/
-      opt_out_url: https://www.fifty.io/opt-out
+      notes: 'Opt-out URL https://www.fifty.io/opt-out now redirects to https://fifty.io (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: findem
       name: Findem, Inc.
       email: taylor@findem.ai
       website: https://www.findem.ai/
-      opt_out_url: https://www.findem.ai/do-not-sell-or-share-my-personal-information
+      opt_out_url: https://www.findem.ai/privacy-rights
       region: us
       category: marketing
     - id: first-american-data-tree
@@ -1822,14 +1814,14 @@ brokers:
       name: Stefan Certic
       email: legal@myflashcloud.com
       website: https://www.myflashcloud.com/
-      opt_out_url: https://www.flashintel.ai/dont-sell-my-information
+      opt_out_url: https://www.flashlabs.ai/dont-sell-my-information
       region: us
       category: marketing
     - id: focus-usa
       name: Focus USA, Inc.
       email: privacy@focus-usa.com
       website: https://www.focus-usa.com/
-      opt_out_url: https://www.focus-usa.com/optout-form/
+      opt_out_url: https://www.focus-usa.com/your-privacy-choices/
       region: us
       category: marketing
     - id: foo-monk
@@ -1858,14 +1850,14 @@ brokers:
       email: ""
       notes: Email privacy@thefourleaf.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
       website: https://www.fourleafdata.com/
-      opt_out_url: https://www.fourleafdata.com/privacy-policy
+      opt_out_url: https://www.fourleafdata.com/privacy-policy/
       region: us
       category: marketing
     - id: foursquare-labs
       name: Foursquare Labs, Inc.
       email: legal@foursquare.com
       website: https://foursquare.com/
-      opt_out_url: https://foursquare.com/data-requests
+      opt_out_url: https://app.foursquare.com/data-requests
       region: us
       category: marketing
     - id: fourthwall-media
@@ -1927,7 +1919,7 @@ brokers:
       name: G2 Bankruptcy Risk Solutions, Inc.
       email: ramtin.taheri@g2risksolutions.com
       website: https://www.g2risksolutions.com/
-      opt_out_url: https://g2risksolutions.com/consumer-center/
+      opt_out_url: https://g2risksolutions.com/transunionconsumers/
       region: us
       category: marketing
     - id: getemails
@@ -1976,21 +1968,21 @@ brokers:
       name: Grata Inc
       email: hello@grata.com
       website: https://www.grata.com/
-      opt_out_url: https://www.grata.com/legal/do-not-sell-my-information
+      opt_out_url: https://grata.com/legal/do-not-sell-my-information
       region: us
       category: marketing
     - id: grayhair-software
       name: Grayhair Software LLC
       email: privacy@grayhairsoftware.com
       website: https://www.grayhairsoftware.com/
-      opt_out_url: https://www.grayhairsoftware.com/privacy-policy/#Do-Not-Sell-My-Personal-Information
+      opt_out_url: https://grayhairsoftware.com/privacy-policy/
       region: us
       category: marketing
     - id: great-lakes-list
       name: GREAT LAKES LIST Inc
       email: ""
       website: https://www.greatlakeslists.com/
-      opt_out_url: https://www.greatlakeslists.com/opt_out_request.php
+      opt_out_url: https://greatlakeslists.com/opt_out_request.php
       region: us
       category: marketing
       notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
@@ -2034,7 +2026,7 @@ brokers:
       name: H1 Insights Inc.
       email: inquiries@h1insights.com
       website: https://www.h1insights.com/
-      opt_out_url: https://www.h1.co/legal/privacy-preferences
+      opt_out_url: https://www.h1.co/privacy-preferences-center/
       region: us
       category: marketing
     - id: harmon-research-group
@@ -2060,14 +2052,14 @@ brokers:
       name: Healthlink Dimensions, LLC
       email: nlenyszyn@healthlinkdimensions.com
       website: https://www.healthlinkdimensions.com/
-      opt_out_url: https://www.healthlinkdimensions.com/consumerprivacyrights?hsLang=en
+      opt_out_url: https://healthlinkdimensions.com/consumerprivacyrights
       region: us
       category: marketing
     - id: healthwise-data
       name: Healthwise Data, LLC
       email: info@healthwisedata.com
       website: https://www.healthwisedata.com/
-      opt_out_url: https://www.healthwisedata.com/compliance-optout
+      opt_out_url: https://healthwisedata.com/compliance-optout/
       region: us
       category: marketing
     - id: heartbeatai
@@ -2081,14 +2073,14 @@ brokers:
       name: Helix Campaigns LLC
       email: info@helixcampaigns.com
       website: https://www.helixcampaigns.com/
-      opt_out_url: https://helixcampaigns.com/mydata/
+      opt_out_url: https://www.helixcampaigns.com/mydata/
       region: us
       category: marketing
     - id: here-north-america
       name: HERE North America LLC
       email: privacy@here.com
       website: https://www.here.com/
-      opt_out_url: https://legal.here.com/en-gb/privacy/do-not-sell
+      opt_out_url: https://www.here.com/en-gb/privacy/do-not-sell
       region: us
       category: marketing
     - id: hexasoft-development-sdn-bhd
@@ -2116,7 +2108,7 @@ brokers:
       name: Hivestack, Inc.
       email: privacy@hivestack.com
       website: https://www.hivestack.com/
-      opt_out_url: https://www.hivestack.com/opt-out-california-residents/
+      opt_out_url: https://perion.com/ccpa/
       region: us
       category: marketing
     - id: home-contractors-review
@@ -2130,7 +2122,7 @@ brokers:
       name: ACCUDATA INTEGRATED Marketing, Inc.
       email: privacy.compliance@accudata.com
       website: https://www.aslmarketing.com/
-      opt_out_url: https://optout.accudata.com
+      opt_out_url: https://privacy.deepsync.com/
       region: us
       category: marketing
     - id: homeowners-marketing-services
@@ -2150,7 +2142,7 @@ brokers:
       name: Hunter Web Services Inc
       email: privacy@hunter.io
       website: https://www.hunter.io/
-      opt_out_url: https://www.hunter.io/claim?ref=donotsell
+      opt_out_url: https://hunter.io/claim
       region: us
       category: marketing
     - id: hybrid-theory
@@ -2172,7 +2164,7 @@ brokers:
       name: ID5 Technology
       email: privacy@id5.io
       website: https://www.id5.io/
-      opt_out_url: https://www.id5.io/platform-privacy-policy/#what-are-your-choices
+      opt_out_url: https://id5.io/trust/platform-privacy-policy
       region: us
       category: marketing
     - id: idengine
@@ -2193,7 +2185,7 @@ brokers:
       name: Ileads.Com, LLC
       email: inquiries@ileads.com
       website: https://www.ileads.com/
-      opt_out_url: https://ileads.com/submitrequest/
+      opt_out_url: https://ileads.com/submit-request
       region: us
       category: marketing
     - id: illumin
@@ -2233,9 +2225,8 @@ brokers:
     - id: infinite-knot
       name: Infinite Knot Inc.
       email: ""
-      notes: Email barrygold@contacts411.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
+      notes: 'Email barrygold@contacts411.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed). Opt-out URL https://www.contacts411.com/opt-out domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.contacts411.com/
-      opt_out_url: https://www.contacts411.com/opt-out
       region: us
       category: marketing
     - id: infinite-media-concepts
@@ -2260,7 +2251,7 @@ brokers:
       name: Infofree.Com LLC
       email: accounting@infofree.com
       website: https://www.infofree.com/
-      opt_out_url: https://privacycompliance.biz/databaseusa-opt-out-process/
+      notes: 'Opt-out URL https://privacycompliance.biz/databaseusa-opt-out-process/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: infomatics
@@ -2303,7 +2294,7 @@ brokers:
       name: Inmarket Media LLC
       email: ""
       website: https://www.inmarket.com/
-      opt_out_url: https://www.inmarket.com/opt-out/
+      opt_out_url: https://preferences.inmarket.com/
       region: us
       category: marketing
       notes: Doesn't process removal requests via email - use the opt-out form at the opt_out_url.
@@ -2352,14 +2343,14 @@ brokers:
       name: Intellicorp Records, Inc.
       email: compliance@intellicorp.net
       website: https://www.intellicorp.net/
-      opt_out_url: https://www.intellicorp.net/marketing/Your-California-Privacy-Rights
+      notes: 'Opt-out URL https://www.intellicorp.net/marketing/Your-California-Privacy-Rights returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: intentgine
       name: Intentgine Inc.
       email: paul@intentgine.com
       website: https://www.intentgine.com/
-      opt_out_url: https://www.intentgine.com/ccpa-privacy
+      opt_out_url: https://intentgine.com/ccpa-privacy/
       region: us
       category: marketing
     - id: intent-iq
@@ -2374,7 +2365,7 @@ brokers:
       name: Intentmacro Inc.
       email: privacy@intentmacro.com
       website: https://www.intentmacro.com/
-      opt_out_url: https://www.intentmacro.com/ccpa-privacy
+      opt_out_url: https://intentmacro.com/ccpa-privacy/
       region: us
       category: marketing
       notes: 'SWEEP 2026-09-12: Registered CA data broker selling B2B contact/intent data; third-party trackers list privacy@intentmacro.com as the official opt-out contact rather than the personal paul@intentmacro.com currently on file. (source: https://www.optery.com/data-brokers/intentmacro/)'
@@ -2389,7 +2380,7 @@ brokers:
       name: INTERACTIVE DATA LLC
       email: legal.compliance@ididata.com
       website: https://www.ididata.com/
-      opt_out_url: https://ididata.com/idis-privacy-statement#privacy
+      opt_out_url: https://www.ididata.com/idis-privacy-statement/
       region: us
       category: marketing
     - id: ihs-markit
@@ -2410,14 +2401,14 @@ brokers:
       name: IQVIA Digital Inc.
       email: privacyofficer@iqvia.com
       website: https://www.iqvia.com/
-      opt_out_url: https://www.iqvia.com/about-us/privacy/ccpa/do-not-sell
+      opt_out_url: https://privacyportal.onetrust.com/webform/07e8dc4d-6686-403e-9b11-39fe7347d2f4/2f999bd2-c826-498c-a504-894eaf543b6f
       region: us
       category: marketing
     - id: irys
       name: Irys
       email: ""
       website: https://www.irys.us/
-      opt_out_url: https://www.irys.us/do-not-sell-ccpa
+      opt_out_url: https://irys.us/do-not-sell-ccpa
       region: us
       category: device-id-only
       notes: 'Reply (2026-09-14): only holds mobile AAID tied to geolocation - no name/address/email collected, so not reachable via this tool''s profile-based request.'
@@ -2461,7 +2452,7 @@ brokers:
       name: JDM List Services, LLC
       email: chrissy@jdmlistservices.com
       website: https://www.jdmlistservices.com/
-      opt_out_url: https://www.jdmlistservices.com/do-not-sell-my-info
+      notes: 'Opt-out URL https://www.jdmlistservices.com/do-not-sell-my-info returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: jd-power-a-corporation-of-delaware
@@ -2483,7 +2474,7 @@ brokers:
       name: Jun Group Productions, LLC
       email: ccpa@jungroup.com
       website: https://www.jungroup.com/
-      opt_out_url: https://jungroup.com/ccpa/
+      opt_out_url: https://jungroup.com/ccpa
       region: us
       category: marketing
     - id: jverify
@@ -2508,8 +2499,7 @@ brokers:
       website: https://www.kbmg.com/
       region: us
       category: marketing
-      opt_out_url: 'https://www.kbmg.com/about-us/ccpa-privacy-policy/#optout'
-      notes: 'john.petrillo@wundermandata.com bounced - Gmail''s own delivery failure confirmed wundermandata.com can''t be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20.'
+      notes: 'john.petrillo@wundermandata.com bounced - Gmail''s own delivery failure confirmed wundermandata.com can''t be found, even though kbmg.com (their actual site) is live. Per their CA data broker registration (oag.ca.gov), current contacts are DoNotMail@wundermanthompson.com and Rachel.glasser@wundermanthompson.com, phone 866-275-4526; opt-out form also on the CCPA privacy policy page above. Updated 2026-08-20. Opt-out URL https://www.kbmg.com/about-us/ccpa-privacy-policy/#optout domain no longer resolves (2026-10-04) - cleared, needs a current form.'
     - id: kb-synergy
       name: KB Synergy Inc
       email: info@kbsynergy.com
@@ -2520,7 +2510,7 @@ brokers:
       name: Key Marketing Advantage, LLC
       email: privacy@keymarketingadvantage.com
       website: https://www.keymarketingadvantage.com/
-      opt_out_url: https://www.keymarketingadvantage.com/do_not_use_my_personal_information
+      notes: 'Opt-out URL https://www.keymarketingadvantage.com/do_not_use_my_personal_information returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: klarifi
@@ -2559,16 +2549,15 @@ brokers:
       name: Koddi Inc.
       email: ""
       website: https://www.koddi.com/
-      opt_out_url: https://koddi.com/dsr-form
+      opt_out_url: https://koddi.com/dsr-form/
       region: us
       category: marketing
       notes: dataprivacy@koddi.com replied that they do not accept privacy requests via email at all - web form only (reply received 2026-08-20).
     - id: kols-key-opinion-leaders
       name: Kols (Key Opinion Leaders)
       email: ""
-      notes: Email kol-privacy@keyopinionleaders.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed).
+      notes: 'Email kol-privacy@keyopinionleaders.com hard-bounced (2026-08-23) - domain has no working mail server (DNS MX lookup failed). Opt-out URL https://www.keyopinionleaders.com/ domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.keyopinionleaders.com/
-      opt_out_url: https://www.keyopinionleaders.com/
       region: us
       category: marketing
     - id: komodo-health
@@ -2590,14 +2579,14 @@ brokers:
       name: LABELS & LISTS Inc
       email: privacy@l2political.com
       website: https://www.l2-data.com/
-      opt_out_url: https://l2political.com/california-privacy-rights-for-california-residents-only/
+      notes: 'Opt-out URL https://l2political.com/california-privacy-rights-for-california-residents-only/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: lead411
       name: Lead411 Corporation
       email: lead411_privacy@l4mail.com
       website: https://www.lead411.com/
-      opt_out_url: https://lead411.com/your-privacy-choices/
+      opt_out_url: https://www.lead411.com/your-privacy-choices/
       region: us
       category: marketing
     - id: leadcrunch
@@ -2611,7 +2600,7 @@ brokers:
       name: Leadership Connect
       email: ""
       website: https://www.leadershipconnect.io/
-      opt_out_url: https://www.leadershipconnect.io/opt-out
+      opt_out_url: https://leadershipconnect.io/opt-out/
       region: us
       category: marketing
       notes: 'Email bounced on 2026-08-20; use the opt_out_url web form instead - no working email found for this broker.'
@@ -2642,7 +2631,7 @@ brokers:
       website: https://www.leadpost.com/
       region: us
       category: marketing
-      opt_out_url: https://leadpost.com/PrivacyRequest
+      opt_out_url: https://app.leadpost.com/OptOut/PrivacyRequest
       notes: delete_mydata@leadpost.com replied with this form as the only submission method (reply received 2026-08-20).
     - id: leadsmarketcom
       name: Leadsmarket.Com LLC
@@ -2656,7 +2645,7 @@ brokers:
       name: Leadspace, Inc.
       email: privacy_registration@leadspace.com
       website: https://www.leadspace.com/
-      opt_out_url: https://www.leadspace.com/do-not-sell-form/
+      opt_out_url: https://www.leadspace.com/do-not-sell-form
       region: us
       category: marketing
     - id: leidos-digital-solutions
@@ -2706,14 +2695,14 @@ brokers:
       name: Limeleads
       email: privacy@limeleads.com
       website: https://www.limeleads.com/
-      opt_out_url: https://www.limeleads.com/do-not-sell-my-data-request/
+      notes: 'Opt-out URL https://www.limeleads.com/do-not-sell-my-data-request/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: lionshare-marketing
       name: Lionshare Marketing, Inc.
       email: info@lionsharemarketing.com
       website: https://www.lionsharemarketing.com/
-      opt_out_url: https://www.lionsharemarketing.com/ccpa-opt-out/
+      opt_out_url: https://www.lionsharemarketing.com/opt-out/
       region: us
       category: marketing
     - id: listings-information-systems-and-tabulation-services
@@ -2758,16 +2747,15 @@ brokers:
     - id: localblox
       name: Localblox
       email: ""
-      notes: Email sabira@localblox.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts.
+      notes: 'Email sabira@localblox.com hard-bounced (2026-08-23) - recipient server rejected all delivery attempts. Opt-out URL https://consumer.localblox.com/privacy_policy domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.localblox.com/
-      opt_out_url: https://consumer.localblox.com/privacy_policy
       region: us
       category: marketing
     - id: locatesmarter
       name: Locatesmarter, LLC
       email: teri.ettelson@locatesmarter.com
       website: https://www.locatesmarter.com/
-      opt_out_url: https://www.locatesmarter.com/request-to-opt-out-do-not-sell-my-personal-information/
+      notes: 'Opt-out URL https://www.locatesmarter.com/request-to-opt-out-do-not-sell-my-personal-information/ domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: logiq
@@ -2798,15 +2786,14 @@ brokers:
       name: Lotadata, Inc.
       email: ""
       website: https://www.lotadata.com/
-      opt_out_url: https://lotadata.com/personal_information
       region: us
       category: marketing
-      notes: 'apu@lotadata.com replied directly: "This company is no longer operational." (reply received 2026-08-20)'
+      notes: 'apu@lotadata.com replied directly: "This company is no longer operational." (reply received 2026-08-20) Opt-out URL https://lotadata.com/personal_information domain no longer resolves (2026-10-04) - cleared, needs a current form.'
     - id: ls-mobile-apps-holdings
       name: L.S Mobile Apps Holdings Ltd
       email: privacy@lsmapps.com
       website: https://www.lsmapps.com/
-      opt_out_url: https://www.lsmapps.com/onetrust-opt-out
+      opt_out_url: https://lsmapps.com/onetrust-opt-out
       region: us
       category: marketing
     - id: lucid-holdings
@@ -2819,7 +2806,7 @@ brokers:
       name: Lundquist Consulting, Inc.
       email: info@lciinc.com
       website: https://www.lciinc.com/
-      opt_out_url: https://g2risksolutions.com/consumer-center/
+      opt_out_url: https://g2risksolutions.com/transunionconsumers/
       region: us
       category: marketing
     - id: lusha-systems
@@ -2911,7 +2898,7 @@ brokers:
       email: privacy@matchbookdata.com
       notes: Replied that they only work with mobile advertising identifiers, not personal identifiers like name/email/phone (2026-08-21) - can't be fulfilled via this tool's profile data.
       website: https://www.matchbookdata.com/
-      opt_out_url: https://www.matchbookdata.com/opt-out-form/
+      opt_out_url: https://www.matchbookdata.com/your-privacy-choices/
       region: us
       category: device-id-only
     - id: maxmind
@@ -2939,7 +2926,7 @@ brokers:
       name: Mediamath, Inc.
       email: privacy@mediamath.com
       website: https://www.mediamath.com/
-      opt_out_url: https://www.mediamath.com/privacy-policy/ccpa-optout/
+      notes: 'Opt-out URL https://www.mediamath.com/privacy-policy/ccpa-optout/ now redirects to https://infillion.com/products/dsp/ (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: medianet-advertising-fz
@@ -2966,9 +2953,8 @@ brokers:
     - id: media-source-solutions
       name: Media Source Solutions
       email: privacy@mediasourcesolutions.com
-      notes: 'Email mvolpe@mediasourcesolutions.com hard-bounced (2026-08-21) - address/domain invalid. SWEEP 2026-09-12: Real data provider (audiences/identity resolution), CA-registered data broker. On-file opt_out_url (unsubscribe.stirista.com) points to an unrelated third-party company, not Media Source Solutions; their own privacy page lists privacy@mediasourcesolutions.com and a dedicated do-not-share form. (source: https://www.mediasourcesolutions.com/privacy-policy/)'
+      notes: 'Email mvolpe@mediasourcesolutions.com hard-bounced (2026-08-21) - address/domain invalid. SWEEP 2026-09-12: Real data provider (audiences/identity resolution), CA-registered data broker. On-file opt_out_url (unsubscribe.stirista.com) points to an unrelated third-party company, not Media Source Solutions; their own privacy page lists privacy@mediasourcesolutions.com and a dedicated do-not-share form. (source: https://www.mediasourcesolutions.com/privacy-policy/) Opt-out URL https://www.mediasourcesolutions.com/do-not-share-my-personal-information/ now redirects to https://www.mediasourcesolutions.com/cgi-sys/suspendedpage.cgi (2026-10-04) - cleared, needs a current form.'
       website: https://www.mediasourcesolutions.com/
-      opt_out_url: https://www.mediasourcesolutions.com/do-not-share-my-personal-information/
       region: us
       category: marketing
     - id: mediawallah
@@ -3011,7 +2997,7 @@ brokers:
       name: Merkle Inc.
       email: DPO@dentsu.com
       website: https://www.merkleinc.com/
-      opt_out_url: https://merkleinc.com/en/privacy-policy/data-product-privacy-notice/control-your-personal-information.html
+      opt_out_url: https://www.merkle.com/en/privacy-policy/data-product-privacy-notice/control-your-personal-information.html
       region: us
       category: marketing
       notes: Merkle is a dentsu brand for privacy-request purposes (confirmed via dentsu's privacy request form, which lists Merkle as a selectable brand) - contact routed to the group DPO rather than an individual employee address. The separate dentsu-inc entry was merged into this one.
@@ -3027,7 +3013,7 @@ brokers:
       name: MH Sub I, LLC
       email: privacy@internetbrands.com
       website: https://www.internetbrands.com/
-      opt_out_url: https://www.internetbrands.com/privacy/privacy-contact-form.php
+      opt_out_url: https://www.internetbrands.com/privacy
       region: us
       category: marketing
       notes: 'Reply (2026-09-02) will not proceed until you specify which Internet Brands website the erasure request concerns - MH Sub I, LLC runs many separate consumer sites (WebMD, Nolo, Martindale-Hubbell, CarsDirect, Fodor''s, etc.). Excluded from bulk send; needs a manual reply that either names the specific site(s) used or asserts the Art. 17 request covers all personal data MH Sub I, LLC holds as controller.'
@@ -3102,14 +3088,14 @@ brokers:
       name: Monevo, Inc.
       email: usasupport@monevo.com
       website: https://www.monevo.com/
-      opt_out_url: https://www.monevo.us/privacy-portal
+      notes: 'Opt-out URL https://www.monevo.us/privacy-portal domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: monocl
       name: Monocl
       email: privacy@definitivehc.com
       website: https://www.monocl.com/
-      opt_out_url: https://preferences.definitivehc.com/privacy
+      opt_out_url: https://preferences.definitivehc.com/
       region: us
       category: marketing
     - id: m-r-strategic-services
@@ -3159,7 +3145,7 @@ brokers:
       name: Nativo, Inc.
       email: legal@nativo.com
       website: https://www.nativo.com/
-      opt_out_url: https://www.nativo.com/interest-based-ads#your-rights
+      opt_out_url: https://ads.life360.com/legal/interest-based-ads
       region: us
       category: marketing
     - id: ncr
@@ -3173,14 +3159,14 @@ brokers:
       name: NC VENTURES LLC
       email: ncs.privacy@ncsolutions.com
       website: https://www.ncsolutions.com/
-      opt_out_url: https://ncsolutions.com/do-not-sell-my-information/
+      notes: 'Opt-out URL https://ncsolutions.com/do-not-sell-my-information/ now redirects to https://www.circana.com/post/circana-completes-acquisition-of-ncsolutions (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: dun-bradstreet
       name: DUN & BRADSTREET Inc
       email: privacy@netwisedata.com
       website: https://www.dnb.com/
-      opt_out_url: https://www.netwisedata.com/consumer-privacy
+      notes: 'Opt-out URL https://www.netwisedata.com/consumer-privacy returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: new-england-list-services
@@ -3252,7 +3238,7 @@ brokers:
       name: NOVA List Company, LLC
       email: ckoch@novalist.com
       website: https://www.novalist.com/
-      opt_out_url: https://www.novalist.com/opt-out
+      opt_out_url: https://www.novalist.com/opt-out/
       region: us
       category: marketing
     - id: nymblr
@@ -3267,7 +3253,7 @@ brokers:
       name: Onaudience Ltd
       email: privacy@onaudience.com
       website: https://www.onaudience.com/
-      opt_out_url: https://www.onaudience.com/opt-out
+      opt_out_url: https://onaudience.com/opt-out/
       region: us
       category: marketing
     - id: on-hold-america
@@ -3281,14 +3267,14 @@ brokers:
       name: Online Advertising Network Sp. z o.o.
       email: privacy@oan.pl
       website: https://www.oan.pl/
-      opt_out_url: https://oan.pl/opt-out/
+      opt_out_url: https://oan.pl/opt-out
       region: us
       category: marketing
     - id: online-media-group
       name: ONLINE MEDIA GROUP Inc.
       email: privacy@omginc.xyz
       website: https://www.omginc.xyz/
-      opt_out_url: https://www.omginc.xyz/privacy#ccpa
+      opt_out_url: https://omginc.xyz/privacy
       region: us
       category: marketing
     - id: opensend
@@ -3308,29 +3294,28 @@ brokers:
       name: Optimal Fusion
       email: dataprotectionofficer@optimalfusion.com
       website: https://www.optimalfusion.com/
-      opt_out_url: https://www.optimalfusion.com/adpreferences/
+      opt_out_url: https://optimalfusion.com/adpreferences/
       region: us
       category: marketing
     - id: orgio
       name: Orgio, Inc.
       email: privacy@theorg.com
       website: https://www.theorg.com/
-      opt_out_url: https://www.theorg.com/do-not-sell
+      opt_out_url: https://theorg.com/do-not-sell
       region: us
       category: marketing
     - id: origin8
       name: ORIGIN8 Inc
       email: ""
-      notes: Email compliance@pushint.com hard-bounced (2026-08-24) - domain has no working mail server (DNS MX lookup failed).
+      notes: 'Email compliance@pushint.com hard-bounced (2026-08-24) - domain has no working mail server (DNS MX lookup failed). Opt-out URL https://pushint.com/manage-my-data domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.pushint.com/
-      opt_out_url: https://pushint.com/manage-my-data
       region: us
       category: marketing
     - id: outbrain
       name: Outbrain Inc.
       email: legal@outbrain.com
       website: https://www.outbrain.com/
-      opt_out_url: https://my.outbrain.com/recommendations-settings/home
+      opt_out_url: https://dsr.outbrain.com/recommendations-settings/home
       region: us
       category: marketing
     - id: outlogic
@@ -3359,9 +3344,8 @@ brokers:
     - id: owneriq
       name: Owneriq, Inc.
       email: ""
-      notes: Email tpowell@owneriq.com hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Email tpowell@owneriq.com hard-bounced (2026-08-21) - address/domain invalid. Opt-out URL https://www.owneriq.com/privacy-notice.html#opt-out domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.owneriq.com/
-      opt_out_url: https://www.owneriq.com/privacy-notice.html#opt-out
       region: us
       category: marketing
     - id: pacific-east-research
@@ -3424,7 +3408,7 @@ brokers:
       name: Pension Benefit Information, LLC
       email: ""
       notes: Auto-reply says this address "cannot accept consumer privacy rights requests" (2026-08-21) - use the portal form, or call 1-800-327-2720.
-      opt_out_url: https://www.pbinfo.com/crf/
+      opt_out_url: https://pbinfo.com/crf/
       website: https://www.pbinfo.com/
       region: us
       category: marketing
@@ -3469,14 +3453,14 @@ brokers:
       email: ""
       notes: 'privacyperion@perion.com: "our product does not process direct identifiers, such as names, e-mail addresses, phone numbers... we solely process online identifiers and online activities associated with that identifier" - directs requests to the form''s "Identification" tab instead (2026-09-23).'
       website: https://www.perion.com/
-      opt_out_url: https://wkf.ms/3VkBXyv
+      opt_out_url: https://forms.monday.com/forms/2e643e95786ac0c2cdf2dca015d20c68?r=use1
       region: global
       category: device-id-only
     - id: permutive
       name: Permutive, Inc
       email: privacy@permutive.com
       website: https://www.permutive.com/
-      opt_out_url: https://permutive.com/privacy/
+      opt_out_url: https://permutive.com/privacy
       region: us
       category: marketing
     - id: pitchbook-data
@@ -3498,7 +3482,7 @@ brokers:
       email: ""
       notes: Email privacy@placeiq.com hard-bounced (2026-08-21) - address/domain invalid.
       website: https://www.precisely.com/
-      opt_out_url: https://www.precisely.com/your-privacy-choices
+      opt_out_url: https://www.precisely.com/your-privacy-choices/
       region: us
       category: marketing
     - id: plexuss
@@ -3542,7 +3526,7 @@ brokers:
       name: Possiblenow Data Services
       email: data@possiblenow.com
       website: https://www.possiblenow.com/
-      opt_out_url: https://site.possiblenow.com/do-not-sell-my-personal-information-new
+      notes: 'Opt-out URL https://site.possiblenow.com/do-not-sell-my-personal-information-new returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: postie
@@ -3618,9 +3602,8 @@ brokers:
     - id: prospector-database
       name: Prospector Database, LLC
       email: ""
-      notes: Email privacy@prospectordatabase.com hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Email privacy@prospectordatabase.com hard-bounced (2026-08-21) - address/domain invalid. Opt-out URL https://www.prospectordatabase.com/privacy-center domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       website: https://www.prospectordatabase.com/
-      opt_out_url: https://www.prospectordatabase.com/privacy-center
       region: us
       category: marketing
     - id: proxima-platform
@@ -3667,7 +3650,7 @@ brokers:
       email: ""
       notes: 'Reply confirms they don''t collect PII (name/DOB/phone/email/address) - only a Mobile Advertising ID (MAID) or Advertising ID (AAID) can be used to search their records (2026-08-22).'
       website: https://www.quadrant.io/
-      opt_out_url: https://www.quadrant.io/opt-out
+      opt_out_url: https://www.quadrant.io/privacy-policy
       region: us
       category: device-id-only
     - id: qualfon
@@ -3696,7 +3679,7 @@ brokers:
       name: Ray Cdp, Inc.
       email: privacy@raycdp.com
       website: https://www.rayinsights.com/
-      opt_out_url: https://www.rayinsights.com/ray-cdp-opt-out-and-delete-request/
+      opt_out_url: https://www.rayinsights.com/privacy-notice/consumer-choice-portal/ray-cdp-opt-out-and-delete-request/
       region: us
       category: marketing
     - id: reach-marketing
@@ -3744,16 +3727,15 @@ brokers:
     - id: recruitbot
       name: Recruitbot, Inc.
       email: ""
-      notes: Email accounting@therecruitbot.com hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Email accounting@therecruitbot.com hard-bounced (2026-08-21) - address/domain invalid. Opt-out URL https://recruitbot.com/removal-request/ returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.recruitbot.com/
-      opt_out_url: https://recruitbot.com/removal-request/
       region: us
       category: marketing
     - id: recsolu
       name: Recsolu Inc.
       email: privacy@yello.co
       website: https://www.yello.co/
-      opt_out_url: https://yello.co/do-not-sell-my-personal-information/
+      notes: 'Opt-out URL https://yello.co/do-not-sell-my-personal-information/ returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: redbird-direct
@@ -3788,7 +3770,7 @@ brokers:
       email: ""
       notes: Email privacy@bvdinfo.com hard-bounced (2026-08-21) - address/domain invalid.
       website: https://www.bvdinfo.com/
-      opt_out_url: https://survey.alchemer.com/s3/8249180/Do-Not-Sell-Request
+      opt_out_url: https://survey.alchemer.com/s3/8534043/Do-Not-Sell-Request
       region: us
       category: marketing
     - id: reklaim
@@ -3796,7 +3778,7 @@ brokers:
       email: info@reklaimyours.com
       notes: 'Reply also offers a direct deletion link at reklaimyou.com/delete-my-account (2026-08-21) - different domain than the existing opt_out_url (reklaimyours.com), not verified which is authoritative so left opt_out_url as-is.'
       website: https://www.reklaimyours.com/
-      opt_out_url: https://www.reklaimyours.com/optout/
+      opt_out_url: https://reklaimyou.com/optout
       region: us
       category: marketing
     - id: relpro
@@ -3851,16 +3833,15 @@ brokers:
     - id: reveal-mobile
       name: Reveal Mobile Inc
       email: info@revealmobile.com
-      notes: 'Privacy policy says mobile in-app data can only be located via IDFA/Android Advertiser ID ("we don''t collect any email addresses, names, or phone numbers from mobile apps") - but website-collected data can still be requested via name/email, so NOT recategorized as device-id-only. Email kept.'
+      notes: 'Privacy policy says mobile in-app data can only be located via IDFA/Android Advertiser ID ("we don''t collect any email addresses, names, or phone numbers from mobile apps") - but website-collected data can still be requested via name/email, so NOT recategorized as device-id-only. Email kept. Opt-out URL https://revealmobile.com/ccpa/ returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.revealmobile.com/
-      opt_out_url: https://revealmobile.com/ccpa/
       region: us
       category: marketing
     - id: revelio-labs
       name: Revelio Labs, Inc.
       email: info@reveliolabs.com
       website: https://www.reveliolabs.com/
-      opt_out_url: https://www.reveliolabs.com/do-not-sell-my-personal-information/
+      opt_out_url: https://www.reveliolabs.com/do-not-sell-my-personal-information
       region: us
       category: marketing
     - id: revenuebase
@@ -3901,14 +3882,14 @@ brokers:
       name: Rocketreach, LLC
       email: support@rocketreach.co
       website: https://www.rocketreach.co/
-      opt_out_url: https://rocketreach.co/claim-profile/
+      opt_out_url: https://rocketreach.co/remove-profile
       region: us
       category: marketing
     - id: dealerx-partners
       name: Dealerx Partners LLC
       email: compliance@dealerx.com
       website: https://www.data.exchange/
-      opt_out_url: https://www.dealerx.com/privacy-options/
+      opt_out_url: https://dealerx.com/privacy-options/
       region: us
       category: marketing
     - id: rooftop-digital
@@ -3923,7 +3904,7 @@ brokers:
       name: Roq.Ad Inc.
       email: privacy@roq.ad
       website: https://www.roq.ad/
-      opt_out_url: https://www.roq.ad/white-papers/#optout
+      notes: 'Opt-out URL https://www.roq.ad/white-papers/#optout now redirects to https://roq.ad/resources (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: round-sky
@@ -3948,7 +3929,7 @@ brokers:
       name: Sabio, Inc.
       email: privacy@sabio.inc
       website: https://www.sabio.inc/
-      opt_out_url: https://www.sabio.inc/do-not-sell-my-info
+      opt_out_url: https://www.sabioctv.com/do-not-sell-my-info
       region: us
       category: marketing
     - id: safegraph
@@ -3987,7 +3968,7 @@ brokers:
       name: SALUTARY DATA LLC
       email: privacy@salutarydata.com
       website: https://www.salutarydata.com/
-      opt_out_url: https://www.salutarydata.com/privacy-opt-out-and-disclosure-form/
+      notes: 'Opt-out URL https://www.salutarydata.com/privacy-opt-out-and-disclosure-form/ domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: free-stream-media
@@ -4023,7 +4004,7 @@ brokers:
       name: Scanbuy, Inc
       email: chai.outmezguine@scanbuy.com
       website: https://www.scanbuy.com/
-      opt_out_url: https://scanbuy.com/rights/data
+      opt_out_url: https://kezzler.com/scanbuy/
       region: us
       category: marketing
     - id: date-detective
@@ -4059,7 +4040,7 @@ brokers:
       email: ""
       notes: 'Reply says the Privacy Request Center is the designated method and this address "does not respond to initial access, correction, deletion, or opt-out" requests (2026-08-21) - but does accept a follow-up email reply containing Full Name, Country/State, City, Email, and Phone if the portal can''t be used.'
       website: https://www.seamless.ai/
-      opt_out_url: http://preferences.seamless.ai
+      opt_out_url: https://preferences.seamless.ai/
       region: us
       category: marketing
     - id: search-america
@@ -4088,7 +4069,7 @@ brokers:
       name: Semcasting.com
       email: privacychoice@semcasting.com
       website: https://www.semcasting.com/
-      opt_out_url: https://www.semcasting.com/privacy-choice?hsLang=en
+      opt_out_url: https://www.semcasting.com/privacy_choice
       region: us
       category: marketing
     - id: service-1st-information-solutions
@@ -4144,7 +4125,7 @@ brokers:
       name: Site Impact
       email: dataprivacy@siteimpact.com
       website: https://www.siteimpact.com/
-      opt_out_url: https://www.siteimpact.com/cali_compliance.php
+      notes: 'Opt-out URL https://www.siteimpact.com/cali_compliance.php returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: skipmasher
@@ -4158,29 +4139,28 @@ brokers:
       name: Skyhook Holding, Inc.
       email: privacy@skyhook.com
       website: https://www.skyhook.com/
-      opt_out_url: https://www.skyhook.com/opt-out-of-skyhook-products
+      opt_out_url: https://www.qualcomm.com/site/privacy/qualcommtpsoptout
       region: us
       category: marketing
     - id: slashdot-media
       name: Slashdot Media, LLC
       email: privacy@slashdotmedia.com
       website: https://www.slashdotmedia.com/
-      opt_out_url: https://www.slashdotmedia.com/opt-out-choices/
+      opt_out_url: https://slashdotmedia.com/opt-out-choices/
       region: us
       category: marketing
     - id: sma-communications
       name: SMA Communications, LLC.
       email: ""
-      notes: Email steven@smacomm.com hard-bounced (2026-08-24) - recipient server rejected all delivery attempts.
+      notes: 'Email steven@smacomm.com hard-bounced (2026-08-24) - recipient server rejected all delivery attempts. Opt-out URL https://smacomm.com/do-not-sell/ now redirects to https://www.hugedomains.com/domain_profile.cfm?d=smacomm.com (2026-10-04) - cleared, needs a current form.'
       website: https://www.smacomm.com/
-      opt_out_url: https://smacomm.com/do-not-sell/
       region: us
       category: marketing
     - id: snovio
       name: SNOVIO Inc
       email: help@snov.io
       website: https://www.snov.io/
-      opt_out_url: https://www.snov.io/do-not-sell-my-personal-information
+      opt_out_url: https://snov.io/do-not-sell-my-personal-information
       region: us
       category: marketing
     - id: social-catfish
@@ -4213,9 +4193,8 @@ brokers:
     - id: sourcescrub
       name: Sourcescrub LLC
       email: ""
-      notes: Email dataprivacy@sourcescrub.com hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Email dataprivacy@sourcescrub.com hard-bounced (2026-08-21) - address/domain invalid. Opt-out URL https://www.sourcescrub.com/legal/do-not-sell-my-personal-information returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.sourcescrub.com/
-      opt_out_url: https://www.sourcescrub.com/legal/do-not-sell-my-personal-information
       region: us
       category: marketing
     - id: sovrn
@@ -4229,9 +4208,8 @@ brokers:
     - id: specialists-marketing-services
       name: Specialists Marketing Services, Inc.
       email: dataprivacyteam@sms-inc.com
-      notes: Replied that as of 2026-06-15 they no longer own/control/have access to the databases in question and "no further action is required" (2026-08-21) - request already effectively moot.
+      notes: 'Replied that as of 2026-06-15 they no longer own/control/have access to the databases in question and "no further action is required" (2026-08-21) - request already effectively moot. Opt-out URL https://sms-inc.com/do-not-sell-or-share-my-personal-information/ returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.sms-inc.com/
-      opt_out_url: https://sms-inc.com/do-not-sell-or-share-my-personal-information/
       region: us
       category: marketing
     - id: spectrum-mailing-lists
@@ -4259,14 +4237,14 @@ brokers:
       name: Spycloud, Inc.
       email: privacy@spycloud.com
       website: https://www.spycloud.com/
-      opt_out_url: https://www.spycloud.com/contact-us/
+      opt_out_url: https://spycloud.com/contact-us/
       region: us
       category: marketing
     - id: spy-dialer
       name: Spy Dialer, Inc.
       email: ""
       website: https://www.spydialer.com/
-      opt_out_url: https://www.spydialer.com/Consumers/
+      opt_out_url: https://www.spydialer.com/consumers/
       region: us
       category: marketing
       notes: 'Auto-reply says info@spydialer.com "is not intended for privacy-related requests" (2026-08-21) - use the opt_out_url form instead.'
@@ -4304,7 +4282,7 @@ brokers:
       name: Statsocial, Inc.
       email: privacy@statsocial.com
       website: https://www.statsocial.com/
-      opt_out_url: https://www.statsocial.com/optout
+      opt_out_url: https://www.statsocial.com/optout/
       region: us
       category: marketing
     - id: step2success-marketing
@@ -4339,7 +4317,7 @@ brokers:
       name: Strata Company
       email: dataprivacy@gostrata.com
       website: https://www.gostrata.com/
-      opt_out_url: https://www.gostrata.com/opt-out-preferences
+      opt_out_url: https://www.gostrata.com/opt-out-preferences/
       region: us
       category: marketing
     - id: strategic-data-intelligence
@@ -4451,21 +4429,21 @@ brokers:
       name: Terminus Software, Inc.
       email: privacy@terminus.com
       website: https://www.terminus.com/
-      opt_out_url: https://home.terminusplatform.com/data-deletion-request
+      opt_out_url: https://app.demandscienceplatform.com/data-deletion-request
       region: us
       category: marketing
     - id: the-alesco-group
       name: THE ALESCO GROUP LLC
       email: paul@alescodata.com
       website: https://www.alescodata.com/
-      opt_out_url: https://alescodata.com/opt-out-request/
+      opt_out_url: https://alescodata.com/privacy-center/
       region: us
       category: marketing
     - id: the-data-group
       name: The Data Group
       email: ""
       notes: Email explicitly "will not be processed" (2026-08-21) - The Data Group is a processor for its clients, not a data controller; use the portal form.
-      opt_out_url: https://thedatagroup.com/consumer-optout-request-form/
+      opt_out_url: https://thedatagroup.com/privacy/consumer-optout-request-form/
       website: https://www.thedatagroup.com/
       region: us
       category: marketing
@@ -4488,7 +4466,7 @@ brokers:
       name: THROTLE Inc
       email: mboyle@throtle.io
       website: https://www.throtle.io/
-      opt_out_url: https://www.throtle.io/website-privacy-policy/#cookie-id
+      notes: 'Opt-out URL https://www.throtle.io/website-privacy-policy/#cookie-id returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: tinuiti
@@ -4508,9 +4486,8 @@ brokers:
     - id: tl1mkt-sl-sl
       name: TL1MKT SL SL
       email: ""
-      notes: Email info@tl1mkt.com hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Email info@tl1mkt.com hard-bounced (2026-08-21) - address/domain invalid. Opt-out URL https://www.tl1mkt.com/opt-out.html returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.tl1mkt.com/
-      opt_out_url: https://www.tl1mkt.com/opt-out.html
       region: us
       category: marketing
     - id: t-mobile-usa
@@ -4525,7 +4502,7 @@ brokers:
       email: ""
       notes: Auto-reply asks requester to also fill in the opt_out_url form to complete the request (2026-08-21).
       website: https://www.traackr.com/
-      opt_out_url: https://www.traackr.com/data-opt-out
+      opt_out_url: https://www.traackr.com/legal/data-opt-out
       region: us
       category: marketing
     - id: tracers-information-specialists
@@ -4539,7 +4516,7 @@ brokers:
       name: Trestle Solutions Inc.
       email: kshah@trestleiq.com
       website: https://www.trestleiq.com/
-      opt_out_url: https://trestleiq.com/do-not-sell-my-personal-information/
+      opt_out_url: https://portal.trestleiq.com/do-not-sell
       region: us
       category: marketing
     - id: triplelift
@@ -4552,14 +4529,14 @@ brokers:
       name: True Blue Analytics
       email: sales@trueblueanalytics.org
       website: https://www.trueblueanalytics.org/
-      opt_out_url: https://www.trueblueanalytics.org/dontsellmydata
+      opt_out_url: https://trueblueanalytics.org/dontsellmydata
       region: us
       category: marketing
     - id: truedata-solutions
       name: Truedata Solutions, Inc.
       email: legal@truedata.co
       website: https://www.truedata.co/
-      opt_out_url: https://info-prod.truedata.co/opt-out-request
+      notes: 'Opt-out URL https://info-prod.truedata.co/opt-out-request returns 404 (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: true-opulence
@@ -4624,9 +4601,8 @@ brokers:
     - id: unearth-campaigns
       name: Unearth Campaigns LLC
       email: ""
-      notes: Auto-reply says "no longer able to process privacy requests submitted by email" (2026-08-21) - use the opt_out_url form instead.
+      notes: 'Auto-reply says "no longer able to process privacy requests submitted by email" (2026-08-21) - use the opt_out_url form instead. Opt-out URL https://www.unearthcampaigns.com/opt-out/ returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.unearthcampaigns.com/
-      opt_out_url: https://www.unearthcampaigns.com/opt-out/
       region: us
       category: marketing
     - id: united-one-resources
@@ -4639,7 +4615,7 @@ brokers:
       name: Unity Technologies SF
       email: dpo@unity3d.com
       website: https://www.unity.com/
-      opt_out_url: https://www.unity.com/legal/do-not-sell-my-personal-information
+      opt_out_url: https://unity.com/legal/do-not-sell-my-personal-information
       region: us
       category: marketing
     - id: unmask
@@ -4673,7 +4649,7 @@ brokers:
       name: US Marketing Group
       email: privacy@usmarketinggrp.com
       website: https://www.usmarketinggrp.com/
-      opt_out_url: https://www.usmarketinggrp.com/privacy-policy/#CCPA
+      opt_out_url: https://usmarketinggrp.com/privacy-policy/
       region: us
       category: marketing
     - id: uspeoplesearchcom
@@ -4713,7 +4689,7 @@ brokers:
       name: VENPATH Inc
       email: accounting@venpath.net
       website: https://www.venpath.net/
-      opt_out_url: https://www.venpath.net/legal/opt-out
+      notes: 'Opt-out URL https://www.venpath.net/legal/opt-out domain no longer resolves (2026-10-04) - cleared, needs a current form.'
       region: us
       category: marketing
     - id: ventiveiq
@@ -4726,16 +4702,15 @@ brokers:
     - id: veraset
       name: Veraset LLC
       email: ""
-      notes: Auto-reply asks requester to complete identity verification via a portal linked in their reply before the request is processed (2026-08-21).
+      notes: 'Auto-reply asks requester to complete identity verification via a portal linked in their reply before the request is processed (2026-08-21). Opt-out URL https://www.veraset.com/do-not-sell-my-personal-information returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.veraset.com/
-      opt_out_url: https://www.veraset.com/do-not-sell-my-personal-information
       region: us
       category: marketing
     - id: versium-analytics
       name: Versium Analytics, Inc
       email: optout@versium.com
       website: https://www.versium.com/
-      opt_out_url: https://versium.com/ccpa-opt-out
+      opt_out_url: https://versium.com/ccpa-opt-out/
       region: us
       category: marketing
     - id: vertify
@@ -4748,7 +4723,7 @@ brokers:
       name: Viant Technology LLC
       email: bnojima@viantinc.com
       website: https://www.viantinc.com/
-      opt_out_url: https://www.viantinc.com/privacy-policy/#opt-out
+      opt_out_url: https://www.viantinc.com/privacy-center/
       region: us
       category: marketing
     - id: videoamp
@@ -4800,7 +4775,7 @@ brokers:
       name: Warmly, Inc
       email: vendors@warmly.ai
       website: https://www.warmly.ai/
-      opt_out_url: https://warmly.ai/p/consumer-rights-request
+      opt_out_url: https://www.warmly.ai/p/do-not-sell-share-my-data
       region: us
       category: marketing
     - id: wealthfeed
@@ -4829,7 +4804,7 @@ brokers:
       email: ""
       notes: Email clear.pm-compliance@thomsonreuters.com hard-bounced (2026-08-21) - address/domain invalid.
       website: https://www.thomsonreuters.com/
-      opt_out_url: https://www.thomsonreuters.com/ccpa-dsar
+      opt_out_url: https://privacyportal-cdn.onetrust.com/dsarwebform/dbf5ae8a-0a6a-4f4b-b527-7f94d0de6bbc/5dc91c0f-f1b7-4b6e-9d42-76043adaf72d.html
       region: us
       category: marketing
     - id: wholesale-mail
@@ -4919,9 +4894,8 @@ brokers:
     - id: yobi-ventures
       name: Yobi Ventures, LLC
       email: ""
-      notes: Email admin@yobi.ventures hard-bounced (2026-08-21) - address/domain invalid.
+      notes: 'Email admin@yobi.ventures hard-bounced (2026-08-21) - address/domain invalid. Opt-out URL https://www.yobi.ventures/opt-out returns 404 (2026-10-04) - cleared, needs a current form.'
       website: https://www.yobi.ventures/
-      opt_out_url: https://www.yobi.ventures/opt-out
       region: us
       category: marketing
     - id: eab-global
@@ -4952,14 +4926,14 @@ brokers:
       email: ""
       notes: 'Auto-reply says their Privacy Choices Portal is "the most efficient way", and that a request made by email must include the requester''s LinkedIn URL or it "cannot take action" (2026-08-21) - this tool doesn''t collect that field.'
       website: https://www.seekout.com/
-      opt_out_url: http://www.seekout.com/privacy/choices
+      opt_out_url: http://www.seekout.com/privacy/choices/
       region: us
       category: marketing
     - id: zs-associates
       name: ZS ASSOCIATES Inc
       email: dataprivacy@zs.com
       website: https://www.zs.com/
-      opt_out_url: https://www.zs.com/data-request
+      opt_out_url: https://www.zs.com/compliance/california-privacy-notice
       region: us
       category: marketing
     - id: 192-com
@@ -4982,7 +4956,7 @@ brokers:
       name: Regis24
       email: datenschutz@regis24.de
       website: https://www.regis24.de
-      opt_out_url: https://www.regis24.de/datenschutz
+      opt_out_url: https://www.regis24.de/datenschutz/
       region: eu
       category: financial-b2b
       notes: 'Replied they only process data for individuals with a German or Austrian address (2026-08-21) - consistent with this being a DE/AT-focused credit agency; no further action taken.'

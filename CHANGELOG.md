@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.6](https://github.com/drumandbytes/eraser/compare/v1.2.5...v1.2.6) (2026-10-04)
+
+
+### Bug Fixes
+
+* **site:** add 404 page, share image and fuller meta descriptions ([#152](https://github.com/drumandbytes/eraser/issues/152)) ([cbdd110](https://github.com/drumandbytes/eraser/commit/cbdd1102d82f966b47498ce681a5c6215729b32f))
+
 ## [1.2.5](https://github.com/drumandbytes/eraser/compare/v1.2.4...v1.2.5) (2026-10-04)
 
 

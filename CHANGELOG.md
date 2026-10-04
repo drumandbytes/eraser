@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.5](https://github.com/drumandbytes/eraser/compare/v1.2.4...v1.2.5) (2026-10-04)
+
+
+### Bug Fixes
+
+* **site:** add trailing slashes to internal links ([#150](https://github.com/drumandbytes/eraser/issues/150)) ([db43878](https://github.com/drumandbytes/eraser/commit/db43878658499769dfaeae39cd148e42b03f6963))
+
 ## [1.2.4](https://github.com/drumandbytes/eraser/compare/v1.2.3...v1.2.4) (2026-10-04)
 
 

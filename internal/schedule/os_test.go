@@ -339,3 +339,13 @@ func TestStateErrors(t *testing.T) {
 		t.Error("TryLock in a missing dir succeeded")
 	}
 }
+
+func TestLoadStateCorrupt(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(statePath(dir), []byte("{not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadState(dir); err == nil || !strings.Contains(err.Error(), "parse") {
+		t.Errorf("corrupt state: %v", err)
+	}
+}

@@ -112,7 +112,9 @@ func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 // without it.
 func init() {
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		extraAllocatorOptions = append(extraAllocatorOptions, chromedp.NoSandbox)
+		// A cold Chrome start under -race on a shared runner can outlast
+		// chromedp's 20s default for the DevTools URL.
+		extraAllocatorOptions = append(extraAllocatorOptions, chromedp.NoSandbox, chromedp.WSURLReadTimeout(90*time.Second))
 	}
 }
 

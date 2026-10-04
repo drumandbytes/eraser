@@ -396,12 +396,9 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 		return fmt.Errorf("failed to select mailbox: %w", err)
 	}
 
-	// The client delivers unilateral responses (EXISTS after the SELECT in
-	// FetchBrokerEmails, for one) on Updates and blocks until they're read,
-	// so draining it here in the loop deadlocked on the first new mail. A
-	// separate reader keeps the connection moving and just flags new mail.
-	// ponytail: the drain goroutine lives as long as the connection; fine
-	// for one watch per Monitor.
+	// Updates blocks until read, and FetchBrokerEmails' SELECT emits EXISTS
+	// into it, so it needs its own reader or the loop deadlocks.
+	// ponytail: drain goroutine lives as long as the connection.
 	updates := make(chan client.Update, 16)
 	newMail := make(chan struct{}, 1)
 	go func() {
@@ -446,8 +443,7 @@ func (m *Monitor) WatchForNewEmails(ctx context.Context, callback func(Email)) e
 				callback(email)
 			}
 
-			// The fetch's own SELECT reports EXISTS too; that's covered by
-			// the fetch just done, so don't let it bounce IDLE straight away.
+			// the fetch's own SELECT flagged new mail too; drop it
 			select {
 			case <-newMail:
 			default:

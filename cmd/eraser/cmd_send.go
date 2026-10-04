@@ -93,10 +93,8 @@ func countWithEmail(brokers []broker.Broker) int {
 	return n
 }
 
-// capSends keeps brokers up to the n-th one with an email. Email-less brokers
-// are only skipped with a note, so they mustn't use up the daily budget: they
-// never get a history row, sort first on every run, and would otherwise eat
-// the same slots each time.
+// capSends keeps brokers up to the n-th one with an email. Email-less ones
+// never get a history row and sort first every run; they mustn't eat budget.
 func capSends(brokers []broker.Broker, n int) []broker.Broker {
 	for i, b := range brokers {
 		if strings.TrimSpace(b.Email) == "" {

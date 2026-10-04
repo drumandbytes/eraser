@@ -323,8 +323,7 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 func (s *Server) Start() error {
 	router := s.setupRouter()
 
-	// lifeMu: serve's Ctrl+C handler may call Shutdown before or while this
-	// runs; it used to read httpServer unsynchronised (nil = panic).
+	// serve's Ctrl+C handler can call Shutdown before or during this
 	s.lifeMu.Lock()
 	if s.shutDown {
 		s.lifeMu.Unlock()
@@ -342,9 +341,7 @@ func (s *Server) Start() error {
 	srv := s.httpServer
 	s.lifeMu.Unlock()
 
-	// Listen before opening the browser, so it opens only once there's a
-	// server to load (it used to open after a blind 500ms, even on a
-	// taken port).
+	// listen first: open the browser only once there's a server to load
 	ln, err := net.Listen("tcp", srv.Addr)
 	if err != nil {
 		cancel()
@@ -364,8 +361,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
-// Shutdown gracefully shuts down the server. Before Start it just makes
-// Start return straight away.
+// Shutdown stops the server; called before Start, Start returns at once.
 func (s *Server) Shutdown(ctx context.Context) error {
 	s.lifeMu.Lock()
 	defer s.lifeMu.Unlock()

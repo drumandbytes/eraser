@@ -85,11 +85,9 @@ func runAutoLoop(every time.Duration) error {
 	}
 }
 
-// waitForNextCycle sleeps for every and reports whether the user asked to
-// stop. Signals are caught only while waiting: during a cycle Ctrl+C keeps
-// its default and kills the process, which is safe mid-send (history is
-// written per broker, the OS drops the lock) and doesn't make the user wait
-// out a 15-minute send. A var so tests can end the loop.
+// waitForNextCycle reports whether to stop. Signals are caught only here:
+// mid-cycle Ctrl+C just kills the process, which is safe (history is per
+// broker, the OS drops the lock). A var so tests can end the loop.
 var waitForNextCycle = func(every time.Duration) (stop bool) {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()

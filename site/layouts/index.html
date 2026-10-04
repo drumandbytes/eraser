@@ -8,7 +8,7 @@
   Incogni and DeleteMe charge $100+/year to do the same thing.</p>
   <p class="cta">
     <a class="btn" href="https://github.com/drumandbytes/eraser/releases">Download</a>
-    <a class="btn ghost" href="{{ "/brokers" | relURL }}">Broker directory</a>
+    <a class="btn ghost" href="{{ "/brokers/" | relURL }}">Broker directory</a>
   </p>
 </section>
 
@@ -30,7 +30,7 @@
       {{ range (where .Site.RegularPages "Section" "guides") }}
       <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
       {{ end }}
-      <li><a href="{{ "/authorities" | relURL }}">EU/EEA data protection authorities</a></li>
+      <li><a href="{{ "/authorities/" | relURL }}">EU/EEA data protection authorities</a></li>
     </ul>
   </div>
 </section>

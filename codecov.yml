@@ -1,0 +1,19 @@
+# Coverage of the code that ships. scripts/ is a maintainer import tool,
+# data/ is embedded YAML.
+ignore:
+  - "scripts/**"
+  - "data/**"
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto # no worse than the base commit...
+        threshold: 1% # ...give or take 1%
+    patch:
+      default:
+        target: 80%
+
+comment:
+  layout: "diff, files"
+  require_changes: true

@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml/badge.svg)](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/drumandbytes/eraser/graph/badge.svg)](https://codecov.io/gh/drumandbytes/eraser)
+[![Go Reference](https://pkg.go.dev/badge/github.com/drumandbytes/eraser.svg)](https://pkg.go.dev/github.com/drumandbytes/eraser)
 [![Release](https://img.shields.io/github/v/release/drumandbytes/eraser)](https://github.com/drumandbytes/eraser/releases)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/drumandbytes/eraser)](go.mod)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

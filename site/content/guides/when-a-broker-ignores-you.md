@@ -1,6 +1,6 @@
 ---
 title: "When a broker ignores you"
-description: "Deadlines, the evidence to keep, and how to complain to a supervisory authority — with what to expect."
+description: "When a data broker ignores your request: deadlines, the evidence to keep, and how to complain to a supervisory authority — with what to expect."
 ---
 
 Most brokers comply once a request lands — the request itself, and the liability

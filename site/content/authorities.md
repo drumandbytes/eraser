@@ -1,6 +1,6 @@
 ---
 title: "Privacy authorities"
-description: "Where to complain, worldwide, if a data broker ignores or refuses a deletion request."
+description: "Where to complain, worldwide, if a data broker ignores or refuses a deletion request: EU/EEA data protection authorities, the UK ICO, US regulators and more."
 layout: authorities
 ---
 

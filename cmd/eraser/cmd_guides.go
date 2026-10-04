@@ -106,7 +106,7 @@ func timelineText(region string) string {
 
 // guideDescription is the meta description / JSON-LD description for a
 // broker page - previously the site-wide default, verbatim, on every page.
-func guideDescription(b broker.Broker, lastChecked string) string {
+func guideDescription(b broker.Broker, lastChecked string, hasLetter bool) string {
 	var method string
 	switch {
 	case b.OptOutURL != "":
@@ -128,6 +128,9 @@ func guideDescription(b broker.Broker, lastChecked string) string {
 	}
 
 	desc := fmt.Sprintf("How to opt out of %s: %s. %s.", b.Name, method, window)
+	if hasLetter {
+		desc += " Includes a ready-to-send request letter."
+	}
 	if lastChecked != "" {
 		desc = fmt.Sprintf("%s Checked %s.", desc, lastChecked)
 	}
@@ -182,7 +185,6 @@ func runGuides(outDir, format string) error {
 			page.LastChecked = m[1]
 		}
 		page.Timeline = timelineText(b.Region)
-		page.Description = guideDescription(b, page.LastChecked)
 		page.Noindex = noindexedBrokers[b.ID]
 		if gdpr, err := engine.Render("gdpr", pp, b); err == nil {
 			page.GDPRBody = gdpr.Body
@@ -190,6 +192,7 @@ func runGuides(outDir, format string) error {
 		if ccpa, err := engine.Render("ccpa", pp, b); err == nil {
 			page.CCPABody = ccpa.Body
 		}
+		page.Description = guideDescription(b, page.LastChecked, page.GDPRBody != "" || page.CCPABody != "")
 
 		var (
 			content []byte

@@ -1,0 +1,42 @@
+name: Coverage
+
+# Separate from CI: the shared go-ci workflow has no coverage output, and
+# this run is without -race so the IDLE watch test (race-tagged off for a
+# go-imap v1 race) counts too.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # Codecov tokenless upload via OIDC
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Test with coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: coverage.out
+          use_oidc: true
+          fail_ci_if_error: false

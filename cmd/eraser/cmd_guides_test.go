@@ -55,6 +55,7 @@ func TestRunGuidesMarkdown(t *testing.T) {
 	for _, want := range []string{
 		`title: "How to opt out of Acme People Finder"`,
 		`last_checked: "2026-08-01"`,
+		"Includes a ready-to-send request letter.", // description mentions the rendered letters
 		"https://acme.example/opt-out",
 		"Article 17",        // GDPR body rendered
 		"1798.105",          // CCPA body rendered

@@ -1,6 +1,6 @@
 ---
 title: "Opting out of advertising data brokers"
-description: "The long tail of adtech and data-append brokers, and why one email covers most of them."
+description: "The long tail of adtech and data-append brokers that buy and sell your device IDs and contact details, and why one well-written email covers most of them."
 ---
 
 Most of the companies in the [broker directory](/brokers/) aren't people-search

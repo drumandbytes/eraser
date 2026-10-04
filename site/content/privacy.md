@@ -1,6 +1,6 @@
 ---
 title: "Privacy"
-description: "What this website collects, and what the tool on your machine doesn't."
+description: "What this website collects (cookieless, aggregate visit counts), and what the Eraser tool on your machine doesn't — nothing about your use reaches us."
 ---
 
 Two different things live under this name, and they have very different answers.

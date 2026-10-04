@@ -1,6 +1,6 @@
 ---
 title: "Sending a GDPR Article 17 request"
-description: "What to write, who to send it to, how brokers must respond, and the exemptions they can lawfully invoke."
+description: "Sending a GDPR Article 17 erasure request: what to write, who to send it to, how brokers must respond, and the exemptions they can lawfully invoke."
 ---
 
 If you live in the EU or EEA, **Article 17 of the GDPR** gives you the right to

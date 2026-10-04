@@ -1,8 +1,7 @@
 //go:build !race
 
-// go-imap v1.2.1 writes IDLE's DONE from its own goroutine onto the writer
-// the next command uses, which -race flags; that's upstream, so this test
-// only runs without the race detector.
+// go-imap v1.2.1 writes IDLE's DONE from its own goroutine; -race flags it
+// (upstream), so this only runs without the race detector.
 
 package main
 

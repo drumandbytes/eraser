@@ -107,13 +107,10 @@ func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 	}
 }
 
-// Ubuntu 24.04 runners block the unprivileged user namespaces Chrome's
-// sandbox needs. The pages under test are local fixtures, so CI runs
-// without it.
+// Ubuntu 24.04 runners can't give Chrome its sandbox; pages are local fixtures.
 func init() {
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		// A cold Chrome start under -race on a shared runner can outlast
-		// chromedp's 20s default for the DevTools URL.
+		// cold start under -race can outlast chromedp's 20s default
 		extraAllocatorOptions = append(extraAllocatorOptions, chromedp.NoSandbox, chromedp.WSURLReadTimeout(90*time.Second))
 	}
 }

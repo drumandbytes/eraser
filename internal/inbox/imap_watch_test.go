@@ -1,8 +1,7 @@
 //go:build !race
 
-// go-imap v1.2.1's client writes IDLE's DONE from its own goroutine onto the
-// writer the next command uses, which -race flags; that's upstream, so this
-// test only runs without the race detector.
+// go-imap v1.2.1 writes IDLE's DONE from its own goroutine; -race flags it
+// (upstream), so this only runs without the race detector.
 
 package inbox
 
@@ -20,10 +19,8 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// New mail during IDLE must not wedge the connection: the follow-up SELECT
-// draws an unsolicited EXISTS, which deadlocked when the watch loop was also
-// the only reader of the client's update channel. Scripted, because go-imap's
-// own server races when it broadcasts updates.
+// New mail during IDLE: the follow-up SELECT's unsolicited EXISTS must not
+// wedge the watch. Scripted, since go-imap's server races on updates.
 func TestWatchForNewEmailsSurvivesNewMail(t *testing.T) {
 	reIdled := make(chan struct{})
 	addr := fakeIMAPServer(t, func(conn net.Conn, br *bufio.Reader) error {

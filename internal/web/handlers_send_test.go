@@ -18,9 +18,8 @@ import (
 	"github.com/drumandbytes/eraser/internal/history"
 )
 
-// fakeRelay is a plaintext SMTP relay that accepts any number of
-// connections. A recipient in reject gets a 550; authFail answers MAIL FROM
-// with a 535, the way a provider that has locked the account does.
+// fakeRelay is plaintext SMTP. reject -> 550 on RCPT; authFail -> 535 on
+// MAIL FROM, like a provider that locked the account.
 type fakeRelay struct {
 	addr     string
 	mu       sync.Mutex

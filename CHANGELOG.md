@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7](https://github.com/drumandbytes/eraser/compare/v1.2.6...v1.2.7) (2026-10-04)
+
+
+### Bug Fixes
+
+* **brokers:** refresh moved opt-out URLs and clear dead ones ([#154](https://github.com/drumandbytes/eraser/issues/154)) ([29bd7bb](https://github.com/drumandbytes/eraser/commit/29bd7bb60a96cfb87eb84e65fd4f0a434860511e))
+
 ## [1.2.6](https://github.com/drumandbytes/eraser/compare/v1.2.5...v1.2.6) (2026-10-04)
 
 

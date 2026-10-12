@@ -15,6 +15,7 @@ func emailBody(email *Email) string {
 // A broker reporting no records is different from refusing an erasure request.
 // These patterns are also used when upgrading saved replies.
 var noDataPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)\b(have|hold|store)\s+no\s+(matching\s+)?(personal\s+)?(data|information|records?)\s+(about|for|on|of|concerning|relating\s+to)\s+(you|your)\b`),
 	regexp.MustCompile(`(?i)(we\s+)?(do\s+not|don't)\s+(have|hold|store)\s+(any\s+)?(personal\s+)?(data|information|records?)\s+(about|for|on|of|relating\s+to)\s+you`),
 	regexp.MustCompile(`(?i)no\s+(matching\s+)?(records?|data|information)\s+(was\s+|were\s+)?found`),
 	regexp.MustCompile(`(?i)(you|your\s+(data|information|email|name|address))\s+(was\s+|were\s+|is\s+|are\s+)?not\s+(found|identified)\s+in\s+our\s+(system|database|records)`),

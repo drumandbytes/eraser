@@ -15,6 +15,8 @@ func TestNoDataClassification(t *testing.T) {
 		review                    bool
 	}{
 		{"clear", "Re: request", "We do not have any records of you in our database.", "", ResponseNoData, false},
+		{"no records of you", "Re: request", "We have no records of you in our database.", "", ResponseNoData, false},
+		{"no data about you", "Re: request", "We hold no data about you.", "", ResponseNoData, false},
 		{"courtesy", "Ticket #123456 received", "We hold no personal data concerning you. If you have questions, contact our team.", "", ResponseNoData, false},
 		{"html", "Re: request", "", "<p>We have no data linked to your email.</p>", ResponseNoData, false},
 		{"subject", "No matching records found", "", "", ResponseNoData, false},

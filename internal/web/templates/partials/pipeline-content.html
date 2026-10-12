@@ -1,0 +1,130 @@
+<div id="pipeline-content" aria-live="polite">
+    {{if .LoadError}}
+    <div class="alert alert-error" role="alert">{{.LoadError}} <a href="{{.Filter.URL}}" class="underline">Try again</a></div>
+    {{else}}
+    <nav class="pipeline-stats" aria-label="Pipeline status filters">
+        {{range .Cards}}
+        <a href="{{.URL}}" hx-get="{{.URL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true"
+           hx-sync="#pipeline-content:replace" class="card pipeline-stat {{if .Active}}selected{{end}}" {{if .Active}}aria-current="true"{{end}}>
+            <span class="text-xs text-muted">{{.Label}}</span>
+            <span class="font-display text-2xl font-bold text-primary">{{.Count}}</span>
+        </a>
+        {{end}}
+    </nav>
+    {{end}}
+
+    <section class="card p-6 mt-6" aria-labelledby="pipeline-results-heading">
+        <nav class="pipeline-tabs" aria-label="Pipeline views">
+            <a class="btn {{if eq .Filter.View "actions"}}btn-primary{{else}}btn-secondary{{end}}" {{if eq .Filter.View "actions"}}aria-current="page"{{end}}
+               href="{{.ActionsURL}}" hx-get="{{.ActionsURL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true" hx-sync="#pipeline-content:replace">Action Required</a>
+            <a class="btn {{if eq .Filter.View "responses"}}btn-primary{{else}}btn-secondary{{end}}" {{if eq .Filter.View "responses"}}aria-current="page"{{end}}
+               href="{{.ResponsesURL}}" hx-get="{{.ResponsesURL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true" hx-sync="#pipeline-content:replace">Responses</a>
+            <a class="btn {{if eq .Filter.View "requests"}}btn-primary{{else}}btn-secondary{{end}}" {{if eq .Filter.View "requests"}}aria-current="page"{{end}}
+               href="{{.RequestsURL}}" hx-get="{{.RequestsURL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true" hx-sync="#pipeline-content:replace">Requests</a>
+        </nav>
+
+        <form id="pipeline-filters" action="/pipeline" method="get" class="pipeline-filters"
+              hx-get="/pipeline" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true"
+              hx-trigger="submit, change"
+              hx-sync="#pipeline-content:replace" hx-indicator="#pipeline-loading">
+            <input type="hidden" name="view" value="{{.Filter.View}}">
+            <div class="pipeline-search">
+                <label for="pipeline-search" class="text-xs text-muted">Search {{if eq .Filter.View "actions"}}action items{{else if eq .Filter.View "responses"}}responses{{else}}requests{{end}}</label>
+                <input id="pipeline-search" name="q" type="search" value="{{.Filter.Search}}" class="form-input" autocomplete="off"
+                       hx-get="/pipeline" hx-trigger="input changed delay:300ms, search" hx-include="#pipeline-filters"
+                       placeholder="{{if eq .Filter.View "requests"}}Broker or email address{{else}}Broker, email text or task notes{{end}}">
+            </div>
+            {{if eq .Filter.View "responses"}}
+            <div>
+                <label for="response-filter" class="text-xs text-muted">Response type</label>
+                <select id="response-filter" name="type" class="form-input">
+                    <option value="">All types</option>
+                    <option value="form_required" {{if eq .Filter.Type "form_required"}}selected{{end}}>Form Required</option>
+                    <option value="confirmation_required" {{if eq .Filter.Type "confirmation_required"}}selected{{end}}>Confirmation Required</option>
+                    <option value="success" {{if eq .Filter.Type "success"}}selected{{end}}>Deletion Confirmed</option>
+                    <option value="no_data" {{if eq .Filter.Type "no_data"}}selected{{end}}>No data held</option>
+                    <option value="rejected" {{if eq .Filter.Type "rejected"}}selected{{end}}>Rejected</option>
+                    <option value="pending" {{if eq .Filter.Type "pending"}}selected{{end}}>Processing</option>
+                    <option value="bounced" {{if eq .Filter.Type "bounced"}}selected{{end}}>Bounced</option>
+                    <option value="unknown" {{if eq .Filter.Type "unknown"}}selected{{end}}>Unknown</option>
+                </select>
+            </div>
+            {{end}}
+            {{if eq .Filter.View "requests"}}
+            <div>
+                <label for="pipeline-status" class="text-xs text-muted">Request status</label>
+                <select id="pipeline-status" name="status" class="form-input">
+                    <option value="">All statuses</option>
+                    <option value="email_sent" {{if eq .Filter.Status "email_sent"}}selected{{end}}>Email sent</option>
+                    <option value="awaiting_response" {{if eq .Filter.Status "awaiting_response"}}selected{{end}}>Awaiting response</option>
+                    <option value="form_required" {{if eq .Filter.Status "form_required"}}selected{{end}}>Form required</option>
+                    <option value="form_filled" {{if eq .Filter.Status "form_filled"}}selected{{end}}>Form filled</option>
+                    <option value="awaiting_captcha" {{if eq .Filter.Status "awaiting_captcha"}}selected{{end}}>Awaiting CAPTCHA</option>
+                    <option value="captcha_solved" {{if eq .Filter.Status "captcha_solved"}}selected{{end}}>CAPTCHA solved</option>
+                    <option value="awaiting_confirmation" {{if eq .Filter.Status "awaiting_confirmation"}}selected{{end}}>Awaiting confirmation</option>
+                    <option value="confirmed" {{if eq .Filter.Status "confirmed"}}selected{{end}}>Confirmed</option>
+                    <option value="no_data" {{if eq .Filter.Status "no_data"}}selected{{end}}>No data held</option>
+                    <option value="rejected" {{if eq .Filter.Status "rejected"}}selected{{end}}>Rejected</option>
+                    <option value="failed" {{if eq .Filter.Status "failed"}}selected{{end}}>Failed</option>
+                </select>
+            </div>
+            {{else}}
+            <label class="text-sm text-secondary pipeline-review-filter"><input type="checkbox" name="needs_review" value="true" {{if .Filter.NeedsReview}}checked{{end}}> Needs review</label>
+            {{end}}
+            <button type="submit" class="btn btn-secondary">Search</button>
+            <a href="{{.ClearURL}}" hx-get="{{.ClearURL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true" hx-sync="#pipeline-content:replace" class="text-sm text-accent">Clear filters</a>
+        </form>
+
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 id="pipeline-results-heading" class="font-display text-lg font-semibold text-primary">{{.Heading}}</h2>
+            {{if not .LoadError}}<span id="pipeline-result-count" class="text-sm text-muted">{{.Total}} result{{if ne .Total 1}}s{{end}}</span>{{end}}
+            <span id="pipeline-loading" class="htmx-indicator text-xs text-muted">Loading…</span>
+        </div>
+
+        <div id="pipeline-results" class="space-y-3">
+            {{range .Items}}
+            <article class="pipeline-result" data-kind="{{.Kind}}">
+                <div class="pipeline-result-main">
+                    <div class="pipeline-result-title">
+                        <a href="{{.URL}}" class="font-semibold text-primary hover:underline">{{.BrokerName}}</a>
+                        <span class="chip {{if or (eq .Kind "success") (eq .Kind "confirmed")}}chip-success{{else if eq .Kind "no_data"}}chip-info{{else if or (eq .Kind "rejected") (eq .Kind "failed") (eq .Kind "bounced")}}chip-error{{else}}chip-neutral{{end}}">{{.Label}}</span>
+                        {{if .NeedsReview}}<span class="chip chip-warning">Needs review</span>{{end}}
+                    </div>
+                    {{if .Subject}}<p class="text-sm text-secondary mt-1">{{.Subject}}</p>{{end}}
+                    {{if .Snippet}}<p class="text-sm text-muted mt-2">{{.Snippet}}</p>{{end}}
+                    <p class="text-xs text-muted mt-2">{{formatTime .At}}</p>
+                </div>
+                <div class="pipeline-result-actions">
+                    <a href="{{.URL}}" class="btn btn-secondary">{{.Action}}</a>
+                    {{if .FormURL}}<a href="{{.FormURL}}" target="_blank" rel="noopener noreferrer" class="text-xs text-accent">Open form ↗</a>{{end}}
+                </div>
+            </article>
+            {{else}}
+            {{if not .LoadError}}
+            <div class="text-center py-8">
+                {{if or .Filter.Search .Filter.Type .Filter.Status .Filter.NeedsReview}}
+                <p class="text-secondary">No matching results</p><p class="text-sm text-muted mt-2">Try another search or clear the filters.</p>
+                {{else if eq .Filter.View "actions"}}
+                <p class="text-secondary">No action required</p><p class="text-sm text-muted mt-2">Your pending forms, tasks and response reviews will appear here.</p>
+                {{else if eq .Filter.View "responses"}}
+                <p class="text-secondary">No responses yet</p><p class="text-sm text-muted mt-2">Scan your inbox to check for broker responses.</p>
+                {{else}}
+                <p class="text-secondary">No requests yet</p><p class="text-sm text-muted mt-2">Sent removal requests will appear here.</p>
+                {{end}}
+            </div>
+            {{end}}
+            {{end}}
+        </div>
+
+        {{if gt .Total 0}}
+        <nav class="pipeline-pagination mt-6" aria-label="Results pages">
+            <span class="text-sm text-muted">Showing {{.Start}}–{{.End}} of {{.Total}}</span>
+            <div class="flex gap-3 items-center">
+                {{if .PreviousURL}}<a href="{{.PreviousURL}}" hx-get="{{.PreviousURL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true" hx-sync="#pipeline-content:replace" class="btn btn-secondary" rel="prev">Previous</a>{{end}}
+                <span class="text-xs text-muted">Page {{.Filter.Page}} of {{.Pages}}</span>
+                {{if .NextURL}}<a href="{{.NextURL}}" hx-get="{{.NextURL}}" hx-target="#pipeline-content" hx-swap="outerHTML" hx-push-url="true" hx-sync="#pipeline-content:replace" class="btn btn-secondary" rel="next">Next</a>{{end}}
+            </div>
+        </nav>
+        {{end}}
+    </section>
+</div>

@@ -83,7 +83,7 @@ func runMarkSent(args, regions, categories []string, dryRun bool) error {
 		return nil
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to open history: %w", err)
 	}

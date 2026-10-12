@@ -70,7 +70,7 @@ func runCleanupBounces(remove bool, days int) error {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}
@@ -237,7 +237,7 @@ func runMarkBounced(brokerIDs []string, note string) error {
 		return err
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

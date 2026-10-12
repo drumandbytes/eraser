@@ -168,7 +168,7 @@ func sentSince(cfgPath string, start time.Time) int {
 	if err != nil {
 		return 0
 	}
-	store, err := history.NewStore(history.DBPathFor(cfgPath))
+	store, err := openHistoryStore(history.DBPathFor(cfgPath))
 	if err != nil {
 		return 0
 	}

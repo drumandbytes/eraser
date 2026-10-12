@@ -128,7 +128,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 		screenshotDir = filepath.Join(home, ".eraser", "screenshots")
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

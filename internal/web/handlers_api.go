@@ -174,16 +174,21 @@ func (s *Server) handleAPIDeleteAllHistory(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *Server) handleAPIResponses(w http.ResponseWriter, r *http.Request) {
-	responseType := r.URL.Query().Get("type")
-	needsReview := r.URL.Query().Get("needs_review") == "true"
-
-	var responses []history.BrokerResponse
-	if s.historyStore != nil {
-		responses, _ = s.historyStore.GetBrokerResponses(s.activeProfile(r).ID, responseType, needsReview, 50)
+	if s.historyStore == nil {
+		http.Error(w, "Unable to load responses", http.StatusInternalServerError)
+		return
 	}
-
+	f := readPipelineFilter(r)
+	responses, total, err := s.historyStore.QueryBrokerResponses(s.activeProfile(r).ID, history.ResponseQuery{
+		Type: r.URL.Query().Get("type"), NeedsReview: r.URL.Query().Get("needs_review") == "true", Search: f.Search, Limit: pipelinePageSize, Offset: (f.Page - 1) * pipelinePageSize,
+	})
+	if err != nil {
+		http.Error(w, "Unable to load responses", http.StatusInternalServerError)
+		return
+	}
 	s.renderPartial(w, "partials/response-list.html", map[string]interface{}{
-		"Responses": responses,
+		"Responses": responses, "Search": f.Search, "Total": total,
+		"Filtered": f.Search != "" || r.URL.Query().Get("type") != "" || r.URL.Query().Get("needs_review") == "true",
 	})
 }
 
@@ -281,6 +286,7 @@ func (s *Server) scanInbox(w http.ResponseWriter, r *http.Request, opt inbox.Sca
 				<div>Confirm required: <span class="font-semibold">%d</span></div>
 				<div>Pending: <span class="font-semibold">%d</span></div>
 				<div>Rejected: <span class="font-semibold">%d</span></div>
+				<div>No data held: <span class="font-semibold">%d</span></div>
 				<div>Unknown: <span class="font-semibold">%d</span></div>
 			</div>
 			<p class="mt-2 text-sm">
@@ -288,7 +294,7 @@ func (s *Server) scanInbox(w http.ResponseWriter, r *http.Request, opt inbox.Sca
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, sum.Total, len(res.New), updated, sum.Success, sum.FormRequired, sum.ConfirmRequired, sum.Pending, sum.Rejected, sum.Unknown)
+	`, sum.Total, len(res.New), updated, sum.Success, sum.FormRequired, sum.ConfirmRequired, sum.Pending, sum.Rejected, sum.NoData, sum.Unknown)
 }
 
 // writeScanAlert writes an .alert-<kind> banner (layout.html); detail is escaped.
@@ -403,7 +409,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 
 	// Reclassify each response - use full classifier if body available, otherwise subject-only
 	var updated, unchanged int
-	var pending, rejected, success, formRequired, confirmRequired, unknown int
+	var pending, rejected, noData, success, formRequired, confirmRequired, unknown int
 
 	for _, resp := range responses {
 		var newType inbox.ResponseType
@@ -431,8 +437,8 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			confirmURL = resp.ConfirmURL
 		}
 
-		// Only update if classification changed or was unknown
-		if string(newType) != resp.ResponseType || (resp.ResponseType == "unknown" && newType != inbox.ResponseUnknown) {
+		// Also refresh confidence/review flags for existing no-data outcomes.
+		if string(newType) != resp.ResponseType || (newType == inbox.ResponseNoData && (confidence != resp.Confidence || needsReview != resp.NeedsReview)) {
 			err := s.historyStore.UpdateBrokerResponseClassification(
 				resp.ID,
 				resp.ProfileID,
@@ -442,11 +448,20 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				confidence,
 				needsReview,
 			)
-			if err == nil {
-				updated++
+			if err != nil {
+				writeScanAlert(w, "error", "Failed to update response:", err.Error())
+				return
 			}
+			updated++
 		} else {
 			unchanged++
+		}
+
+		if newType == inbox.ResponseNoData {
+			if err := s.historyStore.ResolveNoData(resp.ProfileID, resp.BrokerID, true); err != nil {
+				writeScanAlert(w, "error", "Failed to reconcile response:", err.Error())
+				return
+			}
 		}
 
 		// Count by final type
@@ -457,6 +472,8 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			formRequired++
 		case inbox.ResponseConfirmationRequired:
 			confirmRequired++
+		case inbox.ResponseNoData:
+			noData++
 		case inbox.ResponseRejected:
 			rejected++
 		case inbox.ResponsePending:
@@ -476,6 +493,7 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 			<div class="mt-2 text-sm grid grid-cols-3 gap-2">
 				<div>Pending: <span class="font-semibold">%d</span></div>
 				<div>Rejected: <span class="font-semibold">%d</span></div>
+				<div>No data held: <span class="font-semibold">%d</span></div>
 				<div>Success: <span class="font-semibold">%d</span></div>
 				<div>Form required: <span class="font-semibold">%d</span></div>
 				<div>Confirm required: <span class="font-semibold">%d</span></div>
@@ -486,5 +504,5 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, len(responses), updated, unchanged, pending, rejected, success, formRequired, confirmRequired, unknown)
+	`, len(responses), updated, unchanged, pending, rejected, noData, success, formRequired, confirmRequired, unknown)
 }

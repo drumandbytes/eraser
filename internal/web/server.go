@@ -196,6 +196,7 @@ func limitFormBody(w http.ResponseWriter, r *http.Request) {
 // Each page gets its own template set to avoid "content" block conflicts
 func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 	funcs := template.FuncMap{
+		"pipelineLabel": pipelineLabel,
 		"formatTime": func(t time.Time) string {
 			return t.Format("Jan 2, 2006 3:04 PM")
 		},

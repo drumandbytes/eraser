@@ -157,7 +157,7 @@ func runSend() error {
 
 	// Initialize history store early - needed for both the resend-cooldown
 	// skip and the daily send cap below.
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

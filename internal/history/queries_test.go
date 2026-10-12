@@ -175,6 +175,7 @@ func TestParseTimeHelpers(t *testing.T) {
 	want := time.Date(2026, 3, 4, 5, 6, 7, 0, time.UTC)
 	for _, in := range []string{
 		"2026-03-04 05:06:07 +0000 UTC m=+0.000000001",
+		"2026-03-04 00:06:07 -0500 -0500",
 		"2026-03-04T05:06:07Z",
 		"2026-03-04 05:06:07+00:00",
 		"2026-03-04 05:06:07",
@@ -191,7 +192,7 @@ func TestParseTimeHelpers(t *testing.T) {
 	if got := parseFlexibleTimeString(sql.NullString{}); !got.IsZero() {
 		t.Errorf("NULL = %v, want zero", got)
 	}
-	for _, in := range []string{"2026-03-04T05:06:07Z", "2026-03-04 05:06:07"} {
+	for _, in := range []string{"2026-03-04T05:06:07Z", "2026-03-04 05:06:07", "2026-03-04 00:06:07 -0500 -0500"} {
 		if got := parseFlexibleTimeString(sql.NullString{String: in, Valid: true}); !got.Equal(want) {
 			t.Errorf("parseFlexibleTimeString(%q) = %v", in, got)
 		}

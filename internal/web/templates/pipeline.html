@@ -104,283 +104,45 @@
     {{end}}
 
     {{if not .InboxConfigured}}
-    <!-- Setup Required Banner -->
-    <div class="card p-6 mb-8 border-l-4" style="border-left-color: var(--warning);">
-        <div class="flex items-start gap-4">
-            <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: rgba(234, 179, 8, 0.15);">
-                <svg class="w-5 h-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            </div>
-            <div>
-                <h3 class="font-semibold text-primary mb-1">Inbox Monitoring Not Configured</h3>
-                <p class="text-secondary text-sm mb-3">To automatically track broker responses, <a href="/settings" class="text-accent hover:underline">configure inbox monitoring in Settings</a>.</p>
-                <p class="text-muted text-xs">Or add the following to your config.yaml (provider: gmail, proton, fastmail, mailbox-org, posteo, icloud, or set server/port):</p>
-                <pre class="mt-2 p-3 rounded text-xs overflow-x-auto" style="background: var(--bg-elevated);">inbox:
-  enabled: true
-  provider: fastmail
-  email: you@example.org
-  password: your-app-password</pre>
-            </div>
-        </div>
+    <div class="alert alert-info mb-6">
+        <p class="text-sm">To fetch new broker responses, <a href="/settings" class="text-accent hover:underline">configure inbox monitoring in Settings</a>.</p>
     </div>
     {{end}}
 
-    <!-- Pipeline Stats Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8 stagger">
-        <!-- Email Sent -->
-        <div class="card p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--accent-muted);">
-                    <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-muted">Email Sent</p>
-                    <p class="font-display text-xl font-bold text-primary">{{.PipelineStats.EmailSent}}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Required (clickable link to /tasks) -->
-        <a href="/tasks" class="card p-4 hover:ring-2 hover:ring-yellow-400 transition-all block">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(234, 179, 8, 0.15);">
-                    <svg class="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-muted">Form Required</p>
-                    <p class="font-display text-xl font-bold text-warning">{{.PipelineStats.FormRequired}}</p>
-                </div>
-            </div>
-        </a>
-
-        <!-- Awaiting Confirmation -->
-        <div class="card p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: var(--accent-muted);">
-                    <svg class="w-4 h-4 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-muted">Awaiting Confirm</p>
-                    <p class="font-display text-xl font-bold text-accent">{{.PipelineStats.AwaitingConfirmation}}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Confirmed -->
-        <div class="card p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(34, 197, 94, 0.15);">
-                    <svg class="w-4 h-4 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-muted">Confirmed</p>
-                    <p class="font-display text-xl font-bold text-success">{{.PipelineStats.Confirmed}}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pending Tasks -->
-        <div class="card p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(239, 68, 68, 0.15);">
-                    <svg class="w-4 h-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-muted">Pending Tasks</p>
-                    <p class="font-display text-xl font-bold text-error">{{.PipelineStats.PendingTasks}}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Needs Review -->
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-orange-400 transition-all" onclick="filterResponses('unknown')">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: rgba(234, 179, 8, 0.15);">
-                    <svg class="w-4 h-4 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <div>
-                    <p class="text-xs text-muted">Needs Review</p>
-                    <p class="font-display text-xl font-bold text-warning">{{.PipelineStats.NeedsReview}}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Pending Tasks Card -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="font-display text-lg font-semibold text-primary">Action Required</h2>
-                <a href="/tasks" class="text-sm text-accent hover:underline">View all</a>
-            </div>
-
-            {{if .PendingTasks}}
-            <div class="space-y-4">
-                {{range .PendingTasks}}
-                <div class="flex items-center gap-4 p-3 rounded-lg" style="background: var(--bg-elevated);">
-                    {{if eq .TaskType "captcha"}}
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: rgba(239, 68, 68, 0.15);">
-                        <svg class="w-5 h-5 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                    </div>
-                    {{else if eq .TaskType "manual_form"}}
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: rgba(234, 179, 8, 0.15);">
-                        <svg class="w-5 h-5 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                    </div>
-                    {{else}}
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center" style="background: var(--accent-muted);">
-                        <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                    </div>
-                    {{end}}
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-primary truncate">{{.BrokerName}}</p>
-                        <p class="text-xs text-muted">{{.TaskType}} - {{formatDate .CreatedAt}}</p>
-                    </div>
-                    <a href="/tasks/{{.ID}}" class="btn btn-sm btn-secondary">
-                        Solve
-                    </a>
-                </div>
-                {{end}}
-            </div>
-            {{else}}
-            <div class="text-center py-8">
-                <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style="background: var(--bg-elevated);">
-                    <svg class="w-8 h-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <p class="text-secondary mb-1">No pending tasks</p>
-                <p class="text-sm text-muted">All clear! No manual intervention needed.</p>
-            </div>
-            {{end}}
-        </div>
-
-        <!-- Recent Responses Card -->
-        <div class="card p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="font-display text-lg font-semibold text-primary">Recent Responses</h2>
-                <div class="flex gap-2">
-                    <select id="response-filter" class="text-sm rounded-md border-0 py-1 px-2" style="background: var(--bg-elevated); color: var(--text-secondary);"
-                        hx-get="/api/pipeline/responses" hx-target="#response-list" hx-trigger="change"
-                        hx-include="[name='needs_review']">
-                        <option value="">All types</option>
-                        <option value="form_required">Form Required</option>
-                        <option value="confirmation_required">Confirmation Required</option>
-                        <option value="success">Success</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="unknown">Unknown</option>
-                    </select>
-                </div>
-            </div>
-
-            <div id="response-list">
-                {{template "partials/response-list.html" .}}
-            </div>
-        </div>
-    </div>
-
-    <!-- Pipeline Flow Visualization -->
-    <div class="mt-8 card p-6">
-        <h2 class="font-display text-lg font-semibold text-primary mb-6">Pipeline Flow</h2>
-        <div class="overflow-x-auto">
-            <div class="flex items-center justify-between min-w-[800px] gap-2">
-                <!-- Email Sent -->
-                <div class="flex-1 text-center">
-                    <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style="background: var(--accent-muted);">
-                        <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                    </div>
-                    <p class="text-xs text-muted">Email Sent</p>
-                    <p class="font-bold text-primary">{{.PipelineStats.EmailSent}}</p>
-                </div>
-                <div class="text-muted">→</div>
-
-                <!-- Awaiting Response -->
-                <div class="flex-1 text-center">
-                    <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style="background: rgba(156, 163, 175, 0.15);">
-                        <svg class="w-6 h-6 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <p class="text-xs text-muted">Awaiting</p>
-                    <p class="font-bold text-primary">{{.PipelineStats.AwaitingResponse}}</p>
-                </div>
-                <div class="text-muted">→</div>
-
-                <!-- Form Required -->
-                <div class="flex-1 text-center">
-                    <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style="background: rgba(234, 179, 8, 0.15);">
-                        <svg class="w-6 h-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <p class="text-xs text-muted">Form Required</p>
-                    <p class="font-bold text-warning">{{.PipelineStats.FormRequired}}</p>
-                </div>
-                <div class="text-muted">→</div>
-
-                <!-- Awaiting Confirmation -->
-                <div class="flex-1 text-center">
-                    <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style="background: var(--accent-muted);">
-                        <svg class="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                    </div>
-                    <p class="text-xs text-muted">Confirm Link</p>
-                    <p class="font-bold text-accent">{{.PipelineStats.AwaitingConfirmation}}</p>
-                </div>
-                <div class="text-muted">→</div>
-
-                <!-- Confirmed -->
-                <div class="flex-1 text-center">
-                    <div class="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2" style="background: rgba(34, 197, 94, 0.15);">
-                        <svg class="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <p class="text-xs text-muted">Confirmed</p>
-                    <p class="font-bold text-success">{{.PipelineStats.Confirmed}}</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{template "partials/pipeline-content.html" .Pipeline}}
 </div>
-
-<script>
-function filterResponses(type) {
-    // Update the dropdown
-    const dropdown = document.getElementById('response-filter');
-    if (dropdown) {
-        dropdown.value = type;
-        // Trigger HTMX request
-        htmx.trigger(dropdown, 'change');
-    }
-    // Scroll to responses section
-    document.getElementById('response-list').scrollIntoView({ behavior: 'smooth' });
+<style>
+.pipeline-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.pipeline-stat { padding:16px; display:flex; flex-direction:column; gap:6px; text-decoration:none; border:1px solid var(--border); }
+.pipeline-stat:hover, .pipeline-stat:focus-visible { border-color:var(--accent); }
+.pipeline-stat.selected { border-color:var(--accent); background:var(--accent-muted); }
+.pipeline-tabs, .pipeline-filters { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:24px; }
+.pipeline-filters { align-items:end; }
+.pipeline-filters label { display:block; margin-bottom:6px; }
+.pipeline-filters .pipeline-review-filter { display:flex; align-items:center; gap:6px; margin-bottom:10px; }
+.pipeline-filters > div { min-width:0; }
+.pipeline-search { flex:1; min-width:220px !important; }
+.pipeline-filters input[type=search], .pipeline-filters select { width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:8px; color:var(--text-primary); background:var(--bg-elevated); }
+.pipeline-result { display:flex; gap:18px; padding:16px; border-radius:8px; background:var(--bg-elevated); }
+.pipeline-result-main { flex:1; min-width:0; overflow-wrap:anywhere; }
+.pipeline-result-title { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.pipeline-result-actions { display:flex; flex-direction:column; align-items:end; gap:10px; flex-shrink:0; }
+.pipeline-pagination { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+@media (max-width:640px) {
+ .pipeline-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .pipeline-result { flex-direction:column; }
+ .pipeline-result-actions { flex-direction:row; align-items:center; }
+ .pipeline-filters > div { width:100%; }
+ .pipeline-search { min-width:0 !important; }
 }
+</style>
+<script>
+document.body.addEventListener('htmx:beforeSwap', function(event) {
+    if (event.detail.target.id === 'pipeline-content' && event.detail.xhr.status === 500) {
+        event.detail.shouldSwap = true;
+    }
+});
 </script>
 {{end}}
-
 
 {{template "layout" .}}

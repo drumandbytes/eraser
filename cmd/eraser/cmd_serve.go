@@ -63,7 +63,7 @@ func runServe(port int) error {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	store, err := history.NewStore(history.DBPathFor(configPath))
+	store, err := openHistoryStore(history.DBPathFor(configPath))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

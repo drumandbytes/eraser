@@ -200,7 +200,7 @@ func TestRejectionPatterns(t *testing.T) {
 		{
 			name:     "ACUTRAQ - no record",
 			body:     "we do not have any record of a report in our system. ACUTRAQ maintains no files on this person.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "Atlantic Fox - no longer a data broker",
@@ -215,7 +215,7 @@ func TestRejectionPatterns(t *testing.T) {
 		{
 			name:     "No data linked to email",
 			body:     "We have no data linked to your email in our system.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "B2B platform",
@@ -225,7 +225,7 @@ func TestRejectionPatterns(t *testing.T) {
 		{
 			name:     "Never existed in database",
 			body:     "the information below has never existed in our database.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "FCRA exempt",
@@ -235,7 +235,7 @@ func TestRejectionPatterns(t *testing.T) {
 		{
 			name:     "Not identified in database",
 			body:     "Your email was not identified in our database. This means that we don't have any personal information.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 	}
 
@@ -341,19 +341,19 @@ func TestSubjectBasedRejectionPatterns(t *testing.T) {
 			name:     "Not Found in subject",
 			subject:  "[Convex] Re: Deletion Request Update - Not Found",
 			body:     "",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "No record in subject",
 			subject:  "Re: Personal Data Removal Request - No Record Found",
 			body:     "",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "Unable to locate",
 			subject:  "Unable to locate your data - Personal Data Removal Request",
 			body:     "",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 	}
 

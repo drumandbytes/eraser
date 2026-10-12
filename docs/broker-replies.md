@@ -26,13 +26,21 @@ Classifications match `ResponseType` in `internal/inbox/classifier.go`.
 | Reply says | Type | Action |
 |---|---|---|
 | Deletion done / suppressed / "we no longer hold your data" | `success` | none - archive the mail |
-| "No record / no match for you" from a genuine broker | `rejected` | none - they're still a real broker, a future re-scrape may list you again |
+| "No record / no match for you" from a genuine broker | `no_data` (No data held) | none - they're still a real broker, a future re-scrape may list you again |
 | "We are not a data broker" / "B2B only, not in scope" | `rejected` | remove the entry from `data/brokers.yaml`, then check the count floor (below) |
 | "We won't process this by email - use our web form / portal" | `form_required` | set `email: ""`, set/refresh `opt_out_url` to the form they name, add a dated `notes:` line |
 | Won't act without a government-ID document | - | set `category: requires-id`, add a dated `notes:` line (users exclude this category in bulk) |
 | Confirmation / identity link to click | `confirmation_required` | click it (or run `eraser confirm`) - no data change |
 | Bounce / dead address | `bounced` | `eraser mark-bounced <id>`, or set `email: ""` + dated note by hand. Never delete a real broker over a bounce - `MarkEmailUnreachable` in `internal/broker/broker.go` exists so the record survives for a later working address |
 | Refuses on a real statutory exemption (FCRA / GLBA / DPPA), genuine dead end | `rejected` | set `email: ""`, add a dated `notes:` line citing the basis; keep the row (see the `goodhire` entry) |
+
+Clear no-record replies are separate from deletion confirmations and refusals.
+Conditional replies or requests for identity verification still need review.
+On upgrade, Eraser reclassifies qualifying saved replies once, using their stored
+text without fetching mail. It only resolves the current request and superseded
+pending work when the latest reply is confident; newer requests, newer tasks,
+completed/skipped work, and manual pipeline progress are preserved. Original
+messages and task notes remain in history.
 
 "Remove the entry" vs. "blank the email" is a judgement call: delete when the
 company is genuinely not a broker and there's nothing to come back to; blank +

@@ -89,7 +89,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
                 Forms
-                <span class="ml-1 rounded-full chip chip-info">{{.PendingForms}}</span>
+                <span class="ml-1 rounded-full chip chip-info">{{.FormsNeedingAction}}</span>
             </button>
             <button class="filter-btn" data-filter="captcha" onclick="filterItems('captcha')">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -131,7 +131,7 @@
             {{range .Forms}}
             {{if eq .Status "pending"}}
             {{$hasItems = true}}
-            <div class="action-item p-4 hover:bg-opacity-50 transition-colors"
+            <div id="form-{{.BrokerID}}" class="action-item p-4 hover:bg-opacity-50 transition-colors"
                  data-type="form"
                  data-status="pending"
                  style="background: var(--bg-surface);">
@@ -195,7 +195,7 @@
             {{range .Tasks}}
             {{$hasItems = true}}
             <div class="action-item p-4 hover:bg-opacity-50 transition-colors"
-                 data-type="{{.TaskType}}"
+                 data-type="{{if eq .TaskType "manual_form"}}form{{else if eq .TaskType "confirm"}}confirmation{{else}}{{.TaskType}}{{end}}"
                  data-status="{{.Status}}"
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">
@@ -204,7 +204,7 @@
                         {{if eq .TaskType "captcha"}}icon-box-warning
                         {{else if eq .TaskType "manual_form"}}icon-box-info
                         {{else if eq .TaskType "review"}}icon-box-warning
-                        {{else if eq .TaskType "confirmation"}}icon-box-info
+                        {{else if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}icon-box-info
                         {{else}}icon-box-neutral{{end}}">
                         {{if eq .TaskType "captcha"}}
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,7 +219,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
-                        {{else if eq .TaskType "confirmation"}}
+                        {{else if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
@@ -238,9 +238,9 @@
                                 {{if eq .TaskType "captcha"}}chip chip-warning
                                 {{else if eq .TaskType "manual_form"}}chip chip-info
                                 {{else if eq .TaskType "review"}}chip chip-warning
-                                {{else if eq .TaskType "confirmation"}}chip chip-info
+                                {{else if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}chip chip-info
                                 {{else}}chip chip-neutral{{end}}">
-                                {{if eq .TaskType "confirmation"}}Confirmation{{else if eq .TaskType "manual_form"}}Manual Form{{else if eq .TaskType "review"}}Review{{else}}{{.TaskType}}{{end}}
+                                {{if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}Confirmation{{else if eq .TaskType "manual_form"}}Manual Form{{else if eq .TaskType "review"}}Review{{else}}{{.TaskType}}{{end}}
                             </span>
                         </div>
                         {{if .FormURL}}
@@ -310,7 +310,7 @@
                             <span class="rounded-full chip chip-warning">Needs Review</span>
                         </div>
                         <p class="text-xs text-muted mt-1 truncate">{{.EmailSubject}}</p>
-                        <p class="text-xs text-secondary mt-1">Response type: {{.ResponseType}}</p>
+                        <p class="text-xs text-secondary mt-1">Response type: {{pipelineLabel .ResponseType}}</p>
                         <p class="text-xs text-muted mt-1">Received {{.ReceivedAt.Format "Jan 2, 2006 3:04 PM"}}</p>
                     </div>
 
@@ -342,7 +342,7 @@
             <!-- Completed Tasks (for completed filter) -->
             {{range .CompletedTasksList}}
             <div class="action-item p-4 hover:bg-opacity-50 transition-colors hidden"
-                 data-type="{{.TaskType}}"
+                 data-type="{{if eq .TaskType "manual_form"}}form{{else if eq .TaskType "confirm"}}confirmation{{else}}{{.TaskType}}{{end}}"
                  data-status="completed"
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">

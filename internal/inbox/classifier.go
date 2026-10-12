@@ -12,6 +12,7 @@ const (
 	ResponseFormRequired         ResponseType = "form_required"         // Need to fill out a form
 	ResponseConfirmationRequired ResponseType = "confirmation_required" // Need to click confirmation link
 	ResponseSuccess              ResponseType = "success"               // Removal confirmed/completed
+	ResponseNoData               ResponseType = "no_data"               // Broker holds no matching data
 	ResponseRejected             ResponseType = "rejected"              // Request denied
 	ResponsePending              ResponseType = "pending"               // Processing, will follow up
 	ResponseBounced              ResponseType = "bounced"               // Email bounced - invalid address
@@ -88,27 +89,16 @@ var (
 	rejectionPatterns = []*regexp.Regexp{
 		regexp.MustCompile(`(?i)(cannot|can't|unable\s+to)\s+(process|complete|fulfill)\s+(your\s+)?request`),
 		regexp.MustCompile(`(?i)request\s+(has\s+been\s+)?(denied|rejected|declined)`),
-		regexp.MustCompile(`(?i)do\s+not\s+have\s+(any\s+)?(data|information|records)\s+(about|for|on)\s+you`),
-		regexp.MustCompile(`(?i)not\s+found\s+in\s+our\s+(system|database|records)`),
-		regexp.MustCompile(`(?i)no\s+(matching\s+)?(records?|data|information)\s+found`),
 		regexp.MustCompile(`(?i)exempt\s+from\s+(CCPA|GDPR|this\s+request)`),
-		// No data found patterns (from real broker emails)
-		regexp.MustCompile(`(?i)(do\s+not|don't)\s+have\s+(any\s+)?record`),
-		regexp.MustCompile(`(?i)no\s+(matching\s+)?record\s+(of\s+)?(a\s+)?report`),
-		regexp.MustCompile(`(?i)maintains?\s+no\s+(files?|records?|data)`),
 		// Service discontinued patterns
 		regexp.MustCompile(`(?i)no\s+longer\s+(registered|operating)\s+(as\s+)?(an?\s+)?(active\s+)?data\s+broker`),
 		regexp.MustCompile(`(?i)(this\s+)?(email|inbox)(\s+\w+)?\s+(is\s+)?(no\s+longer|being\s+retired)`),
 		regexp.MustCompile(`(?i)service\s+offerings?\s+no\s+longer\s+include`),
 		// Additional rejection patterns from real emails
-		regexp.MustCompile(`(?i)(we\s+)?(have\s+)?no\s+data\s+(linked|associated|related)\s+to\s+(your|this)`),
-		regexp.MustCompile(`(?i)not\s+identified\s+in\s+our\s+database`),
 		regexp.MustCompile(`(?i)(we\s+are|we're)\s+a\s+b2b\s+(platform|company|business)`),
-		regexp.MustCompile(`(?i)has\s+never\s+existed\s+in\s+our\s+database`),
 		regexp.MustCompile(`(?i)consumer\s+reporting\s+agenc(y|ies)\s+(is|are)\s+exempt`),
 		regexp.MustCompile(`(?i)fair\s+credit\s+reporting\s+act.{0,30}exempt`),
 		regexp.MustCompile(`(?i)we\s+do\s+not\s+(remove|delete)\s+data\s+by\s+request`),
-		regexp.MustCompile(`(?i)(your\s+)?(email|name|address|information)\s+was\s+not\s+identified`),
 		// Wrong email address patterns
 		regexp.MustCompile(`(?i)(this\s+)?(email|inbox)\s+(address\s+)?(is\s+)?not\s+(a\s+)?(mechanism|intended)\s+(for|to)`),
 		regexp.MustCompile(`(?i)not\s+intended\s+for\s+(the\s+)?(submission|handling)\s+of\s+privacy`),
@@ -175,9 +165,7 @@ var (
 
 	// Subject-specific rejection patterns
 	subjectRejectionPatterns = []*regexp.Regexp{
-		regexp.MustCompile(`(?i)not\s+found`),
-		regexp.MustCompile(`(?i)no\s+record`),
-		regexp.MustCompile(`(?i)unable\s+to\s+(locate|find|process)`),
+		regexp.MustCompile(`(?i)unable\s+to\s+process`),
 		regexp.MustCompile(`(?i)request\s+(denied|rejected)`),
 	}
 
@@ -265,6 +253,19 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 		result.Reason = "Email delivery failed - address may be invalid"
 		result.BouncedRecipient = ExtractBouncedRecipient(email)
 		result.NeedsReview = false // Bounces are clear-cut
+		return result
+	}
+
+	if matched, review := noDataVerdict(subject, emailBody(email)); matched {
+		result.Type = ResponseNoData
+		result.Confidence = 0.85
+		result.NeedsReview = review
+		if review {
+			result.Confidence = 0.5
+			result.FormURL = GetPrimaryFormURL(result.URLs, email.FromDomain)
+			result.ConfirmURL = GetPrimaryConfirmationURL(result.URLs, email.FromDomain)
+		}
+		result.Reason = getClassificationReason(result.Type, 0)
 		return result
 	}
 
@@ -412,6 +413,8 @@ func getClassificationReason(responseType ResponseType, score int) string {
 	switch responseType {
 	case ResponseSuccess:
 		return "Email indicates removal request was completed successfully"
+	case ResponseNoData:
+		return "Broker reports holding no matching personal data"
 	case ResponseFormRequired:
 		return "Email contains link to opt-out form that needs to be filled"
 	case ResponseConfirmationRequired:
@@ -461,6 +464,12 @@ func stripHTML(html string) string {
 // ClassifyBySubjectOnly classifies based on subject line only (for reclassifying database records)
 // Returns the response type, confidence, and whether it needs review
 func ClassifyBySubjectOnly(subject string) (ResponseType, float64, bool) {
+	if matched, review := noDataVerdict(subject, ""); matched {
+		if review {
+			return ResponseNoData, 0.5, true
+		}
+		return ResponseNoData, 0.7, false
+	}
 	subject = strings.ToLower(subject)
 
 	// Score each category based on subject patterns
@@ -546,6 +555,7 @@ type Summary struct {
 	FormRequired    int
 	ConfirmRequired int
 	Rejected        int
+	NoData          int
 	Pending         int
 	Bounced         int
 	Unknown         int
@@ -566,6 +576,8 @@ func SummarizeResponses(responses []ClassifiedResponse) Summary {
 			summary.ConfirmRequired++
 		case ResponseRejected:
 			summary.Rejected++
+		case ResponseNoData:
+			summary.NoData++
 		case ResponsePending:
 			summary.Pending++
 		case ResponseBounced:

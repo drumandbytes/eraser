@@ -104,7 +104,7 @@ func legalBasisFor(templateName string) string {
 // actually engaging with the request (vs. silence, a bounce, or noise).
 func substantiveResponse(responseType string) bool {
 	switch responseType {
-	case "success", "rejected", "form_required", "confirmation_required":
+	case "success", "rejected", "form_required", "confirmation_required", "no_data":
 		return true
 	default:
 		return false
@@ -230,7 +230,7 @@ func Build(
 				ConfirmURL:  r.ConfirmURL,
 				NeedsReview: r.NeedsReview,
 			})
-			if substantiveResponse(r.ResponseType) {
+			if substantiveResponse(r.ResponseType) && (r.ResponseType != "no_data" || (!r.NeedsReview && r.Confidence >= 0.7)) {
 				gotSubstantive = true
 			}
 		}

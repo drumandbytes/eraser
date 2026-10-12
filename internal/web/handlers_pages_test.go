@@ -1,8 +1,10 @@
 package web
 
 import (
+	"github.com/drumandbytes/eraser/internal/history"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -23,6 +25,12 @@ func TestPipelineShowsScanButtonForProfileMailOverride(t *testing.T) {
 		// profile's own override, not a shared default.
 	})
 
+	store, err := history.NewStore(filepath.Join(t.TempDir(), "history.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	s.historyStore = store
 	req := httptest.NewRequest(http.MethodGet, "/pipeline", nil)
 	req.AddCookie(&http.Cookie{Name: activeProfileCookie, Value: "spouse"})
 	w := httptest.NewRecorder()

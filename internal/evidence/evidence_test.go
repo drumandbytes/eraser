@@ -240,6 +240,18 @@ func TestJoinAddressSkipsBlankParts(t *testing.T) {
 	}
 }
 
+func TestNoDataEvidenceRequiresConfidentReply(t *testing.T) {
+	now := time.Now()
+	requests := []history.Record{{BrokerID: "acme", BrokerName: "Acme", Status: history.StatusSent, Template: "gdpr", SentAt: now.AddDate(0, -2, 0)}}
+	for _, review := range []bool{false, true} {
+		responses := []history.BrokerResponse{{BrokerID: "acme", ResponseType: "no_data", Confidence: 0.85, NeedsReview: review, ReceivedAt: now}}
+		report := Build(testProfile(), requests, responses, testBrokerDB(), testEngine(t), time.Time{}, now)
+		if got := findBroker(t, report, "acme"); got.PastDeadline != review || got.Responses[0].Type != "no_data" {
+			t.Fatalf("review=%v evidence=%+v", review, got)
+		}
+	}
+}
+
 func TestRenderHTML(t *testing.T) {
 	now := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
 	p := testProfile()

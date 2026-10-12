@@ -53,7 +53,7 @@ func TestNoDataNewReplyResolvesOnlyConfidentCurrentOutcome(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer store.Close()
+			defer func() { _ = store.Close() }()
 			if err := store.Add(&history.Record{BrokerID: "acme", BrokerName: "Acme", Status: history.StatusSent, SentAt: time.Now().Add(-time.Hour)}); err != nil {
 				t.Fatal(err)
 			}

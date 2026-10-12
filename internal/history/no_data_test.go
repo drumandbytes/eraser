@@ -123,12 +123,12 @@ func TestNoDataMigrationConcurrentStores(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer a.Close()
+	defer func() { _ = a.Close() }()
 	b, err := NewStore(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 	if err := a.AddBrokerResponse(&BrokerResponse{BrokerID: "acme", ResponseType: "rejected", ReceivedAt: time.Now()}); err != nil {
 		t.Fatal(err)
 	}

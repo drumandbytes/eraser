@@ -303,7 +303,7 @@ func (s *Store) migrate() error {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
 
-	return nil
+	return s.migrateAutomation()
 }
 
 // normalizeProfileID maps "" to DefaultProfileID so rows stay queryable.

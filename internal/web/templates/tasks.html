@@ -195,7 +195,7 @@
             {{range .Tasks}}
             {{$hasItems = true}}
             <div class="action-item p-4 hover:bg-opacity-50 transition-colors"
-                 data-type="{{.TaskType}}"
+                 data-type="{{if index $.ReviewTasks .ID}}review{{else if eq .TaskType "manual_form"}}form{{else if eq .TaskType "confirm"}}confirmation{{else}}{{.TaskType}}{{end}}"
                  data-status="{{.Status}}"
                  style="background: var(--bg-surface);">
                 <div class="flex items-start gap-4">
@@ -204,7 +204,7 @@
                         {{if eq .TaskType "captcha"}}icon-box-warning
                         {{else if eq .TaskType "manual_form"}}icon-box-info
                         {{else if eq .TaskType "review"}}icon-box-warning
-                        {{else if eq .TaskType "confirmation"}}icon-box-info
+                        {{else if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}icon-box-info
                         {{else}}icon-box-neutral{{end}}">
                         {{if eq .TaskType "captcha"}}
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -219,7 +219,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                         </svg>
-                        {{else if eq .TaskType "confirmation"}}
+                        {{else if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                         </svg>
@@ -233,15 +233,16 @@
                     <!-- Task Details -->
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h3 class="text-sm font-semibold text-primary"><a href="/tasks/{{.ID}}" class="hover:underline">{{.BrokerName}}</a></h3>
                             <span class="rounded-full
                                 {{if eq .TaskType "captcha"}}chip chip-warning
                                 {{else if eq .TaskType "manual_form"}}chip chip-info
                                 {{else if eq .TaskType "review"}}chip chip-warning
-                                {{else if eq .TaskType "confirmation"}}chip chip-info
+                                {{else if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}chip chip-info
                                 {{else}}chip chip-neutral{{end}}">
-                                {{if eq .TaskType "confirmation"}}Confirmation{{else if eq .TaskType "manual_form"}}Manual Form{{else if eq .TaskType "review"}}Review{{else}}{{.TaskType}}{{end}}
+                                {{if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}Confirmation{{else if eq .TaskType "manual_form"}}Manual Form{{else if eq .TaskType "review"}}Review{{else}}{{.TaskType}}{{end}}
                             </span>
+                            {{if index $.ReviewTasks .ID}}<span class="chip chip-warning">Needs review</span>{{end}}
                         </div>
                         {{if .FormURL}}
                         <p class="text-xs text-accent mt-1 truncate">
@@ -353,10 +354,12 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h3 class="text-sm font-semibold text-primary"><a href="/tasks/{{.ID}}" class="hover:underline">{{.BrokerName}}</a></h3>
                             <span class="rounded-full chip chip-success">Completed</span>
                         </div>
                         <p class="text-xs text-muted mt-1">Task completed</p>
+                        {{if .Notes}}<p class="text-sm text-secondary mt-2">{{.Notes}}</p>{{end}}
+                        <a href="/tasks/{{.ID}}" class="text-xs text-accent hover:underline">View task details{{if .ScreenshotPath}} and screenshot{{end}}</a>
                     </div>
                     <span class="text-success text-sm font-medium flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

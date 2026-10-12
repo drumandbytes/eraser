@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/evidence"
@@ -146,6 +147,14 @@ func (s *Server) getPipelineStats(profileID string) PipelineStats {
 	// - Pending tasks (from pending_tasks table)
 	// - Items needing review (parser was unsure)
 	stats.PendingTasks = pendingForms + pendingTaskCount + stats.NeedsReview
+	// Review tasks are already included in pendingTaskCount.
+	if tasks, err := s.historyStore.GetPendingTasks(profileID, "", "pending"); err == nil {
+		for _, task := range tasks {
+			if taskNeedsReview(task) {
+				stats.NeedsReview++
+			}
+		}
+	}
 
 	return stats
 }
@@ -255,6 +264,10 @@ func (s *Server) handleFormSkip(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/tasks", http.StatusFound)
 }
 
+func taskNeedsReview(task history.PendingTask) bool {
+	return task.TaskType == history.TaskReview || strings.HasPrefix(task.Notes, "MCP: unknown.") || strings.HasPrefix(task.Notes, "MCP: needs_user.") || strings.HasPrefix(task.Notes, "MCP: action outcome unknown.") || strings.HasPrefix(task.Notes, "MCP: page could not be opened.")
+}
+
 func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 	cfg := s.getConfig()
 	if cfg == nil || !cfg.HasProfile() {
@@ -292,12 +305,22 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 
 	// Count forms needing action (only pending forms, not captcha since those are in pendingTasks)
 	formsNeedingAction := pendingForms
+	reviewTasks := make(map[int64]bool)
+	for _, task := range tasks {
+		// Automation outcomes stay pending until reviewed. Keep their original
+		// task type for safe continuation, but surface them in Needs Review.
+		if taskNeedsReview(task) {
+			reviewTasks[task.ID] = true
+		} else if task.TaskType == history.TaskManualForm {
+			formsNeedingAction++
+		}
+	}
 
 	// Total action items: pending forms (without tasks) + pending tasks
 	// This avoids double-counting captcha items
 	totalActionItems := pendingForms + pendingTasks
 
-	needsReviewCount := len(reviewItems)
+	needsReviewCount := len(reviewItems) + len(reviewTasks)
 
 	data := map[string]interface{}{
 		"Title":              "Action Needed",
@@ -305,6 +328,7 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 		"CompletedTasksList": completedTasksList,
 		"Forms":              forms,
 		"ReviewItems":        reviewItems,
+		"ReviewTasks":        reviewTasks,
 		"TaskType":           taskType,
 		"Status":             status,
 		"PendingTasks":       pendingTasks,
@@ -317,7 +341,7 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 		"SkippedForms":       skippedForms,
 		"NeedsReview":        needsReviewCount,
 		"FormsNeedingAction": formsNeedingAction,
-		"TotalActionItems":   totalActionItems + needsReviewCount,
+		"TotalActionItems":   totalActionItems + len(reviewItems),
 	}
 
 	s.renderWithCSRF(w, r, "tasks.html", data)

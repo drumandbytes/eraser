@@ -32,6 +32,7 @@ go test ./...
 ./eraser confirm                       # click confirmation links from broker emails
 ./eraser fill                          # browser-automate opt-out forms
 ./eraser serve [-p 3000]               # web UI
+./eraser mcp [--demo] [--headless] [--chrome-path /path/to/chrome]  # local MCP over stdio
 ./eraser profile list                  # list configured profiles
 ./eraser profile add                   # add a second/third named profile
 ```
@@ -47,6 +48,12 @@ Every command above (except `profile`, `add-broker`, `list-brokers`) accepts a g
 Web UI equivalents for the per-profile commands: `export` → History → Export evidence (HTML or JSON); `mark-bounced` → the "bounced?" link next to a Sent status on Brokers; `update-brokers` → Settings → Broker List (also reloads the running server's list); `add-broker` → Brokers → + Add broker. Shared-list maintenance (`audit-brokers`, `validate-brokers`, `cleanup-bounces`, `guides`) and browser automation (`fill`, `confirm`) stay CLI-only.
 
 ## Configuration
+
+`mcp` shares the web UI's configuration, selected broker list, profiles, and
+history database. Its browser stays visible by default so a user can complete
+verification. `--demo` uses an isolated temporary profile and five local forms;
+it never accesses real mail or broker sites. See [mcp.md](mcp.md) for the required
+client approval settings and tool reference.
 
 Which of these keys and commands are covered by the 1.x compatibility promise: [stability.md](stability.md).
 

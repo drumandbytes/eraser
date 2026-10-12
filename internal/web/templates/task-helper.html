@@ -78,7 +78,7 @@
             {{if .Task.ScreenshotPath}}
             <div class="card p-6">
                 <h2 class="font-display text-lg font-semibold text-primary mb-4">Form Screenshot</h2>
-                <img src="/screenshots/{{.Task.ScreenshotPath}}" alt="Form screenshot" class="w-full rounded-lg border-[var(--border)]" style="border-width: 1px;">
+                <img src="/tasks/{{.Task.ID}}/screenshot" alt="Form screenshot" class="w-full rounded-lg border-[var(--border)]" style="border-width: 1px;">
             </div>
             {{end}}
 

@@ -95,15 +95,21 @@ const (
 
 // RecordReply classifies one broker reply and stores it (see ScanAndStore).
 func RecordReply(store *history.Store, e *Email, reclassify bool) (ClassifiedResponse, ReplyOutcome, error) {
+	profileID, err := store.ResolveProfileForBroker(e.BrokerID)
+	if err != nil {
+		profileID = history.DefaultProfileID
+	}
+	return RecordReplyForProfile(store, e, profileID, reclassify)
+}
+
+// RecordReplyForProfile stores a reply under an already resolved owner. Scoped
+// callers must resolve/validate ownership first; this avoids resolving it again
+// after a concurrent send by another profile.
+func RecordReplyForProfile(store *history.Store, e *Email, profileID string, reclassify bool) (ClassifiedResponse, ReplyOutcome, error) {
 	classified := ClassifyResponse(e)
 	body := e.Body
 	if body == "" {
 		body = e.HTMLBody
-	}
-
-	profileID, err := store.ResolveProfileForBroker(e.BrokerID)
-	if err != nil {
-		profileID = history.DefaultProfileID
 	}
 
 	if reclassify {

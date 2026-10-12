@@ -242,6 +242,7 @@
                                 {{else}}chip chip-neutral{{end}}">
                                 {{if or (eq .TaskType "confirmation") (eq .TaskType "confirm")}}Confirmation{{else if eq .TaskType "manual_form"}}Manual Form{{else if eq .TaskType "review"}}Review{{else}}{{.TaskType}}{{end}}
                             </span>
+                            {{if .NeedsReview}}<span class="rounded-full chip chip-warning">Needs review</span>{{end}}
                         </div>
                         {{if .FormURL}}
                         <p class="text-xs text-accent mt-1 truncate">

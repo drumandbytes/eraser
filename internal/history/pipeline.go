@@ -16,23 +16,32 @@ type ActionItems struct {
 }
 
 func (a ActionItems) Total() int { return len(a.Forms) + len(a.Tasks) + len(a.Reviews) }
+
+// NeedsReview reports review tasks and automation outcomes awaiting a person.
 func (a ActionItems) NeedsReview() int {
 	n := len(a.Reviews)
 	for _, t := range a.Tasks {
-		if t.TaskType == TaskReview {
+		if t.NeedsReview() {
 			n++
 		}
 	}
 	return n
 }
+
 func (a ActionItems) FormsToFill() int {
 	n := len(a.Forms)
 	for _, t := range a.Tasks {
-		if t.TaskType == TaskManualForm {
+		if t.TaskType == TaskManualForm && !t.NeedsReview() {
 			n++
 		}
 	}
 	return n
+}
+
+// NeedsReview is true for review tasks and for automation outcomes that the
+// agent could not settle. Those stay pending until a person looks at them.
+func (t PendingTask) NeedsReview() bool {
+	return t.TaskType == TaskReview || strings.HasPrefix(t.Notes, "MCP: unknown.") || strings.HasPrefix(t.Notes, "MCP: needs_user.") || strings.HasPrefix(t.Notes, "MCP: action outcome unknown.") || strings.HasPrefix(t.Notes, "MCP: page could not be opened.")
 }
 
 func (s *Store) GetActionItems(profileID string) (ActionItems, error) {

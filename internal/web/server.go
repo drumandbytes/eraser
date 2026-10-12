@@ -417,6 +417,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/pipeline/responses/{responseID}", s.handleResponseReview)
 	r.Get("/tasks", s.handleTasks)
 	r.Get("/tasks/{taskID}", s.handleTaskDetail)
+	r.Get("/tasks/{taskID}/screenshot", s.handleTaskScreenshot)
 	r.Get("/tasks/{taskID}/helper", s.handleTaskHelper)
 	r.Post("/tasks/{taskID}/complete", s.handleTaskComplete)
 	r.Post("/tasks/{taskID}/skip", s.handleTaskSkip)

@@ -1,0 +1,18 @@
+# Merge these tables into your Codex config; replace the absolute command path.
+# Do not put email credentials in this file. Eraser reads its existing config.
+[mcp_servers.eraser]
+command = "/absolute/path/to/eraser"
+args = ["mcp"]
+startup_timeout_sec = 20
+tool_timeout_sec = 60
+default_tools_approval_mode = "approve"
+
+[mcp_servers.eraser.tools.begin_batch]
+approval_mode = "prompt"
+
+[mcp_servers.eraser.tools.retry_action]
+approval_mode = "prompt"
+
+# To try fictional data first, change args to ["mcp", "--demo"].
+# With multiple profiles, use args = ["mcp", "--profile", "your-profile-id"].
+# If Chrome is not on PATH, add "--chrome-path", "/absolute/path/to/chrome".

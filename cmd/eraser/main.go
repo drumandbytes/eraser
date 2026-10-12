@@ -83,6 +83,7 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	rootCmd.AddCommand(initCmd())
 	rootCmd.AddCommand(sendCmd())
 	rootCmd.AddCommand(serveCmd())
+	rootCmd.AddCommand(mcpCmd())
 	rootCmd.AddCommand(listBrokersCmd())
 	rootCmd.AddCommand(statusCmd())
 	rootCmd.AddCommand(addBrokerCmd())

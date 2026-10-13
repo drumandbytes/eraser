@@ -853,13 +853,6 @@ brokers:
       website: https://www.bridgevine.com/
       region: us
       category: marketing
-    - id: brigthswipe
-      name: Brigthswipe Inc
-      email: ""
-      website: https://www.brightswipe.com/
-      region: us
-      category: marketing
-      notes: 'Brigthswipe Inc is BrightCheck''s registered corporate name (product/consumer brand vs legal entity, confirmed via a PRNewswire release announcing the BrightCheck launch) - the separate brightcheck entry was merged into this one. Email admin@brightswipe.com became undeliverable (audit-brokers: MX and host lookup both failed, 2026-10-12) - cleared, needs a working address.'
     - id: brooks-integrated-marketing
       name: Brooks Integrated Marketing, LLC
       email: privacy@brooksim.com

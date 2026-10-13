@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.8](https://github.com/drumandbytes/eraser/compare/v1.2.7...v1.2.8) (2026-10-13)
+
+
+### Bug Fixes
+
+* **brokers:** clear dead email domains (weekly audit) ([#157](https://github.com/drumandbytes/eraser/issues/157)) ([ea8226d](https://github.com/drumandbytes/eraser/commit/ea8226d562623d320ef1c95c20c1b9b996f9201c))
+
 ## [1.2.7](https://github.com/drumandbytes/eraser/compare/v1.2.6...v1.2.7) (2026-10-04)
 
 

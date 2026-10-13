@@ -160,3 +160,19 @@ type connRefusedErr struct{}
 func (connRefusedErr) Error() string { return "connection refused" }
 
 var errConnRefused = connRefusedErr{}
+
+func TestAuditConcurrentlyFlagsNoChannel(t *testing.T) {
+	targets := []broker.Broker{
+		{ID: "gone", Email: "a@gone.test", Website: "https://gone.test"},
+		{ID: "has-portal", Email: "a@portal.test", Website: "https://portal.test", OptOutURL: "https://portal.test/optout"},
+	}
+	// MX/host lookups and HEAD all fail: both are email-dead, but only the
+	// one without an opt-out URL has nothing left.
+	results := auditConcurrently(targets, stubChecker(0, 0, 0, errConnRefused), 2)
+	if !results[0].noChannel {
+		t.Error("gone: want noChannel")
+	}
+	if results[1].noChannel {
+		t.Error("has-portal: opt-out URL remains, want !noChannel")
+	}
+}

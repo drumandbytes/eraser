@@ -108,9 +108,16 @@ Two checks, both also wired into CI:
   appending a dated note - then the workflow opens a PR against `data/brokers.yaml`
   if anything changed. A quiet week opens no PR. Review the PR before merging;
   investigate `website-dead` / `unknown` entries (printed in the run log, never
-  auto-edited) by hand. Also runnable from the Actions tab on demand. Run
-  `eraser audit-brokers --fix` locally with `--brokers <path>` to do the same to a
-  working copy.
+  auto-edited) by hand. A "No working channel left" section lists entries whose
+  email is dead *and* whose website is unreachable with no `opt_out_url` - remove
+  those by hand rather than keeping a row nobody can contact. Also runnable from
+  the Actions tab on demand. Run `eraser audit-brokers --fix` locally with
+  `--brokers <path>` to do the same to a working copy.
+- **Canonical formatting** - `--fix` (and the bounce tooling) save with
+  `yaml.Marshal`, so a hand-edited list that isn't already in that form is
+  reformatted wholesale on the next audit PR. `TestEmbeddedListsCanonical` fails
+  until it is; `go test ./internal/broker -run TestEmbeddedListsCanonical -update`
+  rewrites `data/brokers*.yaml` in place.
 
 ## Security/Correctness Sweep (2026-08)
 

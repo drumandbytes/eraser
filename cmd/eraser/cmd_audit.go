@@ -130,6 +130,9 @@ Examples:
 type auditResult struct {
 	broker  broker.Broker
 	verdict auditVerdict
+	// noChannel: dead email, unreachable website and no opt-out URL, so --fix
+	// would leave the entry with no way to contact the broker.
+	noChannel bool
 }
 
 func runAuditBrokers(regions, categories []string, timeout time.Duration, failOnDead, fix bool) error {
@@ -216,7 +219,13 @@ func auditConcurrently(targets []broker.Broker, checker *auditChecker, workers i
 		go func(i int, b broker.Broker) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			results[i] = auditResult{broker: b, verdict: auditOne(b, checker)}
+			r := auditResult{broker: b, verdict: auditOne(b, checker)}
+			// auditOne stops at email-dead; check the site too so entries
+			// with nothing left get reported.
+			if r.verdict == verdictEmailDead && b.OptOutURL == "" && b.Website != "" {
+				r.noChannel = checkWebsiteVerdict(b.Website, checker) == verdictWebsiteDead
+			}
+			results[i] = r
 		}(i, b)
 	}
 	wg.Wait()
@@ -302,9 +311,12 @@ func hostOf(website string) string {
 
 func printAuditResults(results []auditResult) {
 	counts := map[auditVerdict]int{}
-	var emailDead, websiteDead []string
+	var emailDead, websiteDead, noChannel []string
 	for _, r := range results {
 		counts[r.verdict]++
+		if r.noChannel {
+			noChannel = append(noChannel, r.broker.ID)
+		}
 		switch r.verdict {
 		case verdictEmailDead:
 			emailDead = append(emailDead, r.broker.ID)
@@ -325,6 +337,14 @@ func printAuditResults(results []auditResult) {
 		fmt.Println()
 		fmt.Println("Email domain appears dead (MX and host lookup both failed):")
 		for _, id := range emailDead {
+			fmt.Printf("  - %s\n", id)
+		}
+	}
+	if len(noChannel) > 0 {
+		sort.Strings(noChannel)
+		fmt.Println()
+		fmt.Println("No working channel left (dead email, unreachable website, no opt-out URL) - consider removing:")
+		for _, id := range noChannel {
 			fmt.Printf("  - %s\n", id)
 		}
 	}

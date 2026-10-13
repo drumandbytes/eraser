@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.9](https://github.com/drumandbytes/eraser/compare/v1.2.8...v1.2.9) (2026-10-13)
+
+
+### Bug Fixes
+
+* **audit:** keep broker lists canonical and report dead-end entries ([#162](https://github.com/drumandbytes/eraser/issues/162)) ([0979eb6](https://github.com/drumandbytes/eraser/commit/0979eb6535c6a23abc5324ca2889b6177fd2f930))
+
 ## [1.2.8](https://github.com/drumandbytes/eraser/compare/v1.2.7...v1.2.8) (2026-10-13)
 
 

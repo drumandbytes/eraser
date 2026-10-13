@@ -1,10 +1,3 @@
-# Verified data-broker list - a smaller, higher-signal alternative to
-# data/brokers.yaml. Every entry is a company we can confidently call a
-# data broker (US: cross-checkable against state registries; EU: credit /
-# data-intelligence bureaus) with a current first-party removal/privacy channel.
-#
-# Select it with `eraser send --list verified` or options.broker_list: verified.
-# Grow it from registry CSVs - see docs/auditing.md.
 brokers:
     - id: 192-com
       name: 192.com
@@ -90,7 +83,7 @@ brokers:
       opt_out_url: https://www.data-axle.com/do-not-sell-my-data/
       region: us
       category: marketing
-      notes: 'Infogroup is the former Data Axle identity and was merged into this entry; infogroup.com redirects here. Cross-checkable against the California CPPA data-broker registry.'
+      notes: Infogroup is the former Data Axle identity and was merged into this entry; infogroup.com redirects here. Cross-checkable against the California CPPA data-broker registry.
     - id: epsilon
       name: Epsilon Data Management
       email: privacy@epsilon.com
@@ -114,7 +107,7 @@ brokers:
       opt_out_url: https://www.experian.com/privacy/opting_out
       region: global
       category: marketing
-      notes: 'Includes Tapad, acquired by Experian; the defunct standalone Tapad contact was merged here. Well-known data broker with a published first-party privacy channel.'
+      notes: Includes Tapad, acquired by Experian; the defunct standalone Tapad contact was merged here. Well-known data broker with a published first-party privacy channel.
     - id: fastpeoplesearch
       name: FastPeopleSearch
       email: privacy@fastpeoplesearch.com
@@ -138,7 +131,7 @@ brokers:
       opt_out_url: https://www.unacast.com/opt-out
       region: us
       category: marketing
-      notes: 'GA-UC Holdings and Gravy Analytics now route through Unacast; consolidated under the current company and first-party privacy channel. Cross-checkable against the California CPPA data-broker registry.'
+      notes: GA-UC Holdings and Gravy Analytics now route through Unacast; consolidated under the current company and first-party privacy channel. Cross-checkable against the California CPPA data-broker registry.
     - id: hireright
       name: HireRight
       email: dpo@hireright.com
@@ -161,7 +154,7 @@ brokers:
       opt_out_url: https://www.intelius.com/privacy-center/
       region: us
       category: people-search
-      notes: 'Intelius LLC also operates ZabaSearch and US Search; their duplicate targets were merged here. Cross-checkable against the California CPPA data-broker registry.'
+      notes: Intelius LLC also operates ZabaSearch and US Search; their duplicate targets were merged here. Cross-checkable against the California CPPA data-broker registry.
     - id: kbm-group
       name: KBM GROUP LLC
       email: DoNotMail@wundermanthompson.com
@@ -295,7 +288,7 @@ brokers:
       opt_out_url: https://instantdata.atdata.com/optout
       region: us
       category: marketing
-      notes: 'TowerData and FreshAddress merged and rebranded as AtData in 2021; Experian acquired AtData in 2026, but AtData still publishes this first-party privacy channel. Cross-checkable against the California CPPA data-broker registry.'
+      notes: TowerData and FreshAddress merged and rebranded as AtData in 2021; Experian acquired AtData in 2026, but AtData still publishes this first-party privacy channel. Cross-checkable against the California CPPA data-broker registry.
     - id: transunion-marketing
       name: TransUnion Marketing
       email: privacy@transunion.com
@@ -333,21 +326,21 @@ brokers:
       website: https://www.smartclip.tv/
       region: eu
       category: marketing
-      notes: 'Added 2026-08-20 from their privacy policy - DPO listed as Thomas Servatius, Ringstr. 16-20, 33378 Rheda-Wiedenbrueck, Germany. Not previously in the campaign.'
+      notes: Added 2026-08-20 from their privacy policy - DPO listed as Thomas Servatius, Ringstr. 16-20, 33378 Rheda-Wiedenbrueck, Germany. Not previously in the campaign.
     - id: etarget-sk
       name: eTarget s.r.o.
       email: gdpr@etarget.sk
       website: https://www.etarget.sk/
       region: eu
       category: marketing
-      notes: 'Added 2026-08-20 from their privacy policy contact section. Not previously in the campaign.'
+      notes: Added 2026-08-20 from their privacy policy contact section. Not previously in the campaign.
     - id: schufa
       name: SCHUFA Holding AG
       email: datenschutz@schufa.de
       website: https://www.schufa.de/
       region: eu
       category: financial-b2b
-      notes: 'Added 2026-09-12 from their GDPR/data-protection contact page - the major German consumer credit bureau. Their own materials note they steer requesters toward a paid "Bonitatsauskunft" product first; the free Art. 15 GDPR access/erasure request is a separate legal right.'
+      notes: Added 2026-09-12 from their GDPR/data-protection contact page - the major German consumer credit bureau. Their own materials note they steer requesters toward a paid "Bonitatsauskunft" product first; the free Art. 15 GDPR access/erasure request is a separate legal right.
     - id: crif
       name: CRIF S.p.A.
       email: dirprivacy@crif.com
@@ -361,42 +354,42 @@ brokers:
       website: https://www.dnb.com/en-gb/privacy/gdpr/
       region: eu
       category: financial-b2b
-      notes: 'Added 2026-09-12 from their EU GDPR contact page. D&B acquired Bisnode in 2021 and consolidated EU privacy requests under this EU DPO address; local Bisnode-branded offices route here too.'
+      notes: Added 2026-09-12 from their EU GDPR contact page. D&B acquired Bisnode in 2021 and consolidated EU privacy requests under this EU DPO address; local Bisnode-branded offices route here too.
     - id: deutsche-post-direkt
       name: Deutsche Post Direkt GmbH
       email: datenschutz@postdirekt.de
       website: https://www.deutschepost.de/de/d/deutsche-post-direkt.html
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their data-protection contact page - German address/geo-marketing data broker (Deutsche Post subsidiary).'
+      notes: Added 2026-09-12 from their data-protection contact page - German address/geo-marketing data broker (Deutsche Post subsidiary).
     - id: az-direct
       name: AZ Direct GmbH
       email: datenschutz@az-direct.com
       website: https://www.az-direct.com/
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their data-protection contact page - German/Austrian address broker (Bertelsmann group). A 2026 noyb complaint alleges AZ Direct has resisted providing full Art. 15 data-origin/recipient information, calling it "too burdensome" - a request may take persistence.'
+      notes: Added 2026-09-12 from their data-protection contact page - German/Austrian address broker (Bertelsmann group). A 2026 noyb complaint alleges AZ Direct has resisted providing full Art. 15 data-origin/recipient information, calling it "too burdensome" - a request may take persistence.
     - id: adform
       name: Adform A/S
       email: dpo@adform.com
       website: https://site.adform.com/
       region: eu
       category: requires-id
-      notes: 'Added 2026-09-12 from their Privacy Center - Danish ad-tech DSP/DMP. They ask for an ID document scan to verify identity before processing the request.'
+      notes: Added 2026-09-12 from their Privacy Center - Danish ad-tech DSP/DMP. They ask for an ID document scan to verify identity before processing the request.
     - id: criteo
       name: Criteo SA
       email: dpo@criteo.com
       website: https://www.criteo.com/
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their privacy policy - French retargeting/ad-tech company, one of the largest EU-based ad-tech data brokers.'
+      notes: Added 2026-09-12 from their privacy policy - French retargeting/ad-tech company, one of the largest EU-based ad-tech data brokers.
     - id: rtb-house
       name: RTB House S.A.
       email: dpo@rtbhouse.com
       website: https://www.rtbhouse.com/
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their privacy notices - Polish programmatic/retargeting ad-tech company.'
+      notes: Added 2026-09-12 from their privacy notices - Polish programmatic/retargeting ad-tech company.
     - id: equativ
       name: Equativ (formerly Smart AdServer)
       email: dpo@equativ.com
@@ -404,23 +397,22 @@ brokers:
       opt_out_url: https://privacy.equativ.com/user-rights-hub/
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their privacy documentation - French ad-serving/ad-tech company, rebranded from Smart AdServer. Updated to Equativ''s current DPO address and User Rights Hub.'
+      notes: Added 2026-09-12 from their privacy documentation - French ad-serving/ad-tech company, rebranded from Smart AdServer. Updated to Equativ's current DPO address and User Rights Hub.
     - id: teads
       name: Teads
       email: privacy@teads.com
       website: https://www.teads.com/
       region: eu
       category: marketing
-      notes: 'Added 2026-09-12 from their privacy policy - French outstream video ad-tech company (part of Outbrain). dpo@teads.com and dpo-uk@teads.com are alternates.'
-
+      notes: Added 2026-09-12 from their privacy policy - French outstream video ad-tech company (part of Outbrain). dpo@teads.com and dpo-uk@teads.com are alternates.
     - id: nosis
-      name: 'Nosis Laboratorio de Investigación y Desarrollo S.A.'
+      name: Nosis Laboratorio de Investigación y Desarrollo S.A.
       email: derechoacceso@nosis.com
       website: https://www.nosis.com/
       opt_out_url: https://www.nosis.com/es/legales/datos-personales
       region: global
       category: requires-id
-      notes: 'Argentine commercial/credit intelligence bureau (reports, scoring, "Big Data Personas" on ~40M Argentinians); Ley 25.326 data-rights channel with a direct address. DNI is required for rights requests.'
+      notes: Argentine commercial/credit intelligence bureau (reports, scoring, "Big Data Personas" on ~40M Argentinians); Ley 25.326 data-rights channel with a direct address. DNI is required for rights requests.
     - id: cial-dun-bradstreet
       name: CIAL Dun & Bradstreet
       email: privacy@cialdnb.com
@@ -428,7 +420,7 @@ brokers:
       opt_out_url: https://es.cialdnb.com/politica-de-privacidade
       region: global
       category: financial-b2b
-      notes: 'LATAM business-data/credit-intelligence network (43 countries, D&B affiliate in Argentina/Brazil/Mexico/Peru); privacy@cialdnb.com is their named DPO contact. Well-known data broker with a current first-party privacy channel.'
+      notes: LATAM business-data/credit-intelligence network (43 countries, D&B affiliate in Argentina/Brazil/Mexico/Peru); privacy@cialdnb.com is their named DPO contact. Well-known data broker with a current first-party privacy channel.
     - id: circulo-de-credito
       name: Círculo de Crédito S.A. de C.V. S.I.C.
       email: ""
@@ -436,7 +428,7 @@ brokers:
       opt_out_url: https://www.circulodecredito.com.mx/reclamacion
       region: global
       category: financial-b2b
-      notes: 'Mexican credit bureau regulated by SHCP/CNBV/Banxico/CONDUSEF. The first-party reclamation portal handles modification or deletion under the LRSIC; statutory retention limits apply.'
+      notes: Mexican credit bureau regulated by SHCP/CNBV/Banxico/CONDUSEF. The first-party reclamation portal handles modification or deletion under the LRSIC; statutory retention limits apply.
     - id: buro-de-credito-mx
       name: Buró de Crédito (Trans Union de México S.A. S.I.C.)
       email: ""
@@ -444,7 +436,7 @@ brokers:
       opt_out_url: https://www.burodecredito.com.mx/personas-f%C3%ADsicas/productos/reporte-de-cr%C3%A9dito-especial/reclamaciones.html
       region: global
       category: financial-b2b
-      notes: 'Mexican LRSIC-regulated credit bureau with a current first-party reclamation channel. Official ID and supporting documents are required; statutory retention limits apply. Distinct controller from transunion-marketing.'
+      notes: Mexican LRSIC-regulated credit bureau with a current first-party reclamation channel. Official ID and supporting documents are required; statutory retention limits apply. Distinct controller from transunion-marketing.
     - id: datacredito-experian-co
       name: DataCrédito Experian Colombia
       email: ""
@@ -452,7 +444,7 @@ brokers:
       opt_out_url: https://apps.datacredito.com.co/raw/ciudadanos/ciudadanos/web/indexReclamos
       region: global
       category: financial-b2b
-      notes: 'Colombian credit bureau operated by Experian Colombia S.A.; its first-party Habeas Data page routes claims through this SIC-regulated portal. Distinct Colombian controller from experian-marketing.'
+      notes: Colombian credit bureau operated by Experian Colombia S.A.; its first-party Habeas Data page routes claims through this SIC-regulated portal. Distinct Colombian controller from experian-marketing.
     - id: centrix-nz
       name: Centrix Group Limited
       email: helpdesk@centrix.co.nz
@@ -460,7 +452,7 @@ brokers:
       opt_out_url: https://www.centrix.co.nz/my-credit-score/suppress-your-credit-file/
       region: global
       category: financial-b2b
-      notes: 'New Zealand consumer credit bureau (Credit Reporting Privacy Code 2020) with direct helpdesk and credit-report contacts plus a first-party credit-file suppression form.'
+      notes: New Zealand consumer credit bureau (Credit Reporting Privacy Code 2020) with direct helpdesk and credit-report contacts plus a first-party credit-file suppression form.
     - id: metropol-crb
       name: Metropol Credit Reference Bureau Limited
       email: data@metropol.co.ke
@@ -468,4 +460,4 @@ brokers:
       opt_out_url: https://metropol.co.ke/privacy-policy-statement/
       region: global
       category: financial-b2b
-      notes: 'Kenyan credit bureau regulated by the Central Bank of Kenya, with a named Data Privacy Office. Erasure requests route to disputes@metropol.co.ke; CRB Regulations may require retention.'
+      notes: Kenyan credit bureau regulated by the Central Bank of Kenya, with a named Data Privacy Office. Erasure requests route to disputes@metropol.co.ke; CRB Regulations may require retention.

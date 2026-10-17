@@ -2,6 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "go",
   "include-component-in-tag": false,
+  "prerelease": true,
+  "prerelease-type": "beta",
+  "versioning": "prerelease",
+  "bootstrap-sha": "af8a6643d48660eb0af727baae5d84199e8432d2",
   "packages": {
     ".": {}
   }

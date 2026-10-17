@@ -207,3 +207,29 @@ func TestAutomationPausesForCredentialsAndIdentity(t *testing.T) {
 		}
 	}
 }
+
+func TestURLPolicyExactHostsOnSharedPlatforms(t *testing.T) {
+	platform := NewURLPolicy("https://example-broker.com", "https://privacyportal.onetrust.com/webform/abc")
+	if !platform.allowsHost("privacyportal.onetrust.com") {
+		t.Fatal("named tenant rejected")
+	}
+	if platform.allowsHost("other-company.onetrust.com") || platform.allowsHost("privacyportal.onetrust.com.evil.test") {
+		t.Fatal("another tenant on a shared platform was allowed")
+	}
+	own := NewURLPolicy("https://example-broker.com", "https://optout.example-broker.com/form")
+	if !own.allowsHost("forms.example-broker.com") || own.allowsHost("example-broker.com.attacker.test") {
+		t.Fatal("own subdomain rule wrong")
+	}
+	mixed := NewURLPolicy("https://example-broker.com", "https://privacyportal.onetrust.com/x")
+	if !mixed.allowsHost("www.example-broker.com") {
+		t.Fatal("platform link removed the broker's own subdomains")
+	}
+}
+
+func TestPublicAddress(t *testing.T) {
+	for raw, want := range map[string]bool{"": true, "93.184.216.34": true, "10.0.0.1": false, "127.0.0.1": false, "169.254.1.1": false, "192.168.1.1": false, "not-an-ip": false} {
+		if got := publicAddress(raw); got != want {
+			t.Errorf("publicAddress(%q) = %v, want %v", raw, got, want)
+		}
+	}
+}

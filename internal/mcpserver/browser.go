@@ -66,7 +66,7 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 	if b == nil {
 		return nil, fmt.Errorf("broker not found")
 	}
-	policy := browser.URLPolicy{Domains: browser.BrokerDomains(b.Website, b.OptOutURL)}
+	policy := browser.NewURLPolicy(b.Website, b.OptOutURL)
 	if s.demo != nil {
 		policy.LocalOrigin = s.demo.origin
 	}

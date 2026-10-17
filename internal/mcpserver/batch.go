@@ -3,23 +3,26 @@ package mcpserver
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/template"
 )
 
 type batchPlan struct {
-	ID           string
-	Profile      config.NamedProfile
-	Config       *config.Config
-	ConfigDigest string
-	Tasks        map[string]Task
-	Brokers      map[string]broker.Broker
-	Created      time.Time
-	LastSend     time.Time
+	ID            string
+	Profile       config.NamedProfile
+	Config        *config.Config
+	ConfigDigest  string
+	Tasks         map[string]Task
+	Brokers       map[string]broker.Broker
+	Created       time.Time
+	LastSend      time.Time
+	PreviewDigest string
 }
 
 func profileFields(p config.Profile) map[string]string {
@@ -89,8 +92,13 @@ func (s *Service) prepare(_ context.Context, in prepareInput) (map[string]any, e
 	if len(s.plans) >= 20 {
 		return nil, fmt.Errorf("too many unused previews; end the batch or restart the MCP server")
 	}
+	out := map[string]any{"plan_id": plan.ID, "profile_id": p.ID, "profile_fields": profileFields(p.Profile), "tasks": tasks, "emails": drafts, "expires_in_minutes": 15, "requires_user_approval": true, "approve_with": "Approve in Eraser's web UI (Automation page) or run: eraser mcp approve " + plan.ID}
+	plan.PreviewDigest = digest(out)
+	if err := s.store.CreateBatchApproval(history.BatchApproval{PlanID: plan.ID, ProfileID: p.ID, Digest: plan.PreviewDigest, Preview: digestPreview(out), ExpiresAt: plan.Created.Add(15 * time.Minute)}); err != nil {
+		return nil, fmt.Errorf("store batch preview: %w", err)
+	}
 	s.plans[plan.ID] = plan
-	return map[string]any{"plan_id": plan.ID, "profile_id": p.ID, "profile_fields": profileFields(p.Profile), "tasks": tasks, "emails": drafts, "expires_in_minutes": 15, "requires_user_approval": true}, nil
+	return out, nil
 }
 
 func (s *Service) begin(_ context.Context, in beginInput) (map[string]any, error) {
@@ -103,6 +111,9 @@ func (s *Service) begin(_ context.Context, in beginInput) (map[string]any, error
 	}
 	if err := s.checkConfig(p); err != nil {
 		return nil, err
+	}
+	if err := s.store.ConsumeBatchApproval(p.ID, p.PreviewDigest); err != nil {
+		return nil, fmt.Errorf("batch is not approved: approve it in Eraser's web UI or run eraser mcp approve %s", p.ID)
 	}
 	s.active = p
 	delete(s.plans, in.PlanID)
@@ -140,4 +151,10 @@ func (s *Service) endBatch() {
 	s.pages = map[string]*taskPage{}
 	s.active = nil
 	s.plans = map[string]*batchPlan{}
+}
+
+// digestPreview is the stored copy of the preview the approver reviews.
+func digestPreview(v any) string {
+	b, _ := json.Marshal(v)
+	return string(b)
 }

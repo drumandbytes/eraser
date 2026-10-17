@@ -304,6 +304,9 @@ func (s *Store) migrate() error {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
 
+	if err := s.migrateApprovals(); err != nil {
+		return err
+	}
 	return s.migrateAutomation()
 }
 
@@ -1180,18 +1183,6 @@ func (s *Store) GetPendingTaskStats(profileID string) (pending, completed, skipp
 
 // UpdatePipelineStatus sets a broker's pipeline status for one profile. For
 // inbox replies, resolve the profile via ResolveProfileForBroker first.
-func (s *Store) UpdatePipelineStatus(profileID, brokerID string, status PipelineStatus) error {
-	profileID = normalizeProfileID(profileID)
-	query := `UPDATE removal_requests SET pipeline_status = ? WHERE profile_id = ? AND broker_id = ? AND id = (
-		SELECT id FROM removal_requests WHERE profile_id = ? AND broker_id = ? ORDER BY sent_at DESC LIMIT 1
-	)`
-	_, err := s.db.Exec(query, status, profileID, brokerID, profileID, brokerID)
-	if err != nil {
-		return fmt.Errorf("failed to update pipeline status: %w", err)
-	}
-	return nil
-}
-
 // GetPipelineStats returns counts by pipeline status for one profile
 func (s *Store) GetPipelineStats(profileID string) (map[PipelineStatus]int, error) {
 	latest, err := s.LatestRequests(profileID)

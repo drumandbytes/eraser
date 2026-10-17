@@ -415,6 +415,8 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Post("/settings/profiles/{profileID}/delete", s.handleSettingsProfileDelete)
 	r.Get("/pipeline", s.handlePipeline)
 	r.Get("/pipeline/responses/{responseID}", s.handleResponseReview)
+	r.Get("/automation", s.handleAutomation)
+	r.Post("/automation/approve", s.handleAutomationApprove)
 	r.Get("/tasks", s.handleTasks)
 	r.Get("/tasks/{taskID}", s.handleTaskDetail)
 	r.Get("/tasks/{taskID}/screenshot", s.handleTaskScreenshot)

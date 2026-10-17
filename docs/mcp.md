@@ -73,8 +73,12 @@ Ask **“Handle my pending removal tasks.”** The agent should:
 2. Prepare explicit task IDs, and explicit broker IDs only when you also want
    new removal emails. Show you the profile fields, destinations, and email
    drafts returned by `prepare_batch`.
-3. Call `begin_batch` after you review that preview. Approval is valid only for
-   those tasks and email recipients in that profile and this MCP session.
+3. Ask the user to approve that preview. They approve it on the Automation page
+   in the web UI, or with `eraser mcp approve <plan_id>`, and you then call
+   `begin_batch`. Each approval starts one batch, expires after 15 minutes, and
+   covers only those tasks and email recipients in that profile. `eraser mcp
+   pending` lists previews waiting for approval. An approval cannot be spent by
+   a different preview or after the profile or broker settings change.
 4. Open a task, inspect its text and controls, then fill/select or click using
    references from the latest snapshot. Personal values can be filled by
    `profile_field` without the agent inventing missing information.
@@ -127,7 +131,11 @@ are automated.
 
 Destinations come from that broker's trusted local `website` and `opt_out_url`,
 including subdomains, not from domains invented by an agent or extracted from
-email. URLs need HTTPS and a public address. Redirects, frames, subresources,
+email. Brokers that point at shared privacy or form platforms (OneTrust,
+TrustArc, Google Forms, and similar) may use only the exact tenant host named
+in their catalog entry, not every tenant on that platform. The connected IP
+address is checked too: a page served from a private address stops the
+session. URLs need HTTPS and a public address. Redirects, frames, subresources,
 and form traffic outside those hosts are blocked. This deliberately also
 blocks third-party CDNs and verification services not covered by the catalog;
 some real sites will need manual handling. An unexpected destination pauses

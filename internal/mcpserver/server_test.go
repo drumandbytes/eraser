@@ -39,12 +39,21 @@ func testService(t *testing.T) *Service {
 	return s
 }
 
+// approveTestPlan stands in for the web UI or `eraser mcp approve`.
+func approveTestPlan(t *testing.T, s *Service, planID string) {
+	t.Helper()
+	if err := s.store.ApproveBatch(planID, "test"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func beginTestBatch(t *testing.T, s *Service, in prepareInput) string {
 	t.Helper()
 	preview, err := s.prepare(context.Background(), in)
 	if err != nil {
 		t.Fatal(err)
 	}
+	approveTestPlan(t, s, preview["plan_id"].(string))
 	b, err := s.begin(context.Background(), beginInput{PlanID: preview["plan_id"].(string)})
 	if err != nil {
 		t.Fatal(err)
@@ -143,6 +152,10 @@ func TestBatchScopeExpiryAndConfigChanges(t *testing.T) {
 	}
 	pid := preview["plan_id"].(string)
 	s.plans[pid].Created = time.Now().Add(-16 * time.Minute)
+	if _, err := s.begin(ctx, beginInput{pid}); err == nil {
+		t.Fatal("unapproved preview began")
+	}
+	approveTestPlan(t, s, pid)
 	if _, err := s.begin(ctx, beginInput{pid}); err == nil {
 		t.Fatal("expired preview approved")
 	}

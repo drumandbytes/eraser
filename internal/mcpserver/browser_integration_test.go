@@ -111,6 +111,7 @@ func TestDemoBrowserWorkflowOverMCP(t *testing.T) {
 	}{{"task:1", false, false, false}, {"task:2", true, false, false}, {"task:4", false, true, false}, {"task:5", false, false, true}} {
 		t.Run(tc.id, func(t *testing.T) {
 			preview := call("prepare_batch", prepareInput{TaskIDs: []string{tc.id}})
+			approveTestPlan(t, s, preview["plan_id"].(string))
 			batch := call("begin_batch", beginInput{preview["plan_id"].(string)})["batch_id"].(string)
 			page := decodePage(call("open_task", openInput{batch, tc.id}))
 			fill := func(label, field, value string) {

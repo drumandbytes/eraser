@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -23,9 +24,50 @@ import (
 
 // URLPolicy is scoped to ONE broker, never the entire broker directory.
 // LocalOrigin is reserved for an explicitly started, isolated demo/test server.
+// Domains are the allowed hosts. Subdomains of a host are allowed too, except
+// hosts listed in ExactHosts: shared privacy and form platforms, where a
+// subdomain is another company's tenant.
 type URLPolicy struct {
 	Domains     []string
+	ExactHosts  []string
 	LocalOrigin string
+}
+
+// NewURLPolicy scopes a policy to one broker's website and opt-out host.
+func NewURLPolicy(website, portal string) URLPolicy {
+	p := URLPolicy{Domains: BrokerDomains(website, portal)}
+	for _, d := range p.Domains {
+		if isSharedPlatform(d) {
+			p.ExactHosts = append(p.ExactHosts, d)
+		}
+	}
+	return p
+}
+
+// sharedPlatforms are multi-tenant privacy and form services. Brokers that send
+// users to them may use only the exact tenant host they name.
+var sharedPlatforms = []string{"onetrust.com", "trustarc.com", "datasubject.com", "privacypillar.com", "saymine.io", "stirista.com", "optoutprescreen.com", "forms.gle", "google.com", "hubspot.com", "zendesk.com"}
+
+func isSharedPlatform(host string) bool {
+	for _, p := range sharedPlatforms {
+		if host == p || strings.HasSuffix(host, "."+p) {
+			return true
+		}
+	}
+	return false
+}
+
+func (p URLPolicy) allowsHost(host string) bool {
+	host = strings.ToLower(host)
+	for _, d := range p.Domains {
+		if host == d {
+			return true
+		}
+		if !slices.Contains(p.ExactHosts, d) && strings.HasSuffix(host, "."+d) {
+			return true
+		}
+	}
+	return false
 }
 
 func (p URLPolicy) Validate(ctx context.Context, raw string) error {
@@ -42,8 +84,7 @@ func (p URLPolicy) Validate(ctx context.Context, raw string) error {
 	if u.Scheme != "https" {
 		return fmt.Errorf("personal data requires HTTPS")
 	}
-	ok, _, err := matchesAllowedDomain(raw, p.Domains)
-	if err != nil || !ok {
+	if !p.allowsHost(u.Hostname()) {
 		return fmt.Errorf("destination is outside this broker's approved domains")
 	}
 	ips, err := net.DefaultResolver.LookupIPAddr(ctx, u.Hostname())
@@ -98,6 +139,9 @@ type AutomationSession struct {
 	snapshot string
 	mu       sync.Mutex
 	blocked  string
+	// networkBlocked is set when Chrome connected to a non-public address. Unlike
+	// a destination pause, it refuses further actions on the page.
+	networkBlocked string
 }
 
 func NewAutomationSession(cfg BrowserConfig, p *config.Profile, policy URLPolicy) (*AutomationSession, error) {
@@ -129,14 +173,22 @@ func (s *AutomationSession) Open(caller context.Context, raw string) (*Snapshot,
 		return nil, fmt.Errorf("start Chrome: %w", err)
 	}
 	chromedp.ListenTarget(s.b.ctx, func(event any) {
-		if e, ok := event.(*fetch.EventRequestPaused); ok {
+		switch e := event.(type) {
+		case *fetch.EventRequestPaused:
 			go s.checkRequest(e)
+		case *network.EventResponseReceived:
+			// Our DNS lookup and Chrome's can differ, so check the address Chrome used.
+			if e.Response != nil && s.policy.LocalOrigin == "" && !publicAddress(e.Response.RemoteIPAddress) {
+				s.mu.Lock()
+				s.networkBlocked = "The page connected to a private network address, so it was blocked. Review the broker's URLs."
+				s.mu.Unlock()
+			}
 		}
 	})
 	ctx, cancel := s.operation(caller)
 	defer cancel()
 	patterns := []*fetch.RequestPattern{{URLPattern: "*", RequestStage: fetch.RequestStageRequest}, {URLPattern: "*", ResourceType: network.ResourceTypeDocument, RequestStage: fetch.RequestStageResponse}}
-	if err := chromedp.Run(ctx, network.SetBypassServiceWorker(true), fetch.Enable().WithPatterns(patterns), chromedp.Navigate(raw), chromedp.WaitReady("body")); err != nil {
+	if err := chromedp.Run(ctx, network.Enable(), network.SetBypassServiceWorker(true), fetch.Enable().WithPatterns(patterns), chromedp.Navigate(raw), chromedp.WaitReady("body")); err != nil {
 		return nil, fmt.Errorf("open task page: %w", err)
 	}
 	return s.Observe(caller)
@@ -247,6 +299,9 @@ func (s *AutomationSession) Observe(caller context.Context) (*Snapshot, error) {
 }
 
 func (s *AutomationSession) Act(caller context.Context, snapshot, ref, action, value string) (*Snapshot, error) {
+	if blocked := s.blockedReason(); blocked != "" {
+		return nil, fmt.Errorf("%s", blocked)
+	}
 	if snapshot == "" || snapshot != s.snapshot {
 		return nil, fmt.Errorf("stale snapshot; observe the page again")
 	}
@@ -331,4 +386,20 @@ func BrokerDomains(website, portal string) []string {
 		}
 	}
 	return out
+}
+
+func (s *AutomationSession) blockedReason() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.networkBlocked
+}
+
+// publicAddress reports whether a remote IP that Chrome reported is a public
+// unicast address. An empty value (cached or local responses) is allowed.
+func publicAddress(raw string) bool {
+	if raw == "" {
+		return true
+	}
+	ip := net.ParseIP(raw)
+	return ip != nil && ip.IsGlobalUnicast() && !ip.IsPrivate()
 }

@@ -96,3 +96,45 @@ func TestAutomationTaskVisibleAndProfileScoped(t *testing.T) {
 		t.Fatal("reopened completed task")
 	}
 }
+
+func TestAutomationJournalLifecycle(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.FinishAutomationAction("alice", "missing", "progress", ""); err == nil {
+		t.Fatal("finished an action that was never claimed")
+	}
+	if err := s.ClaimAutomationAction("alice", "k1", "task:acme:form"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.FinishAutomationAction("alice", "k1", "bogus", ""); err == nil {
+		t.Fatal("accepted an invalid outcome")
+	}
+	// An unknown outcome blocks the next attempt on the same subject.
+	if err := s.ClaimAutomationAction("alice", "k2", "task:acme:form"); err == nil {
+		t.Fatal("claimed while the earlier outcome was unknown")
+	}
+	if err := s.FinishAutomationAction("alice", "k1", "progress", "page changed"); err != nil {
+		t.Fatal(err)
+	}
+	attempts, err := s.GetAutomationAttempts("alice", "task:acme:form")
+	if err != nil || len(attempts) != 1 || attempts[0].State != "progress" || attempts[0].Note != "page changed" {
+		t.Fatalf("attempts=%+v err=%v", attempts, err)
+	}
+	if other, _ := s.GetAutomationAttempts("bob", "task:acme:form"); len(other) != 0 {
+		t.Fatal("attempts leaked across profiles")
+	}
+	if err := s.RetryAutomationAction("alice", "k1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RetryAutomationAction("alice", "k1"); err == nil {
+		t.Fatal("released an attempt twice")
+	}
+	if err := s.ClaimAutomationAction("alice", "k3", "task:acme:form"); err != nil {
+		t.Fatalf("claim after retry release: %v", err)
+	}
+	if err := s.FinishAutomationAction("alice", "k3", "submitted", "accepted"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.RetryAutomationAction("alice", "k3"); err == nil {
+		t.Fatal("released an accepted submission")
+	}
+}

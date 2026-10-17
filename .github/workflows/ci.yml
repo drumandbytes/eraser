@@ -79,6 +79,32 @@ jobs:
       - name: Build the site
         run: ./site/build.sh
 
+  # axe-core (WCAG 2.2 A/AA, light and dark) over the website and the web UI
+  # running against fictional seed data. See scripts/a11y/run.sh.
+  a11y:
+    name: Accessibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the versioned docs read every release tag
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: "0.165.0"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - run: scripts/a11y/run.sh
+
   # The shared go-ci job covers Linux amd64. Release binaries also ship for
   # macOS, Windows and Linux arm64, so run the tests there too (no -race:
   # that needs cgo, and the release builds don't use it).
@@ -134,7 +160,7 @@ jobs:
   required-checks-passed:
     name: Required checks passed
     runs-on: ubuntu-latest
-    needs: [ci, zizmor, coverage, site, cross-platform, vulncheck]
+    needs: [ci, zizmor, coverage, site, a11y, cross-platform, vulncheck]
     if: always()
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

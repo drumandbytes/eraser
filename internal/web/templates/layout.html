@@ -158,12 +158,12 @@
         }
 
         .btn-primary {
-            background: var(--accent);
+            background: var(--accent-solid);
             color: white;
         }
 
         .btn-primary:hover {
-            background: var(--accent-hover);
+            background: var(--accent-solid-hover);
         }
 
         .btn-secondary {
@@ -189,7 +189,7 @@
 
         .btn-danger {
             background: rgba(239, 68, 68, 0.12);
-            color: var(--error);
+            color: #f87171;
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
 
@@ -266,6 +266,12 @@
             background: rgba(239, 68, 68, 0.14);
             color: var(--error);
         }
+
+        .light .badge-success { color: #166534; }
+        .light .badge-warning { color: #92400e; }
+        .light .badge-error { color: #b91c1c; }
+        .light .btn-danger { color: #b91c1c; }
+        .text-muted a { text-decoration: underline; }
 
         .badge-neutral {
             background: var(--bg-elevated);

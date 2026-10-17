@@ -41,8 +41,10 @@ body {
   color: var(--ink);
   font: 16px/1.65 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
-a { color: var(--accent); text-decoration: none; }
-a:hover { color: var(--accent-hover); text-decoration: underline; }
+a { color: var(--accent); text-decoration: underline; text-underline-offset: .15em; }
+a:hover { color: var(--accent-hover); text-decoration-thickness: 2px; }
+.brand, .topbar nav a, .btn { text-decoration: none; }
+.topbar nav a:hover, .btn:hover { text-decoration: underline; }
 
 .topbar {
   display: flex; align-items: baseline; gap: 1.5rem;
@@ -65,7 +67,7 @@ a:hover { color: var(--accent-hover); text-decoration: underline; }
   display: inline-block; padding: .6rem 1.1rem; border-radius: 8px;
   background: var(--accent); color: var(--on-accent); font-weight: 600;
 }
-.btn:hover { background: var(--accent-hover); color: var(--on-accent); text-decoration: none; }
+.btn:hover { background: var(--accent-hover); color: var(--on-accent); }
 .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--border); }
 
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 3.5rem; }

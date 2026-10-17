@@ -505,6 +505,23 @@ func TestClosedStoreReturnsErrors(t *testing.T) {
 	_, _, _, errs["GetPendingTaskStats"] = s.GetPendingTaskStats("")
 	errs["UpdatePipelineStatus"] = s.UpdatePipelineStatus("", "x", PipelineConfirmed)
 	_, errs["GetPipelineStats"] = s.GetPipelineStats("")
+	_, errs["LatestRequests"] = s.LatestRequests("")
+	_, _, errs["QueryBrokerResponses"] = s.QueryBrokerResponses("", ResponseQuery{Limit: 10})
+	_, errs["MatchingResponseIDs"] = s.MatchingResponseIDs("", "x")
+	_, errs["GetActionItems"] = s.GetActionItems("")
+	errs["OverridePipelineStatus"] = s.OverridePipelineStatus("", "x", PipelineConfirmed)
+	errs["CreateBatchApproval"] = s.CreateBatchApproval(BatchApproval{PlanID: "p", ExpiresAt: now})
+	errs["ApproveBatch"] = s.ApproveBatch("p", "web")
+	errs["ConsumeBatchApproval"] = s.ConsumeBatchApproval("p", "d")
+	_, errs["PendingBatchApprovals"] = s.PendingBatchApprovals()
+	errs["ClaimAutomationAction"] = s.ClaimAutomationAction("", "k", "s")
+	errs["FinishAutomationAction"] = s.FinishAutomationAction("", "k", "progress", "")
+	_, errs["GetAutomationAttempts"] = s.GetAutomationAttempts("", "s")
+	errs["RetryAutomationAction"] = s.RetryAutomationAction("", "k")
+	_, errs["EnsureAutomationTask"] = s.EnsureAutomationTask("", "a", "A", TaskManualForm, "https://a.example/f", "human")
+	errs["UpdateAutomationTask"] = s.UpdateAutomationTask("", 1, "human", "", "n", "", false)
+	errs["MigrateNoData"] = s.MigrateNoData(func(BrokerResponse) (bool, float64, bool) { return false, 0, false })
+	errs["ResolveNoData"] = s.ResolveNoData("", "a", true)
 
 	for name, err := range errs {
 		if err == nil {

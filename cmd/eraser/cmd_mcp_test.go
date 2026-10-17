@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -49,5 +50,25 @@ func TestMCPApproveAndPending(t *testing.T) {
 	}
 	if _, err := e.run(t, "", "mcp", "approve", "unknown"); err == nil {
 		t.Fatal("approved a batch that does not exist")
+	}
+}
+
+// The server speaks MCP on stdin/stdout. With stdin already at EOF it starts,
+// finds no client, and shuts down without hanging.
+func TestMCPServerStartsAndStopsOnEmptyStdin(t *testing.T) {
+	e := newCLIEnv(t, manualConfig)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		out, err := e.run(t, "", "mcp", "--demo", "--headless")
+		// EOF from the client is a normal way for the server to end.
+		if err != nil && !strings.Contains(err.Error(), "EOF") && !strings.Contains(err.Error(), "closed") {
+			t.Errorf("mcp --demo: %v\n%s", err, out)
+		}
+	}()
+	select {
+	case <-done:
+	case <-time.After(20 * time.Second):
+		t.Fatal("eraser mcp did not stop when stdin closed")
 	}
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.3](https://github.com/drumandbytes/eraser/compare/v1.5.2...v1.5.3) (2026-10-17)
+
+
+### Bug Fixes
+
+* **a11y:** table header scope in docs and 24px targets in the web UI ([#195](https://github.com/drumandbytes/eraser/issues/195)) ([2d68048](https://github.com/drumandbytes/eraser/commit/2d68048d42cbd4b529b38c51097ef3790553a9b8))
+
 ## [1.5.2](https://github.com/drumandbytes/eraser/compare/v1.5.1...v1.5.2) (2026-10-17)
 
 

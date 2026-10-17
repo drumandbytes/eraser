@@ -120,3 +120,24 @@ table.dir a { word-break: break-word; }
 .docs-bar { display: flex; align-items: center; gap: .6rem; margin: .5rem 0 1rem; color: var(--ink-3); font-size: .9rem; }
 .docs-bar select { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; padding: .3rem .5rem; font: inherit; }
 .docs-banner { background: var(--elevated); border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: 6px; padding: .6rem .8rem; font-size: .92rem; color: var(--ink-2); }
+
+/* WCAG 2.4.1 bypass block, visible on keyboard focus only */
+.skip-link { position: absolute; left: .5rem; top: -4rem; z-index: 10; padding: .5rem 1rem; border-radius: 6px; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+.skip-link:focus { top: .5rem; }
+main:focus { outline: none; }
+
+/* wide table scrolls inside its box instead of the page (reflow at 320px) */
+.table-scroll { overflow-x: auto; }
+.table-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* WCAG 2.5.8: 24px minimum targets */
+.filters label { min-height: 24px; }
+.filters input[type=checkbox] { width: 1.5rem; height: 1.5rem; }
+.topbar nav a, .foot a { display: inline-block; min-height: 24px; }
+
+/* long code lines and wide docs tables scroll inside their box, not the page */
+pre { overflow-x: auto; max-width: 100%; }
+.prose table { display: block; overflow-x: auto; max-width: 100%; }
+img { max-width: 100%; height: auto; }
+.highlight { overflow-x: auto; max-width: 100%; }
+:not(pre) > code { overflow-wrap: anywhere; }

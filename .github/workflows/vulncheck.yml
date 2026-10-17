@@ -20,8 +20,9 @@ jobs:
         with:
           persist-credentials: false
 
+      # The latest 1.26 patch, as the releases are built with (go.mod pins 1.26.0).
       - uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
+          go-version: "1.26"
 
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...

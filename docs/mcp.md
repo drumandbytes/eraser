@@ -1,5 +1,9 @@
 # Local MCP automation
 
+> **Experimental.** This feature should work, but it is still new: its commands,
+> tool names and arguments may change in a future 1.x release without a major
+> version bump. See [stability](stability.md).
+
 Eraser's MCP server lets a local Codex agent work through removal follow-ups
 while you review batches and handle verification. It reuses your profiles,
 SMTP/IMAP settings, broker list, SQLite history, and web UI. There is no separate
@@ -135,17 +139,16 @@ Embedded frames, custom controls, shadow DOM, and popup-based workflows may
 need manual completion; only standard visible controls in the main document
 are automated.
 
-Destinations come from that broker's trusted local `website` and `opt_out_url`,
-including subdomains, not from domains invented by an agent or extracted from
-email. Brokers that point at shared privacy or form platforms (OneTrust,
-TrustArc, Google Forms, and similar) may use only the exact tenant host named
-in their catalog entry, not every tenant on that platform, and page loads stay
-under that entry's form path (its first two path segments), because platforms
-like OneTrust serve many companies' forms from one host. The connected IP
-address is checked too: a page served from a private address stops the
-session and is not shown to the agent. URLs need HTTPS and a public address. Redirects, frames, subresources,
-and form traffic outside those hosts are blocked. This deliberately also
-blocks third-party CDNs and verification services not covered by the catalog;
+Destinations come from that broker's trusted local `website` and `opt_out_url`:
+exactly those hosts and their `www.` form, not subdomains and not domains
+invented by an agent or extracted from email. On shared privacy and form
+platforms (OneTrust, TrustArc, Google Forms, and similar) a subdomain or a
+sibling path is another company's form, so page loads there also stay under the
+catalog entry's form path (its first two path segments). The connected IP
+address is checked too: a page served from a private address stops the session
+and is not shown to the agent. URLs need HTTPS and a public address. Redirects,
+frames, subresources, and form traffic outside those hosts are blocked. This
+deliberately also blocks third-party CDNs and verification services not covered by the catalog;
 some real sites will need manual handling. An unexpected destination pauses
 the session persistently. Review the catalog independently, end the batch, and
 prepare a fresh one after correcting a legitimate portal URL. The agent cannot

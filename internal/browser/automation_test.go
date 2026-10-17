@@ -208,7 +208,7 @@ func TestAutomationPausesForCredentialsAndIdentity(t *testing.T) {
 	}
 }
 
-func TestURLPolicyExactHostsOnSharedPlatforms(t *testing.T) {
+func TestURLPolicyAllowsOnlyCatalogHosts(t *testing.T) {
 	platform := NewURLPolicy("https://example-broker.com", "https://privacyportal.onetrust.com/webform/abc")
 	if !platform.allowsHost("privacyportal.onetrust.com") {
 		t.Fatal("named tenant rejected")
@@ -217,12 +217,13 @@ func TestURLPolicyExactHostsOnSharedPlatforms(t *testing.T) {
 		t.Fatal("another tenant on a shared platform was allowed")
 	}
 	own := NewURLPolicy("https://example-broker.com", "https://optout.example-broker.com/form")
-	if !own.allowsHost("forms.example-broker.com") || own.allowsHost("example-broker.com.attacker.test") {
-		t.Fatal("own subdomain rule wrong")
-	}
-	mixed := NewURLPolicy("https://example-broker.com", "https://privacyportal.onetrust.com/x")
-	if !mixed.allowsHost("www.example-broker.com") {
-		t.Fatal("platform link removed the broker's own subdomains")
+	for host, want := range map[string]bool{
+		"example-broker.com": true, "www.example-broker.com": true, "optout.example-broker.com": true,
+		"forms.example-broker.com": false, "example-broker.com.attacker.test": false,
+	} {
+		if got := own.allowsHost(host); got != want {
+			t.Errorf("allowsHost(%q) = %v, want %v", host, got, want)
+		}
 	}
 }
 
@@ -252,8 +253,8 @@ func TestPathPinOnSharedPlatformsAndCSP(t *testing.T) {
 		t.Errorf("pathPrefix empty = %q", got)
 	}
 	src := strings.Join(p.connectSources(), " ")
-	if !strings.Contains(src, "https://*.broker.example") || strings.Contains(src, "https://*.privacyportal.onetrust.com") {
-		t.Errorf("CSP sources ignore the exact host rule: %s", src)
+	if !strings.Contains(src, "https://www.broker.example") || strings.Contains(src, "*.") {
+		t.Errorf("CSP sources should list exact hosts only: %s", src)
 	}
 }
 

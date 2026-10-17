@@ -18,7 +18,7 @@ func mcpCmd() *cobra.Command {
 	var headless, demo bool
 	var chromePath string
 	cmd := &cobra.Command{
-		Use: "mcp", Short: "Expose Eraser tasks to a local AI agent over MCP (stdio)",
+		Use: "mcp", Short: "Expose Eraser tasks to a local AI agent over MCP (experimental)",
 		Long: "Start a local MCP server using the same configuration and history as the web UI.\nBatches and retries start only after you approve them: on the Automation page in the web UI, or with `eraser mcp approve <id>` in a terminal.\nChrome/Chromium is required for browser actions. Use --demo to try fake local forms.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGINT, syscall.SIGTERM)
@@ -38,7 +38,7 @@ func mcpCmd() *cobra.Command {
 				defer cleanup()
 			}
 			defer func() { _ = s.Close() }()
-			fmt.Fprintln(os.Stderr, "Eraser MCP ready. Waiting for a local client; logs use stderr.")
+			fmt.Fprintln(os.Stderr, "Eraser MCP (experimental) ready. Waiting for a local client; logs use stderr.")
 			err = s.MCP.Run(ctx, &mcp.StdioTransport{})
 			if ctx.Err() != nil {
 				return context.Cause(ctx)

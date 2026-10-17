@@ -1,7 +1,6 @@
 package history
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -10,13 +9,11 @@ import (
 // BatchApproval is an MCP batch preview waiting for a person. It's stored so the
 // approver sees what the digest covers.
 type BatchApproval struct {
-	PlanID     string
-	ProfileID  string
-	Digest     string
-	Preview    string
-	ExpiresAt  time.Time
-	ApprovedAt sql.NullTime
-	ApprovedBy string
+	PlanID    string
+	ProfileID string
+	Digest    string
+	Preview   string
+	ExpiresAt time.Time
 }
 
 // ErrNoPendingApproval: unknown, expired, already approved or already spent.

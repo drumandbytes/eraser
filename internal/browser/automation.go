@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -22,12 +21,11 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// URLPolicy is scoped to one broker, never the whole directory. Subdomains of
-// Domains are allowed except under ExactHosts (shared platforms, where a
-// subdomain is another company's tenant). LocalOrigin is only for the demo/test server.
+// URLPolicy is scoped to one broker, never the whole directory. Only the hosts in
+// Domains (and their www. form) are allowed, not subdomains: on shared platforms a
+// subdomain is another company's tenant. LocalOrigin is only for the demo/test server.
 type URLPolicy struct {
-	Domains    []string
-	ExactHosts []string
+	Domains []string
 	// ExactPaths pins page loads on a shared-platform host to the paths of the
 	// catalog URLs: the host serves other companies' forms under other paths.
 	ExactPaths  map[string][]string
@@ -36,11 +34,6 @@ type URLPolicy struct {
 
 func NewURLPolicy(website, portal string) URLPolicy {
 	p := URLPolicy{Domains: BrokerDomains(website, portal), ExactPaths: map[string][]string{}}
-	for _, d := range p.Domains {
-		if isSharedPlatform(d) {
-			p.ExactHosts = append(p.ExactHosts, d)
-		}
-	}
 	for _, raw := range []string{website, portal} {
 		if u, err := url.Parse(raw); err == nil && isSharedPlatform(u.Hostname()) {
 			host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
@@ -84,7 +77,7 @@ func (p URLPolicy) ValidateNavigation(ctx context.Context, raw string) error {
 	return nil
 }
 
-// multi-tenant privacy/form services: brokers on these get their exact host only
+// multi-tenant privacy/form services: page loads on these are pinned to the catalog URL's path
 var sharedPlatforms = []string{"onetrust.com", "trustarc.com", "datasubject.com", "privacypillar.com", "saymine.io", "stirista.com", "optoutprescreen.com", "forms.gle", "google.com", "hubspot.com", "zendesk.com"}
 
 func isSharedPlatform(host string) bool {
@@ -100,10 +93,7 @@ func isSharedPlatform(host string) bool {
 func (p URLPolicy) connectSources() []string {
 	sources := []string{"'self'"}
 	for _, d := range p.Domains {
-		sources = append(sources, "https://"+d)
-		if !slices.Contains(p.ExactHosts, d) {
-			sources = append(sources, "https://*."+d)
-		}
+		sources = append(sources, "https://"+d, "https://www."+d)
 	}
 	if p.LocalOrigin != "" {
 		sources = append(sources, p.LocalOrigin)
@@ -114,10 +104,7 @@ func (p URLPolicy) connectSources() []string {
 func (p URLPolicy) allowsHost(host string) bool {
 	host = strings.ToLower(host)
 	for _, d := range p.Domains {
-		if host == d {
-			return true
-		}
-		if !slices.Contains(p.ExactHosts, d) && strings.HasSuffix(host, "."+d) {
+		if host == d || host == "www."+d {
 			return true
 		}
 	}

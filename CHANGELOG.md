@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/drumandbytes/eraser/compare/v1.3.0...v1.3.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **site:** send /docs/ to the latest release ([#171](https://github.com/drumandbytes/eraser/issues/171)) ([f411a7d](https://github.com/drumandbytes/eraser/commit/f411a7de2822ecb3e5179d8de89c433259cebd40))
+
 ## [1.3.0](https://github.com/drumandbytes/eraser/compare/v1.2.9...v1.3.0) (2026-10-17)
 
 

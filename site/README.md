@@ -26,7 +26,8 @@ into `site/public/`. All generated files are gitignored.
 
 ## Versioned docs
 
-`/docs/` has one snapshot per release line, plus a beta and a nightly one.
+`/docs/` has one snapshot per release line plus a nightly one, and a beta one
+while a prerelease tag is ahead of the last stable release.
 `scripts/docs-versions` builds them (`go run ./scripts/docs-versions`, which
 `build.sh` and the deploy workflow both run):
 
@@ -35,7 +36,7 @@ into `site/public/`. All generated files are gitignored.
   that tag's `docs/*.md`. The newest is marked latest and is the only one search
   engines may index; every other version is `noindex`.
 - A prerelease tag newer than the last stable release (for example
-  `v2.0.0-beta.3`) appears as **2.0 beta** until a stable release passes it.
+  `v1.5.0-beta.1`) appears as **1.5 beta** until a stable release passes it.
 - 0.x tags are skipped.
 
 Only the user-facing pages listed in `scripts/docs-versions/main.go` are published.

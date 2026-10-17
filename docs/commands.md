@@ -32,7 +32,9 @@ go test ./...
 ./eraser confirm                       # click confirmation links from broker emails
 ./eraser fill                          # browser-automate opt-out forms
 ./eraser serve [-p 3000]               # web UI
-./eraser mcp [--demo] [--headless] [--chrome-path /path/to/chrome]  # local MCP over stdio
+./eraser mcp [--demo] [--headless] [--chrome-path /path/to/chrome]  # local MCP over stdio (experimental)
+./eraser mcp approve <id>              # approve a batch or retry the agent prepared (needs a terminal)
+./eraser mcp pending                   # list batches and retries waiting for approval
 ./eraser profile list                  # list configured profiles
 ./eraser profile add                   # add a second/third named profile
 ```
@@ -52,8 +54,10 @@ Web UI equivalents for the per-profile commands: `export` → History → Export
 `mcp` shares the web UI's configuration, selected broker list, profiles, and
 history database. Its browser stays visible by default so a user can complete
 verification. `--demo` uses an isolated temporary profile and five local forms;
-it never accesses real mail or broker sites. See [mcp.md](mcp.md) for the required
-client approval settings and tool reference.
+it never accesses real mail or broker sites. Batches and retries start only after
+you approve them, on the web UI's Automation page or with `mcp approve <id>` in a
+terminal; `mcp pending` lists what is waiting. `mcp` is experimental and outside
+the 1.x stability contract. See [mcp.md](mcp.md) for the tool reference.
 
 Which of these keys and commands are covered by the 1.x compatibility promise: [stability.md](stability.md).
 

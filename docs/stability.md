@@ -17,7 +17,7 @@ This page defines what counts as "a working setup".
   - A flag that's retired keeps working, with a deprecation warning, until 2.0. Example: `monitor --once`, which is now the default behaviour.
 - **`history.db`**: upgrades migrate automatically on first run with no manual step. Downgrading to an older version after an upgrade isn't supported.
 - **`brokers.yaml` format** (`id`, `name`, `email`, `website`, `opt_out_url`, `region`, `category`, `notes`): `update-brokers` on any 1.x release fetches the current list from `main`, so the format may only gain optional fields. Your own `options.broker_file` lists stay valid.
-- **`eraser export --format json`** field names: fields may be added, never renamed or removed. Tools that process the evidence report can rely on them.
+- **`eraser export --format json`** field names: fields may be added, never renamed or removed. Tools that process the evidence report can rely on them. 1.3 added `pipeline_set_by` and the `no_data_held` response and pipeline value; consumers should ignore values they don't know.
 
 ## Not covered: may change in any release
 

@@ -148,21 +148,23 @@ Choose **"Skip — I'll send the emails myself"** in the setup wizard (or `optio
 
 ---
 
-## Let a local AI agent handle follow-ups
+## Let a local AI agent handle follow-ups (experimental)
 
 `eraser mcp` connects Eraser to Codex over local STDIO. Ask **“Handle my pending
-removal tasks”**, review the proposed batch, and approve it once. The agent can
+removal tasks”**, review the proposed batch, and approve it in Eraser, on the
+web UI's **Automation** page or with `eraser mcp approve`. The agent can
 open confirmation links, fill forms, inspect receipts, and save notes and
 screenshots in the existing **Tasks** page. Email sending uses your existing
 settings, templates, limits, and history. Codex supplies the AI; Eraser needs no
-separate AI API key.
+separate AI API key. This feature is experimental: it should work, but its
+commands and tools may change in a future 1.x release.
 
 Chrome/Chromium is required for forms. CAPTCHA, login, identity checks, uncertain
 submissions, and unexpected destinations need your intervention. A completed form
 means the request was accepted, not that the broker has erased your data.
 
 See **[MCP setup and the fake-data demo](docs/mcp.md)** for the Codex configuration,
-required batch approval settings, and supported workflows.
+how batches are approved, and supported workflows.
 
 ## For Developers: CLI Usage
 
@@ -220,6 +222,7 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser confirm` | Click confirmation links found in broker emails |
 | `eraser fill` | Fill opt-out forms via browser automation |
 | `eraser profile add` / `list` / `edit` / `remove` | Manage extra profiles, e.g. a household member ([details](docs/multi-profile.md)) |
+| `eraser mcp` | Connect a local AI agent over MCP (experimental); `eraser mcp approve <id>` approves its batch, `eraser mcp pending` lists waiting ones |
 | `eraser serve` | Start web interface |
 | `eraser serve -p 3000` | Web interface on custom port |
 

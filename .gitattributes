@@ -1,0 +1,4 @@
+# Checkouts use LF on every OS. Windows' default autocrlf would otherwise turn
+# data/*.yaml (embedded in the binary and compared byte for byte by
+# TestEmbeddedListsCanonical) and the shell scripts into CRLF.
+* text=auto eol=lf

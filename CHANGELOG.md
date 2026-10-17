@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.2](https://github.com/drumandbytes/eraser/compare/v1.5.1...v1.5.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **a11y:** skip link, labelled nav, table scope and 320px reflow on the website ([#192](https://github.com/drumandbytes/eraser/issues/192)) ([8bfebd5](https://github.com/drumandbytes/eraser/commit/8bfebd5b1dea477fc1f55b5b07f1a396996e435c))
+
 ## [1.5.1](https://github.com/drumandbytes/eraser/compare/v1.5.0...v1.5.1) (2026-10-17)
 
 

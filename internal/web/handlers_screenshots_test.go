@@ -71,13 +71,14 @@ func TestTaskScreenshotOwnershipAndFileBoundary(t *testing.T) {
 
 func TestAutomationReviewStatsDoNotDoubleCountTasks(t *testing.T) {
 	s := smokeServer(t)
-	for _, tc := range []struct{ profile, note string }{
-		{"default", "MCP: needs_user. Human verification"},
-		{"default", "MCP: unknown. Rejected form"},
-		{"default", "MCP: browser open; automation in progress."},
-		{"spouse", "MCP: unknown. Another profile"},
+	for _, tc := range []struct{ profile, reason, note string }{
+		{"default", "needs_user", "Human verification"},
+		{"default", "outcome_unknown", "Rejected form"},
+		{"default", "", "Browser open; automation in progress."},
+		{"spouse", "outcome_unknown", "Another profile"},
 	} {
-		if err := s.historyStore.AddPendingTask(&history.PendingTask{ProfileID: tc.profile, BrokerID: "spokeo", TaskType: history.TaskManualForm, Notes: tc.note}); err != nil {
+		task := &history.PendingTask{ProfileID: tc.profile, BrokerID: "spokeo", TaskType: history.TaskManualForm, Notes: tc.note, Actor: "mcp:test", ReviewReason: tc.reason}
+		if err := s.historyStore.AddPendingTask(task); err != nil {
 			t.Fatal(err)
 		}
 	}

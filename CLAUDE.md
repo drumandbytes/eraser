@@ -12,6 +12,7 @@ This file is intentionally slim. Read the doc(s) relevant to what you're touchin
 - [docs/commands.md](docs/commands.md) - full CLI command reference, config.yaml schema
 - [docs/broker-replies.md](docs/broker-replies.md) - reading data-broker email replies and turning each response type into the right brokers.yaml edit
 - [docs/multi-profile.md](docs/multi-profile.md) - the `--profile`/`profiles:` feature: config model, history scoping, shared-inbox attribution, web UI switcher
+- [docs/mcp.md](docs/mcp.md) - the experimental `eraser mcp` agent server: batch approval, shared-platform host scope, and what it may and may not do
 - [docs/code-patterns.md](docs/code-patterns.md) - conventions to follow, plus known quirks/gotchas worth reading before touching related code
 - [docs/auditing.md](docs/auditing.md) - how to re-run the dead-code/security sweep, and what's already been removed
 - [docs/stability.md](docs/stability.md) - what 1.x promises not to break (config keys, CLI flags, history.db, brokers.yaml, export JSON) - check before renaming or removing any of them

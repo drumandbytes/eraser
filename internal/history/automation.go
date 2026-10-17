@@ -100,13 +100,13 @@ func (s *Store) RetryAutomationAction(profileID, key string) error {
 
 // EnsureAutomationTask shows email-derived and catalog forms in the Tasks UI, one
 // task per form however often an agent resumes.
-func (s *Store) EnsureAutomationTask(profileID, brokerID, brokerName string, kind TaskType, rawURL string) (*PendingTask, error) {
+func (s *Store) EnsureAutomationTask(profileID, brokerID, brokerName string, kind TaskType, rawURL, actor string) (*PendingTask, error) {
 	profileID = normalizeProfileID(profileID)
 	_, err := s.db.Exec(`INSERT INTO pending_tasks
-		(profile_id, broker_id, broker_name, task_type, form_url, notes, status, created_at)
-		SELECT ?, ?, ?, ?, ?, 'Opened through MCP', 'pending', ? WHERE NOT EXISTS
+		(profile_id, broker_id, broker_name, task_type, form_url, notes, status, created_at, actor)
+		SELECT ?, ?, ?, ?, ?, 'Opened through MCP', 'pending', ?, ? WHERE NOT EXISTS
 		(SELECT 1 FROM pending_tasks WHERE profile_id = ? AND broker_id = ? AND form_url = ?)`,
-		profileID, brokerID, brokerName, kind, rawURL, time.Now(), profileID, brokerID, rawURL)
+		profileID, brokerID, brokerName, kind, rawURL, time.Now(), actor, profileID, brokerID, rawURL)
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +121,14 @@ func (s *Store) EnsureAutomationTask(profileID, brokerID, brokerName string, kin
 
 // UpdateAutomationTask writes notes, evidence and completion in one update. A
 // missing, other-profile, completed or skipped task is an error.
-func (s *Store) UpdateAutomationTask(profileID string, id int64, note, screenshot string, completed bool) error {
+func (s *Store) UpdateAutomationTask(profileID string, id int64, actor, reviewReason, note, screenshot string, completed bool) error {
 	status := "pending"
 	var at any
 	if completed {
 		status, at = "completed", time.Now()
 	}
-	r, err := s.db.Exec(`UPDATE pending_tasks SET notes = ?, screenshot_path = ?, status = ?, completed_at = ?
-		WHERE profile_id = ? AND id = ? AND status = 'pending'`, note, screenshot, status, at, normalizeProfileID(profileID), id)
+	r, err := s.db.Exec(`UPDATE pending_tasks SET notes = ?, screenshot_path = ?, status = ?, completed_at = ?, actor = ?, review_reason = ?
+		WHERE profile_id = ? AND id = ? AND status = 'pending'`, note, screenshot, status, at, actor, reviewReason, normalizeProfileID(profileID), id)
 	if err != nil {
 		return err
 	}

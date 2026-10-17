@@ -39,7 +39,18 @@ func (a ActionItems) FormsToFill() int {
 // NeedsReview: review tasks, plus automation outcomes the agent couldn't settle
 // (they stay pending until a person looks).
 func (t PendingTask) NeedsReview() bool {
-	return t.TaskType == TaskReview || strings.HasPrefix(t.Notes, "MCP: unknown.") || strings.HasPrefix(t.Notes, "MCP: needs_user.") || strings.HasPrefix(t.Notes, "MCP: action outcome unknown.") || strings.HasPrefix(t.Notes, "MCP: page could not be opened.")
+	return t.TaskType == TaskReview || t.ReviewReason != ""
+}
+
+// ActorLabel names the AI agent that recorded a task. Tasks you made are unlabelled.
+func (t PendingTask) ActorLabel() string {
+	if name, ok := strings.CutPrefix(t.Actor, "mcp:"); ok {
+		if name == "" {
+			return "Recorded by an AI agent"
+		}
+		return "Recorded by an AI agent (" + name + ")"
+	}
+	return ""
 }
 
 func (s *Store) GetActionItems(profileID string) (ActionItems, error) {

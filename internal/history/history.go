@@ -67,6 +67,7 @@ type Record struct {
 	SentAt         time.Time
 	CreatedAt      time.Time
 	PipelineStatus PipelineStatus // Current stage in pipeline
+	PipelineActor  string         // "human", "mcp:<client>", or empty for automated updates
 	SentMethod     string         // "smtp" (Eraser sent it) or "manual" (user did)
 }
 
@@ -104,6 +105,10 @@ type PendingTask struct {
 	CreatedAt      time.Time
 	OpenedAt       sql.NullTime // When user first opened the helper page
 	CompletedAt    sql.NullTime
+	// Actor is "human", or "mcp:<client>" for work an agent recorded.
+	Actor string
+	// ReviewReason is set when an automated step needs a person to decide.
+	ReviewReason string
 }
 
 type Store struct {
@@ -204,6 +209,15 @@ func (s *Store) migrate() error {
 	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN sent_method TEXT DEFAULT 'smtp'`); err != nil {
 		return err
 	}
+	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN actor TEXT NOT NULL DEFAULT 'human'`); err != nil {
+		return err
+	}
+	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN review_reason TEXT NOT NULL DEFAULT ''`); err != nil {
+		return err
+	}
+	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN pipeline_actor TEXT NOT NULL DEFAULT ''`); err != nil {
+		return err
+	}
 	if err := addColumnIfMissing(s.db, `ALTER TABLE pending_tasks ADD COLUMN opened_at DATETIME`); err != nil {
 		return err
 	}
@@ -238,6 +252,7 @@ func (s *Store) migrate() error {
 		sent_at DATETIME,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		pipeline_status TEXT DEFAULT 'email_sent',
+		pipeline_actor TEXT NOT NULL DEFAULT '',
 		sent_method TEXT DEFAULT 'smtp'
 	);
 
@@ -290,6 +305,8 @@ func (s *Store) migrate() error {
 		status TEXT DEFAULT 'pending',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		opened_at DATETIME,
+		actor TEXT NOT NULL DEFAULT 'human',
+		review_reason TEXT NOT NULL DEFAULT '',
 		completed_at DATETIME
 	);
 
@@ -383,7 +400,7 @@ func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error)
 func (s *Store) GetAllRequests(profileID string) ([]Record, error) {
 	query := `
 	SELECT id, profile_id, broker_id, broker_name, email, template, status,
-	       message_id, error, sent_at, created_at, pipeline_status, sent_method
+	       message_id, error, sent_at, created_at, pipeline_status, sent_method, pipeline_actor
 	FROM removal_requests WHERE profile_id = ? ORDER BY sent_at ASC, id ASC`
 
 	rows, err := s.db.Query(query, normalizeProfileID(profileID))
@@ -396,9 +413,9 @@ func (s *Store) GetAllRequests(profileID string) ([]Record, error) {
 	for rows.Next() {
 		var r Record
 		var sentAt, createdAt sql.NullTime
-		var messageID, errStr, pipelineStatus, sentMethod sql.NullString
+		var messageID, errStr, pipelineStatus, sentMethod, pipelineActor sql.NullString
 		if err := rows.Scan(&r.ID, &r.ProfileID, &r.BrokerID, &r.BrokerName, &r.Email,
-			&r.Template, &r.Status, &messageID, &errStr, &sentAt, &createdAt, &pipelineStatus, &sentMethod); err != nil {
+			&r.Template, &r.Status, &messageID, &errStr, &sentAt, &createdAt, &pipelineStatus, &sentMethod, &pipelineActor); err != nil {
 			return nil, fmt.Errorf("failed to scan request: %w", err)
 		}
 		r.MessageID = messageID.String
@@ -406,6 +423,7 @@ func (s *Store) GetAllRequests(profileID string) ([]Record, error) {
 		r.SentAt = sentAt.Time
 		r.CreatedAt = createdAt.Time
 		r.PipelineStatus = PipelineStatus(pipelineStatus.String)
+		r.PipelineActor = pipelineActor.String
 		r.SentMethod = sentMethod.String
 		records = append(records, r)
 	}
@@ -1034,13 +1052,16 @@ func (s *Store) AddPendingTask(task *PendingTask) error {
 
 	query := `
 	INSERT INTO pending_tasks (profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
-		browser_state, notes, status, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		browser_state, notes, status, created_at, actor, review_reason)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
+	if task.Actor == "" {
+		task.Actor = "human"
+	}
 
 	result, err := s.db.Exec(query,
 		task.ProfileID, task.BrokerID, task.BrokerName, task.TaskType, task.FormURL, task.ScreenshotPath,
-		task.BrowserState, task.Notes, "pending", time.Now(),
+		task.BrowserState, task.Notes, "pending", time.Now(), task.Actor, task.ReviewReason,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert pending task: %w", err)
@@ -1062,22 +1083,22 @@ func (s *Store) GetPendingTasks(profileID string, taskType TaskType, status stri
 
 	if taskType != "" && status != "" {
 		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
-			browser_state, notes, status, created_at, opened_at, completed_at
+			browser_state, notes, status, created_at, opened_at, completed_at, actor, review_reason
 			FROM pending_tasks WHERE profile_id = ? AND task_type = ? AND status = ? ORDER BY created_at DESC`
 		args = []interface{}{profileID, taskType, status}
 	} else if taskType != "" {
 		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
-			browser_state, notes, status, created_at, opened_at, completed_at
+			browser_state, notes, status, created_at, opened_at, completed_at, actor, review_reason
 			FROM pending_tasks WHERE profile_id = ? AND task_type = ? ORDER BY created_at DESC`
 		args = []interface{}{profileID, taskType}
 	} else if status != "" {
 		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
-			browser_state, notes, status, created_at, opened_at, completed_at
+			browser_state, notes, status, created_at, opened_at, completed_at, actor, review_reason
 			FROM pending_tasks WHERE profile_id = ? AND status = ? ORDER BY created_at DESC`
 		args = []interface{}{profileID, status}
 	} else {
 		query = `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
-			browser_state, notes, status, created_at, opened_at, completed_at
+			browser_state, notes, status, created_at, opened_at, completed_at, actor, review_reason
 			FROM pending_tasks WHERE profile_id = ? ORDER BY created_at DESC`
 		args = []interface{}{profileID}
 	}
@@ -1095,7 +1116,7 @@ func (s *Store) GetPendingTasks(profileID string, taskType TaskType, status stri
 		var formURL, screenshotPath, browserState, notes sql.NullString
 
 		err := rows.Scan(&t.ID, &t.ProfileID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
-			&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt)
+			&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt, &t.Actor, &t.ReviewReason)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan pending task: %w", err)
 		}
@@ -1116,7 +1137,7 @@ func (s *Store) GetPendingTasks(profileID string, taskType TaskType, status stri
 // returns nil, nil, the same as a task that doesn't exist at all.
 func (s *Store) GetPendingTaskByID(id int64, profileID string) (*PendingTask, error) {
 	query := `SELECT id, profile_id, broker_id, broker_name, task_type, form_url, screenshot_path,
-		browser_state, notes, status, created_at, opened_at, completed_at
+		browser_state, notes, status, created_at, opened_at, completed_at, actor, review_reason
 		FROM pending_tasks WHERE id = ? AND profile_id = ?`
 
 	var t PendingTask
@@ -1124,7 +1145,7 @@ func (s *Store) GetPendingTaskByID(id int64, profileID string) (*PendingTask, er
 	var formURL, screenshotPath, browserState, notes sql.NullString
 
 	err := s.db.QueryRow(query, id, normalizeProfileID(profileID)).Scan(&t.ID, &t.ProfileID, &t.BrokerID, &t.BrokerName, &t.TaskType, &formURL, &screenshotPath,
-		&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt)
+		&browserState, &notes, &t.Status, &createdAt, &t.OpenedAt, &t.CompletedAt, &t.Actor, &t.ReviewReason)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}

@@ -74,25 +74,25 @@ func TestAutomationTaskVisibleAndProfileScoped(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = s.Close() }()
-	task, err := s.EnsureAutomationTask("alice", "broker", "Broker", TaskManualForm, "https://example.com/form")
+	task, err := s.EnsureAutomationTask("alice", "broker", "Broker", TaskManualForm, "https://example.com/form", "mcp:test")
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := s.EnsureAutomationTask("alice", "broker", "Broker", TaskManualForm, "https://example.com/form")
+	again, err := s.EnsureAutomationTask("alice", "broker", "Broker", TaskManualForm, "https://example.com/form", "mcp:test")
 	if err != nil || again.ID != task.ID {
 		t.Fatalf("duplicate task: %v", err)
 	}
-	if err := s.UpdateAutomationTask("bob", task.ID, "accepted", "proof.png", true); err == nil {
+	if err := s.UpdateAutomationTask("bob", task.ID, "mcp:test", "", "accepted", "proof.png", true); err == nil {
 		t.Fatal("cross-profile write succeeded")
 	}
-	if err := s.UpdateAutomationTask("alice", task.ID, "Request accepted; awaiting reply", "proof.png", true); err != nil {
+	if err := s.UpdateAutomationTask("alice", task.ID, "mcp:test", "", "Request accepted; awaiting reply", "proof.png", true); err != nil {
 		t.Fatal(err)
 	}
 	got, err := s.GetPendingTasks("alice", "", "completed")
 	if err != nil || len(got) != 1 || got[0].ScreenshotPath != "proof.png" {
 		t.Fatalf("UI task data: %+v, %v", got, err)
 	}
-	if err := s.UpdateAutomationTask("alice", task.ID, "overwrite", "", false); err == nil {
+	if err := s.UpdateAutomationTask("alice", task.ID, "mcp:test", "", "overwrite", "", false); err == nil {
 		t.Fatal("reopened completed task")
 	}
 }

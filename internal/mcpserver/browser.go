@@ -71,7 +71,7 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 	if t.Kind == "confirmation" {
 		kind = history.TaskConfirm
 	}
-	stored, err := s.store.EnsureAutomationTask(p.Profile.ID, t.BrokerID, t.BrokerName, kind, t.URL)
+	stored, err := s.store.EnsureAutomationTask(p.Profile.ID, t.BrokerID, t.BrokerName, kind, t.URL, s.actor())
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 			br.Close()
 			delete(s.pages, t.ID)
 		}
-		_ = s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, "MCP: page could not be opened. Review before retrying.", "", false)
+		_ = s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, s.actor(), "page", "Page could not be opened. Review before retrying.", "", false)
 		// a redirect or timeout can happen after a confirmation GET already took effect:
 		// keep the page for inspection, never replay the URL
 		instructions := "The page was closed. Check the task in Eraser, then call open_task again."
@@ -125,7 +125,7 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 	if err := s.store.MarkTaskOpened(stored.ID, p.Profile.ID); err != nil {
 		return nil, err
 	}
-	if err := s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, "MCP: browser open; automation in progress. "+snap.Blocker, snap.Screenshot, false); err != nil {
+	if err := s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, s.actor(), blockerReason(snap), "Browser open; automation in progress. "+snap.Blocker, snap.Screenshot, false); err != nil {
 		return nil, err
 	}
 	return pageOutput(tp), nil
@@ -218,7 +218,7 @@ func (s *Service) act(ctx context.Context, in actionInput) (map[string]any, erro
 	if err != nil {
 		screenshot := tp.page.Screenshot
 		tp.page = nil
-		_ = s.store.UpdateAutomationTask(p.Profile.ID, tp.storedID, "MCP: action outcome unknown. Inspect the browser before retrying.", screenshot, false)
+		_ = s.store.UpdateAutomationTask(p.Profile.ID, tp.storedID, s.actor(), "outcome_unknown", "Action outcome unknown. Inspect the browser before retrying.", screenshot, false)
 		return nil, fmt.Errorf("action outcome unknown; observe before deciding whether to retry: %w", err)
 	}
 	tp.page = snap
@@ -263,7 +263,7 @@ func (s *Service) recordResult(_ context.Context, in resultInput) (map[string]an
 	default:
 		return nil, fmt.Errorf("outcome must be progress, submitted, needs_user, or unknown")
 	}
-	note := "MCP: " + in.Outcome + ". " + in.Evidence
+	note := in.Outcome + ". " + in.Evidence
 	if completed {
 		note += " Request accepted; this does not establish that personal data was erased."
 	}
@@ -272,14 +272,14 @@ func (s *Service) recordResult(_ context.Context, in resultInput) (map[string]an
 			return nil, err
 		}
 	}
-	if err := s.store.UpdateAutomationTask(p.Profile.ID, tp.storedID, note, tp.page.Screenshot, completed); err != nil {
+	if err := s.store.UpdateAutomationTask(p.Profile.ID, tp.storedID, s.actor(), outcomeReason(in.Outcome, completed), note, tp.page.Screenshot, completed); err != nil {
 		return nil, err
 	}
 	if state != "unknown" {
 		tp.pendingAction = false
 	}
 	if completed {
-		if err := s.store.UpdatePipelineStatus(p.Profile.ID, tp.task.BrokerID, history.PipelineAwaitingResponse); err != nil {
+		if err := s.store.UpdatePipelineStatusBy(p.Profile.ID, tp.task.BrokerID, history.PipelineAwaitingResponse, s.actor()); err != nil {
 			return nil, err
 		}
 		tp.browser.Close()
@@ -352,4 +352,26 @@ func (s *Service) retryApproval(profileID, scope string, in retryInput) (map[str
 		return nil, err
 	}
 	return map[string]any{"approval_required": true, "approval_id": id, "approve_with": "Approve in Eraser's web UI (Automation page) or run: eraser mcp approve " + id + ". Then call retry_action again with approval_id."}, nil
+}
+
+// blockerReason marks a page that needs a person, so it appears under review.
+func blockerReason(snap *browser.Snapshot) string {
+	if snap.Blocker != "" {
+		return "needs_user"
+	}
+	return ""
+}
+
+// outcomeReason keeps unsettled outcomes in the review queue. A completed
+// request is not a review item.
+func outcomeReason(outcome string, completed bool) string {
+	switch {
+	case completed:
+		return ""
+	case outcome == "unknown":
+		return "outcome_unknown"
+	case outcome == "needs_user":
+		return "needs_user"
+	}
+	return ""
 }

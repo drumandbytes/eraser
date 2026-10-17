@@ -46,7 +46,11 @@ type Service struct {
 	pages   map[string]*taskPage
 	newPage func(browser.BrowserConfig, *config.Profile, browser.URLPolicy) (pageSession, error)
 	demo    *demoState
+	client  string
 }
+
+// actor names the agent client that recorded a change, for the Tasks page and export.
+func (s *Service) actor() string { return "mcp:" + s.client }
 
 func New(opts Options) (*Service, error) {
 	if opts.ConfigPath == "" {
@@ -104,6 +108,9 @@ func register[I any](s *Service, name, description string, read, external bool, 
 		}
 		if s.owner == nil {
 			s.owner = req.Session
+			if p := req.Session.InitializeParams(); p != nil && p.ClientInfo != nil {
+				s.client = p.ClientInfo.Name
+			}
 		}
 		if s.owner != req.Session {
 			return nil, nil, fmt.Errorf("this local server serves one client session; start another process")

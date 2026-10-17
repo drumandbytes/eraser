@@ -214,3 +214,36 @@ func TestInjectedPolicyStringKeepsPopupsAndWorkersOut(t *testing.T) {
 		t.Errorf("policy %q allows what the sandbox is there to stop", csp)
 	}
 }
+
+// A redirect has no page of its own: it must go through untouched, and the page
+// it lands on must still get the policy.
+func TestRedirectedDocumentStillGetsThePolicy(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/start", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/landing", http.StatusFound)
+	})
+	mux.HandleFunc("/landing", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = fmt.Fprint(w, `<!doctype html><title>landed</title><script>
+document.title = window.open('about:blank') ? 'landed popup-opened' : 'landed popup-blocked';
+</script><button>Continue</button>`)
+	})
+	s, base := automationFixture(t, mux)
+	snap, err := s.Open(context.Background(), base+"/start")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(snap.URL, "/landing") || snap.Title != "landed popup-blocked" {
+		t.Fatalf("after the redirect: url=%q title=%q", snap.URL, snap.Title)
+	}
+}
+
+// A response with nothing to read still loads, with the sandbox applied.
+func TestEmptyDocumentStillLoads(t *testing.T) {
+	s, base := automationFixture(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+	}))
+	if _, err := s.Open(context.Background(), base); err != nil {
+		t.Fatalf("an empty page should still open: %v", err)
+	}
+}

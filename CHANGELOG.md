@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/drumandbytes/eraser/compare/v1.4.0...v1.4.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **email:** recognise Windows' refused connection and run the full suite on Windows ([#179](https://github.com/drumandbytes/eraser/issues/179)) ([06fabf8](https://github.com/drumandbytes/eraser/commit/06fabf8e80be3e6b479548fb6ef1e644e6190c70))
+
 ## [1.4.0](https://github.com/drumandbytes/eraser/compare/v1.3.1...v1.4.0) (2026-10-17)
 
 

@@ -21,7 +21,7 @@
 
     <div>
         <label for="mail_address" class="label">Email address</label>
-        <input type="email" name="mail_address" id="mail_address" value="{{.Address}}"
+        <input type="email" name="mail_address" id="mail_address" autocomplete="email" value="{{.Address}}"
             class="input {{if .Errors.mail_address}}border-error{{end}}" placeholder="you@example.org">
         {{if .Errors.mail_address}}<p class="mt-1 text-sm text-error">{{.Errors.mail_address}}</p>{{end}}
     </div>

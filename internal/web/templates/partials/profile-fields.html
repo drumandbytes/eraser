@@ -3,7 +3,7 @@
 <div class="grid grid-cols-2 gap-4">
     <div>
         <label for="first_name" class="label">First Name <span class="text-error">*</span></label>
-        <input type="text" name="first_name" id="first_name" required
+        <input type="text" name="first_name" id="first_name" autocomplete="given-name" required
             value="{{.Profile.FirstName}}"
             class="input {{if .Errors.first_name}}border-error{{end}}"
             placeholder="Jane">
@@ -13,7 +13,7 @@
     </div>
     <div>
         <label for="last_name" class="label">Last Name <span class="text-error">*</span></label>
-        <input type="text" name="last_name" id="last_name" required
+        <input type="text" name="last_name" id="last_name" autocomplete="family-name" required
             value="{{.Profile.LastName}}"
             class="input {{if .Errors.last_name}}border-error{{end}}"
             placeholder="Doe">
@@ -25,7 +25,7 @@
 
 <div>
     <label for="middle_name" class="label">Middle Name</label>
-    <input type="text" name="middle_name" id="middle_name"
+    <input type="text" name="middle_name" id="middle_name" autocomplete="additional-name"
         value="{{.Profile.MiddleName}}"
         class="input"
         placeholder="Optional">
@@ -34,7 +34,7 @@
 
 <div>
     <label for="email" class="label">Email Address <span class="text-error">*</span></label>
-    <input type="email" name="email" id="email" required
+    <input type="email" name="email" id="email" autocomplete="email" required
         value="{{.Profile.Email}}"
         class="input {{if .Errors.email}}border-error{{end}}"
         placeholder="jane@example.com">
@@ -51,7 +51,7 @@
     <div class="space-y-4">
         <div>
             <label for="address" class="label">Street Address</label>
-            <input type="text" name="address" id="address"
+            <input type="text" name="address" id="address" autocomplete="street-address"
                 value="{{.Profile.Address}}"
                 class="input"
                 placeholder="123 Main St">
@@ -60,21 +60,21 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="col-span-2">
                 <label for="city" class="label">City</label>
-                <input type="text" name="city" id="city"
+                <input type="text" name="city" id="city" autocomplete="address-level2"
                     value="{{.Profile.City}}"
                     class="input"
                     placeholder="New York">
             </div>
             <div>
                 <label for="state" class="label">State</label>
-                <input type="text" name="state" id="state"
+                <input type="text" name="state" id="state" autocomplete="address-level1"
                     value="{{.Profile.State}}"
                     class="input"
                     placeholder="NY">
             </div>
             <div>
                 <label for="zip_code" class="label">ZIP</label>
-                <input type="text" name="zip_code" id="zip_code"
+                <input type="text" name="zip_code" id="zip_code" autocomplete="postal-code"
                     value="{{.Profile.ZipCode}}"
                     class="input"
                     placeholder="10001">
@@ -84,14 +84,14 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label for="country" class="label">Country</label>
-                <input type="text" name="country" id="country"
+                <input type="text" name="country" id="country" autocomplete="country-name"
                     value="{{.Profile.Country}}"
                     class="input"
                     placeholder="USA">
             </div>
             <div>
                 <label for="phone" class="label">Phone</label>
-                <input type="tel" name="phone" id="phone"
+                <input type="tel" name="phone" id="phone" autocomplete="tel"
                     value="{{.Profile.Phone}}"
                     class="input"
                     placeholder="+1 (555) 123-4567">
@@ -100,7 +100,7 @@
 
         <div>
             <label for="date_of_birth" class="label">Date of Birth</label>
-            <input type="date" name="date_of_birth" id="date_of_birth"
+            <input type="date" name="date_of_birth" id="date_of_birth" autocomplete="bday"
                 value="{{.Profile.DateOfBirth}}"
                 class="input {{if .Errors.date_of_birth}}border-error{{end}}">
             {{if .Errors.date_of_birth}}<p class="mt-1 text-sm text-error">{{.Errors.date_of_birth}}</p>{{end}}

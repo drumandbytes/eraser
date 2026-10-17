@@ -271,6 +271,14 @@
         .light .badge-success { color: #166534; }
         .text-muted a { text-decoration: underline; }
 
+        /* WCAG 2.4.1 bypass block; shown on keyboard focus only */
+        .skip-link { position: absolute; left: 0.5rem; top: -4rem; z-index: 100; padding: 0.5rem 1rem; border-radius: 6px; background: var(--accent-solid); color: #fff; font-weight: 600; }
+        .skip-link:focus { top: 0.5rem; }
+        main:focus { outline: none; }
+
+        /* WCAG 2.5.8: 24px minimum target for standalone links */
+        .site-nav-inner a, footer a, main a.text-sm, main a.text-xs { display: inline-flex; align-items: center; min-height: 24px; }
+
         .badge-neutral {
             background: var(--bg-elevated);
             color: var(--text-secondary);
@@ -613,7 +621,8 @@
     <!-- Navigation: a flush top bar (not a floating pill) so pages get the
          full viewport width - matters most on data-dense pages like the
          750+-broker list. -->
-    <nav class="site-nav">
+    <a href="#main" class="skip-link">Skip to main content</a>
+    <nav class="site-nav" aria-label="Main">
         <div class="max-w-6xl mx-auto px-4 site-nav-inner">
             <!-- Logo -->
             <a href="/" class="flex items-center gap-2 text-decoration-none">
@@ -693,7 +702,7 @@
     </nav>
 
     <!-- Main content -->
-    <main class="max-w-6xl mx-auto pt-8 pb-12 px-4">
+    <main id="main" tabindex="-1" class="max-w-6xl mx-auto pt-8 pb-12 px-4">
         {{template "content" .}}
     </main>
 

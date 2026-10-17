@@ -32,7 +32,7 @@
             </div>
         </div>
 
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--accent)]" onclick="filterItems('form')">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--accent)]" role="button" tabindex="0" onclick="filterItems('form')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();filterItems('form')}">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 icon-box icon-box-info">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,7 +46,7 @@
             </div>
         </div>
 
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--warning)]" onclick="filterItems('review')">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--warning)]" role="button" tabindex="0" onclick="filterItems('review')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();filterItems('review')}">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 icon-box icon-box-warning">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--success)]" onclick="filterItems('completed')">
+        <div class="card p-4 cursor-pointer hover:ring-2 hover:ring-[var(--success)]" role="button" tabindex="0" onclick="filterItems('completed')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();filterItems('completed')}">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 icon-box icon-box-success">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

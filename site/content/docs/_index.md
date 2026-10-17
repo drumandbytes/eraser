@@ -2,6 +2,8 @@
 title: "Documentation"
 description: "Eraser documentation for every release: the stable releases and the nightly build from main."
 robots: "noindex, follow"
+sitemap:
+  disable: true
 ---
 
 This page sends you to the latest stable release. Other versions are listed

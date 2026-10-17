@@ -78,7 +78,7 @@ func TestRender(t *testing.T) {
 		t.Errorf("heading kept or latest page hidden:\n%s", out)
 	}
 	out = render("commands", "no heading, see [x](architecture.md)", Version{Slug: "next"})
-	if !strings.Contains(out, `title: "commands"`) || !strings.Contains(out, "robots: noindex") || !strings.Contains(out, "/blob/main/") {
+	if !strings.Contains(out, `title: "commands"`) || !strings.Contains(out, "robots: noindex") || !strings.Contains(out, "disable: true") || !strings.Contains(out, "/blob/main/") {
 		t.Errorf("fallback title, noindex or main ref wrong:\n%s", out)
 	}
 }

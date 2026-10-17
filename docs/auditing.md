@@ -118,6 +118,7 @@ Two checks, both also wired into CI:
   reformatted wholesale on the next audit PR. `TestEmbeddedListsCanonical` fails
   until it is; `go test ./internal/broker -run TestEmbeddedListsCanonical -update`
   rewrites `data/brokers*.yaml` in place.
+- **Dated evidence** - when you add or change a broker's email or opt-out URL, record the date you verified it and the source you checked (the broker's privacy page or registry entry). A channel with no dated verification is unconfirmed, even if it passes the checks above; the verified list needs this for every entry.
 
 ## Security/Correctness Sweep (2026-08)
 

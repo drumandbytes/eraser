@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.0](https://github.com/drumandbytes/eraser/compare/v1.2.9...v1.3.0) (2026-10-17)
+
+
+### Features
+
+* **mcp:** automate removal follow-ups through local agent tools ([#167](https://github.com/drumandbytes/eraser/issues/167)) ([e2d2c9d](https://github.com/drumandbytes/eraser/commit/e2d2c9d2d6460528f87cf008074f0fe1e76c9cbd))
+* **mcp:** record which agent changed tasks and pipeline stages ([#168](https://github.com/drumandbytes/eraser/issues/168)) ([b9a6190](https://github.com/drumandbytes/eraser/commit/b9a619057355014e36afbe9972d0b4372d430dcd))
+* **pipeline:** mark no-record replies as no_data_held ([#165](https://github.com/drumandbytes/eraser/issues/165)) ([af8a664](https://github.com/drumandbytes/eraser/commit/af8a6643d48660eb0af727baae5d84199e8432d2))
+* **site:** versioned documentation with a version menu ([#169](https://github.com/drumandbytes/eraser/issues/169)) ([c3700f6](https://github.com/drumandbytes/eraser/commit/c3700f6fd118edeae0056a60468686ade70ceb0e))
+
 ## [1.2.9](https://github.com/drumandbytes/eraser/compare/v1.2.8...v1.2.9) (2026-10-13)
 
 

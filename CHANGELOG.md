@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/drumandbytes/eraser/compare/v1.3.1...v1.4.0) (2026-10-17)
+
+
+### Features
+
+* **mcp:** add a feedback form, known limits and the real server version ([#175](https://github.com/drumandbytes/eraser/issues/175)) ([1baa25c](https://github.com/drumandbytes/eraser/commit/1baa25c792c15fa592636c48091d0f8b2d69bc3d))
+
 ## [1.3.1](https://github.com/drumandbytes/eraser/compare/v1.3.0...v1.3.1) (2026-10-17)
 
 

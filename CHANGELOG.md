@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.4](https://github.com/drumandbytes/eraser/compare/v1.5.3...v1.5.4) (2026-10-17)
+
+
+### Bug Fixes
+
+* **site:** keep noindex docs versions out of the sitemap ([#197](https://github.com/drumandbytes/eraser/issues/197)) ([8a8cb2f](https://github.com/drumandbytes/eraser/commit/8a8cb2f11663874fc5db75d9a704897b1dce7023))
+
 ## [1.5.3](https://github.com/drumandbytes/eraser/compare/v1.5.2...v1.5.3) (2026-10-17)
 
 

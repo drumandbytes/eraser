@@ -31,3 +31,15 @@ disableKinds = ["taxonomy", "term", "RSS"]
   name = "GitHub"
   url = "https://github.com/drumandbytes/eraser"
   weight = 40
+
+[mediaTypes."text/x-redirects"]
+  suffixes = [""]
+
+[outputFormats.REDIRECTS]
+  mediaType = "text/x-redirects"
+  baseName = "_redirects"
+  isPlainText = true
+  notAlternative = true
+
+[outputs]
+  home = ["HTML", "REDIRECTS"]

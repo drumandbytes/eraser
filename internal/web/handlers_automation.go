@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// approvalPreview is the subset of an MCP batch preview the approver reviews.
+// approvalPreview is the part of a batch preview the approver sees.
 type approvalPreview struct {
 	PlanID        string            `json:"-"`
 	ProfileID     string            `json:"profile_id"`
@@ -48,8 +48,8 @@ func (s *Server) handleAutomation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleAutomationApprove approves one previewed batch. Browsers cannot send
-// this cross-site (filippo.io/csrf checks Sec-Fetch-Site), so no token is needed.
+// handleAutomationApprove approves one batch. No token: browsers can't post this
+// cross-site (filippo.io/csrf checks Sec-Fetch-Site).
 func (s *Server) handleAutomationApprove(w http.ResponseWriter, r *http.Request) {
 	if s.historyStore == nil {
 		http.Error(w, "Database not available", http.StatusInternalServerError)

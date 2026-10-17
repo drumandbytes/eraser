@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// BatchApproval is an MCP batch preview waiting for a person. The preview is
-// stored so the approver sees exactly what the digest covers.
+// BatchApproval is an MCP batch preview waiting for a person. It's stored so the
+// approver sees what the digest covers.
 type BatchApproval struct {
 	PlanID     string
 	ProfileID  string
@@ -19,8 +19,7 @@ type BatchApproval struct {
 	ApprovedBy string
 }
 
-// ErrNoPendingApproval means the preview is unknown, expired, already approved
-// or already spent.
+// ErrNoPendingApproval: unknown, expired, already approved or already spent.
 var ErrNoPendingApproval = errors.New("no pending approval for this batch")
 
 func (s *Store) migrateApprovals() error {
@@ -38,8 +37,7 @@ func (s *Store) CreateBatchApproval(a BatchApproval) error {
 	return err
 }
 
-// ApproveBatch is called by the web UI or `eraser mcp approve`. It works only on
-// a pending, unexpired preview, and only once.
+// ApproveBatch is the web UI / `eraser mcp approve` side: pending and unexpired only, once.
 func (s *Store) ApproveBatch(planID, approver string) error {
 	r, err := s.db.Exec(`UPDATE batch_approvals SET approved_at = ?, approved_by = ?
 		WHERE plan_id = ? AND approved_at IS NULL AND consumed_at IS NULL AND expires_at > ?`,
@@ -53,8 +51,7 @@ func (s *Store) ApproveBatch(planID, approver string) error {
 	return nil
 }
 
-// ConsumeBatchApproval spends an approval for the exact digest the agent
-// previewed. It is atomic, so one approval can start one batch.
+// ConsumeBatchApproval spends an approval for the exact digest. Atomic: one approval, one batch.
 func (s *Store) ConsumeBatchApproval(planID, digest string) error {
 	r, err := s.db.Exec(`UPDATE batch_approvals SET consumed_at = ?
 		WHERE plan_id = ? AND digest = ? AND approved_at IS NOT NULL AND consumed_at IS NULL AND expires_at > ?`,
@@ -68,7 +65,6 @@ func (s *Store) ConsumeBatchApproval(planID, digest string) error {
 	return nil
 }
 
-// PendingBatchApprovals lists previews still waiting for approval.
 func (s *Store) PendingBatchApprovals() ([]BatchApproval, error) {
 	rows, err := s.db.Query(`SELECT plan_id, profile_id, digest, preview, expires_at FROM batch_approvals
 		WHERE approved_at IS NULL AND consumed_at IS NULL AND expires_at > ? ORDER BY created_at`, time.Now())

@@ -82,8 +82,7 @@ func (s *Service) prepare(_ context.Context, in prepareInput) (map[string]any, e
 		plan.Brokers[id] = *b
 		drafts = append(drafts, map[string]any{"broker_id": id, "to": b.Email, "from": cfg.EmailForProfile(p).From, "subject": mail.Subject, "body": mail.Body})
 	}
-	// Bound pending previews and expire unused ones without retaining personal
-	// information indefinitely in a long-lived process.
+	// previews hold profile data and this process is long-lived: expire and cap them
 	for id, old := range s.plans {
 		if time.Since(old.Created) > 15*time.Minute {
 			delete(s.plans, id)
@@ -153,7 +152,6 @@ func (s *Service) endBatch() {
 	s.plans = map[string]*batchPlan{}
 }
 
-// digestPreview is the stored copy of the preview the approver reviews.
 func digestPreview(v any) string {
 	b, _ := json.Marshal(v)
 	return string(b)

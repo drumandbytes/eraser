@@ -22,18 +22,15 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-// URLPolicy is scoped to ONE broker, never the entire broker directory.
-// LocalOrigin is reserved for an explicitly started, isolated demo/test server.
-// Domains are the allowed hosts. Subdomains of a host are allowed too, except
-// hosts listed in ExactHosts: shared privacy and form platforms, where a
-// subdomain is another company's tenant.
+// URLPolicy is scoped to one broker, never the whole directory. Subdomains of
+// Domains are allowed except under ExactHosts (shared platforms, where a
+// subdomain is another company's tenant). LocalOrigin is only for the demo/test server.
 type URLPolicy struct {
 	Domains     []string
 	ExactHosts  []string
 	LocalOrigin string
 }
 
-// NewURLPolicy scopes a policy to one broker's website and opt-out host.
 func NewURLPolicy(website, portal string) URLPolicy {
 	p := URLPolicy{Domains: BrokerDomains(website, portal)}
 	for _, d := range p.Domains {
@@ -44,8 +41,7 @@ func NewURLPolicy(website, portal string) URLPolicy {
 	return p
 }
 
-// sharedPlatforms are multi-tenant privacy and form services. Brokers that send
-// users to them may use only the exact tenant host they name.
+// multi-tenant privacy/form services: brokers on these get their exact host only
 var sharedPlatforms = []string{"onetrust.com", "trustarc.com", "datasubject.com", "privacypillar.com", "saymine.io", "stirista.com", "optoutprescreen.com", "forms.gle", "google.com", "hubspot.com", "zendesk.com"}
 
 func isSharedPlatform(host string) bool {
@@ -122,16 +118,15 @@ type Snapshot struct {
 	SensitiveControls bool      `json:"sensitive_controls,omitempty"`
 }
 
-// Fingerprint excludes ephemeral IDs and screenshots so repeated observations
-// of the same page cannot bypass the durable duplicate-action check.
+// Fingerprint ignores IDs and screenshots so re-observing a page can't dodge the duplicate-action check.
 func (s Snapshot) Fingerprint() string {
 	s.ID, s.Screenshot = "", ""
 	b, _ := json.Marshal(s)
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
-// AutomationSession retains one isolated Chrome tab between MCP calls. All
-// actions use references from a fresh snapshot, not agent-provided JavaScript.
+// AutomationSession keeps one Chrome tab across MCP calls. Actions use refs from
+// a fresh snapshot; agents never supply JavaScript.
 type AutomationSession struct {
 	b        *Browser
 	policy   URLPolicy
@@ -139,8 +134,7 @@ type AutomationSession struct {
 	snapshot string
 	mu       sync.Mutex
 	blocked  string
-	// networkBlocked is set when Chrome connected to a non-public address. Unlike
-	// a destination pause, it refuses further actions on the page.
+	// set when Chrome hit a non-public address; unlike a destination pause it refuses actions
 	networkBlocked string
 }
 
@@ -199,9 +193,8 @@ func (s *AutomationSession) checkRequest(e *fetch.EventRequestPaused) {
 	defer cancel()
 	execCtx := cdp.WithExecutor(ctx, chromedp.FromContext(ctx).Target)
 	if e.ResponseStatusCode != 0 {
-		// Popups, workers and out-of-scope WebSockets could otherwise escape
-		// the tab's request interceptor. Add a policy alongside the site's CSP;
-		// multiple policies are cumulative, so its own restrictions stay intact.
+		// popups, workers and stray WebSockets could escape the request interceptor, so add
+		// a CSP; policies stack, so the site's own stays in force
 		sources := []string{"'self'"}
 		for _, domain := range s.policy.Domains {
 			sources = append(sources, "https://"+domain, "https://*."+domain)
@@ -216,8 +209,7 @@ func (s *AutomationSession) checkRequest(e *fetch.EventRequestPaused) {
 		}
 		return
 	}
-	// Check every request, including redirects, frames, XHR, and form actions.
-	// Third-party portals must be present in the trusted broker catalog.
+	// every request: redirects, frames, XHR, form actions. third-party portals must be in the catalog
 	if err := s.policy.Validate(ctx, e.Request.URL); err != nil {
 		s.mu.Lock()
 		s.blocked = "A destination outside the approved broker/portal was blocked. Review the broker's configured URLs."
@@ -330,7 +322,7 @@ func (s *AutomationSession) Act(caller context.Context, snapshot, ref, action, v
 	}
 	s.snapshot = "" // Any action invalidates all previous references.
 	if action == "click" {
-		// Give asynchronous navigation/validation a bounded settling interval.
+		// let async navigation/validation settle (bounded)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -394,8 +386,7 @@ func (s *AutomationSession) blockedReason() string {
 	return s.networkBlocked
 }
 
-// publicAddress reports whether a remote IP that Chrome reported is a public
-// unicast address. An empty value (cached or local responses) is allowed.
+// publicAddress treats an empty address (cached or local response) as fine.
 func publicAddress(raw string) bool {
 	if raw == "" {
 		return true

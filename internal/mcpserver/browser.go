@@ -115,8 +115,8 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 	snap, err := br.Open(ctx, t.URL)
 	if err != nil {
 		_ = s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, "MCP: page could not be opened. Review before retrying.", "", false)
-		// A redirect or timeout can occur after a confirmation GET took effect.
-		// Keep the browser available for inspection; never replay the URL here.
+		// a redirect or timeout can happen after a confirmation GET already took effect:
+		// keep the page for inspection, never replay the URL
 		return map[string]any{"task_id": t.ID, "ui_task_id": stored.ID, "action_key": tp.lastAction, "needs_user": "Page could not be opened: " + err.Error(), "instructions": "Inspect the retained Chrome window. Observe it after manual intervention; do not reopen or resubmit an uncertain request."}, nil
 	}
 	tp.page = snap
@@ -220,8 +220,7 @@ func (s *Service) act(ctx context.Context, in actionInput) (map[string]any, erro
 		return nil, fmt.Errorf("action outcome unknown; observe before deciding whether to retry: %w", err)
 	}
 	tp.page = snap
-	// Filling may trigger validation but does not intentionally submit. Clicks
-	// stay unknown until the agent provides evidence of progress/submission.
+	// fills don't submit; a click stays unknown until the agent records evidence
 	if in.Action == "fill" {
 		if err := s.store.FinishAutomationAction(p.Profile.ID, key, "progress", "Field updated"); err != nil {
 			return nil, err

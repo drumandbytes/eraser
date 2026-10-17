@@ -16,8 +16,8 @@ import (
 
 type demoState struct{ origin string }
 
-// NewDemo creates an isolated config and broker site with fictional information.
-// The loopback exception is fixed to this listener and is never a tool argument.
+// NewDemo builds an isolated config and fake broker site. The loopback exception
+// is tied to this listener, never a tool argument.
 func NewDemo(headless bool, chromePath string) (*Service, func(), error) {
 	dir, err := os.MkdirTemp("", "eraser-mcp-demo-")
 	if err != nil {

@@ -1,5 +1,5 @@
-// Package mcpserver exposes Eraser's local workflow to an MCP client. It does
-// not call an LLM and shares the existing config, history, and web interface.
+// Package mcpserver exposes Eraser's local workflow to an MCP client over stdio.
+// It calls no LLM and shares the web UI's config and history.
 package mcpserver
 
 import (

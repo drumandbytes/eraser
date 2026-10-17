@@ -73,7 +73,7 @@ func (s *Service) send(ctx context.Context, in sendInput) (map[string]any, error
 	if p.Config.Options.DryRun {
 		return map[string]any{"dry_run": true, "sent": false}, nil
 	}
-	// Cooperate with scheduled cycles and other MCP senders.
+	// same lock as scheduled cycles and other MCP senders
 	release, ok, err := schedule.TryLock(filepath.Dir(s.opts.ConfigPath))
 	if err != nil {
 		return nil, err
@@ -115,8 +115,7 @@ func (s *Service) send(ctx context.Context, in sendInput) (map[string]any, error
 	if err != nil {
 		return nil, err
 	}
-	// Include bounces so a new eligible send cannot collide with a previously
-	// accepted message subsequently marked as bounced in Eraser.
+	// count bounces too: a new send must not collide with an accepted message later marked bounced
 	status, err := s.store.GetBrokerStatus(p.Profile.ID, b.ID)
 	if err != nil {
 		return nil, err

@@ -10,8 +10,8 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// Screenshots can contain personal data. Resolve them through a task owned by
-// the active profile, never through a public directory or a supplied filename.
+// Screenshots can hold personal data: resolve them through a task the active
+// profile owns, never a public dir or a supplied filename.
 func (s *Server) handleTaskScreenshot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "private, no-store")
 	id, err := strconv.ParseInt(chi.URLParam(r, "taskID"), 10, 64)

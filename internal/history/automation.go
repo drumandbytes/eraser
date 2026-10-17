@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// AutomationAttempt records actions before they reach a broker. An interrupted
-// attempt must be reviewed rather than blindly replayed after a restart.
+// AutomationAttempt is logged before the action reaches a broker; an interrupted
+// one needs review, never a blind replay.
 type AutomationAttempt struct {
 	Key     string `json:"key"`
 	Subject string `json:"subject"`
@@ -25,8 +25,8 @@ func (s *Store) migrateAutomation() error {
 	return err
 }
 
-// ClaimAutomationAction is atomic across MCP processes. A crash leaves an
-// unknown receipt, preventing an automatic retry of a possible submission.
+// ClaimAutomationAction is atomic across MCP processes. A crash leaves the attempt
+// unknown, so a possible submission is never retried automatically.
 func (s *Store) ClaimAutomationAction(profileID, key, subject string) error {
 	r, err := s.db.Exec(`INSERT INTO automation_attempts
 		(profile_id, action_key, subject, state, updated_at)
@@ -98,8 +98,8 @@ func (s *Store) RetryAutomationAction(profileID, key string) error {
 	return err
 }
 
-// EnsureAutomationTask makes email-derived and catalog forms visible in the
-// existing Tasks UI without creating another task each time an agent resumes.
+// EnsureAutomationTask shows email-derived and catalog forms in the Tasks UI, one
+// task per form however often an agent resumes.
 func (s *Store) EnsureAutomationTask(profileID, brokerID, brokerName string, kind TaskType, rawURL string) (*PendingTask, error) {
 	profileID = normalizeProfileID(profileID)
 	_, err := s.db.Exec(`INSERT INTO pending_tasks
@@ -119,8 +119,8 @@ func (s *Store) EnsureAutomationTask(profileID, brokerID, brokerName string, kin
 	return s.GetPendingTaskByID(id, profileID)
 }
 
-// UpdateAutomationTask keeps notes/evidence and completion in one DB update.
-// A missing, wrong-profile, completed, or skipped task is an error.
+// UpdateAutomationTask writes notes, evidence and completion in one update. A
+// missing, other-profile, completed or skipped task is an error.
 func (s *Store) UpdateAutomationTask(profileID string, id int64, note, screenshot string, completed bool) error {
 	status := "pending"
 	var at any

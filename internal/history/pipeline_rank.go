@@ -2,9 +2,8 @@ package history
 
 import "fmt"
 
-// pipelineRank orders stages so automated writers only move a request forward.
-// A late "awaiting response" cannot overwrite a confirmation. Human decisions
-// use OverridePipelineStatus instead.
+// pipelineRank orders stages so automated writers only move a request forward (a
+// late "awaiting response" can't undo a confirmation). People use OverridePipelineStatus.
 var pipelineRank = map[PipelineStatus]int{
 	PipelineEmailSent:            1,
 	PipelineAwaitingResponse:     2,
@@ -28,8 +27,7 @@ var rankCase = func() string {
 	return s + " ELSE 0 END"
 }()
 
-// UpdatePipelineStatus moves the latest request forward only. Unknown or
-// earlier stages are ignored, so a late automated reply cannot undo progress.
+// UpdatePipelineStatus moves the latest request forward only; earlier or unknown stages are ignored.
 func (s *Store) UpdatePipelineStatus(profileID, brokerID string, status PipelineStatus) error {
 	return s.setPipelineStatus(profileID, brokerID, status, true)
 }

@@ -29,23 +29,29 @@ var rankCase = func() string {
 
 // UpdatePipelineStatus moves the latest request forward only; earlier or unknown stages are ignored.
 func (s *Store) UpdatePipelineStatus(profileID, brokerID string, status PipelineStatus) error {
-	return s.setPipelineStatus(profileID, brokerID, status, true)
+	return s.setPipelineStatus(profileID, brokerID, status, true, "")
+}
+
+// UpdatePipelineStatusBy records which agent client moved the stage, so the
+// export can say who did it.
+func (s *Store) UpdatePipelineStatusBy(profileID, brokerID string, status PipelineStatus, actor string) error {
+	return s.setPipelineStatus(profileID, brokerID, status, true, actor)
 }
 
 // OverridePipelineStatus is for a person's explicit decision in the UI.
 func (s *Store) OverridePipelineStatus(profileID, brokerID string, status PipelineStatus) error {
-	return s.setPipelineStatus(profileID, brokerID, status, false)
+	return s.setPipelineStatus(profileID, brokerID, status, false, "human")
 }
 
-func (s *Store) setPipelineStatus(profileID, brokerID string, status PipelineStatus, forwardOnly bool) error {
+func (s *Store) setPipelineStatus(profileID, brokerID string, status PipelineStatus, forwardOnly bool, actor string) error {
 	profileID = normalizeProfileID(profileID)
 	guard := ""
-	args := []any{status, profileID, brokerID, profileID, brokerID}
+	args := []any{status, actor, profileID, brokerID, profileID, brokerID}
 	if forwardOnly {
 		guard = fmt.Sprintf(" AND ? >= (%s)", rankCase)
 		args = append(args, pipelineRank[status])
 	}
-	query := `UPDATE removal_requests SET pipeline_status = ? WHERE profile_id = ? AND broker_id = ? AND id = (
+	query := `UPDATE removal_requests SET pipeline_status = ?, pipeline_actor = ? WHERE profile_id = ? AND broker_id = ? AND id = (
 		SELECT id FROM removal_requests WHERE profile_id = ? AND broker_id = ? ORDER BY sent_at DESC LIMIT 1
 	)` + guard
 	if _, err := s.db.Exec(query, args...); err != nil {

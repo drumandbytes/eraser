@@ -48,6 +48,7 @@ type BrokerEvidence struct {
 	BrokerEmail    string             `json:"broker_email,omitempty"`
 	BrokerWebsite  string             `json:"broker_website,omitempty"`
 	PipelineStatus string             `json:"pipeline_status,omitempty"`
+	PipelineSetBy  string             `json:"pipeline_set_by,omitempty"`
 	PastDeadline   bool               `json:"past_deadline"`
 	DeadlineDate   *time.Time         `json:"deadline_date,omitempty"`
 	Requests       []RequestEvidence  `json:"requests"`
@@ -183,6 +184,7 @@ func Build(
 		}
 
 		var latestPipeline history.PipelineStatus
+		var latestActor string
 		var earliestSent time.Time
 		var anySent bool
 		for _, req := range reqs {
@@ -204,7 +206,7 @@ func Build(
 			}
 			be.Requests = append(be.Requests, re)
 			if req.PipelineStatus != "" {
-				latestPipeline = req.PipelineStatus
+				latestPipeline, latestActor = req.PipelineStatus, req.PipelineActor
 			}
 			if req.Status == history.StatusSent && !req.SentAt.IsZero() {
 				if !anySent || req.SentAt.Before(earliestSent) {
@@ -214,6 +216,7 @@ func Build(
 			}
 		}
 		be.PipelineStatus = string(latestPipeline)
+		be.PipelineSetBy = latestActor
 
 		resp := responsesByBroker[brokerID]
 		sort.SliceStable(resp, func(i, j int) bool { return resp[i].ReceivedAt.Before(resp[j].ReceivedAt) })

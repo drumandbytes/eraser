@@ -130,7 +130,9 @@ page, mailbox, and previous attempts before proposing a retry. An observation
 does not release that safeguard. Native invalid forms can be corrected without
 submitting them; server-side rejection or ambiguous receipts stay open for
 review. The current receipt check is conservative and recognizes English
-acceptance text; other languages may need manual review.
+acceptance text; other languages may need manual review. The agent quotes the
+receipt text from an untrusted page, so a page can phrase a fake receipt that
+the check accepts. The evidence is recorded for you to read, not as proof.
 
 For CAPTCHA, login, identity documents, or missing profile information, the
 agent stops. Complete the step in the visible browser, then ask it to

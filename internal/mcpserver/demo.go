@@ -68,7 +68,7 @@ func NewDemo(headless bool, chromePath string) (*Service, func(), error) {
 		if b.ID == "demo-confirm" {
 			kind = history.TaskConfirm
 		}
-		if _, err := s.store.EnsureAutomationTask("default", b.ID, b.Name, kind, b.OptOutURL); err != nil {
+		if _, err := s.store.EnsureAutomationTask("default", b.ID, b.Name, kind, b.OptOutURL, "human"); err != nil {
 			_ = s.Close()
 			cleanup()
 			return nil, nil, err

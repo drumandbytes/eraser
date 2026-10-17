@@ -5,7 +5,7 @@
 {{- range $versions }}{{ if eq .slug $cur }}{{ $current = . }}{{ end }}{{ end -}}
 <div class="docs-bar">
   <label for="docs-version">Version</label>
-  <select id="docs-version" aria-label="Documentation version">
+  <select id="docs-version" aria-label="Documentation version" onchange="location.href=this.value">
     {{- range $versions }}
     {{- $target := printf "/docs/%s/" .slug }}
     {{- if and $page (in (.pages | default slice) $page) }}{{ $target = printf "/docs/%s/%s/" .slug $page }}{{ end }}

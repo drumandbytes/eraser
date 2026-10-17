@@ -9,6 +9,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -17,7 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -58,19 +59,9 @@ func parseTag(tag string) (semver, bool) {
 	return v, true
 }
 
-func cmpInt(a, b int) int {
-	switch {
-	case a < b:
-		return -1
-	case a > b:
-		return 1
-	}
-	return 0
-}
-
 // compare orders versions by semver precedence: 2.0.0-beta.2 < 2.0.0-beta.10 < 2.0.0.
 func (a semver) compare(b semver) int {
-	for _, c := range []int{cmpInt(a.major, b.major), cmpInt(a.minor, b.minor), cmpInt(a.patch, b.patch)} {
+	for _, c := range []int{cmp.Compare(a.major, b.major), cmp.Compare(a.minor, b.minor), cmp.Compare(a.patch, b.patch)} {
 		if c != 0 {
 			return c
 		}
@@ -89,7 +80,7 @@ func (a semver) compare(b semver) int {
 		var c int
 		switch {
 		case xerr == nil && yerr == nil:
-			c = cmpInt(x, y)
+			c = cmp.Compare(x, y)
 		case xerr == nil:
 			c = -1 // numeric identifiers sort before text
 		case yerr == nil:
@@ -101,7 +92,7 @@ func (a semver) compare(b semver) int {
 			return c
 		}
 	}
-	return cmpInt(len(a.pre), len(b.pre))
+	return cmp.Compare(len(a.pre), len(b.pre))
 }
 
 // selectVersions returns the dropdown entries: next, an optional beta, then the
@@ -145,7 +136,7 @@ func selectVersions(tags []string) []Version {
 	for _, t := range stable {
 		lines = append(lines, t)
 	}
-	sort.Slice(lines, func(i, j int) bool { return lines[i].v.compare(lines[j].v) > 0 })
+	slices.SortFunc(lines, func(a, b tagged) int { return b.v.compare(a.v) })
 	for i, t := range lines {
 		slug := fmt.Sprintf("%d.%d", t.v.major, t.v.minor)
 		out = append(out, Version{Slug: slug, Label: slug, Status: "stable", Latest: i == 0, ref: t.tag})
@@ -160,7 +151,7 @@ var (
 
 // render turns one markdown doc into a Hugo page. The first heading becomes the
 // page title, and relative links are pointed at the site or at GitHub.
-func render(name, body string, v Version) (string, error) {
+func render(name, body string, v Version) string {
 	lines := strings.Split(body, "\n")
 	title := name
 	for i, l := range lines {
@@ -196,7 +187,7 @@ func render(name, body string, v Version) (string, error) {
 		fm.WriteString("robots: noindex\n")
 	}
 	fm.WriteString("---\n\n")
-	return fm.String() + strings.TrimLeft(text, "\n"), nil
+	return fm.String() + strings.TrimLeft(text, "\n")
 }
 
 func git(repo string, args ...string) ([]byte, error) {
@@ -243,11 +234,7 @@ func run(repo, siteDir string) error {
 			if !ok {
 				continue
 			}
-			out, err := render(page, string(body), *v)
-			if err != nil {
-				return err
-			}
-			if err := os.WriteFile(filepath.Join(dir, page+".md"), []byte(out), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(dir, page+".md"), []byte(render(page, string(body), *v)), 0o644); err != nil {
 				return err
 			}
 			v.Pages = append(v.Pages, page)

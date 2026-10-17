@@ -63,10 +63,7 @@ func TestCompare(t *testing.T) {
 
 func TestRender(t *testing.T) {
 	body := "# Commands\n\nSee [multi-profile](multi-profile.md#setup), [architecture](architecture.md) and [the README](../README.md#top).\n"
-	out, err := render("commands", body, Version{Slug: "1.2", Latest: true, ref: "v1.2.9"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	out := render("commands", body, Version{Slug: "1.2", Latest: true, ref: "v1.2.9"})
 	for _, want := range []string{
 		`title: "Commands"`, `docs_version: "1.2"`, `docs_page: "commands"`,
 		"](../multi-profile/#setup)",
@@ -80,7 +77,7 @@ func TestRender(t *testing.T) {
 	if strings.Contains(out, "# Commands") || strings.Contains(out, "noindex") {
 		t.Errorf("heading kept or latest page hidden:\n%s", out)
 	}
-	out, _ = render("commands", "no heading, see [x](architecture.md)", Version{Slug: "next"})
+	out = render("commands", "no heading, see [x](architecture.md)", Version{Slug: "next"})
 	if !strings.Contains(out, `title: "commands"`) || !strings.Contains(out, "robots: noindex") || !strings.Contains(out, "/blob/main/") {
 		t.Errorf("fallback title, noindex or main ref wrong:\n%s", out)
 	}

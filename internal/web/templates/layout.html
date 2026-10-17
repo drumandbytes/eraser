@@ -276,6 +276,10 @@
         .skip-link:focus { top: 0.5rem; }
         main:focus { outline: none; }
 
+        /* WCAG 2.5.8: native checkboxes and radios default to 13px */
+        input[type="checkbox"], input[type="radio"] { width: 24px; height: 24px; }
+        summary { min-height: 24px; }
+
         /* WCAG 2.5.8: 24px minimum target for standalone links */
         .site-nav-inner a, footer a, main a.text-sm, main a.text-xs { display: inline-flex; align-items: center; min-height: 24px; }
 

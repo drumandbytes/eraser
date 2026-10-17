@@ -101,6 +101,7 @@ type PipelineStats struct {
 	CaptchaSolved        int
 	AwaitingConfirmation int
 	Confirmed            int
+	NoData               int
 	Rejected             int
 	Failed               int
 	PendingTasks         int
@@ -108,79 +109,8 @@ type PipelineStats struct {
 }
 
 func (s *Server) getPipelineStats(profileID string) PipelineStats {
-	stats := PipelineStats{}
-
-	if s.historyStore == nil {
-		return stats
-	}
-
-	pipelineStats, err := s.historyStore.GetPipelineStats(profileID)
-	if err == nil {
-		stats.EmailSent = pipelineStats[history.PipelineEmailSent]
-		stats.AwaitingResponse = pipelineStats[history.PipelineAwaitingResponse]
-		stats.FormRequired = pipelineStats[history.PipelineFormRequired]
-		stats.FormFilled = pipelineStats[history.PipelineFormFilled]
-		stats.AwaitingCaptcha = pipelineStats[history.PipelineAwaitingCaptcha]
-		stats.CaptchaSolved = pipelineStats[history.PipelineCaptchaSolved]
-		stats.AwaitingConfirmation = pipelineStats[history.PipelineAwaitingConfirmation]
-		stats.Confirmed = pipelineStats[history.PipelineConfirmed]
-		stats.Rejected = pipelineStats[history.PipelineRejected]
-		stats.Failed = pipelineStats[history.PipelineFailed]
-	}
-
-	pendingTaskCount, _, _, err := s.historyStore.GetPendingTaskStats(profileID)
-	if err == nil {
-		stats.PendingTasks = pendingTaskCount
-	}
-
-	responses, err := s.historyStore.GetBrokerResponses(profileID, "", true, 1000)
-	if err == nil {
-		stats.NeedsReview = len(responses)
-	}
-
-	// Get form stats (what's actually shown on tasks page)
-	pendingForms, _, _, _, _, _ := s.historyStore.GetFormStats(profileID)
-
-	// Calculate unified "Action Needed" based on what's displayed on /tasks page:
-	// - Pending forms (forms without tasks yet)
-	// - Pending tasks (from pending_tasks table)
-	// - Items needing review (parser was unsure)
-	stats.PendingTasks = pendingForms + pendingTaskCount + stats.NeedsReview
-
+	stats, _, _ := s.loadPipelineStats(profileID)
 	return stats
-}
-
-func (s *Server) handlePipeline(w http.ResponseWriter, r *http.Request) {
-	cfg := s.getConfig()
-	if cfg == nil || !cfg.HasProfile() {
-		http.Redirect(w, r, "/setup", http.StatusFound)
-		return
-	}
-
-	active := s.activeProfile(r)
-	pipelineStats := s.getPipelineStats(active.ID)
-
-	// Get recent responses
-	var recentResponses []history.BrokerResponse
-	if s.historyStore != nil {
-		recentResponses, _ = s.historyStore.GetBrokerResponses(active.ID, "", false, 20)
-	}
-
-	// Get pending tasks
-	var pendingTasks []history.PendingTask
-	if s.historyStore != nil {
-		pendingTasks, _ = s.historyStore.GetPendingTasks(active.ID, "", "pending")
-	}
-
-	data := map[string]interface{}{
-		"Title":           "Pipeline Status",
-		"PipelineStats":   pipelineStats,
-		"Responses":       recentResponses,
-		"PendingTasks":    pendingTasks,
-		"InboxConfigured": cfg.InboxForProfile(active).Enabled,
-	}
-
-	s.renderWithCSRF(w, r, "pipeline.html", data)
 }
 
 func (s *Server) handleResponseReview(w http.ResponseWriter, r *http.Request) {
@@ -269,55 +199,54 @@ func (s *Server) handleTasks(w http.ResponseWriter, r *http.Request) {
 		status = "pending"
 	}
 
-	var tasks []history.PendingTask
-	var completedTasksList []history.PendingTask
+	var actions history.ActionItems
 	var forms []history.FormWithStatus
-	var reviewItems []history.BrokerResponse
+	var completedTasksList []history.PendingTask
+	var completedTasksCount, skippedTasks, filledForms, captchaForms, failedForms, skippedForms int
 	if s.historyStore != nil {
-		tasks, _ = s.historyStore.GetPendingTasks(active.ID, history.TaskType(taskType), "pending")
-		completedTasksList, _ = s.historyStore.GetPendingTasks(active.ID, history.TaskType(taskType), "completed")
-		forms, _ = s.historyStore.GetFormsWithStatus(active.ID)
-		reviewItems, _ = s.historyStore.GetBrokerResponses(active.ID, "", true, 1000)
+		var err error
+		actions, err = s.historyStore.GetActionItems(active.ID)
+		if err != nil {
+			http.Error(w, "Unable to load action items", http.StatusInternalServerError)
+			return
+		}
+		forms, err = s.historyStore.GetFormsWithStatus(active.ID)
+		if err != nil {
+			http.Error(w, "Unable to load forms", http.StatusInternalServerError)
+			return
+		}
+		// Pending forms come exclusively from the shared action projection.
+		kept := append([]history.FormWithStatus{}, actions.Forms...)
+		for _, f := range forms {
+			if f.Status != "pending" {
+				kept = append(kept, f)
+			}
+		}
+		forms = kept
+		completedTasksList, _ = s.historyStore.GetPendingTasks(active.ID, "", "completed")
+		_, completedTasksCount, skippedTasks, _ = s.historyStore.GetPendingTaskStats(active.ID)
+		_, filledForms, captchaForms, failedForms, skippedForms, _ = s.historyStore.GetFormStats(active.ID)
 	}
-
-	pendingTasks, completedTasksCount, skippedTasks := 0, 0, 0
-	if s.historyStore != nil {
-		pendingTasks, completedTasksCount, skippedTasks, _ = s.historyStore.GetPendingTaskStats(active.ID)
-	}
-
-	pendingForms, filledForms, captchaForms, failedForms, skippedForms := 0, 0, 0, 0, 0
-	if s.historyStore != nil {
-		pendingForms, filledForms, captchaForms, failedForms, skippedForms, _ = s.historyStore.GetFormStats(active.ID)
-	}
-
-	// Count forms needing action (only pending forms, not captcha since those are in pendingTasks)
-	formsNeedingAction := pendingForms
-
-	// Total action items: pending forms (without tasks) + pending tasks
-	// This avoids double-counting captcha items
-	totalActionItems := pendingForms + pendingTasks
-
-	needsReviewCount := len(reviewItems)
 
 	data := map[string]interface{}{
 		"Title":              "Action Needed",
-		"Tasks":              tasks,
+		"Tasks":              actions.Tasks,
 		"CompletedTasksList": completedTasksList,
 		"Forms":              forms,
-		"ReviewItems":        reviewItems,
+		"ReviewItems":        actions.Reviews,
 		"TaskType":           taskType,
 		"Status":             status,
-		"PendingTasks":       pendingTasks,
+		"PendingTasks":       len(actions.Tasks),
 		"CompletedTasks":     completedTasksCount,
 		"SkippedTasks":       skippedTasks,
-		"PendingForms":       pendingForms,
+		"PendingForms":       len(actions.Forms),
 		"FilledForms":        filledForms,
 		"CaptchaForms":       captchaForms,
 		"FailedForms":        failedForms,
 		"SkippedForms":       skippedForms,
-		"NeedsReview":        needsReviewCount,
-		"FormsNeedingAction": formsNeedingAction,
-		"TotalActionItems":   totalActionItems + needsReviewCount,
+		"NeedsReview":        actions.NeedsReview(),
+		"FormsNeedingAction": actions.FormsToFill(),
+		"TotalActionItems":   actions.Total(),
 	}
 
 	s.renderWithCSRF(w, r, "tasks.html", data)

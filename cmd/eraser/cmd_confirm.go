@@ -74,7 +74,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}

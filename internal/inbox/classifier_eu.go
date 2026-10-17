@@ -48,12 +48,11 @@ func init() {
 		regexp.MustCompile(`(?i)copie\s+de\s+votre\s+(pièce\s+d['’]identité|carte\s+d['’]identité|passeport)`),
 	)
 
-	rejectionPatterns = append(rejectionPatterns,
+	noDataPatterns = append(noDataPatterns,
 		regexp.MustCompile(`(?i)(do\s+not|don't|does\s+not)\s+(process|hold|store)\s+any\s+personal\s+data\s+(relating|related|concerning|pertaining)\s+to\s+you`),
 		regexp.MustCompile(`(?i)no\s+personal\s+data\s+(concerning|relating\s+to|about|pertaining\s+to)\s+you`),
 		regexp.MustCompile(`(?i)you\s+are\s+not\s+(present\s+|listed\s+)?in\s+our\s+(database|records|systems)`),
 		regexp.MustCompile(`(?i)unable\s+to\s+identify\s+you\s+in\s+our\s+(records|database|systems)`),
-		regexp.MustCompile(`(?i)manifestly\s+(unfounded|excessive)`),
 		// German
 		regexp.MustCompile(`(?i)(wir\s+)?(verarbeiten|speichern|haben)\s+keine\s+(personenbezogenen\s+)?daten\s+(zu|über|von)\s+ihnen`),
 		regexp.MustCompile(`(?i)sie\s+sind\s+nicht\s+in\s+unserer\s+datenbank`),
@@ -89,9 +88,9 @@ func init() {
 		regexp.MustCompile(`(?i)(supprimé|effacé|effacement\s+effectué)`),
 	)
 
-	subjectRejectionPatterns = append(subjectRejectionPatterns,
+	rejectionPatterns = append(rejectionPatterns, regexp.MustCompile(`(?i)manifestly\s+(unfounded|excessive)`))
+	subjectNoDataPatterns = append(subjectNoDataPatterns,
 		regexp.MustCompile(`(?i)keine\s+daten`),
 		regexp.MustCompile(`(?i)aucune\s+donnée`),
-		regexp.MustCompile(`(?i)(nicht\s+gefunden|introuvable)`),
 	)
 }

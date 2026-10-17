@@ -12,13 +12,15 @@
             <span class="status-dot status-dot-warning"></span>
             {{else if eq .ResponseType "confirmation_required"}}
             <span class="status-dot" style="background: var(--accent);"></span>
+            {{else if eq .ResponseType "no_data_held"}}
+            <span class="status-dot" style="background: var(--accent);"></span>
             {{else if eq .ResponseType "rejected"}}
             <span class="status-dot status-dot-error"></span>
             {{else}}
             <span class="status-dot" style="background: var(--warning);"></span>
             {{end}}
             <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-primary truncate">{{.BrokerName}}</p>
+                <a href="/pipeline/responses/{{.ID}}" class="text-sm font-medium text-primary hover:underline">{{.BrokerName}}</a>
                 <p class="text-xs text-muted truncate">{{.EmailSubject}}</p>
             </div>
             <div class="text-right">
@@ -26,9 +28,10 @@
                     {{if eq .ResponseType "success"}}chip chip-success
                     {{else if eq .ResponseType "form_required"}}chip chip-warning
                     {{else if eq .ResponseType "confirmation_required"}}chip chip-info
+                    {{else if eq .ResponseType "no_data_held"}}chip chip-info
                     {{else if eq .ResponseType "rejected"}}chip chip-error
                     {{else}}chip chip-warning{{end}}">
-                    {{.ResponseType}}
+                    {{pipelineLabel .ResponseType}}
                 </span>
                 {{if .NeedsReview}}
                 <span class="ml-1 rounded-full chip chip-warning">Review</span>
@@ -75,7 +78,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
     </div>
-    <p class="text-secondary mb-1">No responses yet</p>
+    <p class="text-secondary mb-1">{{if .Filtered}}No matching results{{else}}No responses yet{{end}}</p>
     <p class="text-sm text-muted">Run <code class="px-1 py-0.5 rounded" style="background: var(--bg-elevated);">eraser monitor</code> to check for broker responses</p>
 </div>
 {{end}}

@@ -73,7 +73,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to initialize history: %w", err)
 	}
@@ -151,6 +151,7 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 	fmt.Printf("📊 Summary for %s:\n", inboxCfg.Email)
 	fmt.Printf("  Total responses:     %d\n", summary.Total)
 	fmt.Printf("  ✅ Success:          %d\n", summary.Success)
+	fmt.Printf("  ℹ️  No data held:     %d\n", summary.NoData)
 	fmt.Printf("  📝 Form required:    %d\n", summary.FormRequired)
 	fmt.Printf("  🔗 Confirm required: %d\n", summary.ConfirmRequired)
 	fmt.Printf("  ❌ Rejected:         %d\n", summary.Rejected)
@@ -182,7 +183,7 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 func printClassifiedResponse(r inbox.ClassifiedResponse) {
 	var icon string
 	switch r.Type {
-	case inbox.ResponseSuccess:
+	case inbox.ResponseSuccess, inbox.ResponseNoData:
 		icon = "✅"
 	case inbox.ResponseFormRequired:
 		icon = "📝"

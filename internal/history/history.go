@@ -39,6 +39,7 @@ const (
 	PipelineCaptchaSolved        PipelineStatus = "captcha_solved"
 	PipelineAwaitingConfirmation PipelineStatus = "awaiting_confirmation"
 	PipelineConfirmed            PipelineStatus = "confirmed"
+	PipelineNoData               PipelineStatus = "no_data_held"
 	PipelineFailed               PipelineStatus = "failed"
 	PipelineRejected             PipelineStatus = "rejected"
 )
@@ -75,7 +76,7 @@ type BrokerResponse struct {
 	ProfileID    string
 	BrokerID     string
 	BrokerName   string
-	ResponseType string // form_required, confirmation_required, success, rejected, pending, unknown
+	ResponseType string // form_required, confirmation_required, success, no_data_held, rejected, pending, bounced, unknown
 	EmailFrom    string
 	EmailSubject string
 	EmailBody    string // Stored for reclassification
@@ -464,6 +465,7 @@ func parseSQLiteTime(s string) (time.Time, error) {
 	}
 	formats := []string{
 		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05.999999999 -0700 -0700",
 		time.RFC3339Nano,
 		"2006-01-02 15:04:05.999999999-07:00",
 		"2006-01-02 15:04:05",
@@ -479,16 +481,13 @@ func parseSQLiteTime(s string) (time.Time, error) {
 	return time.Time{}, lastErr
 }
 
-// parseFlexibleTimeString parses a nullable TEXT timestamp in RFC3339 or
-// "2006-01-02 15:04:05". NULL gives the zero Time.
+// parseFlexibleTimeString handles nullable timestamps from current and older
+// SQLite/Go encodings, including numeric-only zones returned by IMAP.
 func parseFlexibleTimeString(s sql.NullString) time.Time {
 	if !s.Valid {
 		return time.Time{}
 	}
-	if t, err := time.Parse(time.RFC3339, s.String); err == nil {
-		return t
-	}
-	t, _ := time.Parse("2006-01-02 15:04:05", s.String)
+	t, _ := parseSQLiteTime(s.String)
 	return t
 }
 
@@ -910,6 +909,7 @@ func (s *Store) GetResponseStats(profileID string) (map[string]int, error) {
 
 // FormWithStatus represents a form detected from email with its current fill status
 type FormWithStatus struct {
+	ResponseID     int64
 	BrokerID       string
 	BrokerName     string
 	FormURL        string
@@ -923,30 +923,33 @@ type FormWithStatus struct {
 // GetFormsWithStatus returns all detected forms with their current status
 // for one profile.
 func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
+	latest, err := s.LatestRequests(profileID)
+	if err != nil {
+		return nil, err
+	}
+	stages := make(map[string]PipelineStatus)
+	for _, r := range latest {
+		stages[r.BrokerID] = r.PipelineStatus
+	}
 	profileID = normalizeProfileID(profileID)
-	// all three joins pinned to profile_id, so another profile's same broker never matches
+	// Pin the task join to the profile; another profile's same broker never matches.
 	query := `
 	SELECT
+		br.id,
 		br.broker_id,
 		br.broker_name,
 		br.form_url,
 		br.email_subject,
 		br.created_at as detected_at,
 		COALESCE(pt.id, 0) as task_id,
-		COALESCE(pt.status, '') as task_status,
-		COALESCE(rr.pipeline_status, '') as pipeline_status
+		COALESCE(pt.status, '') as task_status
 	FROM broker_responses br
 	LEFT JOIN pending_tasks pt ON br.broker_id = pt.broker_id AND pt.profile_id = br.profile_id AND pt.task_type IN ('captcha', 'manual_form')
-	LEFT JOIN (
-		SELECT broker_id, profile_id, pipeline_status
-		FROM removal_requests
-		WHERE id IN (SELECT MAX(id) FROM removal_requests WHERE profile_id = ? GROUP BY broker_id)
-	) rr ON br.broker_id = rr.broker_id AND rr.profile_id = br.profile_id
 	WHERE br.profile_id = ? AND br.form_url IS NOT NULL AND br.form_url != ''
-	ORDER BY br.created_at DESC
+	ORDER BY br.created_at DESC, br.id DESC, CASE WHEN pt.status = 'pending' THEN 0 ELSE 1 END, pt.id DESC
 	`
 
-	rows, err := s.db.Query(query, profileID, profileID)
+	rows, err := s.db.Query(query, profileID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query forms: %w", err)
 	}
@@ -957,10 +960,10 @@ func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 
 	for rows.Next() {
 		var f FormWithStatus
-		var taskStatus, pipelineStatus string
+		var taskStatus string
 
-		if err := rows.Scan(&f.BrokerID, &f.BrokerName, &f.FormURL, &f.EmailSubject,
-			&f.DetectedAt, &f.TaskID, &taskStatus, &pipelineStatus); err != nil {
+		if err := rows.Scan(&f.ResponseID, &f.BrokerID, &f.BrokerName, &f.FormURL, &f.EmailSubject,
+			&f.DetectedAt, &f.TaskID, &taskStatus); err != nil {
 			return nil, fmt.Errorf("failed to scan form: %w", err)
 		}
 
@@ -969,9 +972,12 @@ func (s *Store) GetFormsWithStatus(profileID string) ([]FormWithStatus, error) {
 		}
 		seen[f.BrokerID] = true
 
+		pipelineStatus := string(stages[f.BrokerID])
 		f.PipelineStatus = PipelineStatus(pipelineStatus)
 
-		if taskStatus == "completed" {
+		if pipelineStatus == string(PipelineNoData) {
+			f.Status = "resolved"
+		} else if taskStatus == "completed" {
 			f.Status = "filled"
 		} else if taskStatus == "skipped" {
 			f.Status = "skipped"
@@ -1188,29 +1194,13 @@ func (s *Store) UpdatePipelineStatus(profileID, brokerID string, status Pipeline
 
 // GetPipelineStats returns counts by pipeline status for one profile
 func (s *Store) GetPipelineStats(profileID string) (map[PipelineStatus]int, error) {
-	profileID = normalizeProfileID(profileID)
-	query := `SELECT pipeline_status, COUNT(*) FROM removal_requests
-		WHERE profile_id = ? AND id IN (SELECT MAX(id) FROM removal_requests WHERE profile_id = ? GROUP BY broker_id)
-		GROUP BY pipeline_status`
-
-	rows, err := s.db.Query(query, profileID, profileID)
+	latest, err := s.LatestRequests(profileID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query pipeline stats: %w", err)
+		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
-
 	stats := make(map[PipelineStatus]int)
-	for rows.Next() {
-		var status sql.NullString
-		var count int
-		if err := rows.Scan(&status, &count); err != nil {
-			return nil, fmt.Errorf("failed to scan pipeline stat: %w", err)
-		}
-		if status.Valid {
-			stats[PipelineStatus(status.String)] = count
-		} else {
-			stats[PipelineEmailSent] = count
-		}
+	for _, r := range latest {
+		stats[r.PipelineStatus]++
 	}
-	return stats, rows.Err()
+	return stats, nil
 }

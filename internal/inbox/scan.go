@@ -121,6 +121,11 @@ func RecordReply(store *history.Store, e *Email, reclassify bool) (ClassifiedRes
 					return classified, ReplyUpdated, err
 				}
 			}
+			if classified.Type == ResponseNoData {
+				if err := store.ResolveNoData(profileID, e.BrokerID, true); err != nil {
+					return classified, ReplyUpdated, err
+				}
+			}
 			return classified, ReplyUpdated, nil
 		}
 	}
@@ -139,11 +144,23 @@ func RecordReply(store *history.Store, e *Email, reclassify bool) (ClassifiedRes
 		NeedsReview:  classified.NeedsReview,
 		ReceivedAt:   e.ReceivedAt,
 	})
-	if err != nil || !inserted {
+	if err != nil {
+		return classified, ReplySeen, err
+	}
+	if !inserted {
+		if classified.Type == ResponseNoData {
+			err = store.ResolveNoData(profileID, e.BrokerID, true)
+		}
 		return classified, ReplySeen, err
 	}
 	// No matching request row is fine: the reply still counts.
-	_ = store.UpdatePipelineStatus(profileID, e.BrokerID, pipelineStatusFor(classified.Type))
+	if classified.Type == ResponseNoData {
+		if err := store.ResolveNoData(profileID, e.BrokerID, false); err != nil {
+			return classified, ReplyNew, err
+		}
+	} else {
+		_ = store.UpdatePipelineStatus(profileID, e.BrokerID, pipelineStatusFor(classified.Type))
+	}
 	return classified, ReplyNew, nil
 }
 
@@ -151,6 +168,8 @@ func pipelineStatusFor(t ResponseType) history.PipelineStatus {
 	switch t {
 	case ResponseSuccess:
 		return history.PipelineConfirmed
+	case ResponseNoData:
+		return history.PipelineNoData
 	case ResponseFormRequired:
 		return history.PipelineFormRequired
 	case ResponseConfirmationRequired:

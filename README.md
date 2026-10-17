@@ -358,6 +358,14 @@ Yes, with caveats:
 
 **The Pipeline view** (`eraser pipeline` or the web UI) shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 700+ emails and tracking responses for you.
 
+In the web Pipeline, select a status card to see matching requests or actions.
+The **Responses** tab filters by response type and searches broker names, subjects,
+and saved email bodies; **Action Required** also searches task notes. Filters stay
+in the URL for refresh and browser back/forward. Clear "no records for you" replies
+appear as **No data held**, including qualifying replies already saved before the
+upgrade.
+
+
 ---
 
 ## How It Compares

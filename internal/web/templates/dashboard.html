@@ -111,7 +111,7 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <!-- Awaiting Response -->
             <a href="/pipeline?status=awaiting_response" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-[var(--border)] transition-all cursor-pointer" style="background: var(--bg-elevated);">
                 <p class="text-2xl font-bold text-primary">{{.PipelineStats.AwaitingResponse}}</p>
@@ -127,8 +127,12 @@
                 <p class="text-2xl font-bold text-error">{{.PipelineStats.Rejected}}</p>
                 <p class="text-xs text-muted mt-1">Request Rejected</p>
             </a>
+            <a href="/pipeline?status=no_data_held" class="p-4 rounded-lg text-center hover:ring-2 transition-all cursor-pointer" style="background: var(--accent-muted);">
+                <p class="text-2xl font-bold text-accent">{{.PipelineStats.NoData}}</p>
+                <p class="text-xs text-muted mt-1">No data held</p>
+            </a>
             <!-- Action Needed (unified: forms, confirmations, captchas, reviews) -->
-            <a href="/tasks" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-[var(--warning)] transition-all cursor-pointer" style="background: rgba(234, 179, 8, 0.1);">
+            <a href="/pipeline?view=actions" class="p-4 rounded-lg text-center hover:ring-2 hover:ring-[var(--warning)] transition-all cursor-pointer" style="background: rgba(234, 179, 8, 0.1);">
                 <p class="text-2xl font-bold text-warning">{{.PipelineStats.PendingTasks}}</p>
                 <p class="text-xs text-muted mt-1">Action Needed</p>
             </a>

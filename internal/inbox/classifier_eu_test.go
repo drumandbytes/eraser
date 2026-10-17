@@ -23,7 +23,7 @@ func TestGDPRAndMultilingualClassification(t *testing.T) {
 		{
 			name:     "no personal data concerning you",
 			body:     "Following our checks, we hold no personal data concerning you and there is nothing to erase.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "manifestly unfounded",
@@ -56,7 +56,7 @@ func TestGDPRAndMultilingualClassification(t *testing.T) {
 		{
 			name:     "German - no data",
 			body:     "Wir verarbeiten keine personenbezogenen Daten zu Ihnen. Sie sind nicht in unserer Datenbank.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "German - acknowledgement",
@@ -83,7 +83,7 @@ func TestGDPRAndMultilingualClassification(t *testing.T) {
 		{
 			name:     "French - no data",
 			body:     "Nous ne détenons aucune donnée vous concernant dans nos fichiers.",
-			expected: ResponseRejected,
+			expected: ResponseNoData,
 		},
 		{
 			name:     "French - acknowledgement",
@@ -125,7 +125,7 @@ func TestEUPatternsDoNotRegressEnglish(t *testing.T) {
 		expected ResponseType
 	}{
 		{"please submit your request at https://example.com/dsar", ResponseFormRequired},
-		{"we do not have any record of a report in our system", ResponseRejected},
+		{"we do not have any record of a report in our system", ResponseNoData},
 		{"we have received your request. One of our Privacy Specialists will reach out", ResponsePending},
 		{"Please click here to confirm your request", ResponseConfirmationRequired},
 		{"your data has been removed and we no longer hold your information", ResponseSuccess},

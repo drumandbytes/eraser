@@ -32,7 +32,7 @@ func runPipelineStatus() error {
 		return err
 	}
 
-	store, err := history.NewStore(history.DBPathFor(resolveConfigPath()))
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 	if err != nil {
 		return fmt.Errorf("failed to open history: %w", err)
 	}
@@ -59,6 +59,7 @@ func runPipelineStatus() error {
 	fmt.Printf("  ✅ CAPTCHA solved:        %d\n", pipelineStats[history.PipelineCaptchaSolved])
 	fmt.Printf("  🔗 Awaiting confirmation: %d\n", pipelineStats[history.PipelineAwaitingConfirmation])
 	fmt.Printf("  ✅ Confirmed:             %d\n", pipelineStats[history.PipelineConfirmed])
+	fmt.Printf("  ℹ️  No data held:          %d\n", pipelineStats[history.PipelineNoData])
 	fmt.Printf("  ❌ Rejected:              %d\n", pipelineStats[history.PipelineRejected])
 	fmt.Printf("  💥 Failed:                %d\n", pipelineStats[history.PipelineFailed])
 

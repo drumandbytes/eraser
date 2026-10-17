@@ -34,6 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # A release event checks out the release's tag. Publish main's site
+          # anyway, so a v2 beta cannot replace Nightly with its own content.
+          ref: main
           persist-credentials: false
           fetch-depth: 0 # the docs snapshots read every release tag
 

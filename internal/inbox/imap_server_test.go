@@ -1,17 +1,20 @@
 package inbox
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 
@@ -219,5 +222,64 @@ func TestArchiveEmailsNothingToDo(t *testing.T) {
 	}
 	if err := m.ArchiveEmails([]uint32{6}, "NoSuchFolder"); err == nil {
 		t.Error("archiving into a missing folder should fail")
+	}
+}
+
+// Without UID EXPUNGE (go-imap v1.2.1), archiving by COPY then EXPUNGE removes
+// every \Deleted message in the mailbox, not just the ones being archived.
+// Mail another client already flagged would go too, so the code warns before
+// and after instead of doing it silently.
+func TestArchiveEmailsWarnsWhenOtherMailIsAlreadyFlaggedDeleted(t *testing.T) {
+	f := newIMAPFixture(t, false) // no MOVE: COPY + \Deleted + EXPUNGE
+	f.Deliver(t, "INBOX", "privacy@acme.example", "Re: first", "first")
+	f.Deliver(t, "INBOX", "privacy@acme.example", "Re: second", "second")
+	f.Mailbox(t, "Eraser") // the archive folder must exist for COPY
+
+	inbox := f.Mailbox(t, "INBOX")
+	n := len(inbox.Messages)
+	stray, ours := inbox.Messages[n-2], inbox.Messages[n-1]
+	stray.Flags = append(stray.Flags, imap.DeletedFlag)
+	before := f.Count(t, "INBOX")
+
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	m := f.connect(t)
+	if err := m.ArchiveEmails([]uint32{ours.Uid}, "Eraser"); err != nil {
+		t.Fatal(err)
+	}
+	out := logs.String()
+	for _, want := range []string{
+		"1 message(s) besides the 1 just archived are already flagged \\Deleted",
+		"expunge removed 2 message(s) but this operation only intended to remove 1",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("log is missing %q:\n%s", want, out)
+		}
+	}
+	// This is the behaviour the warnings exist for: the stray message is gone too.
+	if got := f.Count(t, "INBOX"); got != before-2 {
+		t.Errorf("INBOX has %d messages, want %d", got, before-2)
+	}
+}
+
+// With nothing else flagged, archiving by COPY and EXPUNGE stays quiet.
+func TestArchiveEmailsWithoutStrayFlagsDoesNotWarn(t *testing.T) {
+	f := newIMAPFixture(t, false)
+	f.Deliver(t, "INBOX", "privacy@acme.example", "Re: only", "only")
+	f.Mailbox(t, "Eraser")
+	inbox := f.Mailbox(t, "INBOX")
+	ours := inbox.Messages[len(inbox.Messages)-1]
+
+	var logs bytes.Buffer
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(os.Stderr) })
+
+	if err := f.connect(t).ArchiveEmails([]uint32{ours.Uid}, "Eraser"); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(logs.String(), "WARNING") {
+		t.Errorf("unexpected warning:\n%s", logs.String())
 	}
 }

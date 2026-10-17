@@ -15,6 +15,8 @@
 
 Worth knowing before touching related code:
 
+- The automation session's document CSP (`internal/browser/automation.go`, `restrictDocument`) only works because of two Chrome details. A document is paused again at the response stage only if its `ContinueRequest` sets `InterceptResponse`. And Chrome applies just the `sandbox` part of a CSP header edited with `Fetch.continueResponse`: `worker-src` and `connect-src` are ignored, so the response is fulfilled with its own body and the new header instead. Before this was found the policy never ran at all. `TestInjectedCSPApplies` runs a real page against it.
+- Screenshots are named by their actual format: Chrome returns JPEG below quality 100 and PNG at 100, and they used to be JPEG data in `.png` files.
 - `history.Store.UpdatePipelineStatus` only moves a request forward (ranks in `internal/history/pipeline_rank.go`): an earlier or unknown stage is silently ignored, so a late "awaiting response" can't undo a confirmation. A person's explicit decision in the UI goes through `OverridePipelineStatus`, which always applies. Both record who made the change in `pipeline_actor`.
 - `batch_approvals` timestamps are stored and compared in UTC. SQLite compares them as text, so a local UTC offset (DST) would break the ordering. `ConsumeBatchApproval` is the only way to spend an approval and it is atomic: one approval, one batch.
 - `no_data_held` is a value in the export JSON (`response_type`, `pipeline_status`), so it can only be added to, never renamed. `MigrateNoData` only relabels saved replies; resolving a request is `ResolveNoData`'s job (and the reclassify action's).

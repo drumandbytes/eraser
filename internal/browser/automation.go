@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -216,12 +217,7 @@ func (s *AutomationSession) Open(caller context.Context, raw string) (*Snapshot,
 		case *fetch.EventRequestPaused:
 			go s.checkRequest(e)
 		case *network.EventResponseReceived:
-			// Our DNS lookup and Chrome's can differ, so check the address Chrome used.
-			if e.Response != nil && s.policy.LocalOrigin == "" && !publicAddress(e.Response.RemoteIPAddress) {
-				s.mu.Lock()
-				s.networkBlocked = "The page connected to a private network address, so it was blocked. Review the broker's URLs."
-				s.mu.Unlock()
-			}
+			s.noteResponse(e)
 		}
 	})
 	ctx, cancel := s.operation(caller)
@@ -233,18 +229,63 @@ func (s *AutomationSession) Open(caller context.Context, raw string) (*Snapshot,
 	return s.Observe(caller)
 }
 
+// csp is added to every document the session loads. It keeps popups, workers
+// and out-of-scope connections from escaping the tab's request interceptor;
+// policies stack, so the site's own stays in force.
+func (p URLPolicy) csp() string {
+	return "sandbox allow-scripts allow-same-origin allow-forms allow-modals; worker-src 'none'; connect-src " + strings.Join(p.connectSources(), " ")
+}
+
+// restrictDocument adds the CSP to a document response. Chrome only enforces the
+// sandbox part of a header changed through ContinueResponse and ignores
+// worker-src and connect-src from it, so the response is fulfilled with its own
+// body and the new header instead, which makes the whole policy count.
+func (s *AutomationSession) restrictDocument(ctx context.Context, e *fetch.EventRequestPaused) {
+	headers := append(e.ResponseHeaders, &fetch.HeaderEntry{Name: "Content-Security-Policy", Value: s.policy.csp()})
+	var err error
+	if e.ResponseStatusCode >= 300 && e.ResponseStatusCode < 400 {
+		// A redirect has no page; the next hop comes back through the interceptor.
+		if err := fetch.ContinueResponse(e.RequestID).Do(ctx); err != nil {
+			_ = fetch.FailRequest(e.RequestID, network.ErrorReasonBlockedByClient).Do(ctx)
+		}
+		return
+	}
+	body, bodyErr := fetch.GetResponseBody(e.RequestID).Do(ctx)
+	switch {
+	case bodyErr != nil:
+		// Nothing to read (an empty response): the sandbox still applies.
+		err = fetch.ContinueResponse(e.RequestID).WithResponseCode(e.ResponseStatusCode).WithResponseHeaders(headers).Do(ctx)
+	default:
+		// GetResponseBody returns the decoded body, so drop the encoding headers.
+		kept := make([]*fetch.HeaderEntry, 0, len(headers))
+		for _, h := range headers {
+			if n := strings.ToLower(h.Name); n != "content-encoding" && n != "content-length" {
+				kept = append(kept, h)
+			}
+		}
+		err = fetch.FulfillRequest(e.RequestID, e.ResponseStatusCode).WithResponseHeaders(kept).WithBody(base64.StdEncoding.EncodeToString(body)).Do(ctx)
+	}
+	if err != nil {
+		_ = fetch.FailRequest(e.RequestID, network.ErrorReasonBlockedByClient).Do(ctx)
+	}
+}
+
+// noteResponse stops the session when Chrome connected to a non-public address.
+// Our DNS lookup and Chrome's can differ, so check the address Chrome used.
+func (s *AutomationSession) noteResponse(e *network.EventResponseReceived) {
+	if e.Response != nil && s.policy.LocalOrigin == "" && !publicAddress(e.Response.RemoteIPAddress) {
+		s.mu.Lock()
+		s.networkBlocked = "The page connected to a private network address, so it was blocked. Review the broker's URLs."
+		s.mu.Unlock()
+	}
+}
+
 func (s *AutomationSession) checkRequest(e *fetch.EventRequestPaused) {
 	ctx, cancel := context.WithTimeout(s.b.ctx, 10*time.Second)
 	defer cancel()
 	execCtx := cdp.WithExecutor(ctx, chromedp.FromContext(ctx).Target)
 	if e.ResponseStatusCode != 0 {
-		// popups, workers and stray WebSockets could escape the request interceptor, so add
-		// a CSP; policies stack, so the site's own stays in force
-		csp := "sandbox allow-scripts allow-same-origin allow-forms allow-modals; worker-src 'none'; connect-src " + strings.Join(s.policy.connectSources(), " ")
-		headers := append(e.ResponseHeaders, &fetch.HeaderEntry{Name: "Content-Security-Policy", Value: csp})
-		if err := fetch.ContinueResponse(e.RequestID).WithResponseCode(e.ResponseStatusCode).WithResponseHeaders(headers).Do(execCtx); err != nil {
-			_ = fetch.FailRequest(e.RequestID, network.ErrorReasonBlockedByClient).Do(execCtx)
-		}
+		s.restrictDocument(execCtx, e)
 		return
 	}
 	// every request: redirects, frames, XHR, form actions. third-party portals must be in the catalog
@@ -259,7 +300,13 @@ func (s *AutomationSession) checkRequest(e *fetch.EventRequestPaused) {
 		_ = fetch.FailRequest(e.RequestID, network.ErrorReasonBlockedByClient).Do(execCtx)
 		return
 	}
-	_ = fetch.ContinueRequest(e.RequestID).Do(execCtx)
+	// Chrome only pauses a document again at the response stage, where the CSP
+	// is added, when the request asks for it.
+	cont := fetch.ContinueRequest(e.RequestID)
+	if e.ResourceType == network.ResourceTypeDocument {
+		cont = cont.WithInterceptResponse(true)
+	}
+	_ = cont.Do(execCtx)
 }
 
 func (s *AutomationSession) evaluate(ctx context.Context, expression string, out any) error {

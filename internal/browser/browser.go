@@ -379,7 +379,12 @@ func (b *Browser) takeScreenshotQuality(ctx context.Context, brokerID, suffix st
 		return "", err
 	}
 
-	filename := fmt.Sprintf("%s_%s_%d.png", brokerID, suffix, time.Now().Unix())
+	// Chrome returns JPEG below quality 100, and these used to be named .png.
+	ext := "jpg"
+	if quality >= 100 {
+		ext = "png"
+	}
+	filename := fmt.Sprintf("%s_%s_%d.%s", brokerID, suffix, time.Now().Unix(), ext)
 	filepath := filepath.Join(b.config.ScreenshotDir, filename)
 
 	if err := os.WriteFile(filepath, buf, 0600); err != nil {

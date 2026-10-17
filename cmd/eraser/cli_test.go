@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/drumandbytes/eraser/internal/smtptest"
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 // cliEnv is an isolated install: a temp HOME, a config file and a small
@@ -48,7 +49,7 @@ func newCLIEnv(t *testing.T, cfgYAML string) *cliEnv {
 	if err := os.MkdirAll(e.home, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("HOME", e.home)
+	testenv.SetHome(t, e.home)
 	t.Setenv("XDG_CONFIG_HOME", "")
 	if cfgYAML != "" {
 		if err := os.WriteFile(e.cfgPath, []byte(cfgYAML), 0o600); err != nil {

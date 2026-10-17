@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
+
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 func TestGetAllRequestsOldestFirstWithPipeline(t *testing.T) {
@@ -95,7 +98,7 @@ func TestDeleteByStatusAndAllHistory(t *testing.T) {
 
 func TestDBPaths(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 	if got, want := DefaultDBPath(), filepath.Join(home, ".eraser", "history.db"); got != want {
 		t.Errorf("DefaultDBPath = %q, want %q", got, want)
 	}
@@ -122,7 +125,8 @@ func TestNewStoreTightensPermissionsAndReopens(t *testing.T) {
 	addRecord(t, s, "acme", StatusSent, time.Now())
 	_ = s.Close()
 
-	if info, err := os.Stat(path); err != nil || info.Mode().Perm() != 0o600 {
+	// Windows has no POSIX mode bits; it relies on the profile folder's ACL.
+	if info, err := os.Stat(path); err != nil || (runtime.GOOS != "windows" && info.Mode().Perm() != 0o600) {
 		t.Errorf("db mode = %v, %v; want 0600", info.Mode().Perm(), err)
 	}
 

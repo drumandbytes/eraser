@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 func TestParseAndEmbeddedLoad(t *testing.T) {
@@ -20,7 +22,7 @@ func TestParseAndEmbeddedLoad(t *testing.T) {
 func TestLoadPrecedence(t *testing.T) {
 	// HOME override so UserBrokersPath() points into a temp dir.
 	tmp := t.TempDir()
-	t.Setenv("HOME", tmp)
+	testenv.SetHome(t, tmp)
 
 	// No user copy, no override -> embedded.
 	embedded, err := Load("")
@@ -65,7 +67,7 @@ func TestLoadPrecedence(t *testing.T) {
 
 func TestLoadList(t *testing.T) {
 	tmp := t.TempDir()
-	t.Setenv("HOME", tmp) // isolate from any real ~/.eraser/brokers.yaml
+	testenv.SetHome(t, tmp) // isolate from any real ~/.eraser/brokers.yaml
 
 	full, err := LoadList("", "", "")
 	if err != nil {

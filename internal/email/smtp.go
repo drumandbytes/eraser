@@ -82,7 +82,8 @@ func sanitizeSMTPError(err error) error {
 	if strings.Contains(s, "certificate") {
 		return fmt.Errorf("TLS certificate error")
 	}
-	if strings.Contains(s, "connection refused") {
+	// "actively refused" is how Windows words the same error.
+	if strings.Contains(s, "connection refused") || strings.Contains(s, "actively refused") {
 		return fmt.Errorf("could not connect to the SMTP server (wrong host/port, or a local bridge like Proton Mail Bridge isn't running)")
 	}
 	if strings.Contains(s, "starttls") {

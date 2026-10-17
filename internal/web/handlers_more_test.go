@@ -16,6 +16,7 @@ import (
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/schedule"
 	"github.com/drumandbytes/eraser/internal/smtptest"
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 // sessionRequest builds a request carrying a wizard session set up by fill.
@@ -185,7 +186,7 @@ func TestAutomationView(t *testing.T) {
 }
 
 func TestSettingsBrokersUpdateOutcomes(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	testenv.SetHome(t, t.TempDir())
 	var list strings.Builder
 	list.WriteString("brokers:\n")
 	for i := 0; i < broker.MinSaneBrokerCount+1; i++ {

@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 func TestProfileHelpers(t *testing.T) {
@@ -161,7 +163,7 @@ func TestTLSHelpers(t *testing.T) {
 
 func TestDefaultConfigPathAndPermissions(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 	if got := DefaultConfigPath(); got != filepath.Join(home, ".eraser", "config.yaml") {
 		t.Errorf("DefaultConfigPath = %q", got)
 	}
@@ -181,7 +183,8 @@ func TestDefaultConfigPathAndPermissions(t *testing.T) {
 			t.Errorf("Load of a 0644 config: %v", err)
 		}
 	}
-	if err := checkFilePermissions(filepath.Join(home, "missing.yaml")); err == nil {
+	// checkFilePermissions is a no-op on Windows, which has no mode bits.
+	if err := checkFilePermissions(filepath.Join(home, "missing.yaml")); err == nil && runtime.GOOS != "windows" {
 		t.Error("missing file not reported")
 	}
 }

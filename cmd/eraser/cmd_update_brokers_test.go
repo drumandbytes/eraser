@@ -8,11 +8,12 @@ import (
 	"testing"
 
 	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 func TestRunUpdateBrokers(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 
 	// need >= broker.MinSaneBrokerCount entries to pass the guard
 	yaml := "brokers:\n"
@@ -57,7 +58,7 @@ func TestRunUpdateBrokers(t *testing.T) {
 }
 
 func TestRunUpdateBrokersRejectsTinyList(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	testenv.SetHome(t, t.TempDir())
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("brokers:\n  - {id: only, name: Only, email: a@b.c, region: us}\n"))
 	}))

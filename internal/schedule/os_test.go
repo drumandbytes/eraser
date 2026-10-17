@@ -5,10 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 // fakeOS points the seams at a temp HOME and a recording command stub, so
@@ -17,7 +19,7 @@ import (
 func fakeOS(t *testing.T, platform string, fail ...string) *[]string {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 	t.Setenv("XDG_CONFIG_HOME", "")
 	var calls []string
 	origExec, origOS := execCommand, goos
@@ -190,7 +192,7 @@ func TestUnsupportedPlatform(t *testing.T) {
 
 func TestNoHomeDirectory(t *testing.T) {
 	fakeOS(t, "darwin")
-	t.Setenv("HOME", "")
+	testenv.SetHome(t, "")
 	if _, err := os.UserHomeDir(); err == nil {
 		t.Skip("home directory resolves without $HOME here")
 	}
@@ -247,6 +249,11 @@ func TestStableExecutable(t *testing.T) {
 		t.Errorf("temp build: %v", err)
 	}
 
+	// launchd and systemd are Unix schedulers, and this half needs symlinks and
+	// an executable script on PATH.
+	if runtime.GOOS == "windows" {
+		t.Skip("PATH symlink resolution is Unix-only")
+	}
 	// A real install: a binary outside TMPDIR, also reachable via PATH
 	// through a symlink, resolves to the PATH entry.
 	binDir, dir := outsideTMPDIR(t), t.TempDir()
@@ -280,7 +287,10 @@ func outsideTMPDIR(t *testing.T) string {
 	if err := os.Mkdir(sub, 0o700); err != nil {
 		t.Fatal(err)
 	}
+	// Unix reads TMPDIR; Windows reads TMP and TEMP.
 	t.Setenv("TMPDIR", sub)
+	t.Setenv("TMP", sub)
+	t.Setenv("TEMP", sub)
 	bin := filepath.Join(base, "bin")
 	if err := os.Mkdir(bin, 0o700); err != nil {
 		t.Fatal(err)

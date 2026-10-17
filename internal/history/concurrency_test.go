@@ -82,7 +82,11 @@ func TestStoreFilesArePrivate(t *testing.T) {
 // A '?' or '#' in the config directory must not truncate the DSN and silently
 // open a different database without the pragmas.
 func TestStoreOddPathKeepsPragmas(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "we?ird#dir")
+	dirName := "we?ird#dir"
+	if runtime.GOOS == "windows" {
+		dirName = "we#ird%20dir" // ? is not a legal path character on Windows
+	}
+	dir := filepath.Join(t.TempDir(), dirName)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}

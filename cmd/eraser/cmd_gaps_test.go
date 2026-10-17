@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -359,6 +358,7 @@ func captureStdout(t *testing.T, fn func()) string {
 
 // serve runs until Ctrl+C, then shuts down cleanly.
 func TestServeUntilInterrupted(t *testing.T) {
+	requireInterrupt(t)
 	orig := web.OpenBrowser
 	t.Cleanup(func() { web.OpenBrowser = orig })
 	web.OpenBrowser = func(string) {}
@@ -384,9 +384,7 @@ func TestServeUntilInterrupted(t *testing.T) {
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	if err := syscall.Kill(os.Getpid(), syscall.SIGINT); err != nil {
-		t.Fatal(err)
-	}
+	interruptSelf(t)
 	select {
 	case err := <-done:
 		if err != nil {

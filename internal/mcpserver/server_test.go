@@ -106,6 +106,9 @@ func TestMCPTransportDiscoverySchemasAndCredentialRedaction(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = cs.Close() }()
+	if info := cs.InitializeResult().ServerInfo; info.Name != "eraser" || info.Version != Version || !strings.Contains(info.Title, "experimental") {
+		t.Fatalf("server info = %+v", info)
+	}
 	list, err := cs.ListTools(ctx, nil)
 	if err != nil {
 		t.Fatal(err)

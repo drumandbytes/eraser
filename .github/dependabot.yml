@@ -7,6 +7,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # chromedp v0.20 changed the Run, Evaluate and FullScreenshot APIs that
+    # internal/browser uses, and it broke the build. Pinned until the port lands.
+    ignore:
+      - dependency-name: "github.com/chromedp/*"
     groups:
       gomod:
         patterns:

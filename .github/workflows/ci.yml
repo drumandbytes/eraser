@@ -4,7 +4,9 @@ on:
   pull_request:
 
 # No paths-ignore: a filtered-out run never reports required-checks-passed,
-# which the ruleset requires, so the PR could never merge.
+# which the ruleset requires, so the PR could never merge. The `changes` job
+# below gates the heavy jobs instead: a skipped job counts as passed in
+# required-checks-passed, which still always runs.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -14,7 +16,36 @@ permissions:
   contents: read
 
 jobs:
+  # What did this PR touch? `code` is anything the Go build, tests or shipped
+  # binary depend on; `site` is the website, docs and their build scripts. A
+  # change to this file counts as both, so editing the gates re-tests everything.
+  # Any error falls back to running everything.
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      site: ${{ steps.diff.outputs.site }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2 # HEAD is the merge commit; HEAD^1 is the base
+
+      - id: diff
+        run: |
+          files=$(git diff --name-only HEAD^1 HEAD) || files=".github/workflows/ci.yml"
+          [ -n "$files" ] || files=".github/workflows/ci.yml"
+          hit() { grep -qE "$1" <<<"$files" && echo true || echo false; }
+          {
+            echo "code=$(hit '^(cmd|internal|data|scripts)/|^(go\.mod|go\.sum|codecov\.yml|mise\.toml|\.github/workflows/ci\.yml)$')"
+            echo "site=$(hit '^(site|docs)/|^\.github/workflows/ci\.yml$')"
+          } | tee -a "$GITHUB_OUTPUT"
+
   ci:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: drumandbytes/reusable-actions/.github/workflows/go-ci.yml@v1
     with:
       test-race: true
@@ -27,6 +58,8 @@ jobs:
   # (project floor and patch coverage) and still uploads the report to Codecov.
   coverage:
     name: Coverage
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -60,6 +93,8 @@ jobs:
   # A broken site only surfaced after merge, when deploy.yaml ran on main.
   site:
     name: Site build
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.site == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -83,6 +118,8 @@ jobs:
   # running against fictional seed data. See scripts/a11y/run.sh.
   a11y:
     name: Accessibility
+    needs: changes
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.site == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -110,6 +147,8 @@ jobs:
   # that needs cgo, and the release builds don't use it).
   cross-platform:
     name: Test on ${{ matrix.os }}
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -141,6 +180,8 @@ jobs:
 
   vulncheck:
     name: govulncheck
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -160,7 +201,7 @@ jobs:
   required-checks-passed:
     name: Required checks passed
     runs-on: ubuntu-latest
-    needs: [ci, zizmor, coverage, site, a11y, cross-platform, vulncheck]
+    needs: [changes, ci, zizmor, coverage, site, a11y, cross-platform, vulncheck]
     if: always()
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

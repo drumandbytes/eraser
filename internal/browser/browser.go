@@ -361,8 +361,13 @@ func (b *Browser) submitForm(ctx context.Context) error {
 
 // takeScreenshot captures the current page state
 func (b *Browser) takeScreenshot(ctx context.Context, brokerID, suffix string) (string, error) {
+	return b.takeScreenshotQuality(ctx, brokerID, suffix, 90)
+}
+
+// takeScreenshotQuality: 100 makes Chrome return PNG, anything lower JPEG.
+func (b *Browser) takeScreenshotQuality(ctx context.Context, brokerID, suffix string, quality int) (string, error) {
 	var buf []byte
-	err := chromedp.Run(ctx, chromedp.FullScreenshot(&buf, 100))
+	err := chromedp.Run(ctx, chromedp.FullScreenshot(&buf, quality))
 	if err != nil {
 		return "", err
 	}

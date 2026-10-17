@@ -2,11 +2,13 @@ package mcpserver
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/browser"
 	"github.com/drumandbytes/eraser/internal/history"
 )
@@ -21,31 +23,27 @@ type taskPage struct {
 	pendingAction bool
 }
 
-func (s *Service) approvedTask(in openInput) (*batchPlan, Task, error) {
-	p, err := s.authorize(in.BatchID)
+func (s *Service) approvedTask(in openInput) (*batchPlan, Task, *broker.BrokerDatabase, error) {
+	p, db, err := s.authorizeDB(in.BatchID)
 	if err != nil {
-		return nil, Task{}, err
+		return nil, Task{}, nil, err
 	}
 	t, ok := p.Tasks[in.TaskID]
 	if !ok {
-		return nil, Task{}, fmt.Errorf("task is outside the approved batch")
-	}
-	_, _, db, err := s.load()
-	if err != nil {
-		return nil, Task{}, err
+		return nil, Task{}, nil, fmt.Errorf("task is outside the approved batch")
 	}
 	current, err := s.resolveTask(p.Profile, db, in.TaskID)
 	if err != nil {
-		return nil, Task{}, err
+		return nil, Task{}, nil, err
 	}
 	if current.Status != "pending" || current.URL != t.URL || current.Kind != t.Kind {
-		return nil, Task{}, fmt.Errorf("task changed; review it before continuing")
+		return nil, Task{}, nil, fmt.Errorf("task changed; review it before continuing")
 	}
-	return p, t, nil
+	return p, t, db, nil
 }
 
 func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, error) {
-	p, t, err := s.approvedTask(in)
+	p, t, db, err := s.approvedTask(in)
 	if err != nil {
 		return nil, err
 	}
@@ -57,10 +55,6 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 	}
 	if len(s.pages) >= 5 {
 		return nil, fmt.Errorf("five tasks are already open; finish them or end this batch first")
-	}
-	_, _, db, err := s.load()
-	if err != nil {
-		return nil, err
 	}
 	b := db.FindByID(t.BrokerID)
 	if b == nil {
@@ -114,10 +108,18 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 	s.pages[t.ID] = tp
 	snap, err := br.Open(ctx, t.URL)
 	if err != nil {
+		if t.Kind != "confirmation" {
+			br.Close()
+			delete(s.pages, t.ID)
+		}
 		_ = s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, "MCP: page could not be opened. Review before retrying.", "", false)
 		// a redirect or timeout can happen after a confirmation GET already took effect:
 		// keep the page for inspection, never replay the URL
-		return map[string]any{"task_id": t.ID, "ui_task_id": stored.ID, "action_key": tp.lastAction, "needs_user": "Page could not be opened: " + err.Error(), "instructions": "Inspect the retained Chrome window. Observe it after manual intervention; do not reopen or resubmit an uncertain request."}, nil
+		instructions := "The page was closed. Check the task in Eraser, then call open_task again."
+		if t.Kind == "confirmation" {
+			instructions = "Inspect the retained Chrome window. Observe it after manual intervention; do not reopen or resubmit an uncertain request."
+		}
+		return map[string]any{"task_id": t.ID, "ui_task_id": stored.ID, "action_key": tp.lastAction, "needs_user": "Page could not be opened: " + err.Error(), "instructions": instructions}, nil
 	}
 	tp.page = snap
 	if err := s.store.MarkTaskOpened(stored.ID, p.Profile.ID); err != nil {
@@ -134,7 +136,7 @@ func pageOutput(p *taskPage) map[string]any {
 }
 
 func (s *Service) livePage(in openInput) (*batchPlan, *taskPage, error) {
-	p, _, err := s.approvedTask(in)
+	p, _, _, err := s.approvedTask(in)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -296,7 +298,7 @@ func (s *Service) retry(_ context.Context, in retryInput) (map[string]any, error
 	}
 	var scope string
 	if in.TaskID != "" {
-		_, t, err := s.approvedTask(openInput{in.BatchID, in.TaskID})
+		_, t, _, err := s.approvedTask(openInput{in.BatchID, in.TaskID})
 		if err != nil {
 			return nil, err
 		}
@@ -316,6 +318,9 @@ func (s *Service) retry(_ context.Context, in retryInput) (map[string]any, error
 	}
 	for _, a := range all {
 		if a.Key == in.ActionKey {
+			if out, err := s.retryApproval(p.Profile.ID, scope, in); out != nil || err != nil {
+				return out, err
+			}
 			if err := s.store.RetryAutomationAction(p.Profile.ID, a.Key); err != nil {
 				return nil, err
 			}
@@ -327,4 +332,24 @@ func (s *Service) retry(_ context.Context, in retryInput) (map[string]any, error
 		}
 	}
 	return nil, fmt.Errorf("attempt not found in the approved scope")
+}
+
+// retryApproval puts retry_action out of band like begin_batch: the first call
+// stores a request for a person to approve, the second (with approval_id) spends
+// it. It returns nil, nil once the retry is approved.
+func (s *Service) retryApproval(profileID, scope string, in retryInput) (map[string]any, error) {
+	want := digest(struct{ Batch, Task, Broker, Key, Reason string }{in.BatchID, in.TaskID, in.BrokerID, in.ActionKey, in.Reason})
+	if in.ApprovalID != "" {
+		if err := s.store.ConsumeBatchApproval(in.ApprovalID, want); err != nil {
+			return nil, fmt.Errorf("retry is not approved: approve it in Eraser's web UI or run eraser mcp approve %s", in.ApprovalID)
+		}
+		return nil, nil
+	}
+	id := rand.Text()
+	note := fmt.Sprintf("Let the agent retry action %s on %s. Reason the agent gave: %s", in.ActionKey, scope, in.Reason)
+	err := s.store.CreateBatchApproval(history.BatchApproval{PlanID: id, ProfileID: profileID, Digest: want, Preview: digestPreview(map[string]any{"note": note}), ExpiresAt: time.Now().Add(15 * time.Minute)})
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"approval_required": true, "approval_id": id, "approve_with": "Approve in Eraser's web UI (Automation page) or run: eraser mcp approve " + id + ". Then call retry_action again with approval_id."}, nil
 }

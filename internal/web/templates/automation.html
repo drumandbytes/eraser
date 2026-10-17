@@ -22,12 +22,16 @@
             </form>
         </div>
 
+        {{with .Note}}<p class="text-sm text-primary">{{.}}</p>{{end}}
+
+        {{if .ProfileFields}}
         <div>
             <h3 class="text-sm font-semibold text-primary">Profile fields the agent may use</h3>
             <ul class="text-sm text-secondary mt-1">
                 {{range $k, $v := .ProfileFields}}{{if $v}}<li>{{$k}}: {{$v}}</li>{{end}}{{end}}
             </ul>
         </div>
+        {{end}}
 
         {{if .Tasks}}
         <div>

@@ -39,6 +39,36 @@ func testService(t *testing.T) *Service {
 	return s
 }
 
+// approvedRetry runs the two-step retry_action flow: request, out-of-band
+// approval, then the approved call. It also checks the unapproved paths refuse.
+func approvedRetry(t *testing.T, s *Service, in retryInput) {
+	t.Helper()
+	ctx := context.Background()
+	first, err := s.retry(ctx, in)
+	if err != nil || first["approval_required"] != true {
+		t.Fatalf("first retry call: %v %v", first, err)
+	}
+	id := first["approval_id"].(string)
+	in.ApprovalID = id
+	if _, err := s.retry(ctx, in); err == nil {
+		t.Fatal("retry released before approval")
+	}
+	if err := s.store.ApproveBatch(id, "test"); err != nil {
+		t.Fatal(err)
+	}
+	other := in
+	other.Reason = "A different reason than the one that was approved."
+	if _, err := s.retry(ctx, other); err == nil {
+		t.Fatal("approval reused for a different retry")
+	}
+	if out, err := s.retry(ctx, in); err != nil || out["retry_allowed"] != true {
+		t.Fatalf("approved retry: %v %v", out, err)
+	}
+	if _, err := s.retry(ctx, in); err == nil {
+		t.Fatal("approval spent twice")
+	}
+}
+
 // approveTestPlan stands in for the web UI or `eraser mcp approve`.
 func approveTestPlan(t *testing.T, s *Service, planID string) {
 	t.Helper()
@@ -162,12 +192,16 @@ func TestBatchScopeExpiryAndConfigChanges(t *testing.T) {
 }
 
 type fakePage struct {
-	snap   browser.Snapshot
-	closed bool
-	fail   bool
+	snap     browser.Snapshot
+	closed   bool
+	fail     bool
+	openFail bool
 }
 
 func (f *fakePage) Open(context.Context, string) (*browser.Snapshot, error) {
+	if f.openFail {
+		return nil, fmt.Errorf("timeout")
+	}
 	v := f.snap
 	return &v, nil
 }
@@ -207,9 +241,7 @@ func TestSubmissionEvidenceAndUnknownAttemptRecovery(t *testing.T) {
 		t.Fatal("uncertain action retried")
 	}
 	key := s.pages["broker:one"].lastAction
-	if _, err := s.retry(ctx, retryInput{BatchID: id, TaskID: "broker:one", ActionKey: key, Reason: "User checked the broker page; no request was submitted."}); err != nil {
-		t.Fatal(err)
-	}
+	approvedRetry(t, s, retryInput{BatchID: id, TaskID: "broker:one", ActionKey: key, Reason: "User checked the broker page; no request was submitted."})
 	fake.fail = false
 	if _, err := s.act(ctx, actionInput{BatchID: id, TaskID: "broker:one", SnapshotID: "before", Ref: "e0", Action: "click"}); err != nil {
 		t.Fatal(err)
@@ -285,9 +317,7 @@ func TestEmailUnknownRetryAndBounceRecovery(t *testing.T) {
 		t.Fatal("retry escaped approved scope")
 	}
 	retry.BrokerID = "one"
-	if _, err := s.retry(ctx, retry); err != nil {
-		t.Fatal(err)
-	}
+	approvedRetry(t, s, retry)
 	first, err := s.send(ctx, sendInput{id, "one"})
 	if err != nil || first["sent"] != true {
 		t.Fatalf("reviewed retry: %+v, %v", first, err)
@@ -321,5 +351,19 @@ func TestDemoIsolation(t *testing.T) {
 	}
 	if _, err := s.scan(context.Background(), emptyInput{}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestFailedOpenReleasesThePageAndSlot(t *testing.T) {
+	s := testService(t)
+	fake := &fakePage{openFail: true}
+	s.newPage = func(browser.BrowserConfig, *config.Profile, browser.URLPolicy) (pageSession, error) { return fake, nil }
+	id := beginTestBatch(t, s, prepareInput{TaskIDs: []string{"broker:one"}})
+	out, err := s.openTask(context.Background(), openInput{BatchID: id, TaskID: "broker:one"})
+	if err != nil || out["needs_user"] == nil {
+		t.Fatalf("open: %v %v", out, err)
+	}
+	if !fake.closed || len(s.pages) != 0 {
+		t.Fatalf("failed open kept the page: closed=%v pages=%d", fake.closed, len(s.pages))
 	}
 }

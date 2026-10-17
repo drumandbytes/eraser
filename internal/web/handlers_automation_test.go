@@ -48,3 +48,26 @@ func TestAutomationApprovalPageAndApprove(t *testing.T) {
 		t.Fatalf("second approve: status %d, want 409", rec.Code)
 	}
 }
+
+func TestAutomationApproveRequiresSameOriginBrowserRequest(t *testing.T) {
+	s := pipelineTestServer(t)
+	if err := s.historyStore.CreateBatchApproval(history.BatchApproval{PlanID: "p", ProfileID: "default", Digest: "d", Preview: "{}", ExpiresAt: time.Now().Add(time.Minute)}); err != nil {
+		t.Fatal(err)
+	}
+	form := url.Values{"plan_id": {"p"}}.Encode()
+	for name, header := range map[string]string{"curl": "", "cross-site": "cross-site"} {
+		req := loopbackRequest(http.MethodPost, "/automation/approve", strings.NewReader(form))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		if header != "" {
+			req.Header.Set("Sec-Fetch-Site", header)
+		}
+		rec := httptest.NewRecorder()
+		s.setupRouter().ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Errorf("%s: status %d, want 403", name, rec.Code)
+		}
+	}
+	if err := s.historyStore.ConsumeBatchApproval("p", "d"); err == nil {
+		t.Fatal("a blocked request approved the batch")
+	}
+}

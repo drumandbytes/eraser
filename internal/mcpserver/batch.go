@@ -108,7 +108,7 @@ func (s *Service) begin(_ context.Context, in beginInput) (map[string]any, error
 	if p == nil || time.Since(p.Created) > 15*time.Minute {
 		return nil, fmt.Errorf("preview expired; prepare a new batch")
 	}
-	if err := s.checkConfig(p); err != nil {
+	if _, err := s.checkConfig(p); err != nil {
 		return nil, err
 	}
 	if err := s.store.ConsumeBatchApproval(p.ID, p.PreviewDigest); err != nil {
@@ -119,28 +119,35 @@ func (s *Service) begin(_ context.Context, in beginInput) (map[string]any, error
 	return map[string]any{"batch_id": p.ID, "profile_id": p.Profile.ID, "task_count": len(p.Tasks), "email_count": len(p.Brokers)}, nil
 }
 
-func (s *Service) checkConfig(p *batchPlan) error {
+// checkConfig also returns the broker list it loaded, so callers don't parse it again.
+func (s *Service) checkConfig(p *batchPlan) (*broker.BrokerDatabase, error) {
 	cfg, _, db, err := s.load()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if digest(struct {
 		C *config.Config
 		B *broker.BrokerDatabase
 	}{cfg, db}) != p.ConfigDigest {
-		return fmt.Errorf("settings or broker destinations changed; end this batch and review a new preview")
+		return nil, fmt.Errorf("settings or broker destinations changed; end this batch and review a new preview")
 	}
-	return nil
+	return db, nil
 }
 
 func (s *Service) authorize(id string) (*batchPlan, error) {
+	p, _, err := s.authorizeDB(id)
+	return p, err
+}
+
+func (s *Service) authorizeDB(id string) (*batchPlan, *broker.BrokerDatabase, error) {
 	if s.active == nil || id == "" || id != s.active.ID {
-		return nil, fmt.Errorf("no matching approved batch; prepare_batch and begin_batch first")
+		return nil, nil, fmt.Errorf("no matching approved batch; prepare_batch and begin_batch first")
 	}
-	if err := s.checkConfig(s.active); err != nil {
-		return nil, err
+	db, err := s.checkConfig(s.active)
+	if err != nil {
+		return nil, nil, err
 	}
-	return s.active, nil
+	return s.active, db, nil
 }
 
 func (s *Service) endBatch() {

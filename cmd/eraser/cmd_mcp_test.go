@@ -8,6 +8,9 @@ import (
 )
 
 func TestMCPApproveAndPending(t *testing.T) {
+	orig := stdinIsTerminal
+	t.Cleanup(func() { stdinIsTerminal = orig })
+	stdinIsTerminal = func() bool { return true }
 	e := newCLIEnv(t, manualConfig)
 	store, err := history.NewStore(history.DBPathFor(e.cfgPath))
 	if err != nil {
@@ -24,6 +27,11 @@ func TestMCPApproveAndPending(t *testing.T) {
 	}
 	mustContain(t, out, "plan-1", "profile=default")
 
+	stdinIsTerminal = func() bool { return false }
+	if _, err := e.run(t, "", "mcp", "approve", "plan-1"); err == nil {
+		t.Fatal("approved without a terminal")
+	}
+	stdinIsTerminal = func() bool { return true }
 	out, err = e.run(t, "", "mcp", "approve", "plan-1")
 	if err != nil {
 		t.Fatalf("approve: %v\n%s", err, out)

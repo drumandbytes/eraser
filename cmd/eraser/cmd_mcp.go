@@ -19,7 +19,7 @@ func mcpCmd() *cobra.Command {
 	var chromePath string
 	cmd := &cobra.Command{
 		Use: "mcp", Short: "Expose Eraser tasks to a local AI agent over MCP (stdio)",
-		Long: "Start a local MCP server using the same configuration and history as the web UI.\nConfigure begin_batch and retry_action to prompt for approval in your MCP client.\nChrome/Chromium is required for browser actions. Use --demo to try fake local forms.",
+		Long: "Start a local MCP server using the same configuration and history as the web UI.\nBatches and retries start only after you approve them: on the Automation page in the web UI, or with `eraser mcp approve <id>` in a terminal.\nChrome/Chromium is required for browser actions. Use --demo to try fake local forms.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx, stop := signal.NotifyContext(cmd.Context(), syscall.SIGINT, syscall.SIGTERM)
 			defer stop()
@@ -53,11 +53,21 @@ func mcpCmd() *cobra.Command {
 	return cmd
 }
 
+// stdinIsTerminal is a var so tests can stand in for a person at a terminal.
+var stdinIsTerminal = func() bool {
+	fi, err := os.Stdin.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+}
+
 func mcpApproveCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "approve <plan_id>", Short: "Approve a previewed MCP batch (once, for 15 minutes)",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// an agent with a shell runs commands without a terminal
+			if !stdinIsTerminal() {
+				return fmt.Errorf("approve must be run by a person in a terminal; use the Automation page in the web UI otherwise")
+			}
 			store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
 			if err != nil {
 				return err

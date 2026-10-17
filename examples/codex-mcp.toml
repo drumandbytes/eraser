@@ -7,6 +7,8 @@ startup_timeout_sec = 20
 tool_timeout_sec = 60
 default_tools_approval_mode = "approve"
 
+# Optional: Eraser already needs approval in its web UI or `eraser mcp approve`
+# for these two. Keep the prompts if you want a second check in Codex too.
 [mcp_servers.eraser.tools.begin_batch]
 approval_mode = "prompt"
 

@@ -26,19 +26,62 @@ import (
 // Domains are allowed except under ExactHosts (shared platforms, where a
 // subdomain is another company's tenant). LocalOrigin is only for the demo/test server.
 type URLPolicy struct {
-	Domains     []string
-	ExactHosts  []string
+	Domains    []string
+	ExactHosts []string
+	// ExactPaths pins page loads on a shared-platform host to the paths of the
+	// catalog URLs: the host serves other companies' forms under other paths.
+	ExactPaths  map[string][]string
 	LocalOrigin string
 }
 
 func NewURLPolicy(website, portal string) URLPolicy {
-	p := URLPolicy{Domains: BrokerDomains(website, portal)}
+	p := URLPolicy{Domains: BrokerDomains(website, portal), ExactPaths: map[string][]string{}}
 	for _, d := range p.Domains {
 		if isSharedPlatform(d) {
 			p.ExactHosts = append(p.ExactHosts, d)
 		}
 	}
+	for _, raw := range []string{website, portal} {
+		if u, err := url.Parse(raw); err == nil && isSharedPlatform(u.Hostname()) {
+			host := strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+			p.ExactPaths[host] = append(p.ExactPaths[host], pathPrefix(u.Path))
+		}
+	}
 	return p
+}
+
+// pathPrefix keeps the first two path segments: /webform/<id>/<step> -> /webform/<id>.
+func pathPrefix(path string) string {
+	segs := strings.Split(strings.Trim(path, "/"), "/")
+	if segs[0] == "" {
+		return "/"
+	}
+	return "/" + strings.Join(segs[:min(2, len(segs))], "/")
+}
+
+func (p URLPolicy) pathAllowed(host, path string) bool {
+	prefixes, pinned := p.ExactPaths[host]
+	if !pinned {
+		return true
+	}
+	for _, pre := range prefixes {
+		if pre == "/" || path == pre || strings.HasPrefix(path, pre+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidateNavigation is Validate plus the path pin, for page loads and frames.
+// Subresources and XHR only need the host, since platforms serve shared assets.
+func (p URLPolicy) ValidateNavigation(ctx context.Context, raw string) error {
+	if err := p.Validate(ctx, raw); err != nil {
+		return err
+	}
+	if u, err := url.Parse(raw); err == nil && !p.pathAllowed(strings.ToLower(u.Hostname()), u.Path) {
+		return fmt.Errorf("page is outside this broker's form on a shared platform")
+	}
+	return nil
 }
 
 // multi-tenant privacy/form services: brokers on these get their exact host only
@@ -51,6 +94,21 @@ func isSharedPlatform(host string) bool {
 		}
 	}
 	return false
+}
+
+// connectSources is the CSP connect-src list: same hosts as allowsHost.
+func (p URLPolicy) connectSources() []string {
+	sources := []string{"'self'"}
+	for _, d := range p.Domains {
+		sources = append(sources, "https://"+d)
+		if !slices.Contains(p.ExactHosts, d) {
+			sources = append(sources, "https://*."+d)
+		}
+	}
+	if p.LocalOrigin != "" {
+		sources = append(sources, p.LocalOrigin)
+	}
+	return sources
 }
 
 func (p URLPolicy) allowsHost(host string) bool {
@@ -159,7 +217,7 @@ func (s *AutomationSession) operation(caller context.Context) (context.Context, 
 }
 
 func (s *AutomationSession) Open(caller context.Context, raw string) (*Snapshot, error) {
-	if err := s.policy.Validate(caller, raw); err != nil {
+	if err := s.policy.ValidateNavigation(caller, raw); err != nil {
 		return nil, err
 	}
 	// The first Run must own the lifetime context, not a single tool call.
@@ -195,14 +253,7 @@ func (s *AutomationSession) checkRequest(e *fetch.EventRequestPaused) {
 	if e.ResponseStatusCode != 0 {
 		// popups, workers and stray WebSockets could escape the request interceptor, so add
 		// a CSP; policies stack, so the site's own stays in force
-		sources := []string{"'self'"}
-		for _, domain := range s.policy.Domains {
-			sources = append(sources, "https://"+domain, "https://*."+domain)
-		}
-		if s.policy.LocalOrigin != "" {
-			sources = append(sources, s.policy.LocalOrigin)
-		}
-		csp := "sandbox allow-scripts allow-same-origin allow-forms allow-modals; worker-src 'none'; connect-src " + strings.Join(sources, " ")
+		csp := "sandbox allow-scripts allow-same-origin allow-forms allow-modals; worker-src 'none'; connect-src " + strings.Join(s.policy.connectSources(), " ")
 		headers := append(e.ResponseHeaders, &fetch.HeaderEntry{Name: "Content-Security-Policy", Value: csp})
 		if err := fetch.ContinueResponse(e.RequestID).WithResponseCode(e.ResponseStatusCode).WithResponseHeaders(headers).Do(execCtx); err != nil {
 			_ = fetch.FailRequest(e.RequestID, network.ErrorReasonBlockedByClient).Do(execCtx)
@@ -210,7 +261,11 @@ func (s *AutomationSession) checkRequest(e *fetch.EventRequestPaused) {
 		return
 	}
 	// every request: redirects, frames, XHR, form actions. third-party portals must be in the catalog
-	if err := s.policy.Validate(ctx, e.Request.URL); err != nil {
+	validate := s.policy.Validate
+	if e.ResourceType == network.ResourceTypeDocument {
+		validate = s.policy.ValidateNavigation
+	}
+	if err := validate(ctx, e.Request.URL); err != nil {
 		s.mu.Lock()
 		s.blocked = "A destination outside the approved broker/portal was blocked. Review the broker's configured URLs."
 		s.mu.Unlock()
@@ -237,13 +292,17 @@ func (s *AutomationSession) evaluate(ctx context.Context, expression string, out
 }
 
 func (s *AutomationSession) Observe(caller context.Context) (*Snapshot, error) {
+	// Never hand the agent text or a screenshot from a private-address page.
+	if blocked := s.blockedReason(); blocked != "" {
+		return nil, fmt.Errorf("%s", blocked)
+	}
 	ctx, cancel := s.operation(caller)
 	defer cancel()
 	var current string
 	if err := chromedp.Run(ctx, chromedp.Location(&current)); err != nil {
 		return nil, err
 	}
-	if err := s.policy.Validate(ctx, current); err != nil {
+	if err := s.policy.ValidateNavigation(ctx, current); err != nil {
 		return nil, err
 	}
 	if err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
@@ -281,7 +340,7 @@ func (s *AutomationSession) Observe(caller context.Context) (*Snapshot, error) {
 	}
 	s.mu.Unlock()
 	if s.b.config.ScreenshotDir != "" && !snap.SensitiveControls {
-		name, err := s.b.takeScreenshot(ctx, "mcp", rand.Text())
+		name, err := s.b.takeScreenshotQuality(ctx, "mcp", rand.Text(), 100)
 		if err != nil {
 			return nil, fmt.Errorf("save task evidence: %w", err)
 		}

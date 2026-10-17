@@ -19,15 +19,21 @@ AI provider or API key to configure in Eraser.
    in the current session's tool list.
 
 Codex supports local STDIO servers and per-tool approval settings in its
-[official MCP documentation](https://learn.chatgpt.com/docs/extend/mcp).
-Keep `begin_batch` and `retry_action` set to `approval_mode = "prompt"`.
+[official MCP documentation](https://modelcontextprotocol.io/).
 Other tools can use `approve`: the server rejects form actions and sends until
 a batch exists, and enforces that batch's scope afterward.
 
-These two approval settings are part of the authorization design. MCP itself
-does not attest that a person clicked Approve. A client that automatically
-approves every tool can start batches without a person reviewing them. Use
-another client only if it can enforce the same approval policy.
+Batches and retries are approved in Eraser, not in the MCP client. `begin_batch`
+and `retry_action` only work after a person approves the preview, or the retry,
+on the Automation page of the web UI or with `eraser mcp approve <id>` in a
+terminal. A client that auto-approves every tool therefore cannot start a batch
+or release a retry by itself.
+
+That separation has limits. `eraser mcp approve` refuses to run without a
+terminal, and the web page only accepts a browser's same-origin form post, but
+an agent that can run commands or drive your browser can still approve its own
+batch. Don't give the agent a shell or browser for the same session, or keep
+those tools on a prompt in your client.
 
 Use `--config /absolute/path/config.yaml` if the web UI uses a non-default
 configuration. Use `--profile <id>` when several profiles exist; Eraser refuses
@@ -97,7 +103,7 @@ form state live only for the current browser session.
 | Tools | Purpose |
 | --- | --- |
 | `get_status`, `list_brokers`, `list_tasks`, `get_task` | Inspect the selected profile, eligible brokers, task details, source replies, and previous attempts. Lists are paginated. |
-| `prepare_batch`, `begin_batch`, `end_batch` | Preview explicit work, obtain client approval, and revoke authorization. |
+| `prepare_batch`, `begin_batch`, `end_batch` | Preview explicit work, start it once approved in Eraser, and revoke authorization. |
 | `scan_inbox` | Read the configured inbox and classify replies for the selected owner; never archive or open links. |
 | `send_request` | Send one reviewed email through the existing sender, respecting manual mode, dry-run, cooldown, daily cap, and rate limit. |
 | `open_task`, `observe_page`, `get_screenshot` | Open an approved form/link and inspect the persistent browser. Opening a confirmation URL can itself perform an action. |
@@ -133,9 +139,11 @@ Destinations come from that broker's trusted local `website` and `opt_out_url`,
 including subdomains, not from domains invented by an agent or extracted from
 email. Brokers that point at shared privacy or form platforms (OneTrust,
 TrustArc, Google Forms, and similar) may use only the exact tenant host named
-in their catalog entry, not every tenant on that platform. The connected IP
+in their catalog entry, not every tenant on that platform, and page loads stay
+under that entry's form path (its first two path segments), because platforms
+like OneTrust serve many companies' forms from one host. The connected IP
 address is checked too: a page served from a private address stops the
-session. URLs need HTTPS and a public address. Redirects, frames, subresources,
+session and is not shown to the agent. URLs need HTTPS and a public address. Redirects, frames, subresources,
 and form traffic outside those hosts are blocked. This deliberately also
 blocks third-party CDNs and verification services not covered by the catalog;
 some real sites will need manual handling. An unexpected destination pauses

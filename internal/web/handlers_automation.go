@@ -9,6 +9,7 @@ import (
 type approvalPreview struct {
 	PlanID        string            `json:"-"`
 	ProfileID     string            `json:"profile_id"`
+	Note          string            `json:"note"`
 	ProfileFields map[string]string `json:"profile_fields"`
 	Tasks         []struct {
 		BrokerName string `json:"broker_name"`
@@ -53,6 +54,11 @@ func (s *Server) handleAutomation(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAutomationApprove(w http.ResponseWriter, r *http.Request) {
 	if s.historyStore == nil {
 		http.Error(w, "Database not available", http.StatusInternalServerError)
+		return
+	}
+	// a browser form always sends this; curl and scripts don't unless told to
+	if r.Header.Get("Sec-Fetch-Site") != "same-origin" {
+		http.Error(w, "Approve batches from the Automation page in your browser.", http.StatusForbidden)
 		return
 	}
 	planID := r.FormValue("plan_id")

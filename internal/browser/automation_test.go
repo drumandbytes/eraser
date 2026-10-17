@@ -233,3 +233,33 @@ func TestPublicAddress(t *testing.T) {
 		}
 	}
 }
+
+func TestPathPinOnSharedPlatformsAndCSP(t *testing.T) {
+	p := NewURLPolicy("https://broker.example", "https://privacyportal.onetrust.com/webform/abc/def")
+	ctx := context.Background()
+	if err := p.ValidateNavigation(ctx, "https://privacyportal.onetrust.com/webform/other/x"); err == nil {
+		t.Error("another tenant's form on the same host was allowed")
+	}
+	for path, want := range map[string]bool{"/webform/abc": true, "/webform/abc/def": true, "/webform/abcd": false, "/": false, "/webform": false} {
+		if got := p.pathAllowed("privacyportal.onetrust.com", path); got != want {
+			t.Errorf("pathAllowed(%q) = %v, want %v", path, got, want)
+		}
+	}
+	if !p.pathAllowed("broker.example", "/anything") {
+		t.Error("an unpinned host was restricted by path")
+	}
+	if got := pathPrefix(""); got != "/" {
+		t.Errorf("pathPrefix empty = %q", got)
+	}
+	src := strings.Join(p.connectSources(), " ")
+	if !strings.Contains(src, "https://*.broker.example") || strings.Contains(src, "https://*.privacyportal.onetrust.com") {
+		t.Errorf("CSP sources ignore the exact host rule: %s", src)
+	}
+}
+
+func TestObserveRefusesPrivateAddressPage(t *testing.T) {
+	s := &AutomationSession{networkBlocked: "private address"}
+	if _, err := s.Observe(context.Background()); err == nil || !strings.Contains(err.Error(), "private address") {
+		t.Fatalf("Observe on a blocked session: %v", err)
+	}
+}

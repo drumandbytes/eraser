@@ -33,7 +33,7 @@ func (s *Store) migrateApprovals() error {
 
 func (s *Store) CreateBatchApproval(a BatchApproval) error {
 	_, err := s.db.Exec(`INSERT INTO batch_approvals (plan_id, profile_id, digest, preview, created_at, expires_at)
-		VALUES (?, ?, ?, ?, ?, ?)`, a.PlanID, normalizeProfileID(a.ProfileID), a.Digest, a.Preview, time.Now(), a.ExpiresAt)
+		VALUES (?, ?, ?, ?, ?, ?)`, a.PlanID, normalizeProfileID(a.ProfileID), a.Digest, a.Preview, time.Now().UTC(), a.ExpiresAt.UTC())
 	return err
 }
 
@@ -41,7 +41,7 @@ func (s *Store) CreateBatchApproval(a BatchApproval) error {
 func (s *Store) ApproveBatch(planID, approver string) error {
 	r, err := s.db.Exec(`UPDATE batch_approvals SET approved_at = ?, approved_by = ?
 		WHERE plan_id = ? AND approved_at IS NULL AND consumed_at IS NULL AND expires_at > ?`,
-		time.Now(), approver, planID, time.Now())
+		time.Now().UTC(), approver, planID, time.Now().UTC())
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (s *Store) ApproveBatch(planID, approver string) error {
 func (s *Store) ConsumeBatchApproval(planID, digest string) error {
 	r, err := s.db.Exec(`UPDATE batch_approvals SET consumed_at = ?
 		WHERE plan_id = ? AND digest = ? AND approved_at IS NOT NULL AND consumed_at IS NULL AND expires_at > ?`,
-		time.Now(), planID, digest, time.Now())
+		time.Now().UTC(), planID, digest, time.Now().UTC())
 	if err != nil {
 		return fmt.Errorf("consume batch approval: %w", err)
 	}
@@ -67,7 +67,7 @@ func (s *Store) ConsumeBatchApproval(planID, digest string) error {
 
 func (s *Store) PendingBatchApprovals() ([]BatchApproval, error) {
 	rows, err := s.db.Query(`SELECT plan_id, profile_id, digest, preview, expires_at FROM batch_approvals
-		WHERE approved_at IS NULL AND consumed_at IS NULL AND expires_at > ? ORDER BY created_at`, time.Now())
+		WHERE approved_at IS NULL AND consumed_at IS NULL AND expires_at > ? ORDER BY created_at`, time.Now().UTC())
 	if err != nil {
 		return nil, err
 	}

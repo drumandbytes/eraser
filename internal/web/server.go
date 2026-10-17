@@ -211,23 +211,6 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 		"percent": func(f float64) string {
 			return fmt.Sprintf("%.0f%%", f*100)
 		},
-		// dict builds a map from alternating key/value args so a partial can be
-		// invoked with more than one parameter, e.g.
-		// {{template "partials/broker-row.html" (dict "Broker" . "IDPrefix" "mobile-")}}
-		"dict": func(values ...interface{}) (map[string]interface{}, error) {
-			if len(values)%2 != 0 {
-				return nil, fmt.Errorf("dict: got %d args, want an even number of key/value pairs", len(values))
-			}
-			m := make(map[string]interface{}, len(values)/2)
-			for i := 0; i < len(values); i += 2 {
-				key, ok := values[i].(string)
-				if !ok {
-					return nil, fmt.Errorf("dict: key at position %d is %T, want string", i, values[i])
-				}
-				m[key] = values[i+1]
-			}
-			return m, nil
-		},
 	}
 
 	layoutContent, err := templatesFS.ReadFile("templates/layout.html")

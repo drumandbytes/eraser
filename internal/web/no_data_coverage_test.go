@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/drumandbytes/eraser/internal/history"
 )
@@ -63,5 +64,18 @@ func TestReclassifyCountsEveryOutcome(t *testing.T) {
 		if resp.ResponseType == "unknown" {
 			t.Errorf("%s stayed unknown", id)
 		}
+	}
+}
+
+func TestDashboardListsRecentRequestsWithDates(t *testing.T) {
+	s := smokeServer(t)
+	sent := time.Date(2026, time.March, 5, 14, 0, 0, 0, time.UTC)
+	if err := s.historyStore.Add(&history.Record{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme Data", Email: "privacy@acme.example", Template: "gdpr", Status: history.StatusSent, SentAt: sent}); err != nil {
+		t.Fatal(err)
+	}
+	rec := do(t, s, http.MethodGet, "/", false)
+	body := rec.Body.String()
+	if rec.Code != 200 || !strings.Contains(body, "Acme Data") || !strings.Contains(body, "Mar 5, 2026") {
+		t.Fatalf("dashboard: status %d, recent request or its date missing", rec.Code)
 	}
 }

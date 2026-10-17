@@ -66,22 +66,29 @@ CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `go
 ### MCP automation
 
 `cmd_mcp.go` exposes `internal/mcpserver` through the official Go MCP SDK. The
-server is local and serves one client session. The client supplies the AI and
-must prompt before `begin_batch` and `retry_action`; the server enforces the
-resulting profile/task/broker scope. Changing settings invalidates that scope.
+server is local and serves one client session. The client supplies the AI.
+`begin_batch` and `retry_action` work only after a person approves a stored
+preview (`batch_approvals`: single use, expiring, bound to the preview's digest)
+on the web UI's Automation page or with `eraser mcp approve`; the server then
+enforces the resulting profile/task/broker scope. Changing settings invalidates
+that scope.
 
 Browser tools use `internal/browser/automation.go`, retaining Chrome between
 calls and referencing controls from fresh snapshots in an isolated JavaScript
-world. Destinations derive from the selected broker's catalog entries. Request
-interception checks redirects and form traffic; a cumulative document CSP
-blocks popups, workers, and out-of-scope connections. This deliberately limits
+world. Destinations are the selected broker's catalog hosts and their `www.`
+form, nothing broader; on shared platforms (`sharedPlatforms` in `automation.go`)
+page loads also stay under the catalog entry's form path, and a response from a
+non-public address stops the session. Request interception checks redirects and
+form traffic; a cumulative document CSP blocks popups, workers, and out-of-scope
+connections. This deliberately limits
 compatibility with embedded forms and external dependencies.
 
-`internal/history/automation.go` adds an action journal without changing existing
-tables. An action is claimed before external work; interrupted submissions
-remain unknown and cannot be automatically replayed. Notes, screenshots, and
-completion use existing `pending_tasks`, and accepted requests remain awaiting
-a response in the pipeline. Email uses `email.SendRemoval` and the existing
+`internal/history/automation.go` adds an action journal. An action is claimed
+before external work; interrupted submissions remain unknown and cannot be
+automatically replayed. Notes, screenshots, and completion use `pending_tasks`,
+which gains `actor` (`human` or `mcp:<client>`) and `review_reason`;
+`removal_requests` gains `pipeline_actor`. Accepted requests remain awaiting a
+response in the pipeline. Email uses `email.SendRemoval` and the existing
 profile-scoped limits; inbox replies use the existing classifier with an
 explicitly resolved owner. See [mcp.md](mcp.md) for operational limits.
 

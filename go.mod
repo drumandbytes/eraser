@@ -9,7 +9,7 @@ require (
 	github.com/emersion/go-imap v1.2.1
 	github.com/emersion/go-message v0.18.2
 	github.com/go-chi/chi/v5 v5.3.2
-	github.com/modelcontextprotocol/go-sdk v1.7.0
+	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/net v0.61.0
 	golang.org/x/sys v0.49.0

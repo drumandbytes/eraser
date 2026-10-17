@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.5](https://github.com/drumandbytes/eraser/compare/v1.5.4...v1.5.5) (2026-10-17)
+
+
+### Bug Fixes
+
+* **site:** cap page titles at 60 chars before the site suffix ([#200](https://github.com/drumandbytes/eraser/issues/200)) ([cc386e7](https://github.com/drumandbytes/eraser/commit/cc386e7b0cb4f044ae15cf6adae6c91a5cb8a9de))
+
 ## [1.5.4](https://github.com/drumandbytes/eraser/compare/v1.5.3...v1.5.4) (2026-10-17)
 
 

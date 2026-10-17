@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -74,7 +75,8 @@ options:
 			t.Errorf("html output missing %q", want)
 		}
 	}
-	if info, _ := os.Stat(htmlOut); info != nil && info.Mode().Perm() != 0o600 {
+	// Windows has no POSIX mode bits.
+	if info, _ := os.Stat(htmlOut); info != nil && runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Errorf("output perms = %v, want 0600", info.Mode().Perm())
 	}
 

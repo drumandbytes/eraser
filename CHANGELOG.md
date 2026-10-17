@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.0](https://github.com/drumandbytes/eraser/compare/v1.4.2...v1.5.0) (2026-10-17)
+
+
+### Features
+
+* **site:** add a favicon to the website and the web UI ([#187](https://github.com/drumandbytes/eraser/issues/187)) ([09f6e66](https://github.com/drumandbytes/eraser/commit/09f6e6633dd8d8a71edde75c3f09f8bcc52c79e3))
+
+
+### Bug Fixes
+
+* **a11y:** fix contrast, labels and heading order, and scan both UIs in CI ([#189](https://github.com/drumandbytes/eraser/issues/189)) ([125b7a4](https://github.com/drumandbytes/eraser/commit/125b7a4a17d0ea43169f22957feb86f27db2c7dc))
+* **site:** redirect /docs/ to the latest release server-side ([#186](https://github.com/drumandbytes/eraser/issues/186)) ([f8ac914](https://github.com/drumandbytes/eraser/commit/f8ac914219efdaeb24cb433281bbedf3c2117818))
+
 ## [1.4.2](https://github.com/drumandbytes/eraser/compare/v1.4.1...v1.4.2) (2026-10-17)
 
 

@@ -1,7 +1,7 @@
 {{- /* Open Graph, Twitter card and JSON-LD. Kept in one partial so baseof.html
        stays readable and the publisher Organization is defined once. */ -}}
 {{- $isHome := .IsHome -}}
-{{- $title := cond $isHome "Eraser — data broker removal" (printf "%s · Eraser" .Title) -}}
+{{- $title := cond $isHome "Eraser — data broker removal" (printf "%s · Eraser" (strings.Truncate 60 .Title)) -}}
 {{- $desc := or .Description .Site.Params.description -}}
 {{- $org := dict "@type" "Organization" "name" "Drum and Bytes" "url" "https://drumandbytes.com" -}}
 <meta property="og:type" content="{{ cond .IsPage "article" "website" }}">

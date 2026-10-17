@@ -13,6 +13,7 @@ import (
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 func parityServer(t *testing.T) *Server {
@@ -93,7 +94,7 @@ func TestHandleAPIMarkBounced(t *testing.T) {
 // Same as `eraser update-brokers`, plus the running server switches to the
 // new list without a restart.
 func TestHandleSettingsBrokersUpdateReloadsList(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	testenv.SetHome(t, t.TempDir())
 	s := parityServer(t)
 
 	var yaml strings.Builder
@@ -121,7 +122,7 @@ func TestHandleSettingsBrokersUpdateReloadsList(t *testing.T) {
 // Same as `eraser add-broker`: saved to the user's own brokers file and live
 // in the running server's list straight away.
 func TestHandleBrokerNew(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	testenv.SetHome(t, t.TempDir())
 	s := parityServer(t)
 
 	post := func(form url.Values) *httptest.ResponseRecorder {

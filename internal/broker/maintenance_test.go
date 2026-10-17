@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 func saneList(n int, extra string) string {
@@ -22,7 +24,7 @@ func saneList(n int, extra string) string {
 }
 
 func TestUpdate(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	testenv.SetHome(t, t.TempDir())
 	body, etag, status := saneList(MinSaneBrokerCount, ""), `"v1"`, http.StatusOK
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("If-None-Match") == etag {
@@ -89,7 +91,7 @@ func TestUpdate(t *testing.T) {
 // ~/.eraser exists as a file: the list can't be written there.
 func TestUpdateUnwritableHome(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 	if err := os.WriteFile(filepath.Join(home, ".eraser"), nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +206,7 @@ func TestLoadErrors(t *testing.T) {
 	}
 
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 	if err := os.MkdirAll(filepath.Join(home, ".eraser"), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -222,7 +224,7 @@ func TestLoadErrors(t *testing.T) {
 // With no usable home directory the user paths are empty and the embedded
 // list still loads.
 func TestNoHomeDirectory(t *testing.T) {
-	t.Setenv("HOME", "")
+	testenv.SetHome(t, "")
 	if UserBrokersPath() != "" || LocalPath() != "" {
 		t.Skip("this platform resolves a home directory without $HOME")
 	}
@@ -237,7 +239,7 @@ func TestNoHomeDirectory(t *testing.T) {
 
 func TestCurrentCountBrokenUserList(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 	if err := os.MkdirAll(filepath.Join(home, ".eraser"), 0o700); err != nil {
 		t.Fatal(err)
 	}

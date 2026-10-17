@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/testenv"
 )
 
 // Your own entries survive update-brokers replacing the list, override a
@@ -11,7 +13,7 @@ import (
 // except an explicit --brokers file.
 func TestLocalEntriesMergeOverEveryList(t *testing.T) {
 	home := t.TempDir()
-	t.Setenv("HOME", home)
+	testenv.SetHome(t, home)
 
 	base, err := Load("")
 	if err != nil {

@@ -6,15 +6,14 @@
 package main
 
 import (
-	"os"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 )
 
 // --watch keeps every inbox open until Ctrl+C, then exits cleanly.
 func TestMonitorWatchUntilInterrupted(t *testing.T) {
+	requireInterrupt(t)
 	e := newCLIEnv(t, manualConfig+imapInbox(t, [3]string{"privacy@acme.example", "Re: request", "We deleted your data."}))
 	done := make(chan error, 1)
 	var out string
@@ -26,9 +25,7 @@ func TestMonitorWatchUntilInterrupted(t *testing.T) {
 	// The SIGINT handler is in place from the start; give the scan time to
 	// reach IDLE first.
 	time.Sleep(2 * time.Second)
-	if err := syscall.Kill(os.Getpid(), syscall.SIGINT); err != nil {
-		t.Fatal(err)
-	}
+	interruptSelf(t)
 	select {
 	case err := <-done:
 		if err != nil {

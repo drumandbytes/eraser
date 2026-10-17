@@ -17,9 +17,6 @@ import (
 
 func demoTestChrome(t *testing.T) string {
 	t.Helper()
-	if os.Getenv("ERASER_TEST_NO_CHROME") != "" {
-		t.Skip("ERASER_TEST_NO_CHROME is set, skipping Chrome-dependent test")
-	}
 	path := os.Getenv("ERASER_TEST_CHROME")
 	if os.Getenv("GITHUB_ACTIONS") != "true" || runtime.GOOS != "linux" {
 		return path

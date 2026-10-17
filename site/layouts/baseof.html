@@ -23,13 +23,14 @@
 {{ block "head" . }}{{ end }}
 </head>
 <body>
+<a href="#main" class="skip-link">Skip to main content</a>
 <header class="topbar">
   <a class="brand" href="{{ "/" | relURL }}">eraser</a>
-  <nav>
+  <nav aria-label="Main">
     {{ range .Site.Menus.main }}<a href="{{ .URL | relLangURL }}"{{ if $.IsMenuCurrent "main" . }} class="active"{{ end }}>{{ .Name }}</a>{{ end }}
   </nav>
 </header>
-<main class="wrap">
+<main id="main" tabindex="-1" class="wrap">
 {{ block "main" . }}{{ end }}
 </main>
 <footer class="foot">

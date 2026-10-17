@@ -28,10 +28,12 @@
   </div>
   <p class="meta"><span id="count">Loading…</span></p>
 
+  <div class="table-scroll" role="region" aria-label="Broker list" tabindex="0">
   <table class="dir">
-    <thead><tr><th>Broker</th><th>Region</th><th>Category</th><th>Opt out</th></tr></thead>
+    <thead><tr><th scope="col">Broker</th><th scope="col">Region</th><th scope="col">Category</th><th scope="col">Opt out</th></tr></thead>
     <tbody id="rows"></tbody>
   </table>
+  </div>
 </article>
 
 <script src="{{ "js/directory.js" | relURL }}" data-src="{{ "brokers.json" | relURL }}"></script>

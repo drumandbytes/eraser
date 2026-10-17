@@ -246,3 +246,64 @@ func TestNoDataReclassifyResolvesAfterMigration(t *testing.T) {
 		t.Fatalf("status=%s, want %s after reclassify", reqs[0].PipelineStatus, PipelineNoData)
 	}
 }
+
+func TestResolveNoDataCases(t *testing.T) {
+	sent := time.Now().Add(-48 * time.Hour)
+	for _, tc := range []struct {
+		name         string
+		stage        PipelineStatus
+		replyType    string
+		replyAge     time.Duration // relative to sent
+		needsReview  bool
+		confidence   float64
+		laterTask    bool
+		reclassified bool
+		want         PipelineStatus
+	}{
+		{"confident reply resolves", PipelineRejected, "no_data_held", time.Hour, false, 0.9, false, true, PipelineNoData},
+		{"not a no-data reply", PipelineRejected, "rejected", time.Hour, false, 0.9, false, true, PipelineRejected},
+		{"reply before the send", PipelineRejected, "no_data_held", -time.Hour, false, 0.9, false, true, PipelineRejected},
+		{"low confidence", PipelineRejected, "no_data_held", time.Hour, false, 0.5, false, true, PipelineRejected},
+		{"needs review", PipelineRejected, "no_data_held", time.Hour, true, 0.9, false, true, PipelineRejected},
+		{"later task blocks", PipelineRejected, "no_data_held", time.Hour, false, 0.9, true, true, PipelineRejected},
+		{"form stage kept on upgrade", PipelineFormRequired, "no_data_held", time.Hour, false, 0.9, false, true, PipelineFormRequired},
+		{"form stage moves when not upgrading", PipelineFormRequired, "no_data_held", time.Hour, false, 0.9, false, false, PipelineNoData},
+		{"unknown stage untouched", "custom", "no_data_held", time.Hour, false, 0.9, false, true, "custom"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := newTestStore(t)
+			if err := s.Add(&Record{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", Status: StatusSent, SentAt: sent}); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.UpdatePipelineStatus("default", "acme", tc.stage); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.AddBrokerResponse(&BrokerResponse{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", ResponseType: tc.replyType, EmailBody: "x", NeedsReview: tc.needsReview, Confidence: tc.confidence, ReceivedAt: sent.Add(tc.replyAge)}); err != nil {
+				t.Fatal(err)
+			}
+			if tc.laterTask {
+				task := PendingTask{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", TaskType: TaskReview, Notes: "later"}
+				if err := s.AddPendingTask(&task); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := s.db.Exec(`UPDATE pending_tasks SET created_at = ? WHERE id = ?`, sent.Add(3*time.Hour), task.ID); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := s.ResolveNoData("default", "acme", tc.reclassified); err != nil {
+				t.Fatal(err)
+			}
+			reqs, _ := s.LatestRequests("default")
+			if reqs[0].PipelineStatus != tc.want {
+				t.Fatalf("status=%s, want %s", reqs[0].PipelineStatus, tc.want)
+			}
+		})
+	}
+}
+
+func TestResolveNoDataNoRepliesIsNoop(t *testing.T) {
+	s := newTestStore(t)
+	if err := s.ResolveNoData("default", "nobody", true); err != nil {
+		t.Fatal(err)
+	}
+}

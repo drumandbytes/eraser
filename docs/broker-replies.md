@@ -26,7 +26,7 @@ Classifications match `ResponseType` in `internal/inbox/classifier.go`.
 | Reply says | Type | Action |
 |---|---|---|
 | Deletion done / suppressed / "we no longer hold your data" | `success` | none - archive the mail |
-| "No record / no match for you" from a genuine broker | `no_data` (No data held) | none - they're still a real broker, a future re-scrape may list you again |
+| "No record / no match for you" from a genuine broker | `no_data_held` (No data held) | none - they're still a real broker, a future re-scrape may list you again |
 | "We are not a data broker" / "B2B only, not in scope" | `rejected` | remove the entry from `data/brokers.yaml`, then check the count floor (below) |
 | "We won't process this by email - use our web form / portal" | `form_required` | set `email: ""`, set/refresh `opt_out_url` to the form they name, add a dated `notes:` line |
 | Won't act without a government-ID document | - | set `category: requires-id`, add a dated `notes:` line (users exclude this category in bulk) |
@@ -35,6 +35,7 @@ Classifications match `ResponseType` in `internal/inbox/classifier.go`.
 | Refuses on a real statutory exemption (FCRA / GLBA / DPPA), genuine dead end | `rejected` | set `email: ""`, add a dated `notes:` line citing the basis; keep the row (see the `goodhire` entry) |
 
 Clear no-record replies are separate from deletion confirmations and refusals.
+Triage a `no_data_held` reply as no action, but check it first: the request moves to "No data held" only when the reply is confident (at least 0.7) and not flagged for review. Subject lines like "not found", "no record" or "unable to locate" no longer score as rejections from the subject line alone; the body decides. Use the reclassify action on any older reply that still shows `rejected` and reads as no-record.
 Conditional replies or requests for identity verification still need review.
 On upgrade, Eraser reclassifies qualifying saved replies once, using their stored
 text without fetching mail. It only resolves the current request and superseded

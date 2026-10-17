@@ -12,7 +12,7 @@ const (
 	ResponseFormRequired         ResponseType = "form_required"         // Need to fill out a form
 	ResponseConfirmationRequired ResponseType = "confirmation_required" // Need to click confirmation link
 	ResponseSuccess              ResponseType = "success"               // Removal confirmed/completed
-	ResponseNoData               ResponseType = "no_data"               // Broker holds no matching data
+	ResponseNoData               ResponseType = "no_data_held"          // Broker holds no matching data
 	ResponseRejected             ResponseType = "rejected"              // Request denied
 	ResponsePending              ResponseType = "pending"               // Processing, will follow up
 	ResponseBounced              ResponseType = "bounced"               // Email bounced - invalid address

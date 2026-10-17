@@ -42,7 +42,7 @@
                     <option value="form_required" {{if eq .Filter.Type "form_required"}}selected{{end}}>Form Required</option>
                     <option value="confirmation_required" {{if eq .Filter.Type "confirmation_required"}}selected{{end}}>Confirmation Required</option>
                     <option value="success" {{if eq .Filter.Type "success"}}selected{{end}}>Deletion Confirmed</option>
-                    <option value="no_data" {{if eq .Filter.Type "no_data"}}selected{{end}}>No data held</option>
+                    <option value="no_data_held" {{if eq .Filter.Type "no_data_held"}}selected{{end}}>No data held</option>
                     <option value="rejected" {{if eq .Filter.Type "rejected"}}selected{{end}}>Rejected</option>
                     <option value="pending" {{if eq .Filter.Type "pending"}}selected{{end}}>Processing</option>
                     <option value="bounced" {{if eq .Filter.Type "bounced"}}selected{{end}}>Bounced</option>
@@ -63,7 +63,7 @@
                     <option value="captcha_solved" {{if eq .Filter.Status "captcha_solved"}}selected{{end}}>CAPTCHA solved</option>
                     <option value="awaiting_confirmation" {{if eq .Filter.Status "awaiting_confirmation"}}selected{{end}}>Awaiting confirmation</option>
                     <option value="confirmed" {{if eq .Filter.Status "confirmed"}}selected{{end}}>Confirmed</option>
-                    <option value="no_data" {{if eq .Filter.Status "no_data"}}selected{{end}}>No data held</option>
+                    <option value="no_data_held" {{if eq .Filter.Status "no_data_held"}}selected{{end}}>No data held</option>
                     <option value="rejected" {{if eq .Filter.Status "rejected"}}selected{{end}}>Rejected</option>
                     <option value="failed" {{if eq .Filter.Status "failed"}}selected{{end}}>Failed</option>
                 </select>
@@ -87,7 +87,7 @@
                 <div class="pipeline-result-main">
                     <div class="pipeline-result-title">
                         <a href="{{.URL}}" class="font-semibold text-primary hover:underline">{{.BrokerName}}</a>
-                        <span class="chip {{if or (eq .Kind "success") (eq .Kind "confirmed")}}chip-success{{else if eq .Kind "no_data"}}chip-info{{else if or (eq .Kind "rejected") (eq .Kind "failed") (eq .Kind "bounced")}}chip-error{{else}}chip-neutral{{end}}">{{.Label}}</span>
+                        <span class="chip {{if or (eq .Kind "success") (eq .Kind "confirmed")}}chip-success{{else if eq .Kind "no_data_held"}}chip-info{{else if or (eq .Kind "rejected") (eq .Kind "failed") (eq .Kind "bounced")}}chip-error{{else}}chip-neutral{{end}}">{{.Label}}</span>
                         {{if .NeedsReview}}<span class="chip chip-warning">Needs review</span>{{end}}
                     </div>
                     {{if .Subject}}<p class="text-sm text-secondary mt-1">{{.Subject}}</p>{{end}}

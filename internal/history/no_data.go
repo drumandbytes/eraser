@@ -12,9 +12,26 @@ import (
 type NoDataClassifier func(BrokerResponse) (bool, float64, bool)
 
 // MigrateNoData reclassifies saved replies once, atomically across profiles.
-// Claiming the version inside the write transaction also serializes two app
-// processes upgrading the same database. A failed migration is retryable.
+// It only relabels replies; resolving requests is left to ResolveNoData and the
+// reclassify action. Claiming the version inside the write transaction also
+// serializes two app processes upgrading the same database. A failed migration
+// is retryable.
 func (s *Store) MigrateNoData(classify NoDataClassifier) error {
+	// Read the marker without a write lock so routine opens (e.g. `eraser status`)
+	// don't contend with the writer once the migration has run.
+	var tables int
+	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'data_migrations'`).Scan(&tables); err != nil {
+		return err
+	}
+	if tables > 0 {
+		var applied int
+		if err := s.db.QueryRow(`SELECT COUNT(*) FROM data_migrations WHERE name = 'no_data_v1'`).Scan(&applied); err != nil {
+			return err
+		}
+		if applied > 0 {
+			return nil
+		}
+	}
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -53,21 +70,12 @@ func (s *Store) MigrateNoData(classify NoDataClassifier) error {
 	if err != nil {
 		return err
 	}
-	resolved := make(map[[2]string]bool)
 	for _, r := range replies {
 		matched, confidence, review := classify(r)
 		if !matched {
 			continue
 		}
-		if _, err := tx.Exec(`UPDATE broker_responses SET response_type = 'no_data', confidence = ?, needs_review = ? WHERE id = ? AND profile_id = ?`, confidence, review, r.ID, r.ProfileID); err != nil {
-			return err
-		}
-		if !review && confidence >= 0.7 {
-			resolved[[2]string{r.ProfileID, r.BrokerID}] = true
-		}
-	}
-	for key := range resolved {
-		if err := resolveNoData(tx, key[0], key[1], true); err != nil {
+		if _, err := tx.Exec(`UPDATE broker_responses SET response_type = 'no_data_held', confidence = ?, needs_review = ? WHERE id = ? AND profile_id = ?`, confidence, review, r.ID, r.ProfileID); err != nil {
 			return err
 		}
 	}
@@ -83,7 +91,7 @@ func (s *Store) ResolveNoData(profileID, brokerID string, reclassified bool) err
 	}
 	defer func() { _ = tx.Rollback() }()
 	// Obtain the writer lock before reading, avoiding a WAL read/write upgrade.
-	if _, err := tx.Exec(`UPDATE broker_responses SET response_type = response_type WHERE profile_id = ? AND broker_id = ? AND response_type = 'no_data'`, normalizeProfileID(profileID), brokerID); err != nil {
+	if _, err := tx.Exec(`UPDATE broker_responses SET response_type = response_type WHERE profile_id = ? AND broker_id = ? AND response_type = 'no_data_held'`, normalizeProfileID(profileID), brokerID); err != nil {
 		return err
 	}
 	if err := resolveNoData(tx, normalizeProfileID(profileID), brokerID, reclassified); err != nil {
@@ -113,7 +121,7 @@ func resolveNoData(tx *sql.Tx, profileID, brokerID string, upgrading bool) error
 	if err != nil {
 		return err
 	}
-	if r == nil || r.ResponseType != "no_data" || r.NeedsReview || r.Confidence < 0.7 || r.ReceivedAt.IsZero() {
+	if r == nil || r.ResponseType != "no_data_held" || r.NeedsReview || r.Confidence < 0.7 || r.ReceivedAt.IsZero() {
 		return nil
 	}
 	var requestID int64
@@ -186,7 +194,7 @@ func resolveNoData(tx *sql.Tx, profileID, brokerID string, upgrading bool) error
 	if later {
 		return nil
 	}
-	if _, err := tx.Exec(`UPDATE removal_requests SET pipeline_status = 'no_data' WHERE id = ? AND profile_id = ?`, requestID, profileID); err != nil {
+	if _, err := tx.Exec(`UPDATE removal_requests SET pipeline_status = 'no_data_held' WHERE id = ? AND profile_id = ?`, requestID, profileID); err != nil {
 		return err
 	}
 	// Keep the work and its notes as history; don't pretend a form was submitted.

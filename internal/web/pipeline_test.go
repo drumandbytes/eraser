@@ -111,12 +111,12 @@ func TestPipelineResponseSearchFiltersBeforePaging(t *testing.T) {
 	for i := range 62 {
 		r := history.BrokerResponse{BrokerID: fmt.Sprint(i), BrokerName: fmt.Sprintf("Broker %02d", i), ResponseType: "pending", EmailSubject: "Request update", ReceivedAt: now.Add(time.Duration(i) * time.Minute)}
 		if i == 0 {
-			r.ResponseType = "no_data"
+			r.ResponseType = "no_data_held"
 			r.EmailBody = "We hold no data. Distinctive 100%_literal body match."
 		}
 		pipelineReply(t, s, r)
 	}
-	pipelineReply(t, s, history.BrokerResponse{ProfileID: "other", BrokerID: "private", BrokerName: "Private other profile", ResponseType: "no_data", EmailBody: "Distinctive 100%_literal body match."})
+	pipelineReply(t, s, history.BrokerResponse{ProfileID: "other", BrokerID: "private", BrokerName: "Private other profile", ResponseType: "no_data_held", EmailBody: "Distinctive 100%_literal body match."})
 	for _, tc := range []struct {
 		q    string
 		rows int
@@ -125,9 +125,9 @@ func TestPipelineResponseSearchFiltersBeforePaging(t *testing.T) {
 		{"?view=responses", 50, "62 results"},
 		{"?view=responses&page=2", 12, "Page 2 of 2"},
 		{"?view=responses&q=DISTINCTIVE", 1, "Distinctive"},
-		{"?view=responses&type=no_data&q=100%25_literal", 1, "No data held"},
+		{"?view=responses&type=no_data_held&q=100%25_literal", 1, "No data held"},
 		{"?view=responses&type=rejected&q=Distinctive", 0, "No matching results"},
-		{"?view=responses&type=no_data&needs_review=true", 0, "No matching results"},
+		{"?view=responses&type=no_data_held&needs_review=true", 0, "No matching results"},
 		{"?view=responses&page=10000000000000000", 50, "62 results"},
 	} {
 		w := pipelineGET(s, "/pipeline"+tc.q, true)
@@ -136,12 +136,12 @@ func TestPipelineResponseSearchFiltersBeforePaging(t *testing.T) {
 			t.Errorf("%s: status=%d rows=%d, expected %d and %q", tc.q, w.Code, strings.Count(body, `<article class="pipeline-result"`), tc.rows, tc.want)
 		}
 	}
-	w := pipelineGET(s, "/pipeline?view=responses&type=no_data", false)
-	if !strings.Contains(w.Body.String(), `name="type"`) || !strings.Contains(w.Body.String(), `value="no_data" selected`) {
+	w := pipelineGET(s, "/pipeline?view=responses&type=no_data_held", false)
+	if !strings.Contains(w.Body.String(), `name="type"`) || !strings.Contains(w.Body.String(), `value="no_data_held" selected`) {
 		t.Error("response control doesn't submit or restore its selection")
 	}
 	api := httptest.NewRecorder()
-	s.handleAPIResponses(api, httptest.NewRequest("GET", "/api/pipeline/responses?type=no_data&q=Distinctive", nil))
+	s.handleAPIResponses(api, httptest.NewRequest("GET", "/api/pipeline/responses?type=no_data_held&q=Distinctive", nil))
 	if api.Code != 200 || !strings.Contains(api.Body.String(), "Broker 00") || strings.Contains(api.Body.String(), "Broker 61") {
 		t.Fatal("response API ignores filter/search")
 	}

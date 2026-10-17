@@ -12,7 +12,7 @@
             <span class="status-dot status-dot-warning"></span>
             {{else if eq .ResponseType "confirmation_required"}}
             <span class="status-dot" style="background: var(--accent);"></span>
-            {{else if eq .ResponseType "no_data"}}
+            {{else if eq .ResponseType "no_data_held"}}
             <span class="status-dot" style="background: var(--accent);"></span>
             {{else if eq .ResponseType "rejected"}}
             <span class="status-dot status-dot-error"></span>
@@ -28,7 +28,7 @@
                     {{if eq .ResponseType "success"}}chip chip-success
                     {{else if eq .ResponseType "form_required"}}chip chip-warning
                     {{else if eq .ResponseType "confirmation_required"}}chip chip-info
-                    {{else if eq .ResponseType "no_data"}}chip chip-info
+                    {{else if eq .ResponseType "no_data_held"}}chip chip-info
                     {{else if eq .ResponseType "rejected"}}chip chip-error
                     {{else}}chip chip-warning{{end}}">
                     {{pipelineLabel .ResponseType}}

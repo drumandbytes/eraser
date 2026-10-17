@@ -13,15 +13,14 @@ func TestNoDataMigrationPreservesNewerWorkAndProfiles(t *testing.T) {
 		name                                       string
 		stage                                      PipelineStatus
 		newRequest, newReply, laterTask, uncertain bool
-		want                                       PipelineStatus
 	}{
-		{"old rejection", PipelineRejected, false, false, false, false, PipelineNoData},
-		{"new request", PipelineRejected, true, false, false, false, PipelineEmailSent},
-		{"new reply", PipelineAwaitingResponse, false, true, false, false, PipelineAwaitingResponse},
-		{"manual progress", PipelineFormFilled, false, false, false, false, PipelineFormFilled},
-		{"confirmed", PipelineConfirmed, false, false, false, false, PipelineConfirmed},
-		{"new task", PipelineRejected, false, false, true, false, PipelineRejected},
-		{"uncertain", PipelineRejected, false, false, false, true, PipelineRejected},
+		{"old rejection", PipelineRejected, false, false, false, false},
+		{"new request", PipelineRejected, true, false, false, false},
+		{"new reply", PipelineAwaitingResponse, false, true, false, false},
+		{"manual progress", PipelineFormFilled, false, false, false, false},
+		{"confirmed", PipelineConfirmed, false, false, false, false},
+		{"new task", PipelineRejected, false, false, true, false},
+		{"uncertain", PipelineRejected, false, false, false, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s := newTestStore(t)
@@ -65,21 +64,22 @@ func TestNoDataMigrationPreservesNewerWorkAndProfiles(t *testing.T) {
 				t.Fatal(err)
 			}
 			got, _ := s.GetBrokerResponseByID(r.ID, "a")
-			if got.ResponseType != "no_data" || got.EmailBody != r.EmailBody || got.NeedsReview != tc.uncertain {
+			if got.ResponseType != "no_data_held" || got.EmailBody != r.EmailBody || got.NeedsReview != tc.uncertain {
 				t.Fatalf("reply=%+v", got)
 			}
 			a, _ := s.LatestRequests("a")
 			b, _ := s.LatestRequests("b")
-			if a[0].PipelineStatus != tc.want || b[0].PipelineStatus != tc.stage {
-				t.Fatalf("a=%s want=%s; b=%s want=%s", a[0].PipelineStatus, tc.want, b[0].PipelineStatus, tc.stage)
+			// The migration only relabels replies; it never moves requests or tasks.
+			wantA := tc.stage
+			if tc.newRequest {
+				wantA = PipelineEmailSent
+			}
+			if a[0].PipelineStatus != wantA || b[0].PipelineStatus != tc.stage {
+				t.Fatalf("a=%s want=%s; b=%s want=%s", a[0].PipelineStatus, wantA, b[0].PipelineStatus, tc.stage)
 			}
 			gotTask, _ := s.GetPendingTaskByID(task.ID, "a")
-			if tc.want == PipelineNoData {
-				if gotTask.Status != "completed" || !strings.Contains(gotTask.Notes, "Original note") || !strings.Contains(gotTask.Notes, "no data held") {
-					t.Fatalf("resolved task=%+v", gotTask)
-				}
-			} else if gotTask.Status != "pending" {
-				t.Fatal("changed work that was not superseded")
+			if gotTask.Status != "pending" || strings.Contains(gotTask.Notes, "no data held") {
+				t.Fatalf("migration changed task: %+v", gotTask)
 			}
 			if err := s.MigrateNoData(func(BrokerResponse) (bool, float64, bool) { t.Fatal("migration ran twice"); return false, 0, false }); err != nil {
 				t.Fatal(err)
@@ -112,7 +112,7 @@ func TestNoDataMigrationRollsBackAndRetries(t *testing.T) {
 		t.Fatal(err)
 	}
 	got, _ = s.GetBrokerResponseByID(r.ID, "a")
-	if got.ResponseType != "no_data" {
+	if got.ResponseType != "no_data_held" {
 		t.Fatal("failed migration was not retried")
 	}
 }
@@ -166,7 +166,7 @@ func TestNoDataResolutionUsesInstantsAndPreservesTaskHistory(t *testing.T) {
 	}
 	received := base.Add(3 * time.Hour).In(time.FixedZone("", -5*60*60))
 	for _, r := range []BrokerResponse{
-		{BrokerID: "acme", ResponseType: "no_data", Confidence: 0.85, ReceivedAt: received},
+		{BrokerID: "acme", ResponseType: "no_data_held", Confidence: 0.85, ReceivedAt: received},
 		{BrokerID: "acme", ResponseType: "pending", NeedsReview: true, ReceivedAt: base.Add(150 * time.Minute)},
 	} {
 		if err := s.AddBrokerResponse(&r); err != nil {
@@ -220,5 +220,29 @@ func TestNoDataResolutionUsesInstantsAndPreservesTaskHistory(t *testing.T) {
 	reviews, err := s.GetBrokerResponses("default", "", true, -1)
 	if err != nil || len(reviews) != 0 {
 		t.Fatalf("superseded reviews=%+v err=%v", reviews, err)
+	}
+}
+
+func TestNoDataReclassifyResolvesAfterMigration(t *testing.T) {
+	s := newTestStore(t)
+	sent := time.Now().Add(-48 * time.Hour)
+	if err := s.Add(&Record{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", Status: StatusSent, SentAt: sent}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpdatePipelineStatus("default", "acme", PipelineRejected); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AddBrokerResponse(&BrokerResponse{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", ResponseType: "rejected", EmailBody: "no records", ReceivedAt: sent.Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.MigrateNoData(func(BrokerResponse) (bool, float64, bool) { return true, 0.85, false }); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ResolveNoData("default", "acme", true); err != nil {
+		t.Fatal(err)
+	}
+	reqs, _ := s.LatestRequests("default")
+	if reqs[0].PipelineStatus != PipelineNoData {
+		t.Fatalf("status=%s, want %s after reclassify", reqs[0].PipelineStatus, PipelineNoData)
 	}
 }

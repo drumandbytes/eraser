@@ -39,7 +39,7 @@ const (
 	PipelineCaptchaSolved        PipelineStatus = "captcha_solved"
 	PipelineAwaitingConfirmation PipelineStatus = "awaiting_confirmation"
 	PipelineConfirmed            PipelineStatus = "confirmed"
-	PipelineNoData               PipelineStatus = "no_data"
+	PipelineNoData               PipelineStatus = "no_data_held"
 	PipelineFailed               PipelineStatus = "failed"
 	PipelineRejected             PipelineStatus = "rejected"
 )
@@ -76,7 +76,7 @@ type BrokerResponse struct {
 	ProfileID    string
 	BrokerID     string
 	BrokerName   string
-	ResponseType string // form_required, confirmation_required, success, no_data, rejected, pending, bounced, unknown
+	ResponseType string // form_required, confirmation_required, success, no_data_held, rejected, pending, bounced, unknown
 	EmailFrom    string
 	EmailSubject string
 	EmailBody    string // Stored for reclassification

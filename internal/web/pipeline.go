@@ -2,13 +2,14 @@ package web
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/drumandbytes/eraser/internal/history"
 	"golang.org/x/net/html"
@@ -92,7 +93,7 @@ func pipelineLabel(kind string) string {
 		"email_sent": "Email sent", "awaiting_response": "Awaiting response", "form_required": "Form required",
 		"form_filled": "Form filled", "awaiting_captcha": "Awaiting CAPTCHA", "captcha_solved": "CAPTCHA solved",
 		"awaiting_confirmation": "Awaiting confirmation", "confirmed": "Confirmed", "success": "Deletion confirmed",
-		"no_data": "No data held", "rejected": "Rejected", "failed": "Failed", "pending": "Processing",
+		"no_data_held": "No data held", "rejected": "Rejected", "failed": "Failed", "pending": "Processing",
 		"unknown": "Unknown", "bounced": "Bounced", "manual_form": "Form required", "form": "Form required",
 		"confirmation_required": "Confirmation required", "confirm": "Confirmation required", "confirmation": "Confirmation required",
 		"captcha": "CAPTCHA", "review": "Needs review",
@@ -112,9 +113,6 @@ func responsePreview(body, search string) string {
 	for {
 		tt := z.Next()
 		if tt == html.ErrorToken {
-			if z.Err() == io.EOF {
-				break
-			}
 			break
 		}
 		if tt == html.StartTagToken || tt == html.EndTagToken {
@@ -136,9 +134,13 @@ func responsePreview(body, search string) string {
 	runes := []rune(text)
 	start := 0
 	if search != "" {
-		lowered := strings.ToLower(text)
-		if at := strings.Index(lowered, strings.ToLower(search)); at > 0 {
-			start = max(0, len([]rune(lowered[:at]))-55)
+		// One rune in, one rune out, so match indexes line up with runes.
+		lower := make([]rune, len(runes))
+		for i, r := range runes {
+			lower[i] = unicode.ToLower(r)
+		}
+		if at := strings.Index(string(lower), strings.ToLower(search)); at > 0 {
+			start = max(0, utf8.RuneCountInString(string(lower)[:at])-55)
 		}
 	}
 	end := min(len(runes), start+220)
@@ -185,7 +187,7 @@ func newPipelineView(f pipelineFilter, stats PipelineStats) pipelineView {
 	}{
 		{"Email Sent", "email_sent", stats.EmailSent}, {"Awaiting Response", "awaiting_response", stats.AwaitingResponse},
 		{"Form Required", "form_required", stats.FormRequired}, {"Awaiting Confirm", "awaiting_confirmation", stats.AwaitingConfirmation},
-		{"Confirmed", "confirmed", stats.Confirmed}, {"No data held", "no_data", stats.NoData}, {"Rejected", "rejected", stats.Rejected},
+		{"Confirmed", "confirmed", stats.Confirmed}, {"No data held", "no_data_held", stats.NoData}, {"Rejected", "rejected", stats.Rejected},
 		{"Pending Tasks", "actions", stats.PendingTasks}, {"Needs Review", "review", stats.NeedsReview},
 	} {
 		cf := pipelineFilter{View: "requests", Status: card.status, Search: f.Search, Page: 1}

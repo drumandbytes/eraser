@@ -25,7 +25,7 @@ func TestOpenHistoryStoreUpgradesSavedNoDataReply(t *testing.T) {
 	}
 	defer func() { _ = upgraded.Close() }()
 	got, err := upgraded.GetBrokerResponseByID(r.ID, "default")
-	if err != nil || got.ResponseType != "no_data" || got.EmailBody != r.EmailBody {
+	if err != nil || got.ResponseType != "no_data_held" || got.EmailBody != r.EmailBody {
 		t.Fatalf("upgrade=%+v err=%v", got, err)
 	}
 }

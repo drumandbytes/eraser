@@ -184,7 +184,7 @@ func render(name, body string, v Version) string {
 	fmt.Fprintf(&fm, "title: %s\n", strconv.Quote(title))
 	fmt.Fprintf(&fm, "docs_version: %s\ndocs_page: %s\n", strconv.Quote(v.Slug), strconv.Quote(name))
 	if !v.Latest {
-		fm.WriteString("robots: noindex\n")
+		fm.WriteString("robots: noindex\nsitemap:\n  disable: true\n")
 	}
 	fm.WriteString("---\n\n")
 	return fm.String() + strings.TrimLeft(text, "\n")
@@ -241,7 +241,7 @@ func run(repo, siteDir string) error {
 		}
 		index := fmt.Sprintf("---\ntitle: %s\ndocs_version: %s\ndocs_status: %s\n", strconv.Quote("Eraser "+v.Label+" documentation"), strconv.Quote(v.Slug), strconv.Quote(v.Status))
 		if !v.Latest {
-			index += "robots: noindex\n"
+			index += "robots: noindex\nsitemap:\n  disable: true\n"
 		}
 		if err := os.WriteFile(filepath.Join(dir, "_index.md"), []byte(index+"---\n"), 0o644); err != nil {
 			return err

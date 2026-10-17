@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/drumandbytes/eraser/compare/v1.5.0...v1.5.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* **a11y:** keyboard and screen-reader fixes for the web UI ([#191](https://github.com/drumandbytes/eraser/issues/191)) ([5e91c43](https://github.com/drumandbytes/eraser/commit/5e91c4381f5e232a1ecc5aa8f4a637a546d5c1fd))
+
 ## [1.5.0](https://github.com/drumandbytes/eraser/compare/v1.4.2...v1.5.0) (2026-10-17)
 
 

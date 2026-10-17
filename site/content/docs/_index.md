@@ -1,8 +1,10 @@
 ---
 title: "Documentation"
-description: "Eraser documentation for every release: the stable releases, the pre-release beta, and the nightly build from main."
+description: "Eraser documentation for every release: the stable releases and the nightly build from main."
+robots: "noindex, follow"
 ---
 
-Pick a version below. Stable releases are frozen snapshots taken from each
-release's tag. The beta is a pre-release you can try early, and Nightly follows
-`main` and can change at any time.
+This page sends you to the latest stable release. Other versions are listed
+below. Stable releases are frozen snapshots taken from each release's tag, and
+Nightly follows `main` and can change at any time. A beta appears here while a
+prerelease is ahead of the last stable release.

@@ -22,11 +22,124 @@ jobs:
   zizmor:
     uses: drumandbytes/reusable-actions/.github/workflows/zizmor.yml@v1
 
+  # Codecov's GitHub app isn't installed, so it posts no commit statuses and
+  # can't be a required check. This enforces codecov.yml's rules here instead
+  # (project floor and patch coverage) and still uploads the report to Codecov.
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # Codecov tokenless upload via OIDC
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the patch gate diffs against the base branch
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      # No -race, so the IDLE watch test (race-tagged off for a go-imap v1
+      # race) counts too.
+      - name: Test with coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        if: ${{ !cancelled() }}
+        with:
+          files: coverage.out
+
+      - name: Coverage gate
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: go run ./scripts/covgate -profile coverage.out -base "origin/${BASE_REF}" -project-min 88 -patch-min 80
+
+  # A broken site only surfaced after merge, when deploy.yaml ran on main.
+  site:
+    name: Site build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the versioned docs read every release tag
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3.2.1
+        with:
+          hugo-version: "0.165.0"
+
+      - name: Build the site
+        run: ./site/build.sh
+
+  # The shared go-ci job covers Linux amd64. Release binaries also ship for
+  # macOS, Windows and Linux arm64, so run the tests there too (no -race:
+  # that needs cgo, and the release builds don't use it).
+  cross-platform:
+    name: Test on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, macos-latest, macos-15-intel, windows-latest, windows-11-arm]
+        include:
+          # Google ships no Chrome for Linux arm64, so skip the browser tests there.
+          - os: ubuntu-24.04-arm
+            no-chrome: "1"
+          # The suite has never run on Windows and many tests assume POSIX
+          # (syscall.Kill, chmod modes, HOME paths, CRLF checkouts). The build
+          # gates; the tests report until those are ported.
+          - os: windows-latest
+            advisory-tests: true
+          - os: windows-11-arm
+            advisory-tests: true
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      ERASER_TEST_NO_CHROME: ${{ matrix.no-chrome }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - run: go build ./...
+
+      - name: Test
+        continue-on-error: ${{ matrix.advisory-tests == true }}
+        run: go test ./...
+
+  vulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # go.mod pins 1.26.0, whose standard library has known fixes; the releases
+      # build with the latest 1.26 patch, so scan with that.
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "1.26"
+
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
   # The one name the ruleset requires, however the jobs above change.
   required-checks-passed:
     name: Required checks passed
     runs-on: ubuntu-latest
-    needs: [ci, zizmor]
+    needs: [ci, zizmor, coverage, site, cross-platform, vulncheck]
     if: always()
     steps:
       - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')

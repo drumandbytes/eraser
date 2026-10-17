@@ -122,6 +122,11 @@ func init() {
 // first Run) and skips the test when no browser can start.
 func requireChrome(t *testing.T) *Browser {
 	t.Helper()
+	// CI sets this on runners that can't have Chrome (Linux arm64), where a
+	// missing browser is expected rather than a broken setup.
+	if os.Getenv("ERASER_TEST_NO_CHROME") != "" {
+		t.Skip("ERASER_TEST_NO_CHROME is set, skipping Chrome-dependent test")
+	}
 
 	cfg := DefaultConfig()
 	cfg.Headless = true

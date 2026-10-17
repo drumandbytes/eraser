@@ -1,13 +1,12 @@
 name: Coverage
 
-# Separate from CI: the shared go-ci workflow has no coverage output, and
-# this run is without -race so the IDLE watch test (race-tagged off for a
-# go-imap v1 race) counts too.
+# Uploads main's coverage to Codecov as the baseline. PR coverage, and the
+# gate that enforces codecov.yml, run in ci.yml. No -race, so the IDLE watch
+# test (race-tagged off for a go-imap v1 race) counts too.
 
 on:
   push:
     branches: [main]
-  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

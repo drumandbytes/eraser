@@ -1,0 +1,27 @@
+name: Vulnerability check
+
+# ci.yml runs govulncheck on every PR. This catches advisories published later,
+# while nothing is being changed.
+
+on:
+  schedule:
+    - cron: "23 5 * * 1" # Mondays 05:23 UTC, before broker-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...

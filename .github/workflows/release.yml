@@ -5,12 +5,19 @@ on:
   push:
     tags:
       - "v*"
+  # Smoke-test an existing release without publishing anything.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to smoke-test, e.g. v1.4.0
+        required: true
 
 permissions:
   contents: write
 
 jobs:
   release:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -41,3 +48,41 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
+
+  # The release is already published by now, so a failure here is an alarm, not
+  # a gate. Download each binary as a user would, check it against
+  # checksums.txt, and run it on the OS and architecture it was built for.
+  smoke:
+    name: Smoke test ${{ matrix.suffix }}
+    needs: release
+    # A manual run skips the release job; a failed release has nothing to test.
+    if: ${{ !cancelled() && needs.release.result != 'failure' }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, suffix: linux_amd64.tar.gz }
+          - { os: ubuntu-24.04-arm, suffix: linux_arm64.tar.gz }
+          - { os: macos-latest, suffix: darwin_arm64.tar.gz }
+          - { os: macos-15-intel, suffix: darwin_amd64.tar.gz }
+          - { os: windows-latest, suffix: windows_amd64.exe }
+          - { os: windows-11-arm, suffix: windows_arm64.exe }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # The script comes from the tagged commit, like the binaries do.
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Download, verify and run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+          SUFFIX: ${{ matrix.suffix }}
+        run: ./scripts/release-smoke.sh "$TAG" "$SUFFIX"

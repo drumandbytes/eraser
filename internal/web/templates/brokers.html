@@ -200,7 +200,7 @@
     <!-- Broker list: count header + desktop table + mobile cards. The inner
          markup lives in partials/broker-list.html and is exactly what
          GET /api/brokers swaps back into this div. -->
-    <div id="broker-list" class="card overflow-hidden">{{template "partials/broker-list.html" .}}</div>
+    <div id="broker-list" class="card overflow-hidden" aria-live="polite">{{template "partials/broker-list.html" .}}</div>
 
     <!-- Help text -->
     <p class="text-center text-sm text-muted mt-6">

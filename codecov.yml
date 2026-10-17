@@ -7,6 +7,13 @@ ignore:
   - "internal/smtptest/**"
   - "internal/testenv/**"
 
+# Go reports coverage per block, so a multi-line block that ran only partly
+# shows up as a "partial" line. Count those as hits, which is how
+# `go tool cover` and scripts/covgate report it, so the numbers agree.
+parsers:
+  go:
+    partials_as_hits: true
+
 # The same limits are enforced in CI by scripts/covgate (ci.yml), which is what
 # blocks a merge. These statuses only report, so installing Codecov's GitHub app
 # adds nicer PR comments without a second gate.

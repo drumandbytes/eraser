@@ -1,0 +1,20 @@
+{{ define "main" }}
+<article class="prose">
+  {{ if .Params.docs_version }}
+  <p class="crumb"><a href="{{ "/" | relURL }}">Home</a> · <a href="{{ "/docs/" | relURL }}">Docs</a></p>
+  {{ partial "docs-nav.html" . }}
+  <h1>{{ .Title }}</h1>
+  <ul class="linklist">
+    {{ range .Pages.ByTitle }}<li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>{{ end }}
+  </ul>
+  {{ else }}
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+  <ul class="linklist">
+    {{ range hugo.Data.docs_versions.versions }}
+    <li><a href="{{ printf "/docs/%s/" .slug | relURL }}">{{ .label }}</a>{{ if .latest }} · latest stable{{ else if eq .status "beta" }} · pre-release{{ else if eq .status "nightly" }} · from <code>main</code>{{ end }}</li>
+    {{ end }}
+  </ul>
+  {{ end }}
+</article>
+{{ end }}

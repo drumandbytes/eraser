@@ -1,0 +1,8 @@
+{{ define "main" }}
+<article class="prose">
+  <p class="crumb"><a href="{{ "/" | relURL }}">Home</a> · <a href="{{ "/docs/" | relURL }}">Docs</a>{{ with .CurrentSection }} · <a href="{{ .RelPermalink }}">{{ .Params.docs_version }}</a>{{ end }}</p>
+  {{ partial "docs-nav.html" . }}
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+</article>
+{{ end }}

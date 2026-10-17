@@ -77,3 +77,7 @@ eraser-evidence-*.json
 /scripts/import-registries/review.md
 /candidates.yaml
 /review.md
+
+# Generated versioned docs (scripts/docs-versions)
+site/content/docs/*/
+site/data/docs_versions.json

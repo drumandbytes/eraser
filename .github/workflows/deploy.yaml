@@ -7,6 +7,8 @@ on:
   push:
     branches: [main]
     paths:
+      - "docs/**"
+      - "scripts/docs-versions/**"
       - "data/brokers.yaml"
       - "data/authorities.yaml"
       - "site/**"
@@ -14,6 +16,9 @@ on:
       - "internal/template/templates/**"
       - "internal/broker/**"
       - ".github/workflows/deploy.yaml"
+  # A new release adds a docs snapshot. Published, not released: betas count too.
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -29,7 +34,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
+          # A release event checks out the release's tag. Publish main's site
+          # anyway, so an old or pre-release tag cannot replace Nightly with its own content.
+          ref: main
           persist-credentials: false
+          fetch-depth: 0 # the docs snapshots read every release tag
 
       # No module cache: another ref's cache could end up in the published site.
       - uses: actions/setup-go@v7
@@ -44,6 +53,7 @@ jobs:
       - name: Generate content
         run: |
           go run ./cmd/eraser guides --format md --output site/content
+          go run ./scripts/docs-versions
           mkdir -p site/data
           cp data/authorities.yaml site/data/authorities.yaml
 

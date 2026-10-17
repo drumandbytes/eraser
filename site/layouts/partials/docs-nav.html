@@ -1,0 +1,24 @@
+{{- $cur := .Params.docs_version -}}
+{{- $page := .Params.docs_page -}}
+{{- $versions := hugo.Data.docs_versions.versions | default slice -}}
+{{- $current := dict -}}
+{{- range $versions }}{{ if eq .slug $cur }}{{ $current = . }}{{ end }}{{ end -}}
+<div class="docs-bar">
+  <label for="docs-version">Version</label>
+  <select id="docs-version" aria-label="Documentation version">
+    {{- range $versions }}
+    {{- $target := printf "/docs/%s/" .slug }}
+    {{- if and $page (in (.pages | default slice) $page) }}{{ $target = printf "/docs/%s/%s/" .slug $page }}{{ end }}
+    <option value="{{ $target | relURL }}"{{ if eq .slug $cur }} selected{{ end }}>{{ .label }}{{ if .latest }} (latest){{ end }}</option>
+    {{- end }}
+  </select>
+</div>
+{{- with $current }}
+{{- if eq .status "nightly" }}
+<p class="docs-banner">Nightly documentation for unreleased changes on <code>main</code>. It can change at any time.</p>
+{{- else if eq .status "beta" }}
+<p class="docs-banner">Beta documentation for a pre-release. Details may change before the stable release.</p>
+{{- else if not .latest }}
+<p class="docs-banner">You are reading the documentation for {{ .label }}. A newer release exists; use the version menu.</p>
+{{- end }}
+{{- end }}

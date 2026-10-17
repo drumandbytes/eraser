@@ -275,7 +275,7 @@ func TestResolveNoDataCases(t *testing.T) {
 			if err := s.Add(&Record{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", Status: StatusSent, SentAt: sent}); err != nil {
 				t.Fatal(err)
 			}
-			if err := s.UpdatePipelineStatus("default", "acme", tc.stage); err != nil {
+			if err := s.OverridePipelineStatus("default", "acme", tc.stage); err != nil {
 				t.Fatal(err)
 			}
 			if err := s.AddBrokerResponse(&BrokerResponse{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", ResponseType: tc.replyType, EmailBody: "x", NeedsReview: tc.needsReview, Confidence: tc.confidence, ReceivedAt: sent.Add(tc.replyAge)}); err != nil {

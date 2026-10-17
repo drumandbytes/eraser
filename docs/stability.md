@@ -24,6 +24,7 @@ This page defines what counts as "a working setup".
 - The web UI: its pages, routes, HTMX endpoints and layout. It's a local interface, not an API.
 - Human-readable CLI output: tables, emoji and wording. Use `export --format json` for anything machine-read.
 - The removal-request templates' wording. It's improved as broker replies teach us what works.
+- `eraser mcp` (the MCP server, its tool names and arguments, and its `approve`/`pending` subcommands). It is experimental and outside the 1.x contract until it is promoted here.
 - The contents of the broker lists and of the mail-provider presets in setup. Presets only prefill fields, so a changed preset never alters a saved config.
 - Hidden commands, such as `guides`, the project website's page generator.
 - Go packages under `internal/`. Eraser is a program, not a library.

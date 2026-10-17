@@ -6,9 +6,8 @@ import (
 	"strings"
 )
 
-// ActionItems is the common source for action rows and counters in both web
-// pages. Forms represented by tasks appear only once. Reviews are independent
-// actions and are not restricted to the response type "unknown".
+// ActionItems feeds the action rows and counters on both web pages. A form that
+// has a task shows once; reviews stand alone and aren't limited to type "unknown".
 type ActionItems struct {
 	Forms   []FormWithStatus
 	Tasks   []PendingTask
@@ -16,23 +15,31 @@ type ActionItems struct {
 }
 
 func (a ActionItems) Total() int { return len(a.Forms) + len(a.Tasks) + len(a.Reviews) }
+
 func (a ActionItems) NeedsReview() int {
 	n := len(a.Reviews)
 	for _, t := range a.Tasks {
-		if t.TaskType == TaskReview {
+		if t.NeedsReview() {
 			n++
 		}
 	}
 	return n
 }
+
 func (a ActionItems) FormsToFill() int {
 	n := len(a.Forms)
 	for _, t := range a.Tasks {
-		if t.TaskType == TaskManualForm {
+		if t.TaskType == TaskManualForm && !t.NeedsReview() {
 			n++
 		}
 	}
 	return n
+}
+
+// NeedsReview: review tasks, plus automation outcomes the agent couldn't settle
+// (they stay pending until a person looks).
+func (t PendingTask) NeedsReview() bool {
+	return t.TaskType == TaskReview || strings.HasPrefix(t.Notes, "MCP: unknown.") || strings.HasPrefix(t.Notes, "MCP: needs_user.") || strings.HasPrefix(t.Notes, "MCP: action outcome unknown.") || strings.HasPrefix(t.Notes, "MCP: page could not be opened.")
 }
 
 func (s *Store) GetActionItems(profileID string) (ActionItems, error) {

@@ -8,6 +8,7 @@
 - **Database**: SQLite (for history tracking via `modernc.org/sqlite`)
 - **Config**: YAML (`gopkg.in/yaml.v3`)
 - **Browser automation**: chromedp, for `fill`/`confirm` commands and CAPTCHA detection
+- **Local agent connection**: official Go MCP SDK, STDIO transport (`eraser mcp`)
 
 ## Project Structure
 
@@ -36,6 +37,7 @@ eraser/
 │   ├── inbox/                   # IMAP scan (scan.go: ScanAndStore/RecordReply) + reply classification (success/form-required/
 │   │                             # confirmation/rejection/pending/bounced)
 │   ├── schedule/                # unattended cycles: shared lock + state file, launchd/systemd install
+│   ├── mcpserver/               # profile-scoped MCP tools, reviewed batches, persistent browser sessions
 │   ├── template/
 │   │   ├── template.go          # Template rendering engine
 │   │   └── templates/           # Embedded: gdpr.tmpl, ccpa.tmpl, generic.tmpl
@@ -60,6 +62,28 @@ eraser/
 CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR. `.github/workflows/release-please.yml` watches Conventional Commits on `main` and keeps an open release PR with the version bump and `CHANGELOG.md`; merging it tags `vX.Y.Z` and publishes a GitHub Release. That tag push fires `.github/workflows/release.yml`, which runs GoReleaser (`.goreleaser.yaml`) to cross-compile `linux/darwin/windows × amd64/arm64` (`CGO_ENABLED=0`, pure-Go SQLite) and append archives + checksums to the release release-please already created. `main.version` is set via `-ldflags` at that point; it's `"dev"` otherwise.
 
 ## Key Concepts
+
+### MCP automation
+
+`cmd_mcp.go` exposes `internal/mcpserver` through the official Go MCP SDK. The
+server is local and serves one client session. The client supplies the AI and
+must prompt before `begin_batch` and `retry_action`; the server enforces the
+resulting profile/task/broker scope. Changing settings invalidates that scope.
+
+Browser tools use `internal/browser/automation.go`, retaining Chrome between
+calls and referencing controls from fresh snapshots in an isolated JavaScript
+world. Destinations derive from the selected broker's catalog entries. Request
+interception checks redirects and form traffic; a cumulative document CSP
+blocks popups, workers, and out-of-scope connections. This deliberately limits
+compatibility with embedded forms and external dependencies.
+
+`internal/history/automation.go` adds an action journal without changing existing
+tables. An action is claimed before external work; interrupted submissions
+remain unknown and cannot be automatically replayed. Notes, screenshots, and
+completion use existing `pending_tasks`, and accepted requests remain awaiting
+a response in the pipeline. Email uses `email.SendRemoval` and the existing
+profile-scoped limits; inbox replies use the existing classifier with an
+explicitly resolved owner. See [mcp.md](mcp.md) for operational limits.
 
 ### Broker
 `data/brokers.yaml` is compiled into the binary (`data/embed.go`, `//go:embed`).

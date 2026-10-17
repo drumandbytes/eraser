@@ -27,14 +27,15 @@ type Browser struct {
 
 // BrowserConfig holds browser automation settings
 type BrowserConfig struct {
-	Headless      bool
-	Timeout       time.Duration
-	ScreenshotDir string
-	UserAgent     string
-	WindowWidth   int
-	WindowHeight  int
-	WaitForUser   bool         // If true, pause when CAPTCHA detected for user to solve
-	WaitCallback  func() error // Called when waiting for user (e.g., to prompt in terminal)
+	ExecutablePath string // Optional Chrome/Chromium executable override.
+	Headless       bool
+	Timeout        time.Duration
+	ScreenshotDir  string
+	UserAgent      string
+	WindowWidth    int
+	WindowHeight   int
+	WaitForUser    bool         // If true, pause when CAPTCHA detected for user to solve
+	WaitCallback   func() error // Called when waiting for user (e.g., to prompt in terminal)
 }
 
 // DefaultConfig returns sensible default browser settings
@@ -85,6 +86,9 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 		opts = append(opts, chromedp.Headless)
 	}
 	opts = append(opts, extraAllocatorOptions...)
+	if cfg.ExecutablePath != "" {
+		opts = append(opts, chromedp.ExecPath(cfg.ExecutablePath))
+	}
 
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 
@@ -357,8 +361,13 @@ func (b *Browser) submitForm(ctx context.Context) error {
 
 // takeScreenshot captures the current page state
 func (b *Browser) takeScreenshot(ctx context.Context, brokerID, suffix string) (string, error) {
+	return b.takeScreenshotQuality(ctx, brokerID, suffix, 90)
+}
+
+// takeScreenshotQuality: 100 makes Chrome return PNG, anything lower JPEG.
+func (b *Browser) takeScreenshotQuality(ctx context.Context, brokerID, suffix string, quality int) (string, error) {
 	var buf []byte
-	err := chromedp.Run(ctx, chromedp.FullScreenshot(&buf, 90))
+	err := chromedp.Run(ctx, chromedp.FullScreenshot(&buf, quality))
 	if err != nil {
 		return "", err
 	}

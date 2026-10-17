@@ -147,7 +147,7 @@ func (s *Server) handleFormComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.historyStore.UpdatePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineConfirmed); err != nil {
+	if err := s.historyStore.OverridePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineConfirmed); err != nil {
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
 	}
@@ -170,7 +170,7 @@ func (s *Server) handleFormSkip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.historyStore.UpdatePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineRejected); err != nil {
+	if err := s.historyStore.OverridePipelineStatus(s.activeProfile(r).ID, brokerID, history.PipelineRejected); err != nil {
 		http.Error(w, "Failed to update status", http.StatusInternalServerError)
 		return
 	}

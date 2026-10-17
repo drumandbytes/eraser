@@ -72,6 +72,13 @@ Before opening the PR, send a real test email with your own account from the web
 
 This is a single-maintainer project, so PRs aren't blocked on a second approval, but they are reviewed before merge — expect a first response within a few days.
 
+## Release lines
+
+- `main` ships the stable 1.x releases. Fixes and features for 1.x go here.
+- `v2` ships pre-releases of 2.0 (`v2.0.0-beta.N`), marked as pre-releases on GitHub. release-please reads that branch's own `release-please-config.json` (`prerelease: true`, `prerelease-type: beta`) and opens its release PRs there, titled `chore(v2): release 2.0.0-beta.N`.
+- Merge `main` into `v2` regularly. The deploy and release workflows run from the tag's commit, so `v2` needs the same workflow files as `main`.
+- When 2.0 is ready, set `prerelease` to `false` in the `v2` config and merge `v2` into `main`.
+
 ## Reporting a security issue
 
 See the org-wide [Security Policy](https://github.com/drumandbytes/.github/blob/main/SECURITY.md) — please don't open a public issue for a vulnerability. See the [Security Notes](README.md#security-notes) section of the README for how Eraser itself handles your credentials and personal data locally.

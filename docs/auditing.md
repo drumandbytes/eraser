@@ -10,6 +10,8 @@ go run golang.org/x/tools/cmd/deadcode@latest ./...      # unreachable-from-main
 go run golang.org/x/vuln/cmd/govulncheck@latest ./...    # known CVEs in reachable code paths
 ```
 
+`govulncheck` also runs in CI on every PR and weekly (`.github/workflows/vulncheck.yml`), so new advisories show up without a code change.
+
 `golangci-lint` (config: `.golangci.yml` - errcheck, govet, staticcheck, unused) also runs in CI on every push/PR via `.github/workflows/ci.yml`, so a plain `go build`/`go vet`/`go test` pass locally isn't the whole picture - run the lint command above too before assuming a change is clean. The default `max-same-issues`/`max-issues-per-linter` caps hide duplicates past the first few, which reads as "mostly clean" when it isn't - always pass `--max-issues-per-linter=0 --max-same-issues=0` when actually auditing, not just spot-checking.
 
 ## Growing the broker list from state registries

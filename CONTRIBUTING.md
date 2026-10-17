@@ -67,7 +67,8 @@ Before opening the PR, send a real test email with your own account from the web
 
 - [Conventional Commits](https://www.conventionalcommits.org/) with a scope — `feat(brokers):`, `fix(site):`, `fix(audit):`, `chore(ci):`, `docs:`. [release-please](.release-please-manifest.json) reads these to version releases and write `CHANGELOG.md`; an unscoped or non-conventional message just won't show up there.
 - Work on a branch, open a PR against `main`. PRs are squash-merged, so the PR title becomes the commit message — make it a clean Conventional Commit line.
-- All CI checks must pass (`go build`, `go vet`, `go test`, plus broker-list validation).
+- All CI checks must pass: `go build`, `go vet`, `go test -race` and lint on Linux, the tests on macOS, Windows and Linux arm64, `govulncheck`, a build of the docs site, and a coverage gate. The gate enforces `codecov.yml`: total coverage stays above its floor (88%) and at least 80% of the statements you changed are covered (PRs that change fewer than 10 statements are reported, not gated). Run it locally with `go test -coverprofile=coverage.out ./... && go run ./scripts/covgate -profile coverage.out -base origin/main`.
+- A `PR title` check warns when the title isn't a Conventional Commit. It's advisory, but the title decides the release version, so fix it before merging.
 - Update documentation and tests alongside the code.
 
 This is a single-maintainer project, so PRs aren't blocked on a second approval, but they are reviewed before merge — expect a first response within a few days.

@@ -6,15 +6,20 @@ ignore:
   - "internal/imaptest/**"
   - "internal/smtptest/**"
 
+# The same limits are enforced in CI by scripts/covgate (ci.yml), which is what
+# blocks a merge. These statuses only report, so installing Codecov's GitHub app
+# adds nicer PR comments without a second gate.
 coverage:
   status:
     project:
       default:
         target: auto # no worse than the base commit...
         threshold: 1% # ...give or take 1%
+        informational: true
     patch:
       default:
         target: 80%
+        informational: true
 
 comment:
   layout: "diff, files"

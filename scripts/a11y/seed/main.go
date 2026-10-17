@@ -73,7 +73,7 @@ func main() {
 			TaskType: t, FormURL: "https://privacy.example-data.test/optout", Status: "pending", ReviewReason: "reply is ambiguous"}))
 	}
 	must(s.CreateBatchApproval(history.BatchApproval{PlanID: "b7c0f3e91d2a4c58", ProfileID: "default", Digest: "d",
-		Preview: `{"profile_fields":{"first_name":"Jane"},"forms":[{"broker":"Example Data Co","url":"https://privacy.example-data.test/optout"}],"emails":[]}`,
+		Preview:   `{"profile_fields":{"first_name":"Jane"},"forms":[{"broker":"Example Data Co","url":"https://privacy.example-data.test/optout"}],"emails":[]}`,
 		ExpiresAt: now.Add(15 * time.Minute)}))
 }
 

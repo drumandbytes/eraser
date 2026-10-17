@@ -1,0 +1,3 @@
+{{- range hugo.Data.docs_versions.versions }}{{ if .latest -}}
+/docs/ /docs/{{ .slug }}/ 302
+{{ end }}{{ end -}}

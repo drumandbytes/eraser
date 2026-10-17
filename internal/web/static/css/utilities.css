@@ -901,7 +901,7 @@ img,video {
 }
 
 .bg-\[var\(--accent\)\] {
-    background-color:var(--accent);
+    background-color:var(--accent-solid);
 }
 
 .bg-\[var\(--bg-elevated\)\] {
@@ -1126,8 +1126,7 @@ img,video {
 }
 
 .text-accent {
-    --tw-text-opacity:1;
-    color:rgb(99 102 241/var(--tw-text-opacity,1));
+    color:var(--accent);
 }
 
 .text-white {

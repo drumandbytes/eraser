@@ -25,3 +25,13 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  - package-ecosystem: "npm"
+    cooldown:
+      default-days: 7
+    directory: "/scripts/a11y"
+    schedule:
+      interval: "weekly"
+    groups:
+      a11y:
+        patterns: ["*"]

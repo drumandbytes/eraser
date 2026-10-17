@@ -146,7 +146,7 @@
                     <!-- Details -->
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h2 class="text-sm font-semibold text-primary">{{.BrokerName}}</h2>
                             <span class="rounded-full chip chip-info">Form</span>
                         </div>
                         {{if .EmailSubject}}
@@ -233,7 +233,7 @@
                     <!-- Task Details -->
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h2 class="text-sm font-semibold text-primary">{{.BrokerName}}</h2>
                             <span class="rounded-full
                                 {{if eq .TaskType "captcha"}}chip chip-warning
                                 {{else if eq .TaskType "manual_form"}}chip chip-info
@@ -308,7 +308,7 @@
                     <!-- Details -->
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h2 class="text-sm font-semibold text-primary">{{.BrokerName}}</h2>
                             <span class="rounded-full chip chip-warning">Needs Review</span>
                         </div>
                         <p class="text-xs text-muted mt-1 truncate">{{.EmailSubject}}</p>
@@ -355,7 +355,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h2 class="text-sm font-semibold text-primary">{{.BrokerName}}</h2>
                             <span class="rounded-full chip chip-success">Completed</span>
                         </div>
                         <p class="text-xs text-muted mt-1">Task completed</p>
@@ -385,7 +385,7 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h3 class="text-sm font-semibold text-primary">{{.BrokerName}}</h3>
+                            <h2 class="text-sm font-semibold text-primary">{{.BrokerName}}</h2>
                             <span class="rounded-full chip chip-success">Completed</span>
                         </div>
                         <p class="text-xs text-muted mt-1">Form submitted successfully</p>
@@ -409,7 +409,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <h3 class="text-lg font-semibold text-primary mb-2">All caught up!</h3>
+                <h2 class="text-lg font-semibold text-primary mb-2">All caught up!</h2>
                 <p class="text-secondary">No pending action items at the moment.</p>
                 <a href="/pipeline" class="btn btn-secondary mt-4">View Pipeline</a>
             </div>
@@ -419,7 +419,7 @@
 
     <!-- Instructions Card -->
     <div class="card p-6">
-        <h3 class="font-display text-lg font-semibold text-primary mb-4">How to Complete Tasks</h3>
+        <h2 class="font-display text-lg font-semibold text-primary mb-4">How to Complete Tasks</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="p-4 rounded-lg" style="background: var(--bg-elevated);">
                 <div class="w-8 h-8 icon-box icon-box-info mb-3">
@@ -427,7 +427,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                 </div>
-                <h4 class="text-sm font-semibold text-primary mb-1">Opt-Out Forms</h4>
+                <h3 class="text-sm font-semibold text-primary mb-1">Opt-Out Forms</h3>
                 <p class="text-xs text-secondary">Some brokers require filling out an online form. Click "Open Form", enter your details, and submit.</p>
             </div>
             <div class="p-4 rounded-lg" style="background: var(--bg-elevated);">
@@ -436,7 +436,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                     </svg>
                 </div>
-                <h4 class="text-sm font-semibold text-primary mb-1">CAPTCHA Forms</h4>
+                <h3 class="text-sm font-semibold text-primary mb-1">CAPTCHA Forms</h3>
                 <p class="text-xs text-secondary">Click "Solve CAPTCHA" for a helper page with copy buttons for your info. Complete the CAPTCHA, then paste your details.</p>
             </div>
             <div class="p-4 rounded-lg" style="background: var(--bg-elevated);">
@@ -445,7 +445,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                 </div>
-                <h4 class="text-sm font-semibold text-primary mb-1">Email Confirmations</h4>
+                <h3 class="text-sm font-semibold text-primary mb-1">Email Confirmations</h3>
                 <p class="text-xs text-secondary">Check your email for confirmation links from brokers. Click the link to verify your removal request.</p>
             </div>
         </div>

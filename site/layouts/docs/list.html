@@ -1,3 +1,9 @@
+{{ define "head" }}
+{{- if not .Params.docs_version }}{{ range hugo.Data.docs_versions.versions }}{{ if .latest }}
+<meta http-equiv="refresh" content="0; url={{ printf "/docs/%s/" .slug | relURL }}">
+{{- end }}{{ end }}{{ end }}
+{{ end }}
+
 {{ define "main" }}
 <article class="prose">
   {{ if .Params.docs_version }}
@@ -9,10 +15,11 @@
   </ul>
   {{ else }}
   <h1>{{ .Title }}</h1>
+  {{ range hugo.Data.docs_versions.versions }}{{ if .latest }}<p>Opening the latest release, <a href="{{ printf "/docs/%s/" .slug | relURL }}">{{ .label }}</a>…</p>{{ end }}{{ end }}
   {{ .Content }}
   <ul class="linklist">
     {{ range hugo.Data.docs_versions.versions }}
-    <li><a href="{{ printf "/docs/%s/" .slug | relURL }}">{{ .label }}</a>{{ if .latest }} · latest stable{{ else if eq .status "beta" }} · pre-release{{ else if eq .status "nightly" }} · from <code>main</code>{{ end }}</li>
+    <li><a href="{{ printf "/docs/%s/" .slug | relURL }}">{{ .label }}</a>{{ if .latest }} · latest stable{{ else if eq .status "beta" }} · prerelease{{ else if eq .status "nightly" }} · from <code>main</code>{{ end }}</li>
     {{ end }}
   </ul>
   {{ end }}

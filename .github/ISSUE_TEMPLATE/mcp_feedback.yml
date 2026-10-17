@@ -1,0 +1,62 @@
+name: MCP feedback
+description: Tell us how the experimental eraser mcp agent integration worked, or what broke
+labels: [mcp]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        `eraser mcp` is experimental, so reports of what worked are as useful as bugs. See [docs/mcp.md](https://github.com/drumandbytes/eraser/blob/main/docs/mcp.md) for the known limits.
+
+        **Don't paste personal data**: no profile details, mailbox content or screenshots that show your information. Report security problems privately, not here.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What's this about?
+      options:
+        - It worked well
+        - Something broke or behaved wrongly
+        - It blocked a legitimate site or form
+        - The agent did something unexpected
+        - An idea or missing piece
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      description: The agent app and version you connected.
+      placeholder: e.g. Codex 0.x, Claude Code, Cursor
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Eraser version
+      description: Run `eraser --version`.
+      placeholder: e.g. 1.3.1
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS
+        - Windows
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: broker
+    attributes:
+      label: Broker or site involved
+      description: The broker id from the catalog, or just the site's host name.
+      placeholder: e.g. a catalog id, or privacyportal.onetrust.com
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: Which tool calls ran, where it stopped, and any message you saw. Redact anything personal.
+    validations:
+      required: true

@@ -167,6 +167,35 @@ configuration directory. Use one automation workflow at a time: the journal
 coordinates MCP actions, while manually submitting a form in another browser
 or sending through another UI is outside its duplicate protection.
 
+## Known limits
+
+This feature is experimental. It should work, but these limits are known:
+
+- **Tested mostly on fixtures.** It has run against the fake-data demo and local
+  test forms with Codex. Real broker forms, other MCP clients, and macOS or
+  Windows (CI runs Linux) are less tested.
+- **Some real sites will be blocked.** Only the catalog's exact hosts (and their
+  `www.` form) are allowed. Third-party CDNs and verification services outside
+  the catalog are blocked, and on shared platforms such as OneTrust page loads
+  must stay under the catalog entry's form path.
+- **You still handle the hard parts.** CAPTCHA, login, identity checks and
+  embedded forms need you.
+- **Receipts are judged in English only,** and a completed form means the request
+  was accepted, not that the broker erased your data. Anything it can't confirm
+  stays unknown for you to review.
+- **Approval has limits.** The agent can't approve its own batch through MCP
+  tools, but one that can run commands or drive your browser could.
+- **One of everything:** one client session per server process, one batch at a
+  time, and at most five open tasks.
+
+## Feedback
+
+Tried it? Whether it worked or not, tell us through the
+[MCP feedback form](https://github.com/drumandbytes/eraser/issues/new?template=mcp_feedback.yml).
+Include the client you used, your Eraser version (`eraser --version`) and the
+broker involved. Don't paste personal data. Report security problems privately,
+following the repository's security policy.
+
 ## Contributor verification
 
 ```bash

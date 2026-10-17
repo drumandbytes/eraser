@@ -163,6 +163,8 @@ Chrome/Chromium is required for forms. CAPTCHA, login, identity checks, uncertai
 submissions, and unexpected destinations need your intervention. A completed form
 means the request was accepted, not that the broker has erased your data.
 
+Tried it? Tell us how it went with the **[MCP feedback form](https://github.com/drumandbytes/eraser/issues/new?template=mcp_feedback.yml)**.
+
 See **[MCP setup and the fake-data demo](docs/mcp.md)** for the Codex configuration,
 how batches are approved, and supported workflows.
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.2](https://github.com/drumandbytes/eraser/compare/v1.4.1...v1.4.2) (2026-10-17)
+
+
+### Bug Fixes
+
+* **browser:** make the automation CSP apply, and test the Chrome paths ([#183](https://github.com/drumandbytes/eraser/issues/183)) ([c6daf91](https://github.com/drumandbytes/eraser/commit/c6daf91ce8af277f49e501c0e26d994bfaab0de2))
+
 ## [1.4.1](https://github.com/drumandbytes/eraser/compare/v1.4.0...v1.4.1) (2026-10-17)
 
 

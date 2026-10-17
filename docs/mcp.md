@@ -33,6 +33,8 @@ on the Automation page of the web UI or with `eraser mcp approve <id>` in a
 terminal. A client that auto-approves every tool therefore cannot start a batch
 or release a retry by itself.
 
+![The Automation approvals page showing a pending batch with the profile fields, opt-out forms and emails the agent may use](https://raw.githubusercontent.com/drumandbytes/eraser/main/.github/images/automation-approvals.png)
+
 That separation has limits. `eraser mcp approve` refuses to run without a
 terminal, and the web page only accepts a browser's same-origin form post, but
 an agent that can run commands or drive your browser can still approve its own

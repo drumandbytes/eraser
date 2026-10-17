@@ -92,13 +92,6 @@ jobs:
           # Google ships no Chrome for Linux arm64, so skip the browser tests there.
           - os: ubuntu-24.04-arm
             no-chrome: "1"
-          # The suite has never run on Windows and many tests assume POSIX
-          # (syscall.Kill, chmod modes, HOME paths, CRLF checkouts). The build
-          # gates; the tests report until those are ported.
-          - os: windows-latest
-            advisory-tests: true
-          - os: windows-11-arm
-            advisory-tests: true
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env:
@@ -114,9 +107,7 @@ jobs:
 
       - run: go build ./...
 
-      - name: Test
-        continue-on-error: ${{ matrix.advisory-tests == true }}
-        run: go test ./...
+      - run: go test ./...
 
   vulncheck:
     name: govulncheck

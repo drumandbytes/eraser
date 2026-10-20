@@ -63,7 +63,7 @@ release:
 
 # macOS: brew install drumandbytes/homebrew-tap/eraser
 # The binary is unsigned and Homebrew keeps the Gatekeeper quarantine on cask
-# installs (brew trust doesn't clear it), so the post-install hook removes it.
+# installs (brew trust doesn't clear it), so a postflight step removes it.
 # Integrity still comes from the cask's sha256 check.
 # ponytail: xattr hook; Developer ID signing + notarization if we get an
 # Apple developer account.
@@ -80,12 +80,15 @@ homebrew_casks:
     commit_author:
       name: dnb-robot[bot]
       email: 4773076+dnb-robot[bot]@users.noreply.github.com
-    hooks:
-      post:
-        install: |
-          if OS.mac?
-            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/eraser"]
-          end
+    # postflight_steps, not hooks.post.install: GoReleaser renders hooks as a
+    # Ruby `postflight` block, which Homebrew deprecated. chdir "." is the staged path
+    # (no {{staged_path}}: GoReleaser would read it as its own template)
+    custom_block: |
+      postflight_steps do
+        on_macos do
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "eraser"], chdir: "."
+        end
+      end
     caveats: |
       Config lives at ~/.eraser/config.yaml. Start with:
         eraser serve      # web UI at http://localhost:8080

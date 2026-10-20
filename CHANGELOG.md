@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.6](https://github.com/drumandbytes/eraser/compare/v1.5.5...v1.5.6) (2026-10-20)
+
+
+### Bug Fixes
+
+* **cask:** remove quarantine with postflight_steps instead of deprecated postflight ([#202](https://github.com/drumandbytes/eraser/issues/202)) ([9c8e274](https://github.com/drumandbytes/eraser/commit/9c8e2748d59b525711e98c32bcaa593192aed4a6))
+
 ## [1.5.5](https://github.com/drumandbytes/eraser/compare/v1.5.4...v1.5.5) (2026-10-17)
 
 

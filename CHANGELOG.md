@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.7](https://github.com/drumandbytes/eraser/compare/v1.5.6...v1.5.7) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** make govulncheck jobs fetch the latest Go 1.26 patch ([#208](https://github.com/drumandbytes/eraser/issues/208)) ([3a948d3](https://github.com/drumandbytes/eraser/commit/3a948d3189429792cf1d478266d7e09e0e630f38))
+
 ## [1.5.6](https://github.com/drumandbytes/eraser/compare/v1.5.5...v1.5.6) (2026-10-20)
 
 

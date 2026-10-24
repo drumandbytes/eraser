@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.8](https://github.com/drumandbytes/eraser/compare/v1.5.7...v1.5.8) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** build releases and the site with the latest Go 1.26 patch ([#210](https://github.com/drumandbytes/eraser/issues/210)) ([918c947](https://github.com/drumandbytes/eraser/commit/918c947742b34b388044f735e1918596d3621c78))
+
 ## [1.5.7](https://github.com/drumandbytes/eraser/compare/v1.5.6...v1.5.7) (2026-10-24)
 
 

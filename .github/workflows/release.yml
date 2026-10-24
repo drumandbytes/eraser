@@ -31,6 +31,7 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
+          check-latest: true
           cache: false
 
       # dnb-robot, scoped to this repo and homebrew-tap (GoReleaser pushes the

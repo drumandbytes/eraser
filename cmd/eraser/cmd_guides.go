@@ -27,6 +27,12 @@ var curatedCategories = map[string]bool{
 	"device-id-only":   true,
 }
 
+// hasGuide: curated categories always get a page, and a long-tail broker gets one once someone
+// has researched it and set guide: true in brokers.yaml.
+func hasGuide(b broker.Broker) bool {
+	return b.Guide || curatedCategories[strings.ToLower(b.Category)]
+}
+
 func guidesCmd() *cobra.Command {
 	var (
 		output string
@@ -116,6 +122,7 @@ func timelineText(region string) string {
 // categoryInfo explains, per curated category, what these brokers do and what removal looks
 // like. Shared by every page in the category, so keep it general and true of all of them.
 var categoryInfo = map[string]struct{ Label, Intro string }{
+	"marketing":        {"Marketing-data broker", "Marketing-data brokers compile consumer or business contact data and audience segments for advertisers, usually without a public search site. Removal means an opt-out or deletion request to the company itself, and you may need to repeat it for each brand or affiliate it operates."},
 	"people-search":    {"People-search site", "People-search sites assemble public records (addresses, phone numbers, ages, relatives) into searchable profiles. Most have a web form, and many ask you to confirm by email. Profiles often reappear after a few months as the underlying records are re-ingested, so check again every 60-90 days."},
 	"background-check": {"Background-check company", "Background-check and screening companies sell reports built from court, address and employment records to employers, landlords and the public. Some are consumer reporting agencies, which gives you access and dispute rights as well as deletion, and the law can require them to keep some records. Ask for access first if you want to see what they hold."},
 	"financial-b2b":    {"Credit bureau or business-data provider", "Credit bureaus and business-data providers hold financial and company-contact data. Credit reporting is regulated, so erasure is often limited to data held beyond what the law requires; access, correction and objection rights usually still apply. Expect a longer, more formal reply than from a people-search site."},
@@ -242,7 +249,7 @@ func runGuides(outDir, format string) error {
 
 	var curated []broker.Broker
 	for _, b := range db.Brokers {
-		if curatedCategories[strings.ToLower(b.Category)] {
+		if hasGuide(b) {
 			curated = append(curated, b)
 		}
 	}
@@ -311,7 +318,7 @@ func runGuides(outDir, format string) error {
 		dir = append(dir, dirEntry{
 			ID: b.ID, Name: b.Name, Region: b.Region, Category: b.Category,
 			Email: b.Email, OptOut: b.OptOutURL,
-			Curated: curatedCategories[strings.ToLower(b.Category)], Notes: b.Notes,
+			Curated: hasGuide(b), Notes: b.Notes,
 		})
 	}
 	sort.Slice(dir, func(i, j int) bool { return strings.ToLower(dir[i].Name) < strings.ToLower(dir[j].Name) })
@@ -391,8 +398,13 @@ sitemap:
 - **Type:** {{.CategoryLabel}}
 - **Law that applies:** {{.Law}}
 - **How to opt out:** {{.Route}}
-- **Response deadline:** {{.Timeline}}{{if .NeedsID}}
-- **Identity check:** expect to be asked for proof of identity{{end}}
+- **Response deadline:** {{.Timeline}}{{if .Broker.Parent}}
+- **Operated by:** {{.Broker.Parent}}{{if .Broker.HQ}}, {{.Broker.HQ}}{{end}}{{else if .Broker.HQ}}
+- **Based in:** {{.Broker.HQ}}{{end}}{{if .Broker.Holds}}
+- **Data they say they hold:** {{.Broker.Holds}}{{end}}{{if .Broker.Verification}}
+- **Identity check:** {{.Broker.Verification}}{{else if .NeedsID}}
+- **Identity check:** expect to be asked for proof of identity{{end}}{{if .Broker.ResponseTime}}
+- **Response time in their policy:** {{.Broker.ResponseTime}}{{end}}
 
 ## Opt out
 
@@ -432,6 +444,13 @@ No public opt-out URL or email is on file for this broker yet. Try their website
 
 {{.CategoryIntro}}
 {{end}}
+{{if .Broker.Sources}}
+## Sources
+
+Facts above come from the broker's own pages{{if .Broker.Researched}}, read on {{.Broker.Researched}}{{end}}:
+
+{{range .Broker.Sources}}- <{{.}}>
+{{end}}{{end}}
 {{if .Related}}
 ## Related guides
 

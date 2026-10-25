@@ -124,3 +124,56 @@ func TestRelatedGuides(t *testing.T) {
 		t.Errorf("limit not applied: %+v", got)
 	}
 }
+
+func TestGuidesResearchedFields(t *testing.T) {
+	dir := t.TempDir()
+	brokersPath := filepath.Join(dir, "brokers.yaml")
+	if err := os.WriteFile(brokersPath, []byte(`brokers:
+  - id: adco
+    name: Ad Co
+    email: privacy@adco.example
+    region: us
+    category: marketing
+    guide: true
+    parent: Ad Holdings Inc.
+    hq: Austin, USA
+    holds: email addresses and device IDs
+    verification: none stated
+    response_time: 45 days
+    sources: ["https://adco.example/privacy", "not a url"]
+    researched: "2026-10-25"
+  - id: plain
+    name: Plain Co
+    region: us
+    category: marketing
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	defer func(b string) { brokerFile = b }(brokerFile)
+	brokerFile = brokersPath
+
+	out := filepath.Join(dir, "site", "content")
+	if err := runGuides(out, "md"); err != nil {
+		t.Fatalf("runGuides: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(out, "brokers", "plain.md")); !os.IsNotExist(err) {
+		t.Errorf("a long-tail broker without guide: true must not get a page")
+	}
+	b, err := os.ReadFile(filepath.Join(out, "brokers", "adco.md"))
+	if err != nil {
+		t.Fatalf("guide: true broker has no page: %v", err)
+	}
+	s := string(b)
+	for _, want := range []string{
+		"**Operated by:** Ad Holdings Inc., Austin, USA", "**Data they say they hold:** email addresses and device IDs",
+		"**Identity check:** none stated", "**Response time in their policy:** 45 days",
+		"## Sources", "read on 2026-10-25", "<https://adco.example/privacy>", "## About marketing-data brokers",
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("missing %q in:\n%s", want, s)
+		}
+	}
+	if strings.Contains(s, "not a url") {
+		t.Errorf("an invalid source URL should be dropped by sanitizing:\n%s", s)
+	}
+}

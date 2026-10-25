@@ -45,6 +45,8 @@ func isValidURL(rawURL string) bool {
 	return scheme == "http" || scheme == "https"
 }
 
+var researchedDate = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+
 func sanitizeBroker(b *Broker) {
 	if !isValidURL(b.OptOutURL) {
 		b.OptOutURL = ""
@@ -52,6 +54,13 @@ func sanitizeBroker(b *Broker) {
 	if !isValidURL(b.Website) {
 		b.Website = ""
 	}
+	kept := b.Sources[:0]
+	for _, u := range b.Sources {
+		if isValidURL(u) {
+			kept = append(kept, u)
+		}
+	}
+	b.Sources = kept
 }
 
 type Broker struct {
@@ -63,6 +72,17 @@ type Broker struct {
 	Region    string `yaml:"region"`             // "us", "eu", "global"
 	Category  string `yaml:"category,omitempty"` // "people-search", "marketing", "background-check", etc.
 	Notes     string `yaml:"notes,omitempty"`
+
+	// Optional research, shown on the site's guide page. Only facts the broker's own pages
+	// state; Sources are those pages and Researched the date they were read (YYYY-MM-DD).
+	Parent       string   `yaml:"parent,omitempty"`        // operating company or owner
+	HQ           string   `yaml:"hq,omitempty"`            // country or city of the operator
+	Holds        string   `yaml:"holds,omitempty"`         // categories of data they say they hold
+	Verification string   `yaml:"verification,omitempty"`  // what they ask for before acting
+	ResponseTime string   `yaml:"response_time,omitempty"` // what their policy says
+	Sources      []string `yaml:"sources,omitempty"`
+	Researched   string   `yaml:"researched,omitempty"`
+	Guide        bool     `yaml:"guide,omitempty"` // give a long-tail broker its own guide page
 }
 
 type BrokerDatabase struct {
@@ -138,6 +158,14 @@ func (b Broker) Problems() []string {
 	}
 	if b.OptOutURL != "" && !isValidURL(b.OptOutURL) {
 		problems = append(problems, fmt.Sprintf("opt_out_url is not a valid http(s) URL: %q", b.OptOutURL))
+	}
+	for _, u := range b.Sources {
+		if !isValidURL(u) {
+			problems = append(problems, fmt.Sprintf("sources entry is not a valid http(s) URL: %q", u))
+		}
+	}
+	if b.Researched != "" && !researchedDate.MatchString(b.Researched) {
+		problems = append(problems, fmt.Sprintf("researched is not YYYY-MM-DD: %q", b.Researched))
 	}
 	if b.Website != "" && !isValidURL(b.Website) {
 		problems = append(problems, fmt.Sprintf("website is not a valid http(s) URL: %q", b.Website))

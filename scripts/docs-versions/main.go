@@ -146,7 +146,7 @@ func selectVersions(tags []string) []Version {
 
 var (
 	docLink    = regexp.MustCompile(`\]\(([A-Za-z0-9_-]+)\.md(#[^)]*)?\)`)
-	parentLink = regexp.MustCompile(`\]\(\.\./([A-Za-z0-9_.-]+)(#[^)]*)?\)`)
+	parentLink = regexp.MustCompile(`\]\(\.\./([A-Za-z0-9_./-]+)(#[^)]*)?\)`)
 )
 
 // render turns one markdown doc into a Hugo page. The first heading becomes the
@@ -170,6 +170,8 @@ func render(name, body string, v Version) string {
 	for _, p := range pages {
 		known[p] = true
 	}
+	// Parent links first: the doc-link rewrite emits ../<page>/, which parentLink would also match.
+	text = parentLink.ReplaceAllString(text, "]("+repoURL+"/blob/"+ref+"/$1$2)")
 	text = docLink.ReplaceAllStringFunc(text, func(m string) string {
 		sub := docLink.FindStringSubmatch(m)
 		if known[sub[1]] {
@@ -177,7 +179,6 @@ func render(name, body string, v Version) string {
 		}
 		return "](" + repoURL + "/blob/" + ref + "/docs/" + sub[1] + ".md" + sub[2] + ")"
 	})
-	text = parentLink.ReplaceAllString(text, "]("+repoURL+"/blob/"+ref+"/$1$2)")
 
 	var fm strings.Builder
 	fm.WriteString("---\n")

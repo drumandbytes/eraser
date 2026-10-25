@@ -72,7 +72,9 @@ func TestSessionExpiry(t *testing.T) {
 }
 
 func TestSessionUpdateExtendsExpiry(t *testing.T) {
-	store := NewSessionStore(60 * time.Millisecond)
+	// Sleeps well under the TTL so a slow runner (Windows timers overshoot) cannot expire it
+	// between updates; four of them still add up to more than the TTL.
+	store := NewSessionStore(400 * time.Millisecond)
 
 	id, err := store.Create()
 	if err != nil {
@@ -82,7 +84,7 @@ func TestSessionUpdateExtendsExpiry(t *testing.T) {
 	// Keep touching it past the original TTL; each Update should push the
 	// expiry out, so it stays alive.
 	for i := 0; i < 4; i++ {
-		time.Sleep(30 * time.Millisecond)
+		time.Sleep(120 * time.Millisecond)
 		if !store.Update(id, func(s *Session) { s.Step = "still here" }) {
 			t.Fatalf("session expired despite being updated (iteration %d)", i)
 		}

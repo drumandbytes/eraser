@@ -47,5 +47,11 @@ enableGitInfo = true
   isPlainText = true
   notAlternative = true
 
+[outputFormats.LLMS]
+  mediaType = "text/plain"
+  baseName = "llms"
+  isPlainText = true
+  notAlternative = true
+
 [outputs]
-  home = ["HTML", "REDIRECTS"]
+  home = ["HTML", "REDIRECTS", "LLMS"]

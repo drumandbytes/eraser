@@ -12,6 +12,30 @@
   </p>
 </section>
 
+<section class="prose">
+  <h2>What it is</h2>
+  <p>Data brokers collect names, addresses, phone numbers, relatives and device IDs,
+  then sell or publish them. Privacy law gives you the right to make them stop:
+  GDPR Article 17 in the EU, UK and EEA, and the CCPA / CPRA in California. A removal
+  request is just a short, correctly worded email, but there are hundreds of brokers
+  and each one wants it sent to a different address or form, and again every few months.</p>
+  <p>Eraser keeps the broker list, writes the request in the right legal wording for
+  where you live, sends it through your own SMTP or mail account, and tracks each reply
+  over IMAP. Everything stays in a local SQLite file and config on your machine. There
+  is no account, no server of ours in the loop and no telemetry; this website counts
+  visits and nothing else (see the <a href="{{ "/privacy/" | relURL }}">privacy page</a>).</p>
+  <h2>How it compares</h2>
+  <p>Paid services such as Incogni and DeleteMe do the same job for $100+ a year and
+  hold your identity details on their servers. Eraser is MIT-licensed, free, and
+  the broker list and request letters are in the open
+  <a href="https://github.com/drumandbytes/eraser">source repository</a>, so you can
+  check exactly what gets sent and to whom. The trade-off: it runs on your computer,
+  and you stay in charge of the mailbox it sends from.</p>
+  <p>The <a href="{{ "/brokers/" | relURL }}">broker directory</a> has step-by-step
+  opt-out guides for the biggest people-search, background-check and credit brokers,
+  and works without installing anything.</p>
+</section>
+
 <section class="cols">
   <div>
     <h2>How it works</h2>

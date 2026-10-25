@@ -1,9 +1,10 @@
 {{ define "main" }}
 <article class="prose">
   <h1>Broker directory</h1>
-  <p>Every data broker Eraser knows about. The ones with a full opt-out guide are
-  marked <strong>guide</strong>; the rest are advertising / data-append brokers
-  you remove with the same GDPR or CCPA email — see
+  <p>Eraser sends removal requests to 700+ data brokers. {{ len .Pages }} of them
+  have a full opt-out guide, listed below and marked <strong>guide</strong> in the
+  full list. The rest are mostly advertising / data-append brokers you remove with
+  the same GDPR or CCPA email — see
   <a href="{{ "/guides/opting-out-of-advertising-data-brokers/" | relURL }}">the adtech guide</a>.</p>
   <p class="meta">The list is a work in progress — new brokers appear, contact
   details change. Missing one, or spotted a bad address?

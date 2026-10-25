@@ -30,6 +30,7 @@
               "url" .Site.BaseURL
               "description" $desc
               "isAccessibleForFree" true
+              "downloadUrl" (printf "%s/releases" .Site.Params.repo)
               "offers" (dict "@type" "Offer" "price" "0" "priceCurrency" "USD")
               "author" $org))
   -}}
@@ -44,6 +45,7 @@
       "author" $org
       "publisher" $org
   -}}
+  {{- if not .Lastmod.IsZero -}}{{- $ld = merge $ld (dict "dateModified" (.Lastmod.Format "2006-01-02")) -}}{{- end -}}
 {{- else -}}
   {{- $ld = dict
       "@context" "https://schema.org"
@@ -55,3 +57,15 @@
   -}}
 {{- end -}}
 <script type="application/ld+json">{{ $ld | jsonify | safeJS }}</script>
+{{- /* Breadcrumbs mirror the visible Home / Section crumb on broker and guide pages. */ -}}
+{{- if and .IsPage (in (slice "brokers" "guides") .Section) }}
+{{- $sec := .CurrentSection }}
+<script type="application/ld+json">{{ dict
+  "@context" "https://schema.org"
+  "@type" "BreadcrumbList"
+  "itemListElement" (slice
+    (dict "@type" "ListItem" "position" 1 "name" "Home" "item" .Site.BaseURL)
+    (dict "@type" "ListItem" "position" 2 "name" $sec.Title "item" $sec.Permalink)
+    (dict "@type" "ListItem" "position" 3 "name" .Title "item" .Permalink))
+  | jsonify | safeJS }}</script>
+{{- end }}

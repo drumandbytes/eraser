@@ -3,6 +3,12 @@ baseURL = "https://eraser.drumandbytes.dev/"
 title = "Eraser"
 enableRobotsTXT = true
 disableKinds = ["taxonomy", "term", "RSS"]
+enableGitInfo = true
+
+# Broker pages are generated, so git has no history for them; their
+# last_checked date is the real freshness signal. Feeds <lastmod> in the sitemap.
+[frontmatter]
+  lastmod = ["last_checked", ":git", "lastmod", "date"]
 
 [params]
   description = "Send data removal requests to data brokers. Open source, local-first, free."

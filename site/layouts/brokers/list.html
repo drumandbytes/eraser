@@ -1,7 +1,7 @@
 {{ define "main" }}
 <article class="prose">
   <h1>Broker directory</h1>
-  <p>Eraser sends removal requests to 700+ data brokers. {{ len .Pages }} of them
+  <p>Eraser sends removal requests to {{ len .Site.Data.brokers.brokers }} data brokers. {{ len .Pages }} of them
   have a full opt-out guide, listed below and marked <strong>guide</strong> in the
   full list. The rest are mostly advertising / data-append brokers you remove with
   the same GDPR or CCPA email — see
@@ -27,12 +27,17 @@
     <select id="cat" aria-label="Category"><option value="">All categories</option></select>
     <label><input type="checkbox" id="curatedonly"> Guides only</label>
   </div>
-  <p class="meta"><span id="count">Loading…</span></p>
+  {{ $all := .Site.Data.brokers.brokers }}
+  <p class="meta"><span id="count">{{ len $all }} of {{ len $all }} brokers</span></p>
 
   <div class="table-scroll" role="region" aria-label="Broker list" tabindex="0">
   <table class="dir">
     <thead><tr><th scope="col">Broker</th><th scope="col">Region</th><th scope="col">Category</th><th scope="col">Opt out</th></tr></thead>
-    <tbody id="rows"></tbody>
+    <tbody id="rows">
+    {{- range $all }}
+    <tr><td>{{ if .curated }}<a href="{{ printf "/brokers/%s/" .id | relURL }}">{{ .name }}</a> <span class="tag">guide</span>{{ else }}{{ .name }}{{ end }}</td><td>{{ .region }}</td><td>{{ .category }}</td><td>{{ if .opt_out_url }}<a href="{{ .opt_out_url }}" rel="nofollow noopener">form</a>{{ else if .email }}email {{ .email }}{{ else }}—{{ end }}</td></tr>
+    {{- end }}
+    </tbody>
   </table>
   </div>
 </article>

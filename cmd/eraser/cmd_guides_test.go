@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/drumandbytes/eraser/internal/broker"
 )
 
 func TestRunGuidesMarkdown(t *testing.T) {
@@ -57,6 +59,8 @@ func TestRunGuidesMarkdown(t *testing.T) {
 		`last_checked: "2026-08-01"`,
 		"Includes a ready-to-send request letter.", // description mentions the rendered letters
 		"https://acme.example/opt-out",
+		"## At a glance", "People-search site", "United States (CCPA", "Web form, with an email fallback",
+		"## About people-search sites", "## Related reading",
 		"Article 17",        // GDPR body rendered
 		"1798.105",          // CCPA body rendered
 		"[your first name]", // placeholder, not a real profile
@@ -99,5 +103,24 @@ func TestRunGuidesMarkdown(t *testing.T) {
 func TestRunGuidesBadFormat(t *testing.T) {
 	if err := runGuides(t.TempDir(), "pdf"); err == nil {
 		t.Error("expected error for unknown format")
+	}
+}
+
+func TestRelatedGuides(t *testing.T) {
+	mk := func(id, cat string) broker.Broker {
+		return broker.Broker{ID: id, Name: strings.ToUpper(id), Category: cat}
+	}
+	curated := []broker.Broker{mk("a", "people-search"), mk("b", "people-search"), mk("c", "background-check"), mk("d", "people-search"), mk("e", "people-search")}
+
+	// Next ones in name order within the category, wrapping, never itself or another category.
+	got := relatedGuides(curated[3], curated, 5)
+	if len(got) != 3 || got[0].ID != "e" || got[1].ID != "a" || got[2].ID != "b" {
+		t.Errorf("related for d = %+v, want e, a, b", got)
+	}
+	if got := relatedGuides(curated[2], curated, 5); len(got) != 0 {
+		t.Errorf("a category of one should have no related guides, got %+v", got)
+	}
+	if got := relatedGuides(curated[0], curated, 2); len(got) != 2 {
+		t.Errorf("limit not applied: %+v", got)
 	}
 }

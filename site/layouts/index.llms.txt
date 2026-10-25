@@ -1,0 +1,23 @@
+# Eraser
+
+> Open-source, local-first tool that sends GDPR and CCPA data removal requests to {{ len .Site.Data.brokers.brokers }} data brokers from your own machine. Free, no account, no telemetry. This site holds the broker directory, opt-out guides, docs and the list of EU/EEA data protection authorities.
+
+## Start here
+
+- [Home]({{ "/" | absURL }}): what Eraser is and how it compares with paid removal services
+- [Broker directory]({{ "/brokers/" | absURL }}): every broker Eraser contacts, with region, category and opt-out route
+- [Docs]({{ with index (where hugo.Data.docs_versions.versions "latest" true) 0 }}{{ printf "/docs/%s/" .slug | absURL }}{{ end }}): commands, configuration, broker replies, multi-profile, MCP, stability policy
+- [EU/EEA data protection authorities]({{ "/authorities/" | absURL }}): where to complain if a broker ignores you
+
+## Guides
+
+{{ range where .Site.RegularPages "Section" "guides" }}- [{{ .Title }}]({{ .Permalink }}): {{ .Description }}
+{{ end }}
+## Broker opt-out guides
+
+{{ range where (where .Site.RegularPages "Section" "brokers") "Params.robots" "!=" "noindex,follow" }}- [{{ .Title }}]({{ .Permalink }})
+{{ end }}
+## Optional
+
+- [Source code](https://github.com/drumandbytes/eraser): MIT licensed
+- [Privacy](/privacy/): what this website collects

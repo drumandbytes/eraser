@@ -80,7 +80,16 @@ type guidePage struct {
 	Noindex     bool
 	GDPRBody    string
 	CCPABody    string
+
+	CategoryLabel string
+	CategoryIntro string
+	Law           string
+	Route         string
+	NeedsID       bool
+	Related       []relatedGuide
 }
+
+type relatedGuide struct{ ID, Name string }
 
 // noindexedBrokers: reachable but kept out of search and the sitemap, as they
 // offer nothing actionable. Curated by hand; a dead end is an editorial call.
@@ -102,6 +111,67 @@ func timelineText(region string) string {
 	default: // "global" - could be either, depending on the requester
 		return "Under GDPR they must respond within one month if you're in the EU/EEA/UK, or within 45 days under the CCPA if you're in the US."
 	}
+}
+
+// categoryInfo explains, per curated category, what these brokers do and what removal looks
+// like. Shared by every page in the category, so keep it general and true of all of them.
+var categoryInfo = map[string]struct{ Label, Intro string }{
+	"people-search":    {"People-search site", "People-search sites assemble public records (addresses, phone numbers, ages, relatives) into searchable profiles. Most have a web form, and many ask you to confirm by email. Profiles often reappear after a few months as the underlying records are re-ingested, so check again every 60-90 days."},
+	"background-check": {"Background-check company", "Background-check and screening companies sell reports built from court, address and employment records to employers, landlords and the public. Some are consumer reporting agencies, which gives you access and dispute rights as well as deletion, and the law can require them to keep some records. Ask for access first if you want to see what they hold."},
+	"financial-b2b":    {"Credit bureau or business-data provider", "Credit bureaus and business-data providers hold financial and company-contact data. Credit reporting is regulated, so erasure is often limited to data held beyond what the law requires; access, correction and objection rights usually still apply. Expect a longer, more formal reply than from a people-search site."},
+	"requires-id":      {"Broker that verifies identity first", "These brokers ask you to prove who you are before they act, usually with a copy of an ID or a verification form, so that nobody else can delete your record. Send only what their own page asks for, and cover or redact anything they do not need."},
+	"device-id-only":   {"Mobile and device-data broker", "These companies hold mobile advertising IDs, location and app data rather than names. Their forms usually need your device's advertising ID, so reset or delete it in your phone's privacy settings as well, otherwise a new ID starts collecting again."},
+}
+
+// lawText names the law that gives the requester a deletion right, by broker region.
+func lawText(region string) string {
+	switch region {
+	case "eu":
+		return "EU / EEA (GDPR Article 17)"
+	case "us":
+		return "United States (CCPA / CPRA and other state laws)"
+	default:
+		return "Global (GDPR Article 17 for EU/EEA/UK residents, CCPA / CPRA for California)"
+	}
+}
+
+func routeText(b broker.Broker) string {
+	switch {
+	case b.OptOutURL != "" && b.Email != "":
+		return "Web form, with an email fallback"
+	case b.OptOutURL != "":
+		return "Web form"
+	case b.Email != "":
+		return "Email"
+	default:
+		return "No public channel on file"
+	}
+}
+
+// relatedGuides returns up to n other guides from the same category: the ones that follow b in
+// name order, wrapping around, so every guide in a category gets about the same number of
+// incoming links. Noindexed brokers are not linked to.
+func relatedGuides(b broker.Broker, curated []broker.Broker, n int) []relatedGuide {
+	var same []broker.Broker
+	idx := -1
+	for _, o := range curated {
+		if !strings.EqualFold(o.Category, b.Category) {
+			continue
+		}
+		if o.ID == b.ID {
+			idx = len(same)
+		}
+		same = append(same, o)
+	}
+	var out []relatedGuide
+	for i := 1; i < len(same) && len(out) < n; i++ {
+		o := same[(idx+i)%len(same)]
+		if noindexedBrokers[o.ID] {
+			continue
+		}
+		out = append(out, relatedGuide{o.ID, o.Name})
+	}
+	return out
 }
 
 // guideDescription is the meta description / JSON-LD description for a
@@ -185,6 +255,10 @@ func runGuides(outDir, format string) error {
 			page.LastChecked = m[1]
 		}
 		page.Timeline = timelineText(b.Region)
+		cat := strings.ToLower(b.Category)
+		page.CategoryLabel, page.CategoryIntro = categoryInfo[cat].Label, categoryInfo[cat].Intro
+		page.Law, page.Route, page.NeedsID = lawText(b.Region), routeText(b), cat == "requires-id"
+		page.Related = relatedGuides(b, curated, 5)
 		page.Noindex = noindexedBrokers[b.ID]
 		if gdpr, err := engine.Render("gdpr", pp, b); err == nil {
 			page.GDPRBody = gdpr.Body
@@ -246,6 +320,17 @@ func runGuides(outDir, format string) error {
 		return err
 	}
 
+	// Hugo reads the same list from site/data to server-render the full directory, so the
+	// long tail is in the HTML and not only in what directory.js fetches.
+	hugoData := filepath.Join(filepath.Dir(dataDir), "data")
+	if err := os.MkdirAll(hugoData, 0o755); err != nil {
+		return err
+	}
+	wrapped, _ := json.MarshalIndent(map[string]any{"brokers": dir}, "", "  ")
+	if err := os.WriteFile(filepath.Join(hugoData, "brokers.json"), wrapped, 0o644); err != nil {
+		return err
+	}
+
 	fmt.Println("📚 Guides generated")
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Printf("   %d guide page(s) in %s\n", written, brokersDir)
@@ -270,6 +355,7 @@ func renderGuideHTML(p guidePage) ([]byte, error) {
 }
 
 var guideFuncs = template.FuncMap{
+	"lower": strings.ToLower,
 	"title": func(s string) string {
 		words := strings.Fields(strings.ReplaceAll(s, "-", " "))
 		for i, w := range words {
@@ -299,7 +385,14 @@ sitemap:
 
 > {{.Broker.Notes}}
 {{end}}
-{{.Timeline}}
+
+## At a glance
+
+- **Type:** {{.CategoryLabel}}
+- **Law that applies:** {{.Law}}
+- **How to opt out:** {{.Route}}
+- **Response deadline:** {{.Timeline}}{{if .NeedsID}}
+- **Identity check:** expect to be asked for proof of identity{{end}}
 
 ## Opt out
 
@@ -334,6 +427,22 @@ No public opt-out URL or email is on file for this broker yet. Try their website
 
 </details>
 {{end}}
+{{if .CategoryIntro}}
+## About {{.CategoryLabel | lower}}s
+
+{{.CategoryIntro}}
+{{end}}
+{{if .Related}}
+## Related guides
+
+{{range .Related}}- [How to opt out of {{.Name}}](/brokers/{{.ID}}/)
+{{end}}{{end}}
+## Related reading
+
+- [Sending a GDPR Article 17 request](/guides/sending-a-gdpr-article-17-request/)
+- [When a broker ignores you](/guides/when-a-broker-ignores-you/)
+- [Opting out of advertising data brokers](/guides/opting-out-of-advertising-data-brokers/)
+- [All brokers Eraser covers](/brokers/)
 
 ---
 

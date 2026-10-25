@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.6.0](https://github.com/drumandbytes/eraser/compare/v1.5.8...v1.6.0) (2026-10-25)
+
+
+### Features
+
+* **site,brokers:** fuller guides, server-rendered directory, llms.txt, researched broker facts ([#219](https://github.com/drumandbytes/eraser/issues/219)) ([cca1f3b](https://github.com/drumandbytes/eraser/commit/cca1f3b1f747457954106be21c1e7f19c086026e))
+* **site:** fix SEO audit findings ([#213](https://github.com/drumandbytes/eraser/issues/213)) ([2a3dd18](https://github.com/drumandbytes/eraser/commit/2a3dd182765e122a668864551c4fbf4b80e26dae))
+
+
+### Bug Fixes
+
+* **ci:** widen timing in the flaky session expiry test ([#217](https://github.com/drumandbytes/eraser/issues/217)) ([2d25d7c](https://github.com/drumandbytes/eraser/commit/2d25d7c453cb4439a1b0506483a59ffbd2f475af))
+* **site:** keep full page titles within 60 characters ([#216](https://github.com/drumandbytes/eraser/issues/216)) ([95f10b3](https://github.com/drumandbytes/eraser/commit/95f10b3c948aad5f1cc63a3943a1c9984cc62728))
+* **site:** point the docs breadcrumb at the latest version and cap titles at 58 ([#218](https://github.com/drumandbytes/eraser/issues/218)) ([c5a17a6](https://github.com/drumandbytes/eraser/commit/c5a17a6b6d774111de656afab6ed2e36845b7372))
+* **site:** rewrite ../ doc links that point into subfolders ([#215](https://github.com/drumandbytes/eraser/issues/215)) ([4ced5e6](https://github.com/drumandbytes/eraser/commit/4ced5e6b2da0f57edd28fa36546294952df2c20d))
+
 ## [1.5.8](https://github.com/drumandbytes/eraser/compare/v1.5.7...v1.5.8) (2026-10-24)
 
 

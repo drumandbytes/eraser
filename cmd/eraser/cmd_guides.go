@@ -299,6 +299,7 @@ sitemap:
 
 > {{.Broker.Notes}}
 {{end}}
+{{.Timeline}}
 
 ## Opt out
 
@@ -307,7 +308,7 @@ sitemap:
 2. Follow their removal / suppression process. You may need to confirm by email or verify your identity.
 {{if .Broker.Email}}3. If the form fails, email **{{.Broker.Email}}** with the request below.{{end}}
 {{else if .Broker.Email}}
-Email **{{.Broker.Email}}** with the request below. {{.Timeline}}
+Email **{{.Broker.Email}}** with the request below.
 {{else}}
 No public opt-out URL or email is on file for this broker yet. Try their website's privacy page, or contact them and cite the laws below.
 {{end}}

@@ -65,7 +65,7 @@ func TestRender(t *testing.T) {
 	body := "# Commands\n\nSee [multi-profile](multi-profile.md#setup), [architecture](architecture.md) and [the README](../README.md#top).\n"
 	out := render("commands", body, Version{Slug: "1.2", Latest: true, ref: "v1.2.9"})
 	for _, want := range []string{
-		`title: "Commands"`, `docs_version: "1.2"`, `docs_page: "commands"`,
+		`title: "Commands"`, `description: "Every Eraser command`, `docs_version: "1.2"`, `docs_page: "commands"`,
 		"](../multi-profile/#setup)",
 		"](https://github.com/drumandbytes/eraser/blob/v1.2.9/docs/architecture.md)",
 		"](https://github.com/drumandbytes/eraser/blob/v1.2.9/README.md#top)",

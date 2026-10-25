@@ -182,12 +182,26 @@ func render(name, body string, v Version) string {
 	var fm strings.Builder
 	fm.WriteString("---\n")
 	fmt.Fprintf(&fm, "title: %s\n", strconv.Quote(title))
+	if d := docDescriptions[name]; d != "" {
+		fmt.Fprintf(&fm, "description: %s\n", strconv.Quote(d))
+	}
 	fmt.Fprintf(&fm, "docs_version: %s\ndocs_page: %s\n", strconv.Quote(v.Slug), strconv.Quote(name))
 	if !v.Latest {
 		fm.WriteString("robots: noindex\nsitemap:\n  disable: true\n")
 	}
 	fm.WriteString("---\n\n")
 	return fm.String() + strings.TrimLeft(text, "\n")
+}
+
+// docDescriptions are the meta descriptions for the published doc pages; the
+// first paragraphs of the markdown are code blocks or callouts, so they can't
+// be lifted automatically.
+var docDescriptions = map[string]string{
+	"commands":       "Every Eraser command, flag and config.yaml key: sending removal requests, monitoring your inbox, and running the local web UI.",
+	"broker-replies": "How to handle data broker replies to your removal requests: confirmations, ID checks, refusals, and what Eraser classifies automatically.",
+	"mcp":            "Run Eraser's local MCP server so an agent can work through broker follow-ups while you review batches and handle verification.",
+	"multi-profile":  "Send and track removal requests for more than one person from a single Eraser install, with fully separate history per profile.",
+	"stability":      "What Eraser's semantic versioning promises in 1.x: the config, CLI, data and API surface that will not break between minor releases.",
 }
 
 func git(repo string, args ...string) ([]byte, error) {
@@ -239,7 +253,7 @@ func run(repo, siteDir string) error {
 			}
 			v.Pages = append(v.Pages, page)
 		}
-		index := fmt.Sprintf("---\ntitle: %s\ndocs_version: %s\ndocs_status: %s\n", strconv.Quote("Eraser "+v.Label+" documentation"), strconv.Quote(v.Slug), strconv.Quote(v.Status))
+		index := fmt.Sprintf("---\ntitle: %s\ndescription: %s\ndocs_version: %s\ndocs_status: %s\n", strconv.Quote("Eraser "+v.Label+" documentation"), strconv.Quote("Documentation for Eraser "+v.Label+": commands and configuration, broker replies, multi-profile setup, MCP automation and the stability policy."), strconv.Quote(v.Slug), strconv.Quote(v.Status))
 		if !v.Latest {
 			index += "robots: noindex\nsitemap:\n  disable: true\n"
 		}

@@ -27,7 +27,7 @@
 <header class="topbar">
   <a class="brand" href="{{ "/" | relURL }}">eraser</a>
   <nav aria-label="Main">
-    {{ range .Site.Menus.main }}<a href="{{ .URL | relLangURL }}"{{ if $.IsMenuCurrent "main" . }} class="active"{{ end }}>{{ .Name }}</a>{{ end }}
+    {{ range .Site.Menus.main }}{{ $url := .URL }}{{ if eq .Name "Docs" }}{{ range hugo.Data.docs_versions.versions }}{{ if .latest }}{{ $url = printf "/docs/%s/" .slug }}{{ end }}{{ end }}{{ end }}<a href="{{ $url | relLangURL }}"{{ if $.IsMenuCurrent "main" . }} class="active"{{ end }}>{{ .Name }}</a>{{ end }}
   </nav>
 </header>
 <main id="main" tabindex="-1" class="wrap">

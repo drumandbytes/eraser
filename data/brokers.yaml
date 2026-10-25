@@ -13,6 +13,12 @@ brokers:
       opt_out_url: https://www.beenverified.com/app/optout/search
       region: us
       category: people-search
+      parent: BeenVerified, LLC
+      verification: Runs an identity verification step before acting on rights requests; agents need proof of authorization
+      response_time: Acknowledges a request within 10 days and aims to respond within 45 days
+      sources:
+        - https://www.beenverified.com/faq/privacy/
+      researched: "2026-10-25"
     - id: whitepages
       name: Whitepages
       email: ""
@@ -29,6 +35,12 @@ brokers:
       region: us
       category: people-search
       notes: Second INTELIUS LLC entry (mailer-unsubscribe variant) merged into this one on 2026-09-12. Intelius LLC also owns/operates ZabaSearch and US Search - requests via the Intelius Privacy Center cover those brands.
+      parent: Intelius, LLC
+      verification: Takes reasonable steps to verify your identity before responding to certain requests
+      response_time: Access requests within 30 days; appeals within 45 days
+      sources:
+        - https://www.intelius.com/privacy-policy/
+      researched: "2026-10-25"
     - id: truepeoplesearch
       name: TruePeopleSearch
       email: ""
@@ -72,6 +84,12 @@ brokers:
       opt_out_url: https://app.truthfinder.com/privacy-center/
       region: us
       category: people-search
+      parent: TruthFinder, LLC
+      verification: Takes reasonable steps to verify your identity before responding to certain requests
+      response_time: Access requests within 30 days; appeals within 45 days
+      sources:
+        - https://www.truthfinder.com/privacy-policy/
+      researched: "2026-10-25"
     - id: mylife
       name: MyLife
       email: privacy@mylife.com
@@ -87,6 +105,12 @@ brokers:
       opt_out_url: https://pipl.com/personal-information-removal-request
       region: global
       category: people-search
+      parent: Pipl, Inc.
+      verification: Verifies your identity before deleting; may deny a request it reasonably believes is fraudulent
+      response_time: Confirms receipt within 10 days; up to 90 days if it tells you of an extension within 45 days
+      sources:
+        - https://pipl.com/california-privacy-notice-individuals
+      researched: "2026-10-25"
     - id: publicrecordsnow
       name: PublicRecordsNow
       email: ""
@@ -131,6 +155,11 @@ brokers:
       opt_out_url: https://isapps.acxiom.com/optout/optout.aspx
       region: global
       category: marketing
+      verification: Verifies identity before acting on right-to-know requests; may phone you with an authentication quiz and deletes the verification data afterwards
+      sources:
+        - https://www.acxiom.com/privacy/privacy-policy-www-acxiom-com/
+      researched: "2026-10-25"
+      guide: true
     - id: epsilon
       name: Epsilon Data Management
       email: privacy@epsilon.com
@@ -138,6 +167,11 @@ brokers:
       region: global
       category: marketing
       notes: Second EPSILON DATA MANAGEMENT LLC entry (legal.epsilon.com/dsr DSR portal, region us) merged into this one on 2026-09-12 - same company; the DSR portal is an alternate channel. Opt-out URL https://www.epsilon.com/privacy/consumer-preference-center returns 404 (2026-10-04) - cleared, needs a current form.
+      parent: Epsilon Data Management, LLC
+      sources:
+        - https://legal.epsilon.com/global-privacy-policies/
+      researched: "2026-10-25"
+      guide: true
     - id: experian-marketing
       name: Experian Marketing Services
       email: privacy@experian.com
@@ -146,6 +180,12 @@ brokers:
       region: global
       category: marketing
       notes: Includes Tapad, acquired by Experian; the defunct standalone Tapad contact was merged into this entry on 2026-09-12.
+      parent: Experian Marketing Solutions, LLC
+      verification: Opt-out and limit requests need no verification; access, correction and deletion requests by mail need identity documents
+      sources:
+        - https://www.experian.com/privacy/us-consumer-data-privacy-policy
+      researched: "2026-10-25"
+      guide: true
     - id: equifax-marketing
       name: Equifax Marketing Services
       email: UKDPO@equifax.com
@@ -188,6 +228,12 @@ brokers:
       opt_out_url: https://liveramp.com/privacy
       region: global
       category: marketing
+      verification: Verifies identity depending on the request type; will not disclose specific information to someone it cannot verify
+      response_time: Access and correction requests within 45 days
+      sources:
+        - https://liveramp.com/privacy/california-privacy-notice
+      researched: "2026-10-25"
+      guide: true
     - id: lotame
       name: Lotame
       email: ""
@@ -483,6 +529,12 @@ brokers:
       opt_out_url: https://alliantinsight.com/data-services-and-website-privacy-policy/
       region: us
       category: marketing
+      parent: Alliant Cooperative Data Solutions, LLC
+      verification: May ask to verify your identity, except for opt-out and limit-sensitive-data requests
+      sources:
+        - https://alliantinsight.com/data-services-and-website-privacy-policy/
+      researched: "2026-10-25"
+      guide: true
     - id: alphonso
       name: Alphonso Inc.
       email: compliance@lgads.tv
@@ -491,6 +543,11 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Reply (2026-09-05) from compliance@lgads.tv: TV-based ACR data only - IP addresses and device identifiers, no name or email, so a profile-based request can''t be matched. Rights are exercised via the form at the opt_out_url, which needs your current IP address to compare against - not reachable via this tool.'
+      parent: Alphonso Inc.
+      verification: Requests are verified through its verification tool; agents must prove authorization
+      sources:
+        - https://lgads.tv/site-privacy-policy/
+      researched: "2026-10-25"
     - id: altair-data-resources
       name: Altair Data Resources, Inc.
       email: privacy@altairdata.com
@@ -644,6 +701,12 @@ brokers:
       region: us
       category: marketing
       notes: TowerData and FreshAddress merged and rebranded as AtData in 2021; the obsolete TowerData entry was merged here on 2026-09-12. Experian acquired AtData in 2026, but AtData still publishes this privacy address and opt-out portal.
+      parent: AtData, LLC
+      verification: Asks for extra information to verify your identity or clarify the request
+      sources:
+        - https://atdata.com/privacy-policy/
+      researched: "2026-10-25"
+      guide: true
     - id: atlantic-fox-technologies
       name: Atlantic Fox Technologies, Inc.
       email: privacy@atlanticfox.com
@@ -658,6 +721,12 @@ brokers:
       opt_out_url: https://www.attomdata.com/privacy/ccpa-request-form-7233695024/
       region: us
       category: marketing
+      verification: Cannot respond if it cannot verify your identity or authority to make the request
+      response_time: Appeals answered within 60 days
+      sources:
+        - https://www.attomdata.com/privacy/
+      researched: "2026-10-25"
+      guide: true
     - id: audience-acuity
       name: Audience Acuity LLC
       email: privacy@audienceacuity.com
@@ -729,6 +798,11 @@ brokers:
       region: us
       category: background-check
       notes: compliance@bisi.com replied (2026-09-11) that BIS is a consumer reporting agency under the FCRA and states it does not compile, provide, or sell unsolicited data to third parties, nor keep/maintain/opt-in consumer data into any database - so an erasure request is a dead end regardless of address. They also had no background report on file for this requester specifically. Was miscategorized as marketing.
+      parent: Background Information Services, Inc.
+      verification: Asks for your name, email and state of residence, plus whatever it needs to verify your identity or the request
+      sources:
+        - https://www.bisi.com/?pg=privacy
+      researched: "2026-10-25"
     - id: bb-direct
       name: BB Direct, Inc
       email: brianberg@bbdirect.com
@@ -1045,6 +1119,12 @@ brokers:
       opt_out_url: https://privacyportal.onetrust.com/webform/68582716-6ce4-4f6e-bf08-78371b5f3292/6c7dc52d-0e2b-481f-9256-0755179e3783
       region: us
       category: marketing
+      parent: Claritas, LLC
+      verification: Verification steps vary by how you submit; it cannot respond if it cannot verify your identity
+      sources:
+        - https://claritas.com/privacy-legal/
+      researched: "2026-10-25"
+      guide: true
     - id: clay-labs
       name: Clay Labs LLC
       email: privacy@clay.com
@@ -1059,6 +1139,13 @@ brokers:
       opt_out_url: https://www.clearview.ai/privacy-and-requests
       region: us
       category: marketing
+      parent: Clearview AI, Inc.
+      verification: May ask for your photo and an image of a government-issued ID
+      response_time: Acknowledges requests within 10 business days
+      sources:
+        - https://www.clearview.ai/public-privacy-policy
+      researched: "2026-10-25"
+      guide: true
     - id: datanyze
       name: DATANYZE LLC
       email: ccpa@clickagy.com
@@ -1073,6 +1160,12 @@ brokers:
       opt_out_url: https://cognism.privacy.saymine.io/cognism
       region: us
       category: marketing
+      parent: Cognism Limited
+      hq: London, United Kingdom (registered office)
+      sources:
+        - https://www.cognism.com/en/privacy-policy
+      researched: "2026-10-25"
+      guide: true
     - id: collateral-analytics
       name: Collateral Analytics, LLC
       email: compliancemortgagetech@ice.com
@@ -1087,6 +1180,11 @@ brokers:
       region: us
       category: device-id-only
       notes: Opt-out form (collectivedata.io) requires a Mobile Advertising ID and notes requests are device-specific; no name/email path offered.
+      parent: Collective Data Solutions, LLC
+      verification: Its opt-out form asks for your full name, mailing address and a mobile advertising ID or connected-TV ID
+      sources:
+        - https://www.collectivedata.io/opt-out-do-not-sell-request-process/
+      researched: "2026-10-25"
     - id: command-precision
       name: Command Precision Inc.
       email: info@persistent.id
@@ -1130,6 +1228,12 @@ brokers:
       opt_out_url: https://www.comscore.com/About/Privacy/Data-Subject-Rights
       region: us
       category: marketing
+      parent: Comscore, Inc.
+      verification: May ask for more information to verify your identity
+      sources:
+        - https://www.comscore.com/About-Comscore/Privacy-Policy
+      researched: "2026-10-25"
+      guide: true
     - id: connect-computer
       name: Connect Computer LLC
       email: ""
@@ -1230,6 +1334,10 @@ brokers:
       region: us
       category: requires-id
       notes: 'Added 2026-09-14: replied to GDPR erasure request demanding proof of identity (passport, ID card, driving licence, or employee ID) before proceeding - not supplying ID.'
+      verification: May ask for a valid photo ID or other supporting documents before processing certain requests
+      sources:
+        - https://www.crisil.com/en/home/crisil-privacy-notice.html
+      researched: "2026-10-25"
     - id: cross-pixel-media
       name: Cross Pixel Media, Inc.
       email: privacy@crosspixel.net
@@ -1461,6 +1569,10 @@ brokers:
       region: us
       category: device-id-only
       notes: Opt-out form (via the same collectivedata.io platform as collective-data-solutions) requires a Mobile Advertising ID; explicitly says not to enter a phone number.
+      verification: Its opt-out form (run by Collective Data Solutions) asks for your full name, mailing address and a mobile advertising ID or connected-TV ID
+      sources:
+        - https://www.collectivedata.io/opt-out-do-not-sell-request-process/
+      researched: "2026-10-25"
     - id: digital-media-solutions
       name: Digital Media Solutions, LLC
       email: tax@dmsgroup.com
@@ -2348,6 +2460,12 @@ brokers:
       region: us
       category: marketing
       notes: Doesn't process removal requests via email - use the opt-out form at the opt_out_url.
+      verification: Opt-out requests need no extra verification unless fraud is suspected; other requests are not honored if your identity cannot be verified
+      response_time: Within 45 days; appeals within 60 days (45 in Colorado)
+      sources:
+        - https://www.intentiq.com/website-privacy-policy/
+      researched: "2026-10-25"
+      guide: true
     - id: intentmacro
       name: Intentmacro Inc.
       email: privacy@intentmacro.com
@@ -2399,6 +2517,11 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Reply (2026-09-14): only holds mobile AAID tied to geolocation - no name/address/email collected, so not reachable via this tool''s profile-based request.'
+      parent: Irys, Inc.
+      verification: Asks for your device's advertising ID and proof of address such as a utility bill, which it matches against its location data
+      sources:
+        - https://irys.us/privacy-policy
+      researched: "2026-10-25"
     - id: iso-services
       name: ISO Services Inc
       email: bgeorge@verisk.com
@@ -2478,6 +2601,12 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Kargo splits privacy rights into two flows (checked their portal 2026-08-20): (1) Opt-out of sale/share/targeted-ads - check the box at opt_out_url, or just send a GPC signal from your browser; no identifiers needed. (2) Access/deletion - they track by cookie/device ID, not name, so they can''t look you up from a standard request; email privacyinfo@kargo.com with your Digital Identifiers instead (the ktcid/krg_uid/krg_crb cookies set on kargo.com, or your phone''s IDFA/Android Ad ID) plus what you''re requesting. Email left blank since eraser''s standard template has no way to include those identifiers.'
+      parent: Kargo Global, LLC
+      verification: May verify your identity and any agent's authorization
+      response_time: Within 45 days, or as applicable law requires
+      sources:
+        - https://www.kargo.com/privacy
+      researched: "2026-10-25"
     - id: kbm-group
       name: KBM GROUP LLC
       email: DoNotMail@wundermanthompson.com
@@ -2530,6 +2659,12 @@ brokers:
       opt_out_url: https://www.kochava.com/opt-out-do-not-sell-request-process/
       region: us
       category: marketing
+      parent: Kochava Holdings Inc.
+      verification: Its opt-out form asks for your full name, mailing address and a mobile advertising ID
+      sources:
+        - https://www.kochava.com/opt-out-do-not-sell-request-process/
+      researched: "2026-10-25"
+      guide: true
     - id: koddi
       name: Koddi Inc.
       email: ""
@@ -2800,6 +2935,13 @@ brokers:
       opt_out_url: https://www.lusha.com/privacy-center/request-removal/
       region: us
       category: marketing
+      parent: Lusha Systems Inc.
+      hq: Boston, Massachusetts, USA (registered office; incorporated in Delaware)
+      verification: Verifies your identity before completing a request
+      sources:
+        - https://www.lusha.com/legal/privacy-notice/
+      researched: "2026-10-25"
+      guide: true
     - id: m1-data-analytics
       name: M1 Data & Analytics, LLC
       email: gashe@m1-data.com
@@ -2885,6 +3027,11 @@ brokers:
       region: us
       category: device-id-only
       notes: Replied that they only work with mobile advertising identifiers, not personal identifiers like name/email/phone (2026-08-21) - can't be fulfilled via this tool's profile data.
+      parent: Matchbook Data LLC
+      holds: Mobile advertising IDs, which it says it makes inactive within 12 months of last obtaining consent
+      sources:
+        - https://www.matchbookdata.com/privacy-policy/
+      researched: "2026-10-25"
     - id: maxmind
       name: MAXMIND Inc
       email: ""
@@ -3037,6 +3184,11 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Global opt-out page: "we cannot process your request without a valid MAID [Mobile Advertising ID]" even with an email address provided.'
+      parent: Mobilewalla Inc.
+      holds: Data from third-party sources, which it says it deletes within 90 days of receipt
+      sources:
+        - https://www.mobilewalla.com/business-services-privacy-notice-2023
+      researched: "2026-10-25"
     - id: modernize
       name: Modernize, Inc.
       email: support@modernize.com
@@ -3173,6 +3325,11 @@ brokers:
       region: us
       category: requires-id
       notes: 'Added 2026-09-18: replied to GDPR erasure request asking for a copy of government-issued ID and any prior communications from NexSales before proceeding (cited a 45-day window) - not supplying ID.'
+      parent: Nexsales Inc.
+      verification: Privacy requests ask for your name and contact details and a copy of a government-issued photo ID
+      sources:
+        - https://nexsales.com/privacy-policy
+      researched: "2026-10-25"
     - id: nextroll
       name: Nextroll, Inc.
       email: ""
@@ -3310,6 +3467,11 @@ brokers:
       region: us
       category: device-id-only
       notes: Opt-out form requires an Advertising ID or Installation ID to process requests. OUTLOGIC LLC is X-Mode Social's current name (rebranded 2023) - the separate x-mode-social entry (same opt_out_url) was merged into this one.
+      parent: OUTLOGIC LLC
+      holds: Mobile advertising IDs, which it says it makes inactive within 12 months of last obtaining consent
+      sources:
+        - https://outlogic.io/privacy-policy/
+      researched: "2026-10-25"
     - id: outward-media
       name: Outward Media, Inc.
       email: accounting@outwardmedia.com
@@ -3614,6 +3776,11 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Privacy policy: requests need PulsePoint cookies, a MAID, or an IP address - they generally hold only pseudonymous data, no name/email path. (Email was already cleared separately after a hard bounce.)'
+      parent: PulsePoint, Inc.
+      verification: Must verify your identity before acting on a request
+      sources:
+        - https://www.pulsepoint.com/legal/platform-privacy-policy
+      researched: "2026-10-25"
     - id: purecars-technologies
       name: Purecars Technologies, LLC
       email: ""
@@ -3922,6 +4089,11 @@ brokers:
       website: https://www.safegraph.com/
       region: us
       category: marketing
+      verification: Needs to verify your identity for requests to know, correct and delete
+      sources:
+        - https://www.safegraph.com/ccpa-privacy-policy/
+      researched: "2026-10-25"
+      guide: true
     - id: saferent-solutions
       name: Saferent Solutions, LLC
       email: licensing@saferentsolutions.com
@@ -4049,6 +4221,10 @@ brokers:
       region: us
       category: device-id-only
       notes: Reply says they operate a cookie-based service and don't store name/address/phone/email, so can't act on email requests (2026-08-21) - use the existing opt_out_url instead.
+      verification: Its opt-out form emails you a verification link; confirm within 24 hours or submit again
+      sources:
+        - https://www.semasio.com/legal/privacy-choices
+      researched: "2026-10-25"
     - id: semcastingcom
       name: Semcasting.com
       email: privacychoice@semcasting.com
@@ -4240,6 +4416,12 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Reply (2026-08-28): found no match on name/email/address - relies on device ID, cookie ID (sa-user-id), IP address, and user agent instead. Requires emailing those identifiers directly (not reachable via this tool''s profile-based request); use the opt_out_url form as the general opt-out path.'
+      parent: StackAdapt Inc.
+      verification: May ask you to verify your identity; agents need written permission
+      response_time: Within 30 days
+      sources:
+        - https://www.stackadapt.com/legal-document-centre/platform-and-services-privacy-policy
+      researched: "2026-10-25"
     - id: staircase
       name: Staircase, Inc.
       email: ""
@@ -4741,6 +4923,12 @@ brokers:
       region: us
       category: device-id-only
       notes: 'Reply (2026-08-26): found no match on name/email/address - relies on mobile advertiser ID (IDFA/AAID) instead. Requires emailing that identifier directly (not reachable via this tool''s profile-based request); use the opt_out_url as the general privacy-choices path.'
+      parent: Vistar Media, Inc.
+      verification: Verifies your identity before completing rights requests, except opt-outs
+      response_time: Appeals answered within 60 days
+      sources:
+        - https://www.vistarmedia.com/privacy
+      researched: "2026-10-25"
     - id: visual-visitor
       name: VISUAL VISITOR LLC
       email: privacy@visualvisitor.com
@@ -4993,6 +5181,11 @@ brokers:
       region: eu
       category: financial-b2b
       notes: 'Added 2026-09-12 from their privacy policy - pan-EU credit/business-information bureau (Italy HQ). Country-specific DPO contacts exist too (UK: dpo.uk@crif.com; Austria: auskunft@crif.com) if the Italian address does not respond.'
+      parent: CRIF S.p.A.
+      hq: Bologna, Italy
+      sources:
+        - https://www.crif.com/privacy-policy/
+      researched: "2026-10-25"
     - id: dun-bradstreet-eu
       name: Dun & Bradstreet (EU, incl. former Bisnode entities)
       email: eudpo@dnb.com
@@ -5082,6 +5275,11 @@ brokers:
       region: global
       category: financial-b2b
       notes: Added 2026-09-12 from their Habeas Data page - Colombian credit bureau operated by Experian Colombia S.A., supervised by the Superintendencia de Industria y Comercio. Claims/suppression via the SIC-regulated reclamos portal at the opt_out_url; servicioalcliente@experian.com is the general contact. Distinct Colombian controller from the experian-marketing entry.
+      parent: Experian Colombia S.A.
+      hq: Colombia
+      sources:
+        - https://www.datacredito.com.co/privacy-policy
+      researched: "2026-10-25"
     - id: cial-dun-bradstreet
       name: CIAL Dun & Bradstreet
       email: privacy@cialdnb.com

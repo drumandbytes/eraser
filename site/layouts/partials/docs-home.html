@@ -1,0 +1,5 @@
+{{- /* URL the "Docs" breadcrumb and nav point at: the latest stable version, so no link goes
+       through the /docs/ redirect. */ -}}
+{{- $url := "/docs/" -}}
+{{- range hugo.Data.docs_versions.versions }}{{ if .latest }}{{ $url = printf "/docs/%s/" .slug }}{{ end }}{{ end -}}
+{{- return ($url | relURL) -}}

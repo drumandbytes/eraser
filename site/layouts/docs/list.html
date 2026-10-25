@@ -7,7 +7,7 @@
 {{ define "main" }}
 <article class="prose">
   {{ if .Params.docs_version }}
-  <p class="crumb"><a href="{{ "/" | relURL }}">Home</a> · <a href="{{ "/docs/" | relURL }}">Docs</a></p>
+  <p class="crumb"><a href="{{ "/" | relURL }}">Home</a> · <a href="{{ partial "docs-home.html" . }}">Docs</a></p>
   {{ partial "docs-nav.html" . }}
   <h1>{{ .Title }}</h1>
   <ul class="linklist">

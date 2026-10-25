@@ -299,7 +299,7 @@ sitemap:
 
 > {{.Broker.Notes}}
 {{end}}
-{{.Timeline}}{{if .LastChecked}} Contact details last checked {{.LastChecked}}.{{end}}
+{{.Timeline}}
 
 ## Opt out
 

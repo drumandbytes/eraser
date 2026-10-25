@@ -2,7 +2,7 @@
 <article class="prose">
   <p class="crumb"><a href="{{ "/" | relURL }}">Home</a>{{ with .CurrentSection }} · <a href="{{ .RelPermalink }}">{{ .Title }}</a>{{ end }}</p>
   <h1>{{ .Title }}</h1>
-  {{ if .Params.last_checked }}<p class="meta">Broker last checked {{ .Params.last_checked }}.</p>{{ end }}
+  {{ if .Params.last_checked }}<p class="meta">Broker last checked {{ .Lastmod.Format "2006-01-02" }}.</p>{{ end }}
   {{ .Content }}
 </article>
 {{ end }}

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/drumandbytes/eraser/compare/v1.6.0...v1.6.1) (2026-10-26)
+
+
+### Performance Improvements
+
+* **site:** filter the server-rendered broker rows instead of re-rendering them ([#221](https://github.com/drumandbytes/eraser/issues/221)) ([0683483](https://github.com/drumandbytes/eraser/commit/0683483fb99295781c5f324c5e6f5ffb43727dfe))
+
 ## [1.6.0](https://github.com/drumandbytes/eraser/compare/v1.5.8...v1.6.0) (2026-10-25)
 
 

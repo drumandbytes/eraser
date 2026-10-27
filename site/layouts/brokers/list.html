@@ -10,9 +10,6 @@
   details change. Missing one, or spotted a bad address?
   <a href="https://github.com/drumandbytes/eraser/issues/new">Let us know.</a></p>
 
-  <!-- Plain links to every guide page, server-rendered -- the table below is
-       filled in by directory.js from brokers.json, so a crawler that skips JS
-       (or the first indexing pass) would otherwise see zero broker links here. -->
   <h2>Opt-out guides</h2>
   <ul class="guide-links">
     {{ range .Pages.ByTitle }}
@@ -35,12 +32,12 @@
     <thead><tr><th scope="col">Broker</th><th scope="col">Region</th><th scope="col">Category</th><th scope="col">Opt out</th></tr></thead>
     <tbody id="rows">
     {{- range $all }}
-    <tr><td>{{ if .curated }}<a href="{{ printf "/brokers/%s/" .id | relURL }}">{{ .name }}</a> <span class="tag">guide</span>{{ else }}{{ .name }}{{ end }}</td><td>{{ .region }}</td><td>{{ .category }}</td><td>{{ if .opt_out_url }}<a href="{{ .opt_out_url }}" rel="nofollow noopener">form</a>{{ else if .email }}email {{ .email }}{{ else }}—{{ end }}</td></tr>
+    <tr data-n="{{ lower .name }}" data-r="{{ .region }}" data-c="{{ .category }}"{{ if .curated }} data-g{{ end }}><td>{{ if .curated }}<a href="{{ printf "/brokers/%s/" .id | relURL }}">{{ .name }}</a> <span class="tag">guide</span>{{ else }}{{ .name }}{{ end }}</td><td>{{ .region }}</td><td>{{ .category }}</td><td>{{ if .opt_out_url }}<a href="{{ .opt_out_url }}" rel="nofollow noopener">form</a>{{ else if .email }}email {{ .email }}{{ else }}—{{ end }}</td></tr>
     {{- end }}
     </tbody>
   </table>
   </div>
 </article>
 
-<script src="{{ "js/directory.js" | relURL }}" data-src="{{ "brokers.json" | relURL }}"></script>
+<script src="{{ "js/directory.js" | relURL }}" defer></script>
 {{ end }}

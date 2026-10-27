@@ -4467,11 +4467,12 @@ brokers:
       notes: Auto-reply says personal-information requests should go through the opt_out_url form, "the designated channel" (2026-08-21).
     - id: sterling-data-company
       name: STERLING DATA COMPANY LLC
-      email: abe.usher@sterlingd.com
+      email: ""
       website: https://www.sterling.ai/
       opt_out_url: https://sterling.ai/do-not-sell/
       region: us
       category: marketing
+      notes: 'Email abe.usher@sterlingd.com became undeliverable (audit-brokers: MX and host lookup both failed, 2026-10-26) - cleared, needs a working address.'
     - id: stirista
       name: Stirista, LLC
       email: info@stirista.com

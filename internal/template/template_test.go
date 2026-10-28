@@ -66,3 +66,20 @@ func TestCheckCustom(t *testing.T) {
 		}
 	}
 }
+
+func TestCustomSubjectLine(t *testing.T) {
+	e, err := NewEngine()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.SetCustom("Subject: Erase me\r\n\r\nBody for {{.BrokerName}}"); err != nil {
+		t.Fatal(err)
+	}
+	mail, err := e.Render(CustomName, config.Profile{}, broker.Broker{Name: "Acme"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mail.Subject != "Erase me" || mail.Body != "Body for Acme" {
+		t.Errorf("got %q / %q", mail.Subject, mail.Body)
+	}
+}

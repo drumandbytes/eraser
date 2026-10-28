@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/drumandbytes/eraser/compare/v1.6.2...v1.7.0) (2026-10-28)
+
+
+### Features
+
+* **site:** edit request options and custom email template in Settings ([#225](https://github.com/drumandbytes/eraser/issues/225)) ([3d2a7ca](https://github.com/drumandbytes/eraser/commit/3d2a7cae347c445547cf7549f1f6252eabefe6bf))
+
 ## [1.6.2](https://github.com/drumandbytes/eraser/compare/v1.6.1...v1.6.2) (2026-10-27)
 
 

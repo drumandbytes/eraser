@@ -123,7 +123,7 @@ func runInit() error {
 		// audience. An existing config's own template choice always wins.
 		defaultTemplate = "gdpr"
 	}
-	cfg.Options.Template = promptWithDefault(reader, "Default template (gdpr/ccpa/generic)", defaultTemplate)
+	cfg.Options.Template = promptWithDefault(reader, "Default template (gdpr/ccpa/generic/custom)", defaultTemplate)
 
 	// Carry forward tuning options rather than resetting them, so a
 	// hand-edited rate_limit_ms/daily_send_limit in the YAML survives
@@ -138,6 +138,7 @@ func runInit() error {
 	cfg.Options.Regions = existing.Options.Regions
 	cfg.Options.ExcludedBrokers = existing.Options.ExcludedBrokers
 	cfg.Options.ExcludedCategories = existing.Options.ExcludedCategories
+	cfg.Options.CustomTemplate = existing.Options.CustomTemplate
 
 	// Carry forward inbox/pipeline settings too - init only manages the
 	// profile/email/template fields above.

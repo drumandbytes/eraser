@@ -73,6 +73,9 @@ func runServe(port int) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize templates: %w", err)
 	}
+	if err := tmplEngine.UseConfig(cfg); err != nil {
+		return fmt.Errorf("custom template: %w", err)
+	}
 
 	server, err := web.NewServer(port, cfg, configPath, brokerDB, store, tmplEngine)
 	if err != nil {

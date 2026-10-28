@@ -389,6 +389,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/export", s.handleExport)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
+	r.Post("/settings/options", s.handleSettingsOptions)
 	r.Post("/settings/automation", s.handleSettingsAutomation)
 	r.Post("/settings/brokers/update", s.handleSettingsBrokersUpdate)
 	r.Get("/settings/profiles/new", s.handleSettingsProfileNew)

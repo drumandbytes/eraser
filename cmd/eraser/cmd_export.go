@@ -99,6 +99,9 @@ func runExport(opts exportOptions) error {
 	if err != nil {
 		return fmt.Errorf("failed to init template engine: %w", err)
 	}
+	if err := engine.UseConfig(cfg); err != nil {
+		return fmt.Errorf("custom template: %w", err)
+	}
 
 	report := evidence.Build(activeProfile.Profile, requests, responses, brokerDB, engine, sinceTime, time.Now())
 

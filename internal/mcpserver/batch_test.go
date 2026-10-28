@@ -161,3 +161,29 @@ func TestToolsRefuseWithoutApprovedBatchOrConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestCustomTemplateInPrepareAndSend(t *testing.T) {
+	s := testService(t)
+	ctx := context.Background()
+	edit := func(mutate func(*config.Config)) {
+		t.Helper()
+		cfg, err := config.Load(s.opts.ConfigPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mutate(cfg)
+		if err := config.Save(s.opts.ConfigPath, cfg); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	edit(func(c *config.Config) { c.Options.Template, c.Options.CustomTemplate = "custom", "Dear {{.Nope" })
+	if _, err := s.prepare(ctx, prepareInput{BrokerIDs: []string{"one"}}); err == nil || !strings.Contains(err.Error(), "invalid template") {
+		t.Fatalf("prepare with a broken custom template: %v", err)
+	}
+
+	edit(func(c *config.Config) { c.Options.CustomTemplate = "Dear {{.BrokerName}}" })
+	if _, err := s.prepare(ctx, prepareInput{BrokerIDs: []string{"one"}}); err != nil {
+		t.Fatalf("prepare with a custom template: %v", err)
+	}
+}

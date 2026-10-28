@@ -63,6 +63,9 @@ func (s *Service) prepare(_ context.Context, in prepareInput) (map[string]any, e
 	if err != nil {
 		return nil, err
 	}
+	if err := engine.UseConfig(cfg); err != nil {
+		return nil, err
+	}
 	drafts := []map[string]any{}
 	for _, id := range in.BrokerIDs {
 		b := db.FindByID(id)

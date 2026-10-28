@@ -216,6 +216,9 @@ func runSend() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize templates: %w", err)
 	}
+	if err := tmplEngine.UseConfig(cfg); err != nil {
+		return fmt.Errorf("custom template: %w", err)
+	}
 
 	// Resolve the SMTP account to send from: activeProfile's own mail.email
 	// override if it has one, otherwise the shared top-level email: block.
@@ -324,6 +327,9 @@ func runSendManual(cfg *config.Config, activeProfile config.NamedProfile, broker
 	tmplEngine, err := template.NewEngine()
 	if err != nil {
 		return fmt.Errorf("failed to initialize templates: %w", err)
+	}
+	if err := tmplEngine.UseConfig(cfg); err != nil {
+		return fmt.Errorf("custom template: %w", err)
 	}
 	tmplName := cfg.Options.Template
 	if tmplName == "" {

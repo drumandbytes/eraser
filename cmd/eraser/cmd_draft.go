@@ -74,6 +74,9 @@ func runDraft(args []string, output string, regions, categories []string) error 
 	if err != nil {
 		return fmt.Errorf("failed to init template engine: %w", err)
 	}
+	if err := engine.UseConfig(cfg); err != nil {
+		return fmt.Errorf("custom template: %w", err)
+	}
 	tmpl := cfg.Options.Template
 	if tmpl == "" {
 		tmpl = "gdpr"

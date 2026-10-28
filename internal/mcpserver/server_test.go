@@ -372,3 +372,26 @@ func TestFailedOpenReleasesThePageAndSlot(t *testing.T) {
 		t.Fatalf("failed open kept the page: closed=%v pages=%d", fake.closed, len(s.pages))
 	}
 }
+
+func TestSendRefusesBrokenCustomTemplate(t *testing.T) {
+	s := testService(t)
+	relay := smtptest.Start(t)
+	cfg, err := config.Load(s.opts.ConfigPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.Options.SendMode = "smtp"
+	cfg.Email = relay.Email("alice@example.com")
+	if err := config.Save(s.opts.ConfigPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+	id := beginTestBatch(t, s, prepareInput{BrokerIDs: []string{"one"}})
+	// the plan holds its own config snapshot; break its template only
+	s.active.Config.Options.CustomTemplate = "Dear {{.Nope"
+	if _, err := s.send(context.Background(), sendInput{id, "one"}); err == nil || !strings.Contains(err.Error(), "invalid template") {
+		t.Fatalf("send with a broken custom template: %v", err)
+	}
+	if len(relay.Recipients()) != 0 {
+		t.Fatal("sent mail with a broken template")
+	}
+}

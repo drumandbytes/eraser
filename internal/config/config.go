@@ -319,6 +319,10 @@ func (s SMTPConfig) TLS() bool {
 
 type Options struct {
 	Template string `yaml:"template"`
+	// CustomTemplate is the body of the user-written "custom" template
+	// (Go text/template, same fields as the built-ins). An optional first
+	// line "Subject: ..." sets the subject. Used when Template is "custom".
+	CustomTemplate string `yaml:"custom_template,omitempty"`
 	// SendMode:
 	//   "" / "smtp" - Eraser sends over the configured SMTP account.
 	//   "manual"    - Eraser renders the emails for you to send yourself and

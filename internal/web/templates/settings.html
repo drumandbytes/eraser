@@ -276,30 +276,54 @@
 
             {{if .Config}}
             <div class="space-y-4">
-                <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
+                <form method="POST" action="/settings/options" class="space-y-4 py-3 border-b border-[var(--border-subtle)]">
+                    {{.CSRFField}}
                     <div>
-                        <p class="text-sm text-muted">Default Template</p>
+                        <label for="opt-template" class="text-sm text-muted">Default Template</label>
+                        <select id="opt-template" name="template" class="input w-full mt-1">
+                            {{range .Templates}}<option value="{{.}}"{{if eq . $.Config.Options.Template}} selected{{end}}>{{.}}</option>{{end}}
+                            <option value="custom"{{if eq $.Config.Options.Template "custom"}} selected{{end}}>custom (your own text, below)</option>
+                        </select>
                     </div>
-                    <span class="badge badge-neutral">{{.Config.Options.Template}}</span>
-                </div>
-                <div class="flex items-start justify-between py-3 border-b border-[var(--border-subtle)]">
                     <div>
-                        <p class="text-sm text-muted">Rate Limit</p>
-                        <p class="text-secondary">{{.Config.Options.RateLimitMs}}ms between emails</p>
+                        <label for="opt-custom" class="text-sm text-muted">Custom template text</label>
+                        <textarea id="opt-custom" name="custom_template" rows="12" class="input w-full mt-1 font-mono text-xs" placeholder="Subject: Data erasure request&#10;&#10;To {{"{{.BrokerName}}"}},&#10;...&#10;{{"{{.FullName}}"}}">{{.Config.Options.CustomTemplate}}</textarea>
+                        <p class="text-xs text-muted mt-1">Used when the template above is "custom". An optional first line <code>Subject: ...</code> sets the subject. Fields: {{"{{.FullName}} {{.FirstName}} {{.LastName}} {{.Email}} {{.Address}} {{.City}} {{.State}} {{.ZipCode}} {{.Country}} {{.Phone}} {{.DateOfBirth}} {{.OtherNames}} {{.OtherEmails}} {{.OtherAddresses}} {{.OtherPhones}} {{.BrokerName}} {{.BrokerEmail}} {{.BrokerWebsite}} {{.BrokerOptOut}} {{.Date}} {{.Year}} {{.Month}}"}}</p>
                     </div>
-                </div>
-                {{if .Config.Options.Regions}}
-                <div class="flex items-start justify-between py-3">
                     <div>
-                        <p class="text-sm text-muted">Target Regions</p>
-                        <div class="flex gap-2 mt-1">
-                            {{range .Config.Options.Regions}}
-                            <span class="badge badge-neutral uppercase">{{.}}</span>
+                        <label for="opt-rate" class="text-sm text-muted">Rate Limit (ms between emails)</label>
+                        <input id="opt-rate" type="number" name="rate_limit_ms" min="0" value="{{.Config.Options.RateLimitMs}}" class="input w-full mt-1">
+                    </div>
+                    <label class="flex items-start gap-2 text-secondary">
+                        <input type="checkbox" name="manual_send" value="1" class="mt-1"{{if .Config.IsManualSend}} checked{{end}}>
+                        <span>I send the emails myself <span class="block text-xs text-muted">Eraser renders each email for you to send from your own mail client and you mark it sent. No email account needed; any saved one is kept.</span></span>
+                    </label>
+                    <div>
+                        <label for="opt-daily" class="text-sm text-muted">Daily send limit</label>
+                        <input id="opt-daily" type="number" name="daily_send_limit" min="1" value="{{.Config.Options.DailySendLimit}}" class="input w-full mt-1">
+                    </div>
+                    <div>
+                        <label for="opt-list" class="text-sm text-muted">Broker list</label>
+                        <select id="opt-list" name="broker_list" class="input w-full mt-1">
+                            <option value="full"{{if ne .Config.Options.BrokerList "verified"}} selected{{end}}>full (all brokers)</option>
+                            <option value="verified"{{if eq .Config.Options.BrokerList "verified"}} selected{{end}}>verified (hand-checked subset)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="opt-cats" class="text-sm text-muted">Excluded categories (comma-separated, e.g. requires-id)</label>
+                        <input id="opt-cats" type="text" name="excluded_categories" value="{{range $i, $c := .Config.Options.ExcludedCategories}}{{if $i}}, {{end}}{{$c}}{{end}}" class="input w-full mt-1">
+                    </div>
+                    <fieldset>
+                        <legend class="text-sm text-muted">Target Regions <span class="text-xs">(none checked = all brokers)</span></legend>
+                        <div class="flex gap-4 mt-1">
+                            {{range .Regions}}
+                            <label class="flex items-center gap-2 text-secondary uppercase"><input type="checkbox" name="regions" value="{{.Name}}"{{if .Checked}} checked{{end}}> {{.Name}}</label>
                             {{end}}
                         </div>
-                    </div>
-                </div>
-                {{end}}
+                    </fieldset>
+                    <button type="submit" class="btn btn-secondary w-full">Save request options</button>
+                    {{if .OptionsMessage}}<p class="text-sm {{if .OptionsSuccess}}text-success{{else}}text-error{{end}}">{{.OptionsMessage}}</p>{{end}}
+                </form>
             </div>
             {{else}}
             <p class="text-muted">No options configured.</p>

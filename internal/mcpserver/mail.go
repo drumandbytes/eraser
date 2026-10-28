@@ -107,6 +107,9 @@ func (s *Service) send(ctx context.Context, in sendInput) (map[string]any, error
 	if err != nil {
 		return nil, err
 	}
+	if err := engine.UseConfig(p.Config); err != nil {
+		return nil, err
+	}
 	ec := p.Config.EmailForProfile(p.Profile)
 	if !ec.Configured() {
 		return nil, fmt.Errorf("configure email in Eraser's Settings")

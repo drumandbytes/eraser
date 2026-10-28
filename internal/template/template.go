@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"io"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -55,8 +57,13 @@ type Email struct {
 
 // Engine handles email template rendering
 type Engine struct {
+	mu        sync.RWMutex
 	templates map[string]*template.Template
+	subject   string // subject of the custom template, "" = default
 }
+
+// CustomName is the template name backed by Options.CustomTemplate.
+const CustomName = "custom"
 
 // NewEngine creates a new template engine
 func NewEngine() (*Engine, error) {
@@ -82,9 +89,66 @@ func NewEngine() (*Engine, error) {
 	return e, nil
 }
 
+// ParseCustom splits an optional leading "Subject: ..." line off body and
+// parses the rest as a template.
+func ParseCustom(body string) (*template.Template, string, error) {
+	body = strings.ReplaceAll(body, "\r\n", "\n")
+	subject := ""
+	if first, rest, _ := strings.Cut(body, "\n"); strings.HasPrefix(strings.ToLower(first), "subject:") {
+		subject = strings.TrimSpace(first[len("subject:"):])
+		body = strings.TrimLeft(rest, "\n")
+	}
+	if strings.TrimSpace(body) == "" {
+		return nil, "", fmt.Errorf("template body is empty")
+	}
+	tmpl, err := template.New(CustomName).Option("missingkey=error").Parse(body)
+	if err != nil {
+		return nil, "", fmt.Errorf("invalid template: %w", err)
+	}
+	return tmpl, subject, nil
+}
+
+// CheckCustom reports whether body parses and renders (so a bad field name
+// fails here, not at send time).
+func CheckCustom(body string) error {
+	tmpl, _, err := ParseCustom(body)
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(io.Discard, EmailData{})
+}
+
+// SetCustom installs (or, with an empty body, removes) the custom template.
+func (e *Engine) SetCustom(body string) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if strings.TrimSpace(body) == "" {
+		delete(e.templates, CustomName)
+		e.subject = ""
+		return nil
+	}
+	tmpl, subject, err := ParseCustom(body)
+	if err != nil {
+		return err
+	}
+	e.templates[CustomName], e.subject = tmpl, subject
+	return nil
+}
+
+// UseConfig registers cfg's custom template, if it has one.
+func (e *Engine) UseConfig(cfg *config.Config) error {
+	if cfg == nil {
+		return nil
+	}
+	return e.SetCustom(cfg.Options.CustomTemplate)
+}
+
 // Render generates an email from a template
 func (e *Engine) Render(templateName string, profile config.Profile, b broker.Broker) (*Email, error) {
+	e.mu.RLock()
 	tmpl, ok := e.templates[templateName]
+	customSubject := e.subject
+	e.mu.RUnlock()
 	if !ok {
 		return nil, fmt.Errorf("unknown template: %s", templateName)
 	}
@@ -122,6 +186,9 @@ func (e *Engine) Render(templateName string, profile config.Profile, b broker.Br
 	}
 
 	subject := e.getSubject(templateName, b.Name)
+	if templateName == CustomName && customSubject != "" {
+		subject = customSubject
+	}
 
 	return &Email{
 		Subject: subject,

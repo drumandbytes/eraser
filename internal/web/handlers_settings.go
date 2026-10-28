@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/schedule"
+	emaTemplate "github.com/drumandbytes/eraser/internal/template"
 )
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -176,6 +179,117 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	s.renderSettingsWithMessage(w, r, "Inbox monitoring enabled successfully!", true)
 }
 
+// requestTemplates are the built-in email templates (internal/template/templates).
+var requestTemplates = []string{"gdpr", "ccpa", "generic"}
+
+var knownRegions = []string{"us", "eu", "global"}
+
+type regionChoice struct {
+	Name    string
+	Checked bool
+}
+
+func regionChoices(cfg *config.Config) []regionChoice {
+	out := make([]regionChoice, len(knownRegions))
+	for i, n := range knownRegions {
+		out[i] = regionChoice{Name: n}
+		if cfg != nil {
+			out[i].Checked = slices.Contains(cfg.Options.Regions, n)
+		}
+	}
+	return out
+}
+
+func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
+	limitFormBody(w, r)
+	fail := func(msg string) {
+		s.renderSettings(w, r, map[string]interface{}{"OptionsMessage": msg, "OptionsSuccess": false})
+	}
+	if err := r.ParseForm(); err != nil {
+		fail("Failed to parse form")
+		return
+	}
+	cfg := s.getConfig()
+	if cfg == nil {
+		fail("No configuration found - run setup first")
+		return
+	}
+	custom := strings.TrimSpace(strings.ReplaceAll(r.FormValue("custom_template"), "\r\n", "\n"))
+	tmpl := r.FormValue("template")
+	if tmpl == emaTemplate.CustomName {
+		if custom == "" {
+			fail("Write the custom template text first, or pick a built-in template")
+			return
+		}
+	} else if !slices.Contains(requestTemplates, tmpl) {
+		fail("Unknown template")
+		return
+	}
+	if custom != "" {
+		if err := emaTemplate.CheckCustom(custom); err != nil {
+			fail("Custom template: " + err.Error())
+			return
+		}
+	}
+	rate, err := strconv.Atoi(strings.TrimSpace(r.FormValue("rate_limit_ms")))
+	if err != nil || rate < 0 {
+		fail("Rate limit must be a non-negative number")
+		return
+	}
+	daily, err := strconv.Atoi(strings.TrimSpace(r.FormValue("daily_send_limit")))
+	if err != nil || daily < 1 {
+		fail("Daily send limit must be a positive number")
+		return
+	}
+	list := r.FormValue("broker_list")
+	if list != "full" && list != "verified" {
+		fail("Broker list must be full or verified")
+		return
+	}
+	if list == "full" {
+		list = ""
+	}
+	var regions []string
+	for _, reg := range r.Form["regions"] {
+		if !slices.Contains(knownRegions, reg) {
+			fail("Unknown region")
+			return
+		}
+		regions = append(regions, reg)
+	}
+	var cats []string
+	for _, c := range strings.Split(r.FormValue("excluded_categories"), ",") {
+		if c = strings.ToLower(strings.TrimSpace(c)); c != "" {
+			cats = append(cats, c)
+		}
+	}
+	sendMode := ""
+	if r.FormValue("manual_send") != "" {
+		sendMode = "manual"
+	} else if cfg.IsManualSend() && !cfg.Email.Configured() {
+		fail("Add your email account in Settings → Email Configuration before turning off manual sending")
+		return
+	}
+	newCfg := *cfg
+	o := &newCfg.Options
+	o.SendMode = sendMode
+	o.Template, o.CustomTemplate, o.RateLimitMs, o.DailySendLimit = tmpl, custom, rate, daily
+	o.Regions, o.BrokerList, o.ExcludedCategories = regions, list, cats
+	if err := config.Save(s.configPath, &newCfg); err != nil {
+		fail("Failed to save configuration: " + err.Error())
+		return
+	}
+	s.config.Store(&newCfg)
+	_ = s.tmplEngine.SetCustom(custom) // already validated by CheckCustom
+	if list != cfg.Options.BrokerList {
+		if err := s.reloadBrokers(); err != nil {
+			fail("Saved, but reloading the broker list failed: " + err.Error())
+			return
+		}
+	}
+	s.renderSettings(w, r, map[string]interface{}{"OptionsMessage": "Request options saved.", "OptionsSuccess": true})
+}
+
 func (s *Server) renderSettingsWithMessage(w http.ResponseWriter, r *http.Request, message string, success bool) {
 	s.renderSettings(w, r, map[string]interface{}{
 		"InboxMessage": message,
@@ -193,6 +307,8 @@ func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra ma
 		"InboxForm":   inboxFormView(cfg),
 		"BrokerCount": len(s.brokers().Brokers),
 		"OwnBrokers":  ownBrokerCount(),
+		"Templates":   requestTemplates,
+		"Regions":     regionChoices(cfg),
 	}
 	for k, v := range extra {
 		data[k] = v

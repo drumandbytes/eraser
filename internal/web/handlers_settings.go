@@ -226,7 +226,7 @@ func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if custom != "" {
-		if err := checkCustomTemplate(custom); err != nil {
+		if err := emaTemplate.CheckCustom(custom); err != nil {
 			fail("Custom template: " + err.Error())
 			return
 		}
@@ -280,10 +280,7 @@ func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.config.Store(&newCfg)
-	if err := s.tmplEngine.SetCustom(custom); err != nil {
-		fail("Saved, but loading the custom template failed: " + err.Error())
-		return
-	}
+	_ = s.tmplEngine.SetCustom(custom) // already validated by CheckCustom
 	if list != cfg.Options.BrokerList {
 		if err := s.reloadBrokers(); err != nil {
 			fail("Saved, but reloading the broker list failed: " + err.Error())
@@ -291,20 +288,6 @@ func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.renderSettings(w, r, map[string]interface{}{"OptionsMessage": "Request options saved.", "OptionsSuccess": true})
-}
-
-// checkCustomTemplate parses body and renders it with sample data, so a bad
-// field name fails here rather than at send time.
-func checkCustomTemplate(body string) error {
-	e, err := emaTemplate.NewEngine()
-	if err != nil {
-		return err
-	}
-	if err := e.SetCustom(body); err != nil {
-		return err
-	}
-	_, err = e.Render(emaTemplate.CustomName, config.Profile{FirstName: "Sample", LastName: "Person", Email: "sample@example.org"}, broker.Broker{Name: "Sample Broker"})
-	return err
 }
 
 func (s *Server) renderSettingsWithMessage(w http.ResponseWriter, r *http.Request, message string, success bool) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"text/template"
@@ -105,6 +106,16 @@ func ParseCustom(body string) (*template.Template, string, error) {
 		return nil, "", fmt.Errorf("invalid template: %w", err)
 	}
 	return tmpl, subject, nil
+}
+
+// CheckCustom reports whether body parses and renders (so a bad field name
+// fails here, not at send time).
+func CheckCustom(body string) error {
+	tmpl, _, err := ParseCustom(body)
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(io.Discard, EmailData{})
 }
 
 // SetCustom installs (or, with an empty body, removes) the custom template.

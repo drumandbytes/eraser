@@ -210,3 +210,22 @@ func TestHandleSettingsOptionsNoConfig(t *testing.T) {
 		t.Error("saved without a config")
 	}
 }
+
+func TestHandleSettingsOptionsBadFormAndBrokerReloadFailure(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+
+	req := httptest.NewRequest(http.MethodPost, "/settings/options?%zz", strings.NewReader(""))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	s.handleSettingsOptions(w, req)
+	if !strings.Contains(w.Body.String(), "Failed to parse form") {
+		t.Error("bad form not reported")
+	}
+
+	s.BrokerOverride = filepath.Join(t.TempDir(), "missing.yaml")
+	w = postOptions(t, s, validOptions()) // switches to the verified list
+	if !strings.Contains(w.Body.String(), "reloading the broker list failed") {
+		t.Error("reload failure not reported")
+	}
+}

@@ -55,3 +55,14 @@ func TestUseConfigAndRenderErrors(t *testing.T) {
 		t.Error("syntax error accepted")
 	}
 }
+
+func TestCheckCustom(t *testing.T) {
+	if err := CheckCustom("Hi {{.FullName}}"); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []string{"", "Hi {{.Nope}}", "{{.Unclosed"} {
+		if err := CheckCustom(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+}

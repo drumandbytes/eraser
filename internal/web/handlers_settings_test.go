@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -174,5 +175,38 @@ func TestHandleSettingsOptionsCustomTemplate(t *testing.T) {
 	}
 	if mail.Subject != "Please erase me" || !strings.Contains(mail.Body, "Dear "+b.Name+",") {
 		t.Errorf("unexpected render: %q / %q", mail.Subject, mail.Body)
+	}
+}
+
+func TestHandleSettingsOptionsFullListAndSaveFailure(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
+	form := validOptions()
+	postOptions(t, s, form) // verified
+	form.Set("broker_list", "full")
+	postOptions(t, s, form)
+	if got := s.getConfig().Options.BrokerList; got != "" {
+		t.Errorf("full list stored as %q, want empty", got)
+	}
+
+	// A config path under a regular file can't be written.
+	blocker := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(blocker, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	s.configPath = filepath.Join(blocker, "config.yaml")
+	form.Set("rate_limit_ms", "42")
+	w := postOptions(t, s, form)
+	if !strings.Contains(w.Body.String(), "Failed to save configuration") {
+		t.Error("save failure not reported")
+	}
+}
+
+func TestHandleSettingsOptionsNoConfig(t *testing.T) {
+	s := newTestServer(t, testConfig())
+	s.config.Store(nil)
+	w := postOptions(t, s, validOptions())
+	if strings.Contains(w.Body.String(), "Request options saved.") {
+		t.Error("saved without a config")
 	}
 }

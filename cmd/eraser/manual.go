@@ -11,8 +11,8 @@ import (
 )
 
 // selectBrokers returns the brokers named in args (unknown IDs error), else all
-// matching the filters. Brokers without an email are kept; callers decide.
-func selectBrokers(db *broker.BrokerDatabase, args, regions, categories []string) ([]broker.Broker, error) {
+// matching the filters and in scope for country. Brokers without an email are kept; callers decide.
+func selectBrokers(db *broker.BrokerDatabase, args, regions, categories []string, country string) ([]broker.Broker, error) {
 	if len(args) > 0 {
 		out := make([]broker.Broker, 0, len(args))
 		for _, id := range args {
@@ -25,7 +25,7 @@ func selectBrokers(db *broker.BrokerDatabase, args, regions, categories []string
 		return out, nil
 	}
 
-	return db.Select(nil, regions, categories, nil, nil), nil
+	return broker.ForCountry(db.Select(nil, regions, categories, nil, nil), country), nil
 }
 
 // formatEML wraps a rendered email as an RFC-822 message that a mail client

@@ -61,7 +61,7 @@ func runMarkSent(args, regions, categories []string, dryRun bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
-	brokers, err := selectBrokers(brokerDB, args, regions, categories)
+	brokers, err := selectBrokers(brokerDB, args, regions, categories, activeProfile.Country)
 	if err != nil {
 		return err
 	}

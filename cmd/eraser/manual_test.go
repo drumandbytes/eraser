@@ -20,35 +20,48 @@ func manualBrokerDB() *broker.BrokerDatabase {
 	}}
 }
 
+func TestSelectBrokersCountryScope(t *testing.T) {
+	db := manualBrokerDB()
+	db.Brokers[1].Countries = []string{"DE"}
+	got, _ := selectBrokers(db, nil, nil, nil, "France")
+	if len(got) != 2 {
+		t.Fatalf("France should skip the DE-only broker, got %d", len(got))
+	}
+	got, _ = selectBrokers(db, nil, nil, nil, "Germany")
+	if len(got) != 3 {
+		t.Fatalf("Germany should see all 3, got %d", len(got))
+	}
+}
+
 func TestSelectBrokers(t *testing.T) {
 	db := manualBrokerDB()
 
-	got, err := selectBrokers(db, []string{"acme", "globex"}, nil, nil)
+	got, err := selectBrokers(db, []string{"acme", "globex"}, nil, nil, "")
 	if err != nil || len(got) != 2 {
 		t.Fatalf("by id: %v, %d", err, len(got))
 	}
-	if _, err := selectBrokers(db, []string{"nope"}, nil, nil); err == nil {
+	if _, err := selectBrokers(db, []string{"nope"}, nil, nil, ""); err == nil {
 		t.Error("unknown id should error")
 	}
 
-	got, err = selectBrokers(db, nil, []string{"eu"}, nil)
+	got, err = selectBrokers(db, nil, []string{"eu"}, nil, "")
 	if err != nil || len(got) != 1 || got[0].ID != "globex" {
 		t.Fatalf("region filter: %v, %+v", err, got)
 	}
-	got, _ = selectBrokers(db, nil, nil, []string{"marketing"})
+	got, _ = selectBrokers(db, nil, nil, []string{"marketing"}, "")
 	if len(got) != 2 {
 		t.Fatalf("category filter got %d, want 2", len(got))
 	}
-	got, _ = selectBrokers(db, nil, nil, nil)
+	got, _ = selectBrokers(db, nil, nil, nil, "")
 	if len(got) != 3 {
 		t.Fatalf("no filter got %d, want all 3", len(got))
 	}
 	// several values OR together within a flag, AND across flags; case-insensitive
-	got, _ = selectBrokers(db, nil, []string{"EU", "us"}, []string{"people-search", "marketing"})
+	got, _ = selectBrokers(db, nil, []string{"EU", "us"}, []string{"people-search", "marketing"}, "")
 	if len(got) != 3 {
 		t.Fatalf("multi-value filter got %d, want 3", len(got))
 	}
-	got, _ = selectBrokers(db, nil, []string{"us"}, []string{"marketing", "people-search"})
+	got, _ = selectBrokers(db, nil, []string{"us"}, []string{"marketing", "people-search"}, "")
 	if len(got) != 2 {
 		t.Fatalf("region AND multi-category got %d, want 2", len(got))
 	}

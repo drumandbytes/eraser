@@ -88,6 +88,19 @@ func TestBrokersPageManualMode(t *testing.T) {
 	}
 }
 
+func TestBrokerEmailPageHiddenOutsideCountryScope(t *testing.T) {
+	s := manualTestServer(t)
+	s.brokers().FindByID("acme").Countries = []string{"DE"}
+	s.getConfig().Profile.Country = "France"
+
+	req := withURLParam(httptest.NewRequest(http.MethodGet, "/brokers/acme/email", nil), "brokerID", "acme")
+	w := httptest.NewRecorder()
+	s.handleBrokerEmail(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("out-of-scope broker email page: want 404, got %d", w.Code)
+	}
+}
+
 func TestBrokerEmailPageAndMarkSent(t *testing.T) {
 	s := manualTestServer(t)
 

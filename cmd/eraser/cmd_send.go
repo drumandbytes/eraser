@@ -150,7 +150,10 @@ func runSend() error {
 	}
 	excluded := append(append([]string{}, cfg.Options.ExcludedBrokers...), excludedIDs...)
 	brokers := brokerDB.Select(brokerIDs, selectedRegions, categories, excluded, cfg.Options.ExcludedCategories)
-	brokers = broker.ForCountry(brokers, activeProfile.Country)
+	if inScope := broker.ForCountry(brokers, activeProfile.Country); len(inScope) < len(brokers) {
+		fmt.Printf("Skipping %d broker(s) that only handle other countries than %q.\n", len(brokers)-len(inScope), activeProfile.Country)
+		brokers = inScope
+	}
 	if len(brokers) == 0 {
 		fmt.Println("No brokers to process.")
 		return nil

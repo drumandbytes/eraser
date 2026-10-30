@@ -24,7 +24,7 @@ func (s *Server) configuredTemplate() string {
 func (s *Server) handleBrokerEmail(w http.ResponseWriter, r *http.Request) {
 	brokerID := chi.URLParam(r, "brokerID")
 	b := s.brokers().FindByID(brokerID)
-	if b == nil {
+	if b == nil || !b.AppliesTo(s.activeProfile(r).Country) {
 		http.NotFound(w, r)
 		return
 	}

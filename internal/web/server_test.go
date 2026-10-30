@@ -162,6 +162,23 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 	}
 }
 
+// A broker scoped to other countries is hidden for a profile outside them.
+func TestGetBrokersWithStatusRespectsCountries(t *testing.T) {
+	cfg := testConfig("default")
+	cfg.Profiles[0].Profile.Country = "France"
+	s := newTestServer(t, cfg)
+	s.brokers().Brokers = []broker.Broker{
+		{ID: "de-only", Name: "DE Only", Region: "eu", Countries: []string{"DE"}},
+		{ID: "anywhere", Name: "Anywhere", Region: "eu"},
+	}
+
+	got := s.getBrokersWithStatus("default", "", "", "", "", nil, nil, false, false)
+
+	if len(got) != 1 || got[0].ID != "anywhere" {
+		t.Errorf("expected only anywhere for a French profile, got %+v", got)
+	}
+}
+
 // "Show excluded" returns excluded brokers flagged Excluded.
 func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 	cfg := testConfig()

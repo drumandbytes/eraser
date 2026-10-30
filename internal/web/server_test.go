@@ -165,7 +165,7 @@ func TestGetBrokersWithStatusRespectsExclusions(t *testing.T) {
 // A broker scoped to other countries is hidden for a profile outside them.
 func TestGetBrokersWithStatusRespectsCountries(t *testing.T) {
 	cfg := testConfig("default")
-	cfg.Profiles[0].Profile.Country = "France"
+	cfg.Profiles[0].Country = "France"
 	s := newTestServer(t, cfg)
 	s.brokers().Brokers = []broker.Broker{
 		{ID: "de-only", Name: "DE Only", Region: "eu", Countries: []string{"DE"}},

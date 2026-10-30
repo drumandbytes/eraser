@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/drumandbytes/eraser/compare/v1.7.0...v1.7.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **brokers:** remove AZ Direct at their request (German-only address data) ([#227](https://github.com/drumandbytes/eraser/issues/227)) ([c143e50](https://github.com/drumandbytes/eraser/commit/c143e50887933282147cb62eaea91b063218d6a7))
+
 ## [1.7.0](https://github.com/drumandbytes/eraser/compare/v1.6.2...v1.7.0) (2026-10-28)
 
 

@@ -18,7 +18,6 @@ This fork of [eraser](https://github.com/digisamroc/eraser) is set up for an EU/
 - `crif` (CRIF, Italy - pan-EU credit/business-information bureau)
 - `dun-bradstreet-eu` (Dun & Bradstreet EU, incl. former Bisnode entities)
 - `deutsche-post-direkt` (Deutsche Post Direkt, Germany - address/geo-marketing data)
-- `az-direct` (AZ Direct, Germany/Austria - Bertelsmann address broker; see its note re: a noyb complaint)
 - `adform` (Adform, Denmark - ad-tech DSP/DMP)
 - `criteo` (Criteo, France - retargeting ad-tech)
 - `rtb-house` (RTB House, Poland - programmatic ad-tech)

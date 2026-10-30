@@ -311,8 +311,11 @@ The broker database is at `data/brokers.yaml` and is compiled into the binary, s
   website: https://example.com
   opt_out_url: https://example.com/optout
   region: us  # us, eu, or global
+  countries: [DE]  # optional: only people connected to these countries (ISO codes); omit for everyone
   category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, device-id-only, or requires-id
 ```
+
+`countries` is for brokers that only hold one market's data (a German credit bureau, a Mexican one) and ask not to be sent requests from elsewhere. Eraser skips them for profiles whose `country` is outside the list; an empty or unrecognised country never hides anything. Name a broker with `send --broker <id>` to send regardless, e.g. when you have a past address in that country.
 
 Or use the interactive command:
 

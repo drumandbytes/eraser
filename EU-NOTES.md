@@ -35,6 +35,10 @@ request directly. `genius-sports` is `region: global`, so it is already reachabl
 the EU region filter. `seawave-media` was removed after its address hard-bounced and no website
 or request channel could be verified.
 
+## Country-scoped brokers
+
+A handful of entries carry `countries:` (for example `schufa`: `[DE]`, `regis24`: `[DE, AT]`, `192-com`: `[GB]`, plus the Mexican, Colombian, Argentine, New Zealand and Kenyan credit bureaus). They only hold one market's data, and sending them requests from elsewhere produces no-match replies and wasted work on their side. Eraser skips them for profiles whose `country` is outside the list. Most US brokers are deliberately *not* scoped: they hold EU residents' data too. If you lived in a scoped country before, name the broker with `send --broker <id>`.
+
 ## What's NOT in brokers.yaml
 
 Other EU/UK adtech, credit-reporting, B2B-intelligence, and Data Governance Act brokers exist that do **not** take a plain removal email — they require submitting a GDPR Article 15/17 request through their own web form or DSR portal (often a Termly/OneTrust/saymine.io-hosted page), or are cookie-identifier-based deletions that don't apply if you're not carrying their tracking cookies (e.g. browsing with Brave's strict cookie blocking). Bulk-emailing those wouldn't do anything, and auto-filling arbitrary DSR portals reliably isn't safe to automate. Track those manually outside this repo — a spreadsheet works fine — rather than committing a personal review-status file here.

@@ -235,11 +235,11 @@ func (s *Service) status(_ context.Context, _ emptyInput) (map[string]any, error
 }
 
 func (s *Service) listBrokers(_ context.Context, in listInput) (map[string]any, error) {
-	cfg, _, db, err := s.load()
+	cfg, p, db, err := s.load()
 	if err != nil {
 		return nil, err
 	}
-	bs := db.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories)
+	bs := broker.ForCountry(db.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories), p.Country)
 	a, b := window(in, len(bs))
 	return map[string]any{"brokers": bs[a:b], "total": len(bs), "next_offset": b}, nil
 }

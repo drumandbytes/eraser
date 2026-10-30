@@ -33,6 +33,12 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !br.AppliesTo(s.activeProfile(r).Country) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`<span class="text-error">This broker only handles other countries</span>`))
+		return
+	}
+
 	cfg := s.getConfig()
 	if cfg == nil {
 		w.WriteHeader(http.StatusBadRequest)

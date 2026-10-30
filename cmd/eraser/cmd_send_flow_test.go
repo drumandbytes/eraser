@@ -58,6 +58,28 @@ func TestSendDryRunAndReal(t *testing.T) {
 	mustContain(t, out, "Complete: 1 sent")
 }
 
+func TestSendSkipsBrokersOutsideCountryScope(t *testing.T) {
+	rl := smtptest.Start(t)
+	e := newCLIEnv(t, relayConfig(rl, ""))
+	raw, err := os.ReadFile(e.brokersPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scoped := strings.Replace(string(raw), "    region: eu\n", "    region: eu\n    countries: [DE]\n", 1)
+	if err := os.WriteFile(e.brokersPath, []byte(scoped), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := e.run(t, "", "send", "--dry-run")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustContain(t, out, `Skipping 1 broker(s) that only handle other countries than "Latvia"`)
+
+	out, _ = e.run(t, "", "send", "--dry-run", "--broker", "acme")
+	mustContain(t, out, "No brokers to process.")
+}
+
 func TestSendFiltersAndRefusals(t *testing.T) {
 	rl := smtptest.Start(t)
 	e := newCLIEnv(t, relayConfig(rl, ""))

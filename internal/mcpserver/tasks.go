@@ -73,7 +73,7 @@ func (s *Service) tasks(p config.NamedProfile, db *broker.BrokerDatabase) ([]Tas
 		out = append(out, t)
 	}
 	for _, b := range db.Brokers {
-		if b.Email != "" || b.OptOutURL == "" {
+		if b.Email != "" || b.OptOutURL == "" || !b.AppliesTo(p.Country) {
 			continue
 		}
 		t := Task{ID: "broker:" + b.ID, BrokerID: b.ID, BrokerName: b.Name, Kind: "form", URL: b.OptOutURL, Status: "pending", Notes: b.Notes}
@@ -84,9 +84,9 @@ func (s *Service) tasks(p config.NamedProfile, db *broker.BrokerDatabase) ([]Tas
 	return out, nil
 }
 
-func eligible(cfg *config.Config, db *broker.BrokerDatabase, id string) bool {
+func eligible(cfg *config.Config, db *broker.BrokerDatabase, id, country string) bool {
 	for _, b := range db.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories) {
-		if b.ID == id {
+		if b.ID == id && b.AppliesTo(country) {
 			return true
 		}
 	}
@@ -104,7 +104,7 @@ func (s *Service) listTasks(_ context.Context, in listInput) (map[string]any, er
 	}
 	filtered := []Task{}
 	for _, t := range all {
-		if eligible(cfg, db, t.BrokerID) {
+		if eligible(cfg, db, t.BrokerID, p.Country) {
 			filtered = append(filtered, t)
 		}
 	}
@@ -119,7 +119,7 @@ func (s *Service) resolveTask(p config.NamedProfile, db *broker.BrokerDatabase, 
 	}
 	if kind == "broker" {
 		b := db.FindByID(value)
-		if b == nil || b.OptOutURL == "" {
+		if b == nil || b.OptOutURL == "" || !b.AppliesTo(p.Country) {
 			return Task{}, fmt.Errorf("broker form not found")
 		}
 		return Task{ID: id, BrokerID: b.ID, BrokerName: b.Name, Kind: "form", URL: b.OptOutURL, Status: "pending", Notes: b.Notes}, nil

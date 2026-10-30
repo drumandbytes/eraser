@@ -96,6 +96,10 @@ func TestSendOneRefusals(t *testing.T) {
 			c.Email = config.EmailConfig{}
 			s.config.Store(&c)
 		}, http.StatusBadRequest, "Email not configured"},
+		{"outside broker countries", "/api/send/spokeo", func(s *Server) {
+			s.brokers().FindByID("spokeo").Countries = []string{"DE"}
+			s.getConfig().Profiles[0].Country = "France"
+		}, http.StatusNotFound, "only handles other countries"},
 		{"dry run", "/api/send/spokeo", func(s *Server) {
 			c := *s.getConfig()
 			c.Options.DryRun = true

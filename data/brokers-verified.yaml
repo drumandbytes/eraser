@@ -362,13 +362,6 @@ brokers:
       region: eu
       category: marketing
       notes: Added 2026-09-12 from their data-protection contact page - German address/geo-marketing data broker (Deutsche Post subsidiary).
-    - id: az-direct
-      name: AZ Direct GmbH
-      email: datenschutz@az-direct.com
-      website: https://www.az-direct.com/
-      region: eu
-      category: marketing
-      notes: Added 2026-09-12 from their data-protection contact page - German/Austrian address broker (Bertelsmann group). A 2026 noyb complaint alleges AZ Direct has resisted providing full Art. 15 data-origin/recipient information, calling it "too burdensome" - a request may take persistence.
     - id: adform
       name: Adform A/S
       email: dpo@adform.com

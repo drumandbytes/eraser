@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/data"
+	"github.com/drumandbytes/eraser/internal/dpa"
 	"gopkg.in/yaml.v3"
 )
 
@@ -72,6 +73,10 @@ type Broker struct {
 	Region    string `yaml:"region"`             // "us", "eu", "global"
 	Category  string `yaml:"category,omitempty"` // "people-search", "marketing", "background-check", etc.
 	Notes     string `yaml:"notes,omitempty"`
+	// Countries limits a broker to people connected to these countries (ISO 3166-1
+	// alpha-2, e.g. ["DE"]) - for brokers that only hold data on one market and ask
+	// not to be sent requests from elsewhere. Empty means everyone.
+	Countries []string `yaml:"countries,omitempty"`
 
 	// Optional research, shown on the site's guide page. Only facts the broker's own pages
 	// state; Sources are those pages and Researched the date they were read (YYYY-MM-DD).
@@ -152,6 +157,11 @@ func (b Broker) Problems() []string {
 	}
 	if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
 		problems = append(problems, fmt.Sprintf("unknown region %q", b.Region))
+	}
+	for _, c := range b.Countries {
+		if len(strings.TrimSpace(c)) != 2 || dpa.ForCountry(c) == nil {
+			problems = append(problems, fmt.Sprintf("countries entry is not a known ISO 3166-1 alpha-2 code: %q", c))
+		}
 	}
 	if b.Email != "" && !looseEmailRe.MatchString(strings.TrimSpace(b.Email)) {
 		problems = append(problems, fmt.Sprintf("implausible email %q", b.Email))
@@ -240,6 +250,37 @@ func toSet(items []string) map[string]bool {
 		}
 	}
 	return m
+}
+
+// AppliesTo reports whether a request from someone in country (a profile's
+// free-text country: name or ISO code) is in scope for the broker. Brokers
+// without a countries list apply to everyone, and so does an empty or
+// unrecognised country - an unset profile never hides brokers.
+func (b Broker) AppliesTo(country string) bool {
+	if len(b.Countries) == 0 {
+		return true
+	}
+	a := dpa.ForCountry(country)
+	if a == nil {
+		return true
+	}
+	for _, c := range b.Countries {
+		if strings.EqualFold(strings.TrimSpace(c), a.Code) {
+			return true
+		}
+	}
+	return false
+}
+
+// ForCountry drops brokers whose countries list excludes the given country.
+func ForCountry(brokers []Broker, country string) []Broker {
+	out := make([]Broker, 0, len(brokers))
+	for _, b := range brokers {
+		if b.AppliesTo(country) {
+			out = append(out, b)
+		}
+	}
+	return out
 }
 
 // Filter returns brokers matching the given regions (empty means "all"),

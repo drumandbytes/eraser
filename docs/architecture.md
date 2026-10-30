@@ -118,6 +118,7 @@ Each broker in `data/brokers.yaml` (top-level key `brokers:`) has:
 - `opt_out_url`: Direct opt-out link (optional)
 - `region`: `us`, `eu`, or `global`
 - `category`: `people-search`, `marketing`, `background-check`, `financial-b2b`, `data-intermediary`, `device-id-only` (tracks by cookie/device ID, not name/email - can't be reached via this tool's standard profile-based request), or `requires-id` (won't act on a request without a government-issued ID document or similar heavyweight identity verification - this tool won't supply one on your behalf)
+- `countries`: Optional list of ISO 3166-1 alpha-2 codes (e.g. `[DE]`). When set, `send`, the web UI and the MCP server only include the broker for profiles whose `country` is one of them. An empty or unrecognised profile country never hides a broker. For brokers that only hold one market's data
 - `notes`: Free-text, optional - used to record why an entry looks unusual (e.g. "use the form, not email")
 
 **Brokers with `email: ""`** can't be reached by `send` at all - they only take requests through a web form/DSR portal, or the address bounced and was cleared by `cleanup-bounces`/`mark-bounced`. Use `eraser list-brokers --missing-email` to see them; they need manual follow-up outside the tool.

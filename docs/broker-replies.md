@@ -29,6 +29,7 @@ Classifications match `ResponseType` in `internal/inbox/classifier.go`.
 | "No record / no match for you" from a genuine broker | `no_data_held` (No data held) | none - they're still a real broker, a future re-scrape may list you again |
 | "We are not a data broker" / "B2B only, not in scope" | `rejected` | remove the entry from `data/brokers.yaml`, then check the count floor (below) |
 | "We won't process this by email - use our web form / portal" | `form_required` | set `email: ""`, set/refresh `opt_out_url` to the form they name, add a dated `notes:` line |
+| "We only hold data for country X; stop sending us requests from elsewhere" | - | set `countries: [XX]` (ISO code) and add a dated `notes:` line; remove the entry instead if they ask for removal |
 | Won't act without a government-ID document | - | set `category: requires-id`, add a dated `notes:` line (users exclude this category in bulk) |
 | Confirmation / identity link to click | `confirmation_required` | click it (or run `eraser confirm`) - no data change |
 | Bounce / dead address | `bounced` | `eraser mark-bounced <id>`, or set `email: ""` + dated note by hand. Never delete a real broker over a bounce - `MarkEmailUnreachable` in `internal/broker/broker.go` exists so the record survives for a later working address |

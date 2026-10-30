@@ -128,3 +128,37 @@ func TestMarkEmailUnreachableUnknownEmailReturnsNil(t *testing.T) {
 		t.Errorf("MarkEmailUnreachable(unknown email) = %+v, want nil", got)
 	}
 }
+
+func TestAppliesTo(t *testing.T) {
+	de := Broker{ID: "de-only", Countries: []string{"DE"}}
+	any := Broker{ID: "anywhere"}
+	for _, tc := range []struct {
+		b       Broker
+		country string
+		want    bool
+	}{
+		{de, "Germany", true},
+		{de, "de", true},
+		{de, "France", false},
+		{de, "United States", false},
+		{de, "", true},
+		{de, "Atlantis", true},
+		{any, "France", true},
+	} {
+		if got := tc.b.AppliesTo(tc.country); got != tc.want {
+			t.Errorf("%s.AppliesTo(%q) = %v, want %v", tc.b.ID, tc.country, got, tc.want)
+		}
+	}
+	if got := ForCountry([]Broker{de, any}, "Latvia"); len(got) != 1 || got[0].ID != "anywhere" {
+		t.Errorf("ForCountry(Latvia) = %v", got)
+	}
+}
+
+func TestProblemsBadCountry(t *testing.T) {
+	if p := (Broker{Name: "x", Countries: []string{"DE"}}).Problems(); len(p) != 0 {
+		t.Errorf("valid countries flagged: %v", p)
+	}
+	if p := (Broker{Name: "x", Countries: []string{"Germany"}}).Problems(); len(p) != 1 {
+		t.Errorf("name instead of code not flagged: %v", p)
+	}
+}

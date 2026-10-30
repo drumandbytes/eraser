@@ -84,9 +84,9 @@ func (s *Service) tasks(p config.NamedProfile, db *broker.BrokerDatabase) ([]Tas
 	return out, nil
 }
 
-func eligible(cfg *config.Config, db *broker.BrokerDatabase, id string) bool {
+func eligible(cfg *config.Config, db *broker.BrokerDatabase, id, country string) bool {
 	for _, b := range db.Filter(cfg.Options.Regions, cfg.Options.ExcludedBrokers, cfg.Options.ExcludedCategories) {
-		if b.ID == id {
+		if b.ID == id && b.AppliesTo(country) {
 			return true
 		}
 	}
@@ -104,7 +104,7 @@ func (s *Service) listTasks(_ context.Context, in listInput) (map[string]any, er
 	}
 	filtered := []Task{}
 	for _, t := range all {
-		if eligible(cfg, db, t.BrokerID) {
+		if eligible(cfg, db, t.BrokerID, p.Country) {
 			filtered = append(filtered, t)
 		}
 	}

@@ -47,7 +47,7 @@ func (s *Service) prepare(_ context.Context, in prepareInput) (map[string]any, e
 		if err != nil {
 			return nil, err
 		}
-		if !eligible(cfg, db, t.BrokerID) {
+		if !eligible(cfg, db, t.BrokerID, p.Country) {
 			return nil, fmt.Errorf("broker %s is excluded by current settings", t.BrokerID)
 		}
 		if t.Status != "pending" || t.Kind == "review" || t.URL == "" {
@@ -69,7 +69,7 @@ func (s *Service) prepare(_ context.Context, in prepareInput) (map[string]any, e
 	drafts := []map[string]any{}
 	for _, id := range in.BrokerIDs {
 		b := db.FindByID(id)
-		if b == nil || !eligible(cfg, db, id) {
+		if b == nil || !eligible(cfg, db, id, p.Country) {
 			return nil, fmt.Errorf("unknown or excluded broker %s", id)
 		}
 		if b.Email == "" {

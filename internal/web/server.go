@@ -602,7 +602,11 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 
 	// same exclusions as broker.Filter; the web UI used to skip them
 	var excludedIDs, excludedNames, excludedCats, configuredRegions map[string]bool
+	var profileCountry string
 	if cfg := s.getConfig(); cfg != nil {
+		if p, err := cfg.GetProfile(profileID); err == nil {
+			profileCountry = p.Country
+		}
 		excludedIDs = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
 		excludedNames = make(map[string]bool, len(cfg.Options.ExcludedBrokers))
 		for _, e := range cfg.Options.ExcludedBrokers {
@@ -650,6 +654,10 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 
 		// Category filter
 		if category != "" && strings.ToLower(b.Category) != category {
+			continue
+		}
+
+		if !b.AppliesTo(profileCountry) {
 			continue
 		}
 

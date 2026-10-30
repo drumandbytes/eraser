@@ -286,4 +286,11 @@ func TestCountryHiddenCountsOutOfScopeBrokers(t *testing.T) {
 	if n, _ := s.countryHidden("default"); n != 0 {
 		t.Errorf("unset country should hide nothing, got %d", n)
 	}
+	if n, _ := s.countryHidden("nobody"); n != 0 {
+		t.Errorf("unknown profile should hide nothing, got %d", n)
+	}
+	s.config.Store(nil)
+	if n, _ := s.countryHidden("default"); n != 0 {
+		t.Errorf("no config should hide nothing, got %d", n)
+	}
 }

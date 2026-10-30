@@ -5,6 +5,6 @@
   "description": "axe-core accessibility scan of the website and the web UI",
   "dependencies": {
     "axe-core": "^4.14.0",
-    "puppeteer-core": "^25.14.0"
+    "puppeteer-core": "^25.16.0"
   }
 }

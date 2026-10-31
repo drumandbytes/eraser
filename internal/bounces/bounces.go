@@ -10,6 +10,7 @@ import (
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/inbox"
 )
 
@@ -126,4 +127,19 @@ func Clear(listPath string, dead []Item) ([]Item, error) {
 		}
 	}
 	return cleared, nil
+}
+
+// EverSent is the set of broker IDs any profile has successfully emailed.
+func EverSent(cfg *config.Config, store *history.Store) map[string]bool {
+	everSent := map[string]bool{}
+	for _, p := range cfg.GetProfiles() {
+		times, err := store.LastSuccessfulSendTimes(p.ID)
+		if err != nil {
+			continue // don't fail the whole scan over one profile's history
+		}
+		for id := range times {
+			everSent[id] = true
+		}
+	}
+	return everSent
 }

@@ -235,17 +235,7 @@ func runMarkBounced(brokerIDs []string, note string) error {
 // clear a real contact. Limiting to brokers we've actually emailed shrinks
 // that to the user's own contacts.
 func everSentBrokerIDs(cfg *config.Config, store *history.Store) map[string]bool {
-	everSent := map[string]bool{}
-	for _, p := range cfg.GetProfiles() {
-		times, err := store.LastSuccessfulSendTimes(p.ID)
-		if err != nil {
-			continue // don't fail the whole scan over one profile's history
-		}
-		for id := range times {
-			everSent[id] = true
-		}
-	}
-	return everSent
+	return bounces.EverSent(cfg, store)
 }
 
 // truncateString truncates a string to the specified length

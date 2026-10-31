@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -57,4 +58,42 @@ func TestLoadKeepsUnresolvableCountry(t *testing.T) {
 	if _, err := os.Stat(p + ".1x.bak"); err == nil {
 		t.Error("no migration happened, so no backup expected")
 	}
+}
+
+// A failed backup or rewrite must not lose the in-memory migration or block loading.
+func TestLoadCountryMigrationSurvivesWriteFailures(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs POSIX permissions and a non-root user")
+	}
+	body := "profiles:\n  - id: default\n    first_name: A\n    last_name: B\n    email: a@b.co\n    country: Germany\n"
+
+	t.Run("backup fails", func(t *testing.T) {
+		p := writeCfg(t, body)
+		dir := filepath.Dir(p)
+		if err := os.Chmod(dir, 0o500); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+		cfg, err := Load(p)
+		if err != nil || cfg.Profiles[0].Country != "DE" {
+			t.Fatalf("load = %v, %v", cfg, err)
+		}
+		if got, _ := os.ReadFile(p); string(got) != body {
+			t.Error("config must be left untouched when the backup can't be written")
+		}
+	})
+
+	t.Run("rewrite fails", func(t *testing.T) {
+		p := writeCfg(t, body)
+		if err := os.WriteFile(p+".1x.bak", []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(p, 0o400); err != nil {
+			t.Fatal(err)
+		}
+		cfg, err := Load(p)
+		if err != nil || cfg.Profiles[0].Country != "DE" {
+			t.Fatalf("load = %v, %v", cfg, err)
+		}
+	})
 }

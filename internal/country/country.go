@@ -26,6 +26,13 @@ var aliases = map[string]string{
 	"deutschland": "DE", "österreich": "AT", "españa": "ES", "italia": "IT",
 }
 
+// notCountries are x/text regions that aren't ISO 3166-1 countries: ISO's
+// exceptional reservations and the EU/UN groupings. They'd otherwise show up
+// as choices ("Eurozone", "Canary Islands") in the profile dropdown.
+var notCountries = map[string]bool{
+	"AC": true, "CP": true, "DG": true, "EA": true, "IC": true, "TA": true, "EZ": true, "UN": true,
+}
+
 var (
 	once    sync.Once
 	entries []Entry
@@ -40,7 +47,7 @@ func load() {
 				code := string([]rune{a, b})
 				r, err := language.ParseRegion(code)
 				// Canonicalize drops deprecated and alias codes (DD -> DE, UK -> GB).
-				if err != nil || !r.IsCountry() || r.String() != code || r.Canonicalize() != r {
+				if err != nil || !r.IsCountry() || r.String() != code || r.Canonicalize() != r || notCountries[code] {
 					continue
 				}
 				name := display.English.Regions().Name(r)

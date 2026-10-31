@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
@@ -83,19 +82,7 @@ func runConfirm(confirmURL, brokerID string, pending, validateDomain, dryRun boo
 	// Build list of broker domains for validation
 	var brokerDomains []string
 	for _, b := range brokerDB.Brokers {
-		if b.Website != "" {
-			domain := strings.TrimPrefix(b.Website, "https://")
-			domain = strings.TrimPrefix(domain, "http://")
-			domain = strings.TrimSuffix(domain, "/")
-			if idx := strings.Index(domain, "/"); idx != -1 {
-				domain = domain[:idx]
-			}
-			brokerDomains = append(brokerDomains, domain)
-
-			if strings.HasPrefix(domain, "www.") {
-				brokerDomains = append(brokerDomains, strings.TrimPrefix(domain, "www."))
-			}
-		}
+		brokerDomains = append(brokerDomains, b.Domains()...)
 	}
 
 	handler := browser.NewConfirmationHandler(brokerDomains)

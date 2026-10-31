@@ -687,7 +687,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 
 		brokerRegion := strings.ToLower(b.Region)
-		if len(configuredRegions) > 0 && !configuredRegions["global"] && !configuredRegions[brokerRegion] && brokerRegion != "global" {
+		if !b.InRegions(configuredRegions) {
 			continue
 		}
 		if region != "" && brokerRegion != region {

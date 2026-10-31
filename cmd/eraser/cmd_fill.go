@@ -103,19 +103,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 	// Build list of broker domains for validation (same logic as cmd_confirm.go)
 	var brokerDomains []string
 	for _, b := range brokerDB.Brokers {
-		if b.Website != "" {
-			domain := strings.TrimPrefix(b.Website, "https://")
-			domain = strings.TrimPrefix(domain, "http://")
-			domain = strings.TrimSuffix(domain, "/")
-			if idx := strings.Index(domain, "/"); idx != -1 {
-				domain = domain[:idx]
-			}
-			brokerDomains = append(brokerDomains, domain)
-
-			if strings.HasPrefix(domain, "www.") {
-				brokerDomains = append(brokerDomains, strings.TrimPrefix(domain, "www."))
-			}
-		}
+		brokerDomains = append(brokerDomains, b.Domains()...)
 	}
 
 	// --headless wins if you passed it explicitly; otherwise fall back to

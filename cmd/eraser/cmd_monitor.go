@@ -16,7 +16,6 @@ import (
 
 func monitorCmd() *cobra.Command {
 	var days int
-	var once bool
 	var watch bool
 
 	cmd := &cobra.Command{
@@ -32,20 +31,17 @@ This command will:
 
 Requires inbox configuration in config.yaml with IMAP settings.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMonitor(days, once, watch)
+			return runMonitor(days, watch)
 		},
 	}
 
 	cmd.Flags().IntVar(&days, "days", 7, "Number of days to look back for emails")
-	cmd.Flags().BoolVar(&once, "once", false, "Check inbox once and exit (don't watch for new emails)")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Continuously watch for new emails")
-	// one scan is already the default; kept so existing scripts don't break
-	_ = cmd.Flags().MarkDeprecated("once", "a single scan is the default; drop the flag")
 
 	return cmd
 }
 
-func runMonitor(days int, once bool, watch bool) error {
+func runMonitor(days int, watch bool) error {
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
@@ -93,7 +89,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		// writes to the shared SQLite history store (see the --watch note
 		// below).
 		for _, inboxCfg := range inboxes {
-			if err := scanInbox(ctx, inboxCfg, brokerDB, store, days, once, watch); err != nil {
+			if err := scanInbox(ctx, inboxCfg, brokerDB, store, days, watch); err != nil {
 				return err
 			}
 		}
@@ -108,7 +104,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		wg.Add(1)
 		go func(i int, inboxCfg config.InboxConfig) {
 			defer wg.Done()
-			errs[i] = scanInbox(ctx, inboxCfg, brokerDB, store, days, once, watch)
+			errs[i] = scanInbox(ctx, inboxCfg, brokerDB, store, days, watch)
 		}(i, inboxCfg)
 	}
 	wg.Wait()
@@ -123,7 +119,7 @@ func runMonitor(days int, once bool, watch bool) error {
 
 // scanInbox classifies and stores one inbox's broker replies, and with --watch
 // keeps watching until ctx ends.
-func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, once bool, watch bool) error {
+func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, watch bool) error {
 	monitor := inbox.NewMonitor(inboxCfg, brokerDB.Brokers)
 
 	if err := monitor.Connect(ctx); err != nil {
@@ -159,7 +155,7 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 	fmt.Printf("  ❓ Unknown:          %d\n", summary.Unknown)
 	fmt.Printf("  👁️  Need review:      %d\n", summary.NeedReview)
 
-	if once || !watch {
+	if !watch {
 		return nil
 	}
 

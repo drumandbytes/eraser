@@ -110,7 +110,7 @@ func (s *Server) setBrokerExcluded(w http.ResponseWriter, r *http.Request, exclu
 	}
 	newCfg.Options.ExcludedBrokers = updated
 
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		http.Error(w, "Failed to save configuration: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

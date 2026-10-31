@@ -326,7 +326,7 @@ func ExtractBouncedRecipient(email *Email) string {
 	// Combine all text content
 	content := email.Body
 	if email.HTMLBody != "" {
-		content += " " + stripHTMLSimple(email.HTMLBody)
+		content += " " + PlainText(email.HTMLBody)
 	}
 
 	// Also check subject (sometimes contains the address)
@@ -362,13 +362,6 @@ func ExtractBouncedRecipient(email *Email) string {
 	}
 
 	return ""
-}
-
-// stripHTMLSimple removes HTML tags (simple version for bounce parsing).
-// Reuses htmlAnyTagRe (compiled once, in classifier.go) instead of
-// recompiling the same pattern on every call - this runs per bounce email.
-func stripHTMLSimple(html string) string {
-	return htmlAnyTagRe.ReplaceAllString(html, " ")
 }
 
 // GetPrimaryFormURL returns the most likely opt-out form URL using scoring

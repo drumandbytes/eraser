@@ -599,16 +599,6 @@ type BrokerWithStatus struct {
 	lastSentAt time.Time
 }
 
-func stringSet(items []string) map[string]bool {
-	set := make(map[string]bool, len(items))
-	for _, item := range items {
-		if value := strings.ToLower(strings.TrimSpace(item)); value != "" {
-			set[value] = true
-		}
-	}
-	return set
-}
-
 // countryHidden counts brokers the profile's country takes out of its list, for
 // the "N hidden" note on the brokers page. Zero when the country is unset.
 func (s *Server) countryHidden(profileID string) (n int, country string) {
@@ -658,14 +648,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		for _, c := range cfg.Options.ExcludedCategories {
 			excludedCats[strings.ToLower(strings.TrimSpace(c))] = true
 		}
-		configuredRegions = stringSet(cfg.Options.Regions)
+		configuredRegions = broker.Set(cfg.Options.Regions)
 	}
 
 	search = strings.ToLower(strings.TrimSpace(search))
 	category = strings.ToLower(strings.TrimSpace(category))
 	region = strings.ToLower(strings.TrimSpace(region))
 	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
-	includeSet, runExcludeSet := stringSet(includeIDs), stringSet(excludeIDs)
+	includeSet, runExcludeSet := broker.Set(includeIDs), broker.Set(excludeIDs)
 
 	manualMode := false
 	if cfg := s.getConfig(); cfg != nil {

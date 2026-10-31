@@ -25,12 +25,12 @@ const MinSaneBrokerCount = 200
 // deliberately a fraction of the size of the main list.
 const MinVerifiedBrokerCount = 20
 
-// knownRegions is the closed set of region values the rest of the code
-// branches on (see Filter). A typo like "usa" would silently drop a broker
-// from every region-filtered send.
 var countryCodeRe = regexp.MustCompile(`^[A-Z]{2}$`)
 
-var knownRegions = map[string]bool{"us": true, "eu": true, "global": true}
+// KnownRegions is the closed set of region values the rest of the code
+// branches on (see Filter). A typo like "usa" would silently drop a broker
+// from every region-filtered send.
+var KnownRegions = []string{"us", "eu", "global"}
 
 // looseEmailRe is a deliberately permissive check - it only catches obvious
 // breakage (missing @, no dot in the domain, whitespace), not RFC compliance.
@@ -157,7 +157,7 @@ func (b Broker) Problems() []string {
 	if strings.TrimSpace(b.Name) == "" {
 		problems = append(problems, "missing name")
 	}
-	if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
+	if b.Region != "" && !slices.Contains(KnownRegions, strings.ToLower(strings.TrimSpace(b.Region))) {
 		problems = append(problems, fmt.Sprintf("unknown region %q", b.Region))
 	}
 	for _, c := range b.Countries {
@@ -244,7 +244,8 @@ func LoadList(overridePath, configPath, listName string) (*BrokerDatabase, error
 	return Load("")
 }
 
-func toSet(items []string) map[string]bool {
+// Set is the lower-cased, trimmed, non-empty items as a lookup set.
+func Set(items []string) map[string]bool {
 	m := make(map[string]bool, len(items))
 	for _, s := range items {
 		if key := strings.ToLower(strings.TrimSpace(s)); key != "" {
@@ -310,7 +311,7 @@ func ForCountry(brokers []Broker, profileCountry string) []Broker {
 // (case-insensitive) is in excludedCategories - e.g. "requires-id" to skip
 // brokers that demand a government ID document before acting on a request.
 func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCategories []string) []Broker {
-	regionSet := toSet(regions)
+	regionSet := Set(regions)
 	selected := db.Select(nil, nil, nil, excluded, excludedCategories)
 	result := selected[:0]
 	for _, b := range selected {
@@ -333,8 +334,8 @@ func (b Broker) InRegions(set map[string]bool) bool {
 }
 
 func (db *BrokerDatabase) Select(ids, regions, categories, excluded, excludedCategories []string) []Broker {
-	idSet, regionSet, categorySet := toSet(ids), toSet(regions), toSet(categories)
-	excludedSet, excludedCatSet := toSet(excluded), toSet(excludedCategories)
+	idSet, regionSet, categorySet := Set(ids), Set(regions), Set(categories)
+	excludedSet, excludedCatSet := Set(excluded), Set(excludedCategories)
 
 	var result []Broker
 	for _, b := range db.Brokers {
@@ -360,7 +361,7 @@ func (db *BrokerDatabase) Select(ids, regions, categories, excluded, excludedCat
 
 func (db *BrokerDatabase) UnknownIDs(ids []string) []string {
 	var unknown []string
-	for id := range toSet(ids) {
+	for id := range Set(ids) {
 		if db.FindByID(id) == nil {
 			unknown = append(unknown, id)
 		}

@@ -3,6 +3,7 @@ package inbox
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -55,6 +56,11 @@ func TestConnectErrors(t *testing.T) {
 	bad.Password = "wrong"
 	if err := NewMonitor(bad, nil).Connect(context.Background()); err == nil || !strings.Contains(err.Error(), "failed to login") {
 		t.Errorf("wrong password: %v", err)
+	}
+	locked := f.cfg
+	locked.Password = "enc:v2:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+	if err := NewMonitor(locked, nil).Connect(context.Background()); !errors.Is(err, config.ErrLocked) {
+		t.Errorf("passphrase-protected password with nobody to ask: %v", err)
 	}
 	nobody := f.cfg
 	nobody.Port = 1

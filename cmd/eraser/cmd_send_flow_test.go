@@ -76,7 +76,13 @@ func TestSendSkipsBrokersOutsideCountryScope(t *testing.T) {
 	}
 	mustContain(t, out, `Skipping 1 broker(s) that only handle other countries than "Latvia"`)
 
+	// Like the web list: hidden by default for a Latvian profile, shown with --all-countries.
 	out, _ = e.run(t, "", "list-brokers")
+	mustContain(t, out, "1 hidden: they only handle countries other than Latvia")
+	if strings.Contains(out, "Only for: DE") {
+		t.Errorf("scoped broker should be hidden by default: %s", out)
+	}
+	out, _ = e.run(t, "", "list-brokers", "--all-countries")
 	mustContain(t, out, "Only for: DE")
 
 	// Naming the broker explicitly bypasses the scope.

@@ -307,6 +307,7 @@ func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra ma
 		"OwnBrokers":  ownBrokerCount(),
 		"Templates":   requestTemplates,
 		"Regions":     regionChoices(cfg),
+		"Passphrase":  s.passphraseView(cfg),
 	}
 	for k, v := range extra {
 		data[k] = v

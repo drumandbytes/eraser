@@ -77,7 +77,12 @@ func (m *Monitor) Connect(ctx context.Context) error {
 
 	log.Printf("Connected, logging in as %s...", m.config.Email)
 
-	if err := c.Login(m.config.Email, m.config.Password); err != nil {
+	password, err := config.Reveal(m.config.Password)
+	if err != nil {
+		_ = c.Logout()
+		return err
+	}
+	if err := c.Login(m.config.Email, password); err != nil {
 		_ = c.Logout()
 		return fmt.Errorf("failed to login: %w", err)
 	}

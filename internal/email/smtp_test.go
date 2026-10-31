@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"errors"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -201,6 +202,15 @@ func TestSendRefusesPlaintextAuthWithoutSTARTTLS(t *testing.T) {
 	case <-auth:
 		t.Fatal("AUTH sent in plaintext")
 	default:
+	}
+}
+
+// A passphrase-protected password with nobody to ask fails before any network I/O.
+func TestSendReportsLockedPassword(t *testing.T) {
+	s := NewSMTPSender(config.SMTPConfig{Host: "127.0.0.1", Port: 465, Username: "jane", Password: "enc:v2:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="}, "jane@example.org")
+	res := s.Send(context.Background(), Message{To: "privacy@acme.example", From: "jane@example.org", Subject: "x", Body: "hi"})
+	if res.Success || !errors.Is(res.Error, config.ErrLocked) {
+		t.Fatalf("want ErrLocked, got success=%v err=%v", res.Success, res.Error)
 	}
 }
 

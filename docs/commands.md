@@ -16,6 +16,7 @@ go test ./...
 ./eraser status [--limit 50]
 ./eraser draft [<broker-id>...] [--region eu] [--category people-search] [-o ./out]  # render emails to send by hand
 ./eraser mark-sent <broker-id>... [--region eu] [--category ...] [--dry-run]         # record a hand-sent request
+./eraser passphrase set|clear       # optional extra gate on the stored mail passwords (see README, Security Notes)
 ./eraser send --manual                 # walk the list, mark each one as you send it yourself
 ./eraser add-broker
 ./eraser mark-bounced <broker-id>...   # correct the record when an email actually bounced

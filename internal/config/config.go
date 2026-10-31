@@ -39,11 +39,14 @@ type Config struct {
 	// brokers, mail account and options; history is kept per profile
 	// (profile_id). Takes precedence over Profile.
 	Profiles []NamedProfile `yaml:"profiles,omitempty"`
-	Email    EmailConfig    `yaml:"email"`
-	Options  Options        `yaml:"options"`
-	Inbox    InboxConfig    `yaml:"inbox,omitempty"`
-	Pipeline Pipeline       `yaml:"pipeline,omitempty"`
-	Schedule Schedule       `yaml:"schedule,omitempty"`
+	// PassphraseProtected: mail passwords are encrypted with a passphrase on
+	// top of the machine binding (see secret.go). Set with `eraser passphrase set`.
+	PassphraseProtected bool        `yaml:"passphrase_protected,omitempty"`
+	Email               EmailConfig `yaml:"email"`
+	Options             Options     `yaml:"options"`
+	Inbox               InboxConfig `yaml:"inbox,omitempty"`
+	Pipeline            Pipeline    `yaml:"pipeline,omitempty"`
+	Schedule            Schedule    `yaml:"schedule,omitempty"`
 }
 
 // Schedule is the in-app fallback for automated cycles when the OS scheduler
@@ -369,7 +372,26 @@ func Load(path string) (*Config, error) {
 		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
-	migrateFrom1x(path, data, &cfg)
+	plaintext := false
+	if err := cfg.secretFields(func(p *string) error {
+		if *p != "" && !isEncrypted(*p) {
+			plaintext = true
+			return nil
+		}
+		if strings.HasPrefix(*p, secretPrefixV2) {
+			return nil // decrypted by Reveal, when the passphrase is available
+		}
+		plain, err := decryptSecret(*p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: %v; re-enter it with `eraser init` or in Settings\n", err)
+			plain = ""
+		}
+		*p = plain
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	migrateFrom1x(path, data, &cfg, plaintext)
 	applyInboxDefaults(&cfg.Inbox)
 	for i := range cfg.Profiles {
 		if cfg.Profiles[i].Mail != nil && cfg.Profiles[i].Mail.Inbox != nil {
@@ -387,14 +409,49 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
+// maskPasswords blanks every non-empty password: value in a config document, so
+// the 1.x backup never keeps a password in plain text. A document without any
+// comes back byte for byte; one it can't parse yields nothing rather than risk
+// keeping a password.
+func maskPasswords(doc []byte) []byte {
+	var root yaml.Node
+	if err := yaml.Unmarshal(doc, &root); err != nil {
+		return nil
+	}
+	masked := 0
+	var walk func(n *yaml.Node)
+	walk = func(n *yaml.Node) {
+		if n.Kind == yaml.MappingNode {
+			for i := 0; i+1 < len(n.Content); i += 2 {
+				if v := n.Content[i+1]; n.Content[i].Value == "password" && v.Kind == yaml.ScalarNode && v.Value != "" {
+					v.Value, v.Tag = "", "!!str"
+					masked++
+				}
+			}
+		}
+		for _, c := range n.Content {
+			walk(c)
+		}
+	}
+	walk(&root)
+	if masked == 0 {
+		return doc
+	}
+	out, err := yaml.Marshal(&root)
+	if err != nil {
+		return nil
+	}
+	return out
+}
+
 // migrateFrom1x upgrades a 1.x config in memory and on disk: the pre-0.11
 // top-level profile: block becomes profiles: [{id: default}], and free-text
 // profile countries become ISO alpha-2 codes. Before the first rewrite the
 // original file is kept as <path>.1x.bak. A country that doesn't resolve is
 // left alone and warned about. email.provider needs no step: it is no longer
 // read and drops out on the next save.
-func migrateFrom1x(path string, orig []byte, cfg *Config) {
-	changed := false
+func migrateFrom1x(path string, orig []byte, cfg *Config, plaintextSecrets bool) {
+	changed := plaintextSecrets
 	var legacy struct {
 		Profile Profile `yaml:"profile"`
 	}
@@ -420,7 +477,12 @@ func migrateFrom1x(path string, orig []byte, cfg *Config) {
 	}
 	bak := path + ".1x.bak"
 	if _, err := os.Stat(bak); err != nil {
-		if err := os.WriteFile(bak, orig, 0600); err != nil {
+		masked := maskPasswords(orig)
+		if masked == nil {
+			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating it from 1.x; leaving it unchanged\n")
+			return
+		}
+		if err := os.WriteFile(bak, masked, 0600); err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating it from 1.x: %v\n", err)
 			return
 		}
@@ -458,8 +520,24 @@ func Save(path string, cfg *Config) error {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	out := *cfg // normalize a copy: cfg may be the live config others read
-	data, err := yaml.Marshal(&out)
+	out := cfg.cloneForSecrets() // cfg may be the live config others read
+	if err := out.secretFields(func(p *string) error {
+		var enc string
+		var err error
+		if out.PassphraseProtected && *p != "" && !isEncrypted(*p) {
+			var pass string
+			if pass, err = passphrase(); err == nil {
+				enc, err = encryptV2(*p, pass)
+			}
+		} else {
+			enc, err = encryptSecret(*p)
+		}
+		*p = enc
+		return err
+	}); err != nil {
+		return fmt.Errorf("failed to protect passwords: %w", err)
+	}
+	data, err := yaml.Marshal(out)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config: %w", err)
 	}

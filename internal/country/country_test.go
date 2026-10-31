@@ -45,6 +45,14 @@ func TestAll(t *testing.T) {
 		}
 		seen[e.Name] = true
 	}
+	for _, code := range []string{"EZ", "UN", "AC", "IC", "EA"} {
+		if Name(code) != "" {
+			t.Errorf("%s is not a country but is selectable", code)
+		}
+	}
+	if len(all) > 252 {
+		t.Errorf("%d entries; ISO 3166-1 has 249 plus Kosovo", len(all))
+	}
 	if got := Name("GB"); got != "United Kingdom" {
 		t.Errorf("Name(GB) = %q", got)
 	}

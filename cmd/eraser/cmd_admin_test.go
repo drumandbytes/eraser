@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
 	"strings"
@@ -253,5 +254,23 @@ func TestStatusAndPipeline(t *testing.T) {
 	mustContain(t, out, "Form required:         1", "form_required: 1", "Pending:   1", "Acme Data [captcha] - https://acme.example/form")
 	if _, err := e.run(t, "", "pipeline"); err == nil {
 		t.Error("pipeline without --profile succeeded")
+	}
+}
+
+func TestPromptCountry(t *testing.T) {
+	ask := func(input, current string) string {
+		return promptCountry(bufio.NewReader(strings.NewReader(input)), "Country", current)
+	}
+	if got := ask("Germany\n", ""); got != "DE" {
+		t.Errorf("name = %q", got)
+	}
+	if got := ask("Atlantis\nlv\n", ""); got != "LV" {
+		t.Errorf("retry after bad input = %q", got)
+	}
+	if got := ask("\n", "United Kingdom"); got != "GB" {
+		t.Errorf("keep legacy current = %q", got)
+	}
+	if got := ask("\n", "Atlantis"); got != "" {
+		t.Errorf("unresolvable current should clear, got %q", got)
 	}
 }

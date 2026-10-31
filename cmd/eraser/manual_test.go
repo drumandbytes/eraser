@@ -68,7 +68,7 @@ func TestSelectBrokers(t *testing.T) {
 }
 
 func TestFormatEML(t *testing.T) {
-	eml := formatEML("me@example.com", "them@example.com", &emailtmpl.Email{Subject: "Hi there", Body: "line one\nline two"})
+	eml := emailtmpl.FormatEML("me@example.com", "them@example.com", &emailtmpl.Email{Subject: "Hi there", Body: "line one\nline two"})
 	msg, err := mail.ReadMessage(strings.NewReader(string(eml)))
 	if err != nil {
 		t.Fatalf("not a valid RFC-822 message: %v", err)

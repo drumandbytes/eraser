@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/drumandbytes/eraser/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -34,19 +35,18 @@ func checkFilePermissions(path string) error {
 }
 
 type Config struct {
-	// Profile is the pre-0.11 single-profile block. Load/Save move it into
-	// Profiles as "default", so nothing writes it any more; read profiles via
-	// GetProfiles/GetProfile.
-	Profile Profile `yaml:"profile,omitempty"`
 	// Profiles tracks removal requests for several people against the same
 	// brokers, mail account and options; history is kept per profile
 	// (profile_id). Takes precedence over Profile.
 	Profiles []NamedProfile `yaml:"profiles,omitempty"`
-	Email    EmailConfig    `yaml:"email"`
-	Options  Options        `yaml:"options"`
-	Inbox    InboxConfig    `yaml:"inbox,omitempty"`
-	Pipeline Pipeline       `yaml:"pipeline,omitempty"`
-	Schedule Schedule       `yaml:"schedule,omitempty"`
+	// PassphraseProtected: mail passwords are encrypted with a passphrase on
+	// top of the machine binding (see secret.go). Set with `eraser passphrase set`.
+	PassphraseProtected bool        `yaml:"passphrase_protected,omitempty"`
+	Email               EmailConfig `yaml:"email"`
+	Options             Options     `yaml:"options"`
+	Inbox               InboxConfig `yaml:"inbox,omitempty"`
+	Pipeline            Pipeline    `yaml:"pipeline,omitempty"`
+	Schedule            Schedule    `yaml:"schedule,omitempty"`
 }
 
 // Schedule is the in-app fallback for automated cycles when the OS scheduler
@@ -122,13 +122,13 @@ func (c *Config) ConfiguredInboxes() []InboxConfig {
 // history rows are attributed to after the profile_id migration.
 const DefaultProfileID = "default"
 
-// GetProfiles returns every profile. The legacy profile: fallback only
-// matters for configs built in memory; Load/Save normalize it away.
+// GetProfiles returns every profile; before setup that's one empty "default"
+// profile, so callers always have someone to edit.
 func (c *Config) GetProfiles() []NamedProfile {
 	if len(c.Profiles) > 0 {
 		return c.Profiles
 	}
-	return []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
+	return []NamedProfile{{ID: DefaultProfileID}}
 }
 
 // PrimaryProfile is the "default" profile if there is one, else the first:
@@ -151,16 +151,6 @@ func (c *Config) HasProfile() bool {
 		}
 	}
 	return false
-}
-
-// normalizeProfiles moves a legacy profile: block into profiles: as
-// "default". With both present the legacy block was already ignored by
-// GetProfiles; it's kept as-is rather than silently dropped.
-func (c *Config) normalizeProfiles() {
-	if len(c.Profiles) == 0 && !reflect.ValueOf(c.Profile).IsZero() {
-		c.Profiles = []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
-		c.Profile = Profile{}
-	}
 }
 
 // GetProfile resolves a profile by ID. Empty id works only when exactly one
@@ -287,11 +277,8 @@ func (p Profile) FullName() string {
 }
 
 type EmailConfig struct {
-	// Provider is optional and only "smtp" is accepted - SMTP is the only
-	// transport. Kept so pre-0.11 configs (which all say "smtp") still load.
-	Provider string     `yaml:"provider,omitempty"`
-	From     string     `yaml:"from"`
-	SMTP     SMTPConfig `yaml:"smtp,omitempty"`
+	From string     `yaml:"from"`
+	SMTP SMTPConfig `yaml:"smtp,omitempty"`
 }
 
 // Configured reports whether a sending account is set up at all.
@@ -385,7 +372,26 @@ func Load(path string) (*Config, error) {
 		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
-	cfg.normalizeProfiles()
+	plaintext := false
+	if err := cfg.secretFields(func(p *string) error {
+		if *p != "" && !isEncrypted(*p) {
+			plaintext = true
+			return nil
+		}
+		if strings.HasPrefix(*p, secretPrefixV2) {
+			return nil // decrypted by Reveal, when the passphrase is available
+		}
+		plain, err := decryptSecret(*p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: %v; re-enter it with `eraser init` or in Settings\n", err)
+			plain = ""
+		}
+		*p = plain
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	migrateFrom1x(path, data, &cfg, plaintext)
 	applyInboxDefaults(&cfg.Inbox)
 	for i := range cfg.Profiles {
 		if cfg.Profiles[i].Mail != nil && cfg.Profiles[i].Mail.Inbox != nil {
@@ -401,6 +407,91 @@ func Load(path string) (*Config, error) {
 	// clobbering an explicit false.
 
 	return &cfg, nil
+}
+
+// maskPasswords blanks every non-empty password: value in a config document, so
+// the 1.x backup never keeps a password in plain text. A document without any
+// comes back byte for byte; one it can't parse yields nothing rather than risk
+// keeping a password.
+func maskPasswords(doc []byte) []byte {
+	var root yaml.Node
+	if err := yaml.Unmarshal(doc, &root); err != nil {
+		return nil
+	}
+	masked := 0
+	var walk func(n *yaml.Node)
+	walk = func(n *yaml.Node) {
+		if n.Kind == yaml.MappingNode {
+			for i := 0; i+1 < len(n.Content); i += 2 {
+				if v := n.Content[i+1]; n.Content[i].Value == "password" && v.Kind == yaml.ScalarNode && v.Value != "" {
+					v.Value, v.Tag = "", "!!str"
+					masked++
+				}
+			}
+		}
+		for _, c := range n.Content {
+			walk(c)
+		}
+	}
+	walk(&root)
+	if masked == 0 {
+		return doc
+	}
+	out, err := yaml.Marshal(&root)
+	if err != nil {
+		return nil
+	}
+	return out
+}
+
+// migrateFrom1x upgrades a 1.x config in memory and on disk: the pre-0.11
+// top-level profile: block becomes profiles: [{id: default}], and free-text
+// profile countries become ISO alpha-2 codes. Before the first rewrite the
+// original file is kept as <path>.1x.bak. A country that doesn't resolve is
+// left alone and warned about. email.provider needs no step: it is no longer
+// read and drops out on the next save.
+func migrateFrom1x(path string, orig []byte, cfg *Config, plaintextSecrets bool) {
+	changed := plaintextSecrets
+	var legacy struct {
+		Profile Profile `yaml:"profile"`
+	}
+	if len(cfg.Profiles) == 0 && yaml.Unmarshal(orig, &legacy) == nil && !reflect.ValueOf(legacy.Profile).IsZero() {
+		cfg.Profiles, changed = []NamedProfile{{ID: DefaultProfileID, Profile: legacy.Profile}}, true
+	}
+	for i := range cfg.Profiles {
+		p := &cfg.Profiles[i]
+		if p.Country == "" {
+			continue
+		}
+		code, ok := country.Code(p.Country)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "WARNING: profile %q: country %q isn't a known country; fix it with `eraser profile edit` (country-scoped brokers aren't filtered until then)\n", p.ID, p.Country)
+			continue
+		}
+		if code != p.Country {
+			p.Country, changed = code, true
+		}
+	}
+	if !changed {
+		return
+	}
+	bak := path + ".1x.bak"
+	if _, err := os.Stat(bak); err != nil {
+		masked := maskPasswords(orig)
+		if masked == nil {
+			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating it from 1.x; leaving it unchanged\n")
+			return
+		}
+		if err := os.WriteFile(bak, masked, 0600); err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating it from 1.x: %v\n", err)
+			return
+		}
+	}
+	if err := Save(path, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: could not save the migrated config: %v\n", err)
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Upgraded %s from 1.x (country codes, encrypted passwords). The original is kept as %s with passwords blanked.\n", filepath.Base(path), filepath.Base(bak))
 }
 
 // applyInboxDefaults fills Folder/ArchiveFolder and, for known providers,
@@ -431,9 +522,24 @@ func Save(path string, cfg *Config) error {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	out := *cfg // normalize a copy: cfg may be the live config others read
-	out.normalizeProfiles()
-	data, err := yaml.Marshal(&out)
+	out := cfg.cloneForSecrets() // cfg may be the live config others read
+	if err := out.secretFields(func(p *string) error {
+		var enc string
+		var err error
+		if out.PassphraseProtected && *p != "" && !isEncrypted(*p) {
+			var pass string
+			if pass, err = passphrase(); err == nil {
+				enc, err = encryptV2(*p, pass)
+			}
+		} else {
+			enc, err = encryptSecret(*p)
+		}
+		*p = enc
+		return err
+	}); err != nil {
+		return fmt.Errorf("failed to protect passwords: %w", err)
+	}
+	data, err := yaml.Marshal(out)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config: %w", err)
 	}
@@ -475,9 +581,6 @@ func (c *Config) Validate() error {
 }
 
 func validateEmailConfig(e EmailConfig) error {
-	if e.Provider != "" && e.Provider != "smtp" {
-		return fmt.Errorf("email: unknown provider %q (only smtp is supported; the line can be removed)", e.Provider)
-	}
 	if !e.Configured() {
 		return fmt.Errorf("email.smtp: host is required (or set options.send_mode: manual)")
 	}

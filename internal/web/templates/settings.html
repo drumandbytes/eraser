@@ -263,6 +263,51 @@
         </div>
         {{end}}
 
+        <!-- Passphrase Section -->
+        <div class="card p-6" id="passphrase">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
+                    <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-primary">Passphrase</h2>
+                    <p class="text-sm text-muted">{{if .Passphrase.Protected}}Your mail passwords are protected by a passphrase{{else}}An extra gate on your stored mail passwords{{end}}</p>
+                </div>
+            </div>
+            <p class="text-sm text-secondary mb-3">Mail passwords are always encrypted for this machine and user. A passphrase also stops someone logged in as you from using them.</p>
+            <div class="alert alert-warning mb-4 text-sm">
+                <strong>Heads-up:</strong> with a passphrase, runs with nobody at the keyboard can't unlock your mail password. The OS schedule (<em>Schedule with my OS</em>) is refused, and <code>eraser serve</code> or <code>eraser auto loop</code> ask once at startup. There is no recovery; if you forget it, re-enter your mail passwords.
+            </div>
+            <form method="POST" action="/settings/passphrase#passphrase" class="space-y-4">
+                {{$.CSRFField}}
+                {{if .Passphrase.Protected}}
+                <div>
+                    <label for="pp-current" class="label">Current passphrase</label>
+                    <input type="password" name="current" id="pp-current" class="input" autocomplete="current-password" required>
+                </div>
+                {{end}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="pp-new" class="label">{{if .Passphrase.Protected}}New passphrase{{else}}Passphrase{{end}}</label>
+                        <input type="password" name="new" id="pp-new" class="input" autocomplete="new-password" minlength="{{.Passphrase.MinLength}}">
+                    </div>
+                    <div>
+                        <label for="pp-confirm" class="label">Repeat</label>
+                        <input type="password" name="confirm" id="pp-confirm" class="input" autocomplete="new-password" minlength="{{.Passphrase.MinLength}}">
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button type="submit" name="action" value="set" class="btn btn-primary">{{if .Passphrase.Protected}}Change passphrase{{else}}Set passphrase{{end}}</button>
+                    {{if .Passphrase.Protected}}<button type="submit" name="action" value="clear" class="btn btn-secondary" formnovalidate>Remove passphrase</button>{{end}}
+                </div>
+            </form>
+            {{if .PassphraseMessage}}
+            <div class="mt-4 alert {{if .PassphraseSuccess}}alert-success{{else}}alert-error{{end}}">{{.PassphraseMessage}}</div>
+            {{end}}
+        </div>
+
         <!-- Request Options Section -->
         <div class="card p-6">
             <div class="flex items-center gap-3 mb-6">

@@ -1,5 +1,43 @@
 {{define "content"}}
 <div class="fade-in-up">
+    {{with .WhatsNew}}
+    <section class="whatsnew mb-8" aria-labelledby="whats-new-title">
+        <div class="whatsnew-head">
+            <div class="notice-icon" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+            </div>
+            <div class="notice-body">
+                <h2 id="whats-new-title" class="notice-title" style="font-size: 18px;">What's new in Eraser 2.0</h2>
+                <p class="notice-text">A few things changed with this version. Nothing needs doing, but they're worth knowing.</p>
+            </div>
+            <form method="POST" action="/whats-new/dismiss"><button type="submit" class="btn btn-primary">Got it</button></form>
+        </div>
+        <div class="whatsnew-grid">
+            <div class="whatsnew-item">
+                <h3>Countries</h3>
+                <p>Your profile's country is stored as an ISO code. Brokers that only cover one market (a German credit bureau, say) are skipped if you're elsewhere, and the Brokers page says how many are hidden.</p>
+            </div>
+            <div class="whatsnew-item">
+                <h3>Encrypted passwords</h3>
+                <p>Mail passwords are no longer stored as plain text. Settings has an optional passphrase for an extra gate; with one set, the OS schedule can't send, and <code>eraser serve</code> asks once at startup.</p>
+            </div>
+            <div class="whatsnew-item">
+                <h3>More in the web UI</h3>
+                <p>Check bounces and Reclassify on the Pipeline page, and download all drafts as a zip from Brokers. Every one has a CLI twin.</p>
+            </div>
+            <div class="whatsnew-item">
+                <h3>Live settings, tidier config</h3>
+                <p>Changes made in the CLI show up here without a restart. The old <code>profile:</code> block, <code>email.provider</code> and <code>monitor --once</code> are gone.</p>
+            </div>
+        </div>
+        {{with .Upgraded}}
+        <p class="notice-text" style="margin-top: 16px;"><strong style="color: var(--text-primary);">Your config was upgraded.</strong> The original is saved as <code title="{{.Backup}}">{{.BackupName}}</code> with passwords blanked; delete it when you're happy. Moved to a new machine? Re-enter your mail passwords in Settings.</p>
+        {{end}}
+        <div class="whatsnew-foot">
+            <a class="btn btn-secondary" href="https://github.com/drumandbytes/eraser/blob/main/docs/upgrading-to-2.0.md" target="_blank" rel="noopener">Read the upgrade guide</a>
+        </div>
+    </section>
+    {{end}}
     <!-- Hero Section -->
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
         <div class="flex items-center gap-4">

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 	"github.com/spf13/cobra"
 )
 
@@ -76,7 +77,7 @@ func runInit() error {
 	me.City = promptWithDefault(reader, "City (optional)", prev.City)
 	me.State = promptWithDefault(reader, "State/Province (optional)", prev.State)
 	me.ZipCode = promptWithDefault(reader, "ZIP/Postal code (optional)", prev.ZipCode)
-	me.Country = promptWithDefault(reader, "Country (optional)", prev.Country)
+	me.Country = promptCountry(reader, "Country (optional)", prev.Country)
 	prevAddresses := promptWithDefault(reader,
 		"Previous address(es) from the last 5-7 years, if different - semicolon separated (optional)",
 		strings.Join(prev.PreviousAddresses, "; "))
@@ -157,6 +158,7 @@ func runInit() error {
 	if err := config.Save(configPath, cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
+	config.MarkWhatsNewSeen(configPath) // a fresh setup has nothing to be told about 2.0
 
 	fmt.Println()
 	if updating {
@@ -188,11 +190,41 @@ func promptWithDefault(reader *bufio.Reader, label, current string) string {
 	if current != "" {
 		msg = fmt.Sprintf("%s [%s]", label, current)
 	}
-	input := prompt(reader, msg+": ")
+	// Never echo a password; fall back to a plain read when stdin isn't a terminal.
+	input, err := readSecret(msg + ": ")
+	if err != nil {
+		input = prompt(reader, msg+": ")
+	}
 	if input == "" {
 		return current
 	}
 	return input
+}
+
+// promptCountry asks for a country until it resolves to an ISO code (or is
+// left empty), and returns the code. current may be a code or a legacy name.
+func promptCountry(reader *bufio.Reader, label, current string) string {
+	shown := current
+	if code, ok := country.Code(current); ok {
+		shown = country.Name(code) + " (" + code + ")"
+	}
+	for {
+		msg := label
+		if shown != "" {
+			msg = fmt.Sprintf("%s [%s]", label, shown)
+		}
+		input := prompt(reader, msg+" - name or ISO code: ")
+		if input == "" {
+			if code, ok := country.Code(current); ok {
+				return code
+			}
+			return ""
+		}
+		if code, ok := country.Code(input); ok {
+			return code
+		}
+		fmt.Printf("  %q isn't a known country - use its English name or two-letter ISO code (e.g. DE, Latvia).\n", input)
+	}
 }
 
 // promptSecretWithDefault is like promptWithDefault but never echoes the

@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/data"
-	"github.com/drumandbytes/eraser/internal/dpa"
+	"github.com/drumandbytes/eraser/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -25,12 +25,12 @@ const MinSaneBrokerCount = 200
 // deliberately a fraction of the size of the main list.
 const MinVerifiedBrokerCount = 20
 
-// knownRegions is the closed set of region values the rest of the code
-// branches on (see Filter). A typo like "usa" would silently drop a broker
-// from every region-filtered send.
 var countryCodeRe = regexp.MustCompile(`^[A-Z]{2}$`)
 
-var knownRegions = map[string]bool{"us": true, "eu": true, "global": true}
+// KnownRegions is the closed set of region values the rest of the code
+// branches on (see Filter). A typo like "usa" would silently drop a broker
+// from every region-filtered send.
+var KnownRegions = []string{"us", "eu", "global"}
 
 // looseEmailRe is a deliberately permissive check - it only catches obvious
 // breakage (missing @, no dot in the domain, whitespace), not RFC compliance.
@@ -157,7 +157,7 @@ func (b Broker) Problems() []string {
 	if strings.TrimSpace(b.Name) == "" {
 		problems = append(problems, "missing name")
 	}
-	if b.Region != "" && !knownRegions[strings.ToLower(strings.TrimSpace(b.Region))] {
+	if b.Region != "" && !slices.Contains(KnownRegions, strings.ToLower(strings.TrimSpace(b.Region))) {
 		problems = append(problems, fmt.Sprintf("unknown region %q", b.Region))
 	}
 	for _, c := range b.Countries {
@@ -244,7 +244,8 @@ func LoadList(overridePath, configPath, listName string) (*BrokerDatabase, error
 	return Load("")
 }
 
-func toSet(items []string) map[string]bool {
+// Set is the lower-cased, trimmed, non-empty items as a lookup set.
+func Set(items []string) map[string]bool {
 	m := make(map[string]bool, len(items))
 	for _, s := range items {
 		if key := strings.ToLower(strings.TrimSpace(s)); key != "" {
@@ -254,20 +255,40 @@ func toSet(items []string) map[string]bool {
 	return m
 }
 
-// AppliesTo reports whether a request from someone in country (a profile's
-// free-text country: name or ISO code) is in scope for the broker. Brokers
+// Domain is the broker website's lower-case host without a leading "www.", or
+// "" when it has no usable website.
+func (b Broker) Domain() string {
+	u, err := url.Parse(strings.TrimSpace(b.Website))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+}
+
+// Domains lists the website host with and without "www." (nil without a
+// website), for matching links against a broker's own site.
+func (b Broker) Domains() []string {
+	d := b.Domain()
+	if d == "" {
+		return nil
+	}
+	return []string{d, "www." + d}
+}
+
+// AppliesTo reports whether a request from someone in profileCountry (a profile's
+// country: ISO code, or a legacy name) is in scope for the broker. Brokers
 // without a countries list apply to everyone, and so does an empty or
 // unrecognised country - an unset profile never hides brokers.
-func (b Broker) AppliesTo(country string) bool {
+func (b Broker) AppliesTo(profileCountry string) bool {
 	if len(b.Countries) == 0 {
 		return true
 	}
-	a := dpa.ForCountry(country)
-	if a == nil {
+	code, ok := country.Code(profileCountry)
+	if !ok {
 		return true
 	}
 	for _, c := range b.Countries {
-		if strings.EqualFold(strings.TrimSpace(c), a.Code) {
+		if strings.EqualFold(strings.TrimSpace(c), code) {
 			return true
 		}
 	}
@@ -275,10 +296,10 @@ func (b Broker) AppliesTo(country string) bool {
 }
 
 // ForCountry drops brokers whose countries list excludes the given country.
-func ForCountry(brokers []Broker, country string) []Broker {
+func ForCountry(brokers []Broker, profileCountry string) []Broker {
 	out := make([]Broker, 0, len(brokers))
 	for _, b := range brokers {
-		if b.AppliesTo(country) {
+		if b.AppliesTo(profileCountry) {
 			out = append(out, b)
 		}
 	}
@@ -290,23 +311,31 @@ func ForCountry(brokers []Broker, country string) []Broker {
 // (case-insensitive) is in excludedCategories - e.g. "requires-id" to skip
 // brokers that demand a government ID document before acting on a request.
 func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCategories []string) []Broker {
-	regionSet := toSet(regions)
-	if len(regionSet) == 0 || regionSet["global"] {
-		return db.Select(nil, nil, nil, excluded, excludedCategories)
-	}
+	regionSet := Set(regions)
 	selected := db.Select(nil, nil, nil, excluded, excludedCategories)
 	result := selected[:0]
 	for _, b := range selected {
-		if regionSet[strings.ToLower(b.Region)] || strings.EqualFold(b.Region, "global") {
+		if b.InRegions(regionSet) {
 			result = append(result, b)
 		}
 	}
 	return result
 }
 
+// InRegions reports whether b is in scope for a configured region set
+// (lower-case keys). An empty set or one containing "global" means every
+// broker, and global brokers are in scope for any set.
+func (b Broker) InRegions(set map[string]bool) bool {
+	if len(set) == 0 || set["global"] {
+		return true
+	}
+	r := strings.ToLower(b.Region)
+	return r == "global" || set[r]
+}
+
 func (db *BrokerDatabase) Select(ids, regions, categories, excluded, excludedCategories []string) []Broker {
-	idSet, regionSet, categorySet := toSet(ids), toSet(regions), toSet(categories)
-	excludedSet, excludedCatSet := toSet(excluded), toSet(excludedCategories)
+	idSet, regionSet, categorySet := Set(ids), Set(regions), Set(categories)
+	excludedSet, excludedCatSet := Set(excluded), Set(excludedCategories)
 
 	var result []Broker
 	for _, b := range db.Brokers {
@@ -332,7 +361,7 @@ func (db *BrokerDatabase) Select(ids, regions, categories, excluded, excludedCat
 
 func (db *BrokerDatabase) UnknownIDs(ids []string) []string {
 	var unknown []string
-	for id := range toSet(ids) {
+	for id := range Set(ids) {
 		if db.FindByID(id) == nil {
 			unknown = append(unknown, id)
 		}

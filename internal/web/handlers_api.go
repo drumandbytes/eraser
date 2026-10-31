@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/inbox"
+	"github.com/drumandbytes/eraser/internal/reclassify"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -110,7 +111,7 @@ func (s *Server) setBrokerExcluded(w http.ResponseWriter, r *http.Request, exclu
 	}
 	newCfg.Options.ExcludedBrokers = updated
 
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		http.Error(w, "Failed to save configuration: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -305,185 +306,29 @@ func writeScanAlert(w http.ResponseWriter, kind, title, detail string) {
 	_, _ = fmt.Fprintf(w, `<div class="alert alert-%s"><strong>%s</strong> %s</div>`, kind, title, template.HTMLEscapeString(detail))
 }
 
-// handleAPIReclassify reclassifies all existing database records using subject-only patterns
+// handleAPIReclassify reclassifies all saved replies (shared with
+// `eraser monitor --reclassify`).
 func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 	if s.historyStore == nil {
 		writeScanAlert(w, "error", "Database not available.", "")
 		return
 	}
-
-	responses, err := s.historyStore.GetAllBrokerResponses()
-	if err != nil {
-		writeScanAlert(w, "error", "Failed to get responses:", err.Error())
-		return
-	}
-
-	if len(responses) == 0 {
-		writeScanAlert(w, "info", "No responses to reclassify.", "")
-		return
-	}
-
-	// Check how many records are missing email bodies
-	var missingBodies int
-	for _, resp := range responses {
-		if resp.EmailBody == "" {
-			missingBodies++
-		}
-	}
-
-	// backfill bodies from every configured inbox: responses span all profiles
-	cfg := s.getConfig()
-	var bodiesUpdated int
 	var inboxes []config.InboxConfig
-	if cfg != nil {
+	if cfg := s.getConfig(); cfg != nil {
 		inboxes = cfg.ConfiguredInboxes()
 	}
-	if missingBodies > 0 && len(inboxes) > 0 && s.brokers() != nil {
-		log.Printf("Found %d records missing email bodies, fetching from IMAP...", missingBodies)
-
-		// Fetch emails from both INBOX and archive folder, across every
-		// configured inbox.
-		var allEmails []inbox.Email
-
-		for _, inboxCfg := range inboxes {
-			monitor := inbox.NewMonitor(inboxCfg, s.brokers().Brokers)
-
-			ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
-			if err := monitor.Connect(ctx); err != nil {
-				log.Printf("Warning: failed to connect to IMAP for body fetch: %v", err)
-				cancel()
-				continue
-			}
-
-			emails, err := monitor.FetchBrokerEmails(ctx, 30)
-			if err != nil {
-				log.Printf("Warning: failed to fetch from INBOX: %v", err)
-			} else {
-				allEmails = append(allEmails, emails...)
-			}
-
-			// Also fetch from archive folder if configured
-			if inboxCfg.ArchiveFolder != "" {
-				archiveEmails, err := monitor.FetchBrokerEmailsFromFolder(ctx, inboxCfg.ArchiveFolder, 30)
-				if err != nil {
-					log.Printf("Warning: failed to fetch from archive folder: %v", err)
-				} else {
-					allEmails = append(allEmails, archiveEmails...)
-				}
-			}
-
-			_ = monitor.Disconnect()
-			cancel()
-		}
-
-		log.Printf("Fetched %d emails from IMAP", len(allEmails))
-
-		// Build lookup map: key = "broker_id|subject" -> email body
-		emailBodies := make(map[string]string)
-		for _, email := range allEmails {
-			if email.BrokerID == "" {
-				continue // Not matched to a broker
-			}
-			key := email.BrokerID + "|" + email.Subject
-			body := email.Body
-			if body == "" {
-				body = email.HTMLBody
-			}
-			if body != "" {
-				emailBodies[key] = body
-			}
-		}
-
-		for i := range responses {
-			resp := &responses[i]
-			if resp.EmailBody != "" {
-				continue // Already has body
-			}
-			key := resp.BrokerID + "|" + resp.EmailSubject
-			if body, ok := emailBodies[key]; ok {
-				if err := s.historyStore.UpdateBrokerResponseBody(resp.ID, resp.ProfileID, body); err == nil {
-					bodiesUpdated++
-					resp.EmailBody = body // in-memory too, for the reclassification below
-				}
-			}
-		}
-		log.Printf("Updated %d records with email bodies from IMAP", bodiesUpdated)
+	var brokers []broker.Broker
+	if db := s.brokers(); db != nil {
+		brokers = db.Brokers
 	}
-
-	// Reclassify each response - use full classifier if body available, otherwise subject-only
-	var updated, unchanged int
-	var pending, rejected, noData, success, formRequired, confirmRequired, unknown int
-
-	for _, resp := range responses {
-		var newType inbox.ResponseType
-		var confidence float64
-		var needsReview bool
-		var formURL, confirmURL string
-
-		if resp.EmailBody != "" {
-			// Use full classifier with body
-			email := &inbox.Email{
-				From:    resp.EmailFrom,
-				Subject: resp.EmailSubject,
-				Body:    resp.EmailBody,
-			}
-			classified := inbox.ClassifyResponse(email)
-			newType = classified.Type
-			confidence = classified.Confidence
-			needsReview = classified.NeedsReview
-			formURL = classified.FormURL
-			confirmURL = classified.ConfirmURL
-		} else {
-			// Fall back to subject-only classification
-			newType, confidence, needsReview = inbox.ClassifyBySubjectOnly(resp.EmailSubject)
-			formURL = resp.FormURL
-			confirmURL = resp.ConfirmURL
-		}
-
-		// Also refresh confidence/review flags for existing no-data outcomes.
-		if string(newType) != resp.ResponseType || (newType == inbox.ResponseNoData && (confidence != resp.Confidence || needsReview != resp.NeedsReview)) {
-			err := s.historyStore.UpdateBrokerResponseClassification(
-				resp.ID,
-				resp.ProfileID,
-				string(newType),
-				formURL,
-				confirmURL,
-				confidence,
-				needsReview,
-			)
-			if err != nil {
-				writeScanAlert(w, "error", "Failed to update response:", err.Error())
-				return
-			}
-			updated++
-		} else {
-			unchanged++
-		}
-
-		if newType == inbox.ResponseNoData {
-			if err := s.historyStore.ResolveNoData(resp.ProfileID, resp.BrokerID, true); err != nil {
-				writeScanAlert(w, "error", "Failed to reconcile response:", err.Error())
-				return
-			}
-		}
-
-		// Count by final type
-		switch newType {
-		case inbox.ResponseSuccess:
-			success++
-		case inbox.ResponseFormRequired:
-			formRequired++
-		case inbox.ResponseConfirmationRequired:
-			confirmRequired++
-		case inbox.ResponseNoData:
-			noData++
-		case inbox.ResponseRejected:
-			rejected++
-		case inbox.ResponsePending:
-			pending++
-		default:
-			unknown++
-		}
+	sum, err := reclassify.Run(r.Context(), s.historyStore, inboxes, brokers)
+	if err != nil {
+		writeScanAlert(w, "error", "Reclassification failed:", err.Error())
+		return
+	}
+	if sum.Total == 0 {
+		writeScanAlert(w, "info", "No responses to reclassify.", "")
+		return
 	}
 
 	_, _ = fmt.Fprintf(w, `
@@ -507,5 +352,5 @@ func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 				<a href="/pipeline" class="underline" onclick="window.location.reload()">Refresh page</a>
 			</p>
 		</div>
-	`, len(responses), updated, unchanged, pending, rejected, noData, success, formRequired, confirmRequired, unknown)
+	`, sum.Total, sum.Updated, sum.Unchanged, sum.Pending, sum.Rejected, sum.NoData, sum.Success, sum.FormRequired, sum.ConfirmRequired, sum.Unknown)
 }

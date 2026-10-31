@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/imaptest"
 	"github.com/drumandbytes/eraser/internal/schedule"
@@ -61,9 +63,16 @@ func TestMonitor(t *testing.T) {
 	out, _ = e.run(t, "", "monitor")
 	mustContain(t, out, "Found 2 emails from data brokers", "0 new")
 
-	// The deprecated --once still works.
-	if _, err := e.run(t, "", "monitor", "--once"); err != nil {
-		t.Errorf("--once: %v", err)
+	// Web parity: the Reclassify button as a flag.
+	out, err = e.run(t, "", "monitor", "--reclassify")
+	if err != nil {
+		t.Fatalf("monitor --reclassify: %v\n%s", err, out)
+	}
+	mustContain(t, out, "Reclassified 2 saved replies", "Success:")
+
+	// --once was removed in 2.0 (a single scan is the default).
+	if _, err := e.run(t, "", "monitor", "--once"); err == nil {
+		t.Error("monitor --once should be an unknown flag")
 	}
 }
 
@@ -448,5 +457,63 @@ func TestTruncateHelpers(t *testing.T) {
 	}
 	if got := truncateURL("short", 12); got != "short" {
 		t.Errorf("truncateURL short = %q", got)
+	}
+}
+
+func TestTwoPointZeroAnnouncementShowsOnce(t *testing.T) {
+	e := newCLIEnv(t, manualConfig)
+	if config.WhatsNewSeen(e.cfgPath) {
+		t.Fatal("setup of the test env should leave it unseen")
+	}
+	r, w, _ := os.Pipe()
+	old := os.Stderr
+	os.Stderr = w
+	_, err := e.run(t, "", "status", "--profile", "default")
+	_ = w.Close()
+	os.Stderr = old
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, _ := io.ReadAll(r)
+	if !strings.Contains(string(out), "Eraser 2.0:") || !config.WhatsNewSeen(e.cfgPath) {
+		t.Errorf("first command should announce 2.0 and remember it: %q", out)
+	}
+	if _, err := e.run(t, "", "status", "--profile", "default"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMonitorReclassify(t *testing.T) {
+	// Nothing saved yet.
+	e := newCLIEnv(t, manualConfig)
+	out, err := e.run(t, "", "monitor", "--reclassify")
+	if err != nil {
+		t.Fatalf("empty history: %v", err)
+	}
+	mustContain(t, out, "No responses to reclassify")
+
+	// A saved reply whose body is stored is reclassified without touching the inbox.
+	addResponse := func() {
+		store, err := history.NewStore(history.DBPathFor(e.cfgPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = store.Close() }()
+		if err := store.AddBrokerResponse(&history.BrokerResponse{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", ResponseType: "unknown",
+			EmailSubject: "Re: request", EmailBody: "We have deleted your data and removed all records as requested.", ReceivedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	addResponse()
+	out, err = e.run(t, "", "monitor", "--reclassify")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustContain(t, out, "Reclassified 1 saved replies", "1 updated")
+
+	// A broken config is reported, not ignored.
+	bad := newCLIEnv(t, "")
+	if _, err := bad.run(t, "", "monitor", "--reclassify"); err == nil || !strings.Contains(err.Error(), "failed to load config") {
+		t.Errorf("no config: %v", err)
 	}
 }

@@ -86,7 +86,7 @@ func TestEverSentBrokerIDsSingleProfileConfig(t *testing.T) {
 	}
 
 	cfg := &config.Config{
-		Profile: config.Profile{FirstName: "Test", LastName: "User", Email: "test@example.com"},
+		Profiles: []config.NamedProfile{{ID: config.DefaultProfileID, Profile: config.Profile{FirstName: "Test", LastName: "User", Email: "test@example.com"}}},
 	}
 
 	got := everSentBrokerIDs(cfg, store)

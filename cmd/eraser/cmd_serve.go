@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -51,6 +52,10 @@ func runServe(port int) error {
 			fmt.Printf("⚠️  Config exists but failed to load: %v\n", err)
 			fmt.Println("The setup wizard will help you reconfigure.")
 			cfg = nil
+		} else if err := cfg.Unlock(); errors.Is(err, config.ErrLocked) {
+			fmt.Println("🔒 Mail passwords are protected by a passphrase. Open the web UI to unlock.")
+		} else if err != nil {
+			return err
 		}
 	}
 

@@ -166,16 +166,7 @@ func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sender, err := email.NewSender(session.Email)
-	if err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="alert alert-error">
-				<strong>Configuration error:</strong> %s
-				<p class="mt-2 text-sm">Please check your email settings and try again.</p>
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
-		return
-	}
+	sender := email.NewSMTPSender(session.Email.SMTP, session.Email.From)
 
 	testMsg := email.Message{
 		To:      session.Profile.Email,
@@ -257,7 +248,6 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 				updated.Profiles[i].Profile = applyProfileForm(updated.Profiles[i].Profile, session.Profile)
 			}
 		}
-		updated.Profile = config.Profile{}
 		cfg = &updated
 	}
 	cfg.Email = session.Email
@@ -267,7 +257,7 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		cfg.Email = config.Email{}
 	}
 
-	if err := config.Save(s.configPath, cfg); err != nil {
+	if err := s.saveConfig(cfg); err != nil {
 		data := map[string]interface{}{
 			"Title": "Setup - Error",
 			"Error": err.Error(),
@@ -277,6 +267,8 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.config.Store(cfg)
+	// Someone who just finished setup has nothing to be told about 2.0.
+	config.MarkWhatsNewSeen(s.configPath)
 
 	// Clear session - credentials are now saved to config file
 	s.clearSession(w, r)

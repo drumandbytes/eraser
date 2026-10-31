@@ -9,6 +9,7 @@ import (
 	"github.com/chromedp/chromedp"
 
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 )
 
 // isContextErr reports a context cancel/deadline, as opposed to chromedp's
@@ -216,7 +217,7 @@ func (f *FormFiller) getFieldMappings() []FieldMapping {
 		},
 		{
 			FieldType:    "country",
-			ProfileValue: f.profile.Country,
+			ProfileValue: country.Display(f.profile.Country),
 			Selectors: []string{
 				"input[name='country']",
 				"input[id='country']",

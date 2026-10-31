@@ -5,6 +5,7 @@ package evidence
 
 import (
 	"fmt"
+	"github.com/drumandbytes/eraser/internal/country"
 	"html/template"
 	"sort"
 	"strings"
@@ -276,7 +277,7 @@ func Build(
 
 func joinAddress(p config.Profile) string {
 	parts := []string{}
-	for _, s := range []string{p.Address, p.City, p.State, p.ZipCode, p.Country} {
+	for _, s := range []string{p.Address, p.City, p.State, p.ZipCode, country.Display(p.Country)} {
 		if strings.TrimSpace(s) != "" {
 			parts = append(parts, s)
 		}

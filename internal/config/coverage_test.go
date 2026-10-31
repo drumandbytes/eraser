@@ -66,7 +66,6 @@ func TestValidate(t *testing.T) {
 		"duplicate id":   {func(c *Config) { c.Profiles = append(c.Profiles, c.Profiles[0]); c.Profiles[1].ID = "JANE" }, "duplicate profile id"},
 		"no last name":   {func(c *Config) { c.Profiles[0].LastName = "" }, "first_name and last_name"},
 		"no email":       {func(c *Config) { c.Profiles[0].Email = "" }, "email is required"},
-		"bad provider":   {func(c *Config) { c.Email.Provider = "sendgrid" }, "unknown provider"},
 		"no host":        {func(c *Config) { c.Email.SMTP.Host = "" }, "host is required"},
 		"no from":        {func(c *Config) { c.Email.From = "" }, "from address"},
 		"no port":        {func(c *Config) { c.Email.SMTP.Port = 0 }, "port is required"},

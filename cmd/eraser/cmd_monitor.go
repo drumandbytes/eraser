@@ -11,13 +11,13 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/inbox"
+	"github.com/drumandbytes/eraser/internal/reclassify"
 	"github.com/spf13/cobra"
 )
 
 func monitorCmd() *cobra.Command {
 	var days int
-	var once bool
-	var watch bool
+	var watch, doReclassify bool
 
 	cmd := &cobra.Command{
 		Use:   "monitor",
@@ -32,20 +32,21 @@ This command will:
 
 Requires inbox configuration in config.yaml with IMAP settings.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runMonitor(days, once, watch)
+			if doReclassify {
+				return runReclassify()
+			}
+			return runMonitor(days, watch)
 		},
 	}
 
 	cmd.Flags().IntVar(&days, "days", 7, "Number of days to look back for emails")
-	cmd.Flags().BoolVar(&once, "once", false, "Check inbox once and exit (don't watch for new emails)")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Continuously watch for new emails")
-	// one scan is already the default; kept so existing scripts don't break
-	_ = cmd.Flags().MarkDeprecated("once", "a single scan is the default; drop the flag")
+	cmd.Flags().BoolVar(&doReclassify, "reclassify", false, "Re-run the classifier over every saved reply instead of scanning (fills in missing bodies from your inbox first)")
 
 	return cmd
 }
 
-func runMonitor(days int, once bool, watch bool) error {
+func runMonitor(days int, watch bool) error {
 	cfg, err := config.Load(resolveConfigPath())
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
@@ -93,7 +94,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		// writes to the shared SQLite history store (see the --watch note
 		// below).
 		for _, inboxCfg := range inboxes {
-			if err := scanInbox(ctx, inboxCfg, brokerDB, store, days, once, watch); err != nil {
+			if err := scanInbox(ctx, inboxCfg, brokerDB, store, days, watch); err != nil {
 				return err
 			}
 		}
@@ -108,7 +109,7 @@ func runMonitor(days int, once bool, watch bool) error {
 		wg.Add(1)
 		go func(i int, inboxCfg config.InboxConfig) {
 			defer wg.Done()
-			errs[i] = scanInbox(ctx, inboxCfg, brokerDB, store, days, once, watch)
+			errs[i] = scanInbox(ctx, inboxCfg, brokerDB, store, days, watch)
 		}(i, inboxCfg)
 	}
 	wg.Wait()
@@ -123,7 +124,7 @@ func runMonitor(days int, once bool, watch bool) error {
 
 // scanInbox classifies and stores one inbox's broker replies, and with --watch
 // keeps watching until ctx ends.
-func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, once bool, watch bool) error {
+func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broker.BrokerDatabase, store *history.Store, days int, watch bool) error {
 	monitor := inbox.NewMonitor(inboxCfg, brokerDB.Brokers)
 
 	if err := monitor.Connect(ctx); err != nil {
@@ -159,7 +160,7 @@ func scanInbox(ctx context.Context, inboxCfg config.InboxConfig, brokerDB *broke
 	fmt.Printf("  ❓ Unknown:          %d\n", summary.Unknown)
 	fmt.Printf("  👁️  Need review:      %d\n", summary.NeedReview)
 
-	if once || !watch {
+	if !watch {
 		return nil
 	}
 
@@ -209,4 +210,41 @@ func printClassifiedResponse(r inbox.ClassifiedResponse) {
 	if r.NeedsReview {
 		fmt.Printf("   ⚠️  Confidence: %.0f%% - manual review recommended\n", r.Confidence*100)
 	}
+}
+
+// runReclassify is the CLI twin of the web UI's Reclassify button.
+func runReclassify() error {
+	cfg, err := config.Load(resolveConfigPath())
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+	brokerDB, err := broker.Load(brokerFile)
+	if err != nil {
+		return fmt.Errorf("failed to load brokers: %w", err)
+	}
+	store, err := openHistoryStore(history.DBPathFor(resolveConfigPath()))
+	if err != nil {
+		return fmt.Errorf("failed to initialize history: %w", err)
+	}
+	defer func() { _ = store.Close() }()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	sum, err := reclassify.Run(ctx, store, cfg.ConfiguredInboxes(), brokerDB.Brokers)
+	if err != nil {
+		return err
+	}
+	if sum.Total == 0 {
+		fmt.Println("No responses to reclassify.")
+		return nil
+	}
+	fmt.Printf("🔁 Reclassified %d saved replies (%d updated, %d unchanged", sum.Total, sum.Updated, sum.Unchanged)
+	if sum.BodiesUpdated > 0 {
+		fmt.Printf(", %d message bodies filled in from your inbox", sum.BodiesUpdated)
+	}
+	fmt.Println(")")
+	fmt.Printf("   Success: %d  Form required: %d  Confirm required: %d  Pending: %d  Rejected: %d  No data held: %d  Unknown: %d\n",
+		sum.Success, sum.FormRequired, sum.ConfirmRequired, sum.Pending, sum.Rejected, sum.NoData, sum.Unknown)
+	return nil
 }

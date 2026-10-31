@@ -298,7 +298,7 @@ func TestReclassify(t *testing.T) {
 	}
 	broken := smokeServer(t)
 	_ = broken.historyStore.Close()
-	if rec := do(t, broken, http.MethodPost, "/api/inbox/reclassify", true); !strings.Contains(rec.Body.String(), "Failed to get responses") {
+	if rec := do(t, broken, http.MethodPost, "/api/inbox/reclassify", true); !strings.Contains(rec.Body.String(), "Reclassification failed") {
 		t.Errorf("closed db: %s", rec.Body.String())
 	}
 

@@ -157,8 +157,7 @@ func TestHandleSettingsProfileEditUnknownIDReturns404(t *testing.T) {
 }
 
 func TestHandleSettingsProfileEditPromotesLegacyProfileBlock(t *testing.T) {
-	// Legacy top-level profile: block only (an in-memory config; Load would
-	// already have normalized it). Editing writes it as profiles: [default].
+	// A single default profile; editing keeps it as profiles: [default].
 	s := newTestServer(t, testConfig())
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 
@@ -179,9 +178,6 @@ func TestHandleSettingsProfileEditPromotesLegacyProfileBlock(t *testing.T) {
 	cfg := s.getConfig()
 	if len(cfg.Profiles) != 1 || cfg.Profiles[0].ID != config.DefaultProfileID || cfg.Profiles[0].FirstName != "New" || cfg.Profiles[0].Email != "new@example.com" {
 		t.Errorf("expected profiles: [default] with the edit, got %+v", cfg.Profiles)
-	}
-	if cfg.Profile.FirstName != "" {
-		t.Errorf("expected the legacy profile: block cleared, got %+v", cfg.Profile)
 	}
 }
 
@@ -253,8 +249,7 @@ func profileWithMailOverride() *config.Config {
 		}
 		cfg.Profiles[i].Mail = &config.MailConfig{
 			Email: &config.EmailConfig{
-				Provider: "smtp",
-				From:     "spouse@gmail.com",
+				From: "spouse@gmail.com",
 				SMTP: config.SMTPConfig{
 					Host:     "smtp.gmail.com",
 					Port:     465,
@@ -473,5 +468,23 @@ func TestHandleSettingsProfileEditRoundTripsIdentityFields(t *testing.T) {
 	if strings.Join(p.NameVariants, "|") != "Sp. Ouse|S. Ouse" || len(p.PreviousAddresses) != 2 ||
 		len(p.AdditionalEmails) != 1 || len(p.AdditionalPhones) != 1 || p.DateOfBirth != "1990-01-01" {
 		t.Errorf("identity fields not saved as entered: %+v", p.Profile)
+	}
+}
+
+func TestBuildProfileFromFormResolvesCountry(t *testing.T) {
+	build := func(country string) (config.Profile, map[string]string) {
+		form := url.Values{"first_name": {"A"}, "last_name": {"B"}, "email": {"a@b.co"}, "country": {country}}
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		return buildProfileFromForm(req)
+	}
+	if p, errs := build("Germany"); p.Country != "DE" || errs["country"] != "" {
+		t.Errorf("Germany -> %q, %v", p.Country, errs)
+	}
+	if _, errs := build("Atlantis"); errs["country"] == "" {
+		t.Error("unknown country should be rejected")
+	}
+	if p, errs := build(""); p.Country != "" || errs["country"] != "" {
+		t.Errorf("empty country should be allowed, got %q %v", p.Country, errs)
 	}
 }

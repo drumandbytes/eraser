@@ -74,7 +74,7 @@ func (s *Server) handleSettingsAutomation(w http.ResponseWriter, r *http.Request
 		}
 		newCfg := *cfg
 		newCfg.Schedule.Enabled = r.FormValue("action") == "enable"
-		if err := config.Save(s.configPath, &newCfg); err != nil {
+		if err := s.saveConfig(&newCfg); err != nil {
 			s.renderAutomationMessage(w, r, "Failed to save configuration: "+err.Error(), false)
 			return
 		}
@@ -169,7 +169,7 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	config.ApplyInboxDefaults(&inbox)
 	newCfg.Inbox = inbox
 
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		s.renderSettingsWithMessage(w, r, "Failed to save configuration: "+err.Error(), false)
 		return
 	}
@@ -182,16 +182,14 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 // requestTemplates are the built-in email templates (internal/template/templates).
 var requestTemplates = []string{"gdpr", "ccpa", "generic"}
 
-var knownRegions = []string{"us", "eu", "global"}
-
 type regionChoice struct {
 	Name    string
 	Checked bool
 }
 
 func regionChoices(cfg *config.Config) []regionChoice {
-	out := make([]regionChoice, len(knownRegions))
-	for i, n := range knownRegions {
+	out := make([]regionChoice, len(broker.KnownRegions))
+	for i, n := range broker.KnownRegions {
 		out[i] = regionChoice{Name: n}
 		if cfg != nil {
 			out[i].Checked = slices.Contains(cfg.Options.Regions, n)
@@ -251,7 +249,7 @@ func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
 	}
 	var regions []string
 	for _, reg := range r.Form["regions"] {
-		if !slices.Contains(knownRegions, reg) {
+		if !slices.Contains(broker.KnownRegions, reg) {
 			fail("Unknown region")
 			return
 		}
@@ -275,7 +273,7 @@ func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
 	o.SendMode = sendMode
 	o.Template, o.CustomTemplate, o.RateLimitMs, o.DailySendLimit = tmpl, custom, rate, daily
 	o.Regions, o.BrokerList, o.ExcludedCategories = regions, list, cats
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		fail("Failed to save configuration: " + err.Error())
 		return
 	}
@@ -309,6 +307,7 @@ func (s *Server) renderSettings(w http.ResponseWriter, r *http.Request, extra ma
 		"OwnBrokers":  ownBrokerCount(),
 		"Templates":   requestTemplates,
 		"Regions":     regionChoices(cfg),
+		"Passphrase":  s.passphraseView(cfg),
 	}
 	for k, v := range extra {
 		data[k] = v

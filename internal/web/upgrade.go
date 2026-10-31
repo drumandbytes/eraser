@@ -3,13 +3,15 @@ package web
 import (
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 // upgradeNotice says a 1.x config was migrated on load, while its backup is
 // still around and the person hasn't dismissed the notice. The backup file is
 // the signal: nothing else is stored.
 type upgradeNotice struct {
-	Backup string
+	Backup     string // full path, for the tooltip
+	BackupName string // file name, what is shown
 }
 
 func (s *Server) upgradeNotice() *upgradeNotice {
@@ -23,7 +25,7 @@ func (s *Server) upgradeNotice() *upgradeNotice {
 	if _, err := os.Stat(s.configPath + ".1x.notice-seen"); err == nil {
 		return nil
 	}
-	return &upgradeNotice{Backup: bak}
+	return &upgradeNotice{Backup: bak, BackupName: filepath.Base(bak)}
 }
 
 func (s *Server) handleDismissUpgradeNotice(w http.ResponseWriter, r *http.Request) {

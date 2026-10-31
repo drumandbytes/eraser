@@ -121,6 +121,96 @@
            COMPONENT STYLES
            ============================================ */
 
+
+        /* ============================================
+           NOTICES (config upgraded, what's new)
+           ============================================ */
+        .notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 16px 18px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        .notice-icon {
+            flex: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent-muted);
+            color: var(--accent);
+        }
+        .notice-body { flex: 1; min-width: 0; }
+        .notice-title {
+            margin: 0;
+            font-family: var(--font-display);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .notice-text { margin: 4px 0 0; font-size: 14px; line-height: 1.55; color: var(--text-secondary); }
+        .notice-hint { margin: 6px 0 0; font-size: 13px; color: var(--text-muted); }
+        .notice code {
+            padding: 1px 6px;
+            font-size: 12.5px;
+            color: var(--text-primary);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .notice-dismiss {
+            flex: none;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            background: transparent;
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease;
+        }
+        .notice-dismiss:hover { background: var(--bg-elevated); color: var(--text-primary); }
+        .notice-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .whatsnew {
+            padding: 24px;
+            background: linear-gradient(135deg, var(--accent-muted), transparent 55%), var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+        .whatsnew-head { display: flex; align-items: flex-start; gap: 14px; }
+        .whatsnew-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 20px; }
+        @media (min-width: 720px) { .whatsnew-grid { grid-template-columns: 1fr 1fr; } }
+        .whatsnew-item {
+            padding: 14px 16px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .whatsnew-item h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .whatsnew-item p { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-secondary); }
+        .whatsnew-item code { font-size: 12px; color: var(--text-primary); }
+        .whatsnew-foot {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
         /* Cards */
         .card {
             background: var(--bg-surface);
@@ -708,11 +798,20 @@
     <!-- Main content -->
     <main id="main" tabindex="-1" class="max-w-6xl mx-auto pt-8 pb-12 px-4">
         {{if not .WhatsNew}}{{with .UpgradeNotice}}
-        <div class="card p-4 mb-6 flex items-start justify-between gap-4" role="status">
-            <div class="text-sm text-primary">
-                <strong>Config upgraded.</strong> Your 1.x config was migrated: countries are now ISO codes and mail passwords are encrypted. The original is kept as <code>{{.Backup}}</code> with passwords blanked; delete it when you're happy. Moved to a new machine? Re-enter your mail passwords in Settings.
+        <div class="notice mb-6" role="status">
+            <div class="notice-icon" aria-hidden="true">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
             </div>
-            <form method="POST" action="/upgrade-notice/dismiss"><button type="submit" class="btn btn-ghost btn-sm">Dismiss</button></form>
+            <div class="notice-body">
+                <p class="notice-title">Config upgraded to 2.0</p>
+                <p class="notice-text">Your 1.x config was migrated: countries are now ISO codes and mail passwords are encrypted. The original is saved as <code title="{{.Backup}}">{{.BackupName}}</code> next to your config, with passwords blanked. Delete it when you're happy.</p>
+                <p class="notice-hint">Moved to a new machine? Re-enter your mail passwords in Settings.</p>
+            </div>
+            <form method="POST" action="/upgrade-notice/dismiss">
+                <button type="submit" class="notice-dismiss" aria-label="Dismiss this notice" title="Dismiss">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </form>
         </div>
         {{end}}{{end}}
         {{template "content" .}}

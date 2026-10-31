@@ -98,3 +98,27 @@ func TestBounceCheckRefusals(t *testing.T) {
 		t.Errorf("empty inbox: %s", body)
 	}
 }
+
+func TestBounceCheckWithNothingToClearAndClearFailures(t *testing.T) {
+	// Only an unknown-address bounce: reported, but nothing to clear.
+	srv := imaptest.Start(t, false)
+	from, subject, body := ndr("nobody@unknown.example")
+	srv.Deliver(t, "INBOX", from, subject, body)
+	s := inboxServer(t)
+	cfg := *s.getConfig()
+	cfg.Inbox = srv.Inbox
+	s.config.Store(&cfg)
+	if got := do(t, s, http.MethodPost, "/api/inbox/bounces", true).Body.String(); !strings.Contains(got, "None of them need action") || strings.Contains(got, "Clear ") {
+		t.Errorf("no dead addresses:\n%s", got)
+	}
+
+	// A list that can't be edited: the clear fails loudly and changes nothing.
+	b := bounceServer(t)
+	b.BrokerOverride = b.configPath + ".missing-brokers.yaml"
+	if got := do(t, b, http.MethodPost, "/api/inbox/bounces/clear", true).Body.String(); !strings.Contains(got, "clear the addresses") {
+		t.Errorf("unwritable list:\n%s", got)
+	}
+	if b.brokers().FindByID("spokeo").Email == "" {
+		t.Error("a failed clear must not change the loaded list")
+	}
+}

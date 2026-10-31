@@ -482,3 +482,38 @@ func TestTwoPointZeroAnnouncementShowsOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMonitorReclassify(t *testing.T) {
+	// Nothing saved yet.
+	e := newCLIEnv(t, manualConfig)
+	out, err := e.run(t, "", "monitor", "--reclassify")
+	if err != nil {
+		t.Fatalf("empty history: %v", err)
+	}
+	mustContain(t, out, "No responses to reclassify")
+
+	// A saved reply whose body is stored is reclassified without touching the inbox.
+	addResponse := func() {
+		store, err := history.NewStore(history.DBPathFor(e.cfgPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = store.Close() }()
+		if err := store.AddBrokerResponse(&history.BrokerResponse{ProfileID: "default", BrokerID: "acme", BrokerName: "Acme", ResponseType: "unknown",
+			EmailSubject: "Re: request", EmailBody: "We have deleted your data and removed all records as requested.", ReceivedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	addResponse()
+	out, err = e.run(t, "", "monitor", "--reclassify")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustContain(t, out, "Reclassified 1 saved replies", "1 updated")
+
+	// A broken config is reported, not ignored.
+	bad := newCLIEnv(t, "")
+	if _, err := bad.run(t, "", "monitor", "--reclassify"); err == nil || !strings.Contains(err.Error(), "failed to load config") {
+		t.Errorf("no config: %v", err)
+	}
+}

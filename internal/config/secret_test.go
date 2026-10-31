@@ -298,3 +298,120 @@ func TestV2CorruptInputs(t *testing.T) {
 		}
 	}
 }
+
+func TestMachineIDFallsBackToHostname(t *testing.T) {
+	old := machineID
+	t.Cleanup(func() { machineID = old })
+	for name, fn := range map[string]func() (string, error){
+		"error":    func() (string, error) { return "", errors.New("no id") },
+		"empty id": func() (string, error) { return "", nil },
+	} {
+		machineID = fn
+		enc, err := encryptSecret("pw")
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if got, err := decryptSecret(enc); err != nil || got != "pw" {
+			t.Errorf("%s: round trip = %q, %v", name, got, err)
+		}
+	}
+}
+
+func TestDecryptSecretRejectsBadCiphertext(t *testing.T) {
+	withMachineID(t, "m")
+	for _, bad := range []string{secretPrefix + "!!!", secretPrefix + "AAAA", secretPrefix + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"} {
+		if _, err := decryptSecret(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+	enc, _ := encryptSecret("pw")
+	withMachineID(t, "another machine")
+	if _, err := decryptSecret(enc); err == nil {
+		t.Error("a password from another machine must not decrypt")
+	}
+}
+
+func TestPassphraseProviderFailureMeansLocked(t *testing.T) {
+	withMachineID(t, "m")
+	resetPassphrase(t, func() (string, error) { return "", errors.New("not a terminal") })
+	enc, err := encryptV2("pw", "right-pass-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Reveal(enc); !errors.Is(err, ErrLocked) {
+		t.Errorf("provider failure should read as locked, got %v", err)
+	}
+	if PassphraseUnlocked() {
+		t.Error("nothing was entered")
+	}
+}
+
+func TestRevealWrongPassphraseForgetsIt(t *testing.T) {
+	withMachineID(t, "m")
+	resetPassphrase(t, nil)
+	enc, _ := encryptV2("pw", "right-pass-1")
+	SetPassphrase("wrong-pass-2")
+	if _, err := Reveal(enc); err == nil || PassphraseUnlocked() {
+		t.Errorf("a wrong passphrase must fail and be forgotten (err=%v unlocked=%v)", err, PassphraseUnlocked())
+	}
+	SetPassphrase("right-pass-1")
+	if got, err := Reveal(enc); err != nil || got != "pw" || !PassphraseUnlocked() {
+		t.Errorf("Reveal = %q, %v", got, err)
+	}
+	if got, _ := Reveal("plain"); got != "plain" {
+		t.Error("a value that isn't v2 passes through")
+	}
+}
+
+func TestCheckPassphraseDoesNotTouchTheCache(t *testing.T) {
+	withMachineID(t, "m")
+	resetPassphrase(t, nil)
+	_, cfg := baseSecretConfig(t)
+	if err := cfg.CheckPassphrase("anything"); err != nil {
+		t.Errorf("no passphrase set: %v", err)
+	}
+	if err := cfg.SetPassphraseProtection("right-pass-1"); err != nil {
+		t.Fatal(err)
+	}
+	p := writeCfg(t, "")
+	if err := Save(p, cfg); err != nil {
+		t.Fatal(err)
+	}
+	stored, _ := Load(p)
+	SetPassphrase("")
+	if err := stored.CheckPassphrase("wrong-pass-2"); err == nil {
+		t.Error("wrong passphrase accepted")
+	}
+	if err := stored.CheckPassphrase("right-pass-1"); err != nil {
+		t.Errorf("right passphrase rejected: %v", err)
+	}
+	if PassphraseUnlocked() {
+		t.Error("CheckPassphrase must not unlock the process")
+	}
+}
+
+func TestCloneIsolatesPasswords(t *testing.T) {
+	cfg := &Config{
+		Email: EmailConfig{SMTP: SMTPConfig{Password: "a"}},
+		Profiles: []NamedProfile{{ID: "p", Mail: &MailConfig{
+			Email: &EmailConfig{SMTP: SMTPConfig{Password: "b"}},
+			Inbox: &InboxConfig{Password: "c"},
+		}}},
+	}
+	clone := cfg.Clone()
+	clone.Profiles[0].Mail.Email.SMTP.Password = "changed"
+	clone.Profiles[0].Mail.Inbox.Password = "changed"
+	if cfg.Profiles[0].Mail.Email.SMTP.Password != "b" || cfg.Profiles[0].Mail.Inbox.Password != "c" {
+		t.Error("changing the clone changed the original")
+	}
+	if err := (&Config{}).secretFields(func(*string) error { return errors.New("stop") }); err == nil {
+		t.Error("an error from the callback must stop the walk")
+	}
+}
+
+func TestSaveFailsWhenTheDirectoryCannotBeCreated(t *testing.T) {
+	file := writeCfg(t, "x") // a file, so nothing can be created under it
+	if err := Save(file+"/sub/config.yaml", &Config{}); err == nil {
+		t.Error("expected a directory error")
+	}
+}

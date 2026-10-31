@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -77,5 +78,56 @@ func TestPassphraseSetRejections(t *testing.T) {
 	mustContain(t, out, "Nothing changed")
 	if raw, _ := os.ReadFile(e.cfgPath); strings.Contains(string(raw), "enc:v2:") {
 		t.Error("declining must not change the config")
+	}
+}
+
+func TestPassphraseProviderAsksOnTheTerminal(t *testing.T) {
+	scriptedSecrets(t, "typed passphrase")
+	got, err := config.PassphraseProvider()
+	if err != nil || got != "typed passphrase" {
+		t.Errorf("provider = %q, %v", got, err)
+	}
+}
+
+func TestPassphraseCommandsFailCleanly(t *testing.T) {
+	noConfig := newCLIEnv(t, "")
+	for _, args := range [][]string{{"passphrase", "set", "--yes"}, {"passphrase", "clear"}} {
+		if _, err := noConfig.run(t, "", args...); err == nil || !strings.Contains(err.Error(), "failed to load config") {
+			t.Errorf("%v without a config: %v", args, err)
+		}
+	}
+
+	e := newCLIEnv(t, passphraseTestConfig)
+	old := readSecret
+	t.Cleanup(func() { readSecret = old })
+	readSecret = func(string) (string, error) { return "", errors.New("not a terminal") }
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err == nil || !strings.Contains(err.Error(), "can't read the passphrase") {
+		t.Errorf("no terminal: %v", err)
+	}
+
+	// The repeat prompt failing is reported too.
+	calls := 0
+	readSecret = func(string) (string, error) {
+		calls++
+		if calls == 2 {
+			return "", errors.New("closed")
+		}
+		return "long-enough-pass", nil
+	}
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err == nil {
+		t.Error("a failing repeat prompt must fail the command")
+	}
+
+	// Clearing with the wrong passphrase leaves the config alone.
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err != nil {
+		t.Fatal(err)
+	}
+	scriptedSecrets(t, "wrong-1", "wrong-2", "wrong-3")
+	if _, err := e.run(t, "", "passphrase", "clear"); err == nil {
+		t.Error("clear with the wrong passphrase must fail")
+	}
+	if raw, _ := os.ReadFile(e.cfgPath); !strings.Contains(string(raw), "enc:v2:") {
+		t.Error("a failed clear must leave the passphrase in place")
 	}
 }

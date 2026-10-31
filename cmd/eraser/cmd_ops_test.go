@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/imaptest"
 	"github.com/drumandbytes/eraser/internal/schedule"
@@ -455,5 +457,28 @@ func TestTruncateHelpers(t *testing.T) {
 	}
 	if got := truncateURL("short", 12); got != "short" {
 		t.Errorf("truncateURL short = %q", got)
+	}
+}
+
+func TestTwoPointZeroAnnouncementShowsOnce(t *testing.T) {
+	e := newCLIEnv(t, manualConfig)
+	if config.WhatsNewSeen(e.cfgPath) {
+		t.Fatal("setup of the test env should leave it unseen")
+	}
+	r, w, _ := os.Pipe()
+	old := os.Stderr
+	os.Stderr = w
+	_, err := e.run(t, "", "status", "--profile", "default")
+	_ = w.Close()
+	os.Stderr = old
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, _ := io.ReadAll(r)
+	if !strings.Contains(string(out), "Eraser 2.0:") || !config.WhatsNewSeen(e.cfgPath) {
+		t.Errorf("first command should announce 2.0 and remember it: %q", out)
+	}
+	if _, err := e.run(t, "", "status", "--profile", "default"); err != nil {
+		t.Fatal(err)
 	}
 }

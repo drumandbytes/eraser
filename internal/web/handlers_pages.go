@@ -28,6 +28,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		"BrokerCount":   len(s.brokers().Brokers),
 		"RecentHistory": s.getRecentHistory(active.ID, 10),
 		"Stats":         s.getStats(active.ID),
+		"WhatsNew":      s.whatsNew(),
 		"PipelineStats": s.getPipelineStats(active.ID),
 	}
 

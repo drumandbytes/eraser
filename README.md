@@ -17,6 +17,8 @@ You know those sites like Spokeo, BeenVerified, and Whitepages that have your ho
 📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev/?ref=eraser-readme)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
 🔗 [More Drumandbytes projects](https://drumandbytes.com/projects/?ref=eraser-readme)
 
+> **Upgrading from 1.x?** 2.0 stores your profile's country as an ISO code, encrypts your mail passwords (with an optional passphrase), skips country-specific brokers that don't apply to you, and removes a few old settings. Your config is upgraded automatically on first run and the original is kept as `config.yaml.1x.bak`. See the [upgrade guide](docs/upgrading-to-2.0.md).
+
 ### What to Expect
 
 **The good:** Eraser automatically sends removal request emails to 700+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
@@ -207,7 +209,7 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser send --dry-run` | Preview without sending |
 | `eraser send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
 | `eraser send --resend` | Force re-send even to brokers within the cooldown window |
-| `eraser list-brokers` | Show all 700+ brokers |
+| `eraser list-brokers` | Show the 700+ brokers, minus those that only handle other countries than your profile's (`--all-countries` shows them all) |
 | `eraser status` | View history and stats |
 | `eraser status --limit 50` | Show more history |
 | `eraser add-broker` | Add a custom broker interactively |
@@ -216,7 +218,9 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser audit-brokers` | Check broker websites/email domains for signs of life |
 | `eraser validate-brokers` | Structural check of a broker list (ids, names, regions, emails, URLs) |
 | `eraser update-brokers` | Fetch the latest broker list (the list ships inside the binary; this refreshes it) |
-| `eraser monitor` | Monitor your inbox (IMAP) for broker responses |
+| `eraser monitor` | Monitor your inbox (IMAP) for broker responses; `--reclassify` re-runs the classifier over every saved reply |
+| `eraser draft` / `eraser mark-sent` | Write the removal emails as `.eml` files to send by hand, then record them as sent |
+| `eraser passphrase set` / `clear` | Add or remove a passphrase on your stored mail passwords ([details](#security-notes)) |
 | `eraser schedule install` | Run sends + inbox checks automatically every 6 hours (launchd on macOS, systemd on Linux) |
 | `eraser auto` | Same cycle in the foreground, looping every 6 hours (Windows, containers) |
 | `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
@@ -227,6 +231,8 @@ On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eras
 | `eraser mcp` | Connect a local AI agent over MCP (experimental); `eraser mcp approve <id>` approves its batch, `eraser mcp pending` lists waiting ones |
 | `eraser serve` | Start web interface |
 | `eraser serve -p 3000` | Web interface on custom port |
+
+Everything in the web interface has a command-line twin and the other way round, apart from a few maintainer commands and `confirm`; the full list is in [docs/ui-cli-parity.md](docs/ui-cli-parity.md).
 
 ### Configuration File
 

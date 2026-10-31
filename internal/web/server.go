@@ -588,6 +588,25 @@ func stringSet(items []string) map[string]bool {
 	return set
 }
 
+// countryHidden counts brokers the profile's country takes out of its list, for
+// the "N hidden" note on the brokers page. Zero when the country is unset.
+func (s *Server) countryHidden(profileID string) (n int, country string) {
+	cfg := s.getConfig()
+	if cfg == nil {
+		return 0, ""
+	}
+	p, err := cfg.GetProfile(profileID)
+	if err != nil || p.Country == "" {
+		return 0, ""
+	}
+	for _, b := range s.brokers().Brokers {
+		if !b.AppliesTo(p.Country) {
+			n++
+		}
+	}
+	return n, p.Country
+}
+
 // getBrokersWithStatus returns brokers with history status. Excluded brokers
 // are dropped unless showExcluded, where they're kept with Excluded set.
 func (s *Server) getBrokersWithStatus(profileID, search, category, region, statusFilter string, includeIDs, excludeIDs []string, missingEmail, showExcluded bool) []BrokerWithStatus {

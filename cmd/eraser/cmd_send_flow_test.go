@@ -76,8 +76,14 @@ func TestSendSkipsBrokersOutsideCountryScope(t *testing.T) {
 	}
 	mustContain(t, out, `Skipping 1 broker(s) that only handle other countries than "Latvia"`)
 
+	out, _ = e.run(t, "", "list-brokers")
+	mustContain(t, out, "Only for: DE")
+
+	// Naming the broker explicitly bypasses the scope.
 	out, _ = e.run(t, "", "send", "--dry-run", "--broker", "acme")
-	mustContain(t, out, "No brokers to process.")
+	if strings.Contains(out, "Skipping") || strings.Contains(out, "No brokers to process") {
+		t.Errorf("explicit --broker should bypass country scope: %s", out)
+	}
 }
 
 func TestSendFiltersAndRefusals(t *testing.T) {

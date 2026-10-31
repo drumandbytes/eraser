@@ -1,6 +1,6 @@
 <!-- Count header -->
 <div class="px-4 py-3 border-b border-[var(--border)] bg-elevated">
-    <p class="text-sm text-secondary">Showing <span class="font-medium text-primary">{{.Filtered}}</span> of <span class="font-medium text-primary">{{.Total}}</span> brokers</p>
+    <p class="text-sm text-secondary">Showing <span class="font-medium text-primary">{{.Filtered}}</span> of <span class="font-medium text-primary">{{.Total}}</span> brokers{{if .CountryHidden}} <span class="text-muted">&middot; {{.CountryHidden}} hidden - they only handle countries other than {{.Country}}</span>{{end}}</p>
 </div>
 
 <!-- Desktop Table -->
@@ -26,6 +26,7 @@
                         {{else}}
                         <span class="text-sm text-warning" title="Needs manual follow-up - no email on file">No email on file</span>
                         {{end}}
+                        {{if .Countries}}<span class="badge badge-neutral" title="Only handles requests from these countries">Only {{range $i, $c := .Countries}}{{if $i}}, {{end}}{{$c}}{{end}}</span>{{end}}
                     </div>
                 </td>
                 <td>
@@ -78,6 +79,7 @@
             {{if .Region}}
             <span class="text-muted uppercase">{{.Region}}</span>
             {{end}}
+            {{if .Countries}}<span class="badge badge-neutral" title="Only handles requests from these countries">Only {{range $i, $c := .Countries}}{{if $i}}, {{end}}{{$c}}{{end}}</span>{{end}}
         </div>
         <div id="actions-mobile-{{.ID}}" class="flex gap-2">{{template "partials/broker-actions-mobile.html" .}}</div>
     </div>

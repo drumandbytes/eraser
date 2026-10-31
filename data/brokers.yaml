@@ -5117,6 +5117,8 @@ brokers:
       region: eu
       category: financial-b2b
       notes: Replied that 192.com's records are UK-only and asked for more context, since the request came from a non-UK address (2026-08-21) - consistent with this being a UK-focused broker (see EU-NOTES.md); no further action taken.
+      countries:
+        - GB
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de
@@ -5125,6 +5127,8 @@ brokers:
       region: eu
       category: financial-b2b
       notes: Replied "no data stored about you" (2026-08-21) - no further action taken.
+      countries:
+        - DE
     - id: regis24
       name: Regis24
       email: datenschutz@regis24.de
@@ -5133,6 +5137,9 @@ brokers:
       region: eu
       category: financial-b2b
       notes: Replied they only process data for individuals with a German or Austrian address (2026-08-21) - consistent with this being a DE/AT-focused credit agency; no further action taken.
+      countries:
+        - DE
+        - AT
     - id: adikteev
       name: Adikteev
       email: dpo@adikteev.com
@@ -5175,6 +5182,8 @@ brokers:
       region: eu
       category: financial-b2b
       notes: Added 2026-09-12 from their GDPR/data-protection contact page - the major German consumer credit bureau. Their own materials note they steer requesters toward a paid "Bonitatsauskunft" product first; the free Art. 15 GDPR access/erasure request is a separate legal right.
+      countries:
+        - DE
     - id: crif
       name: CRIF S.p.A.
       email: dirprivacy@crif.com
@@ -5201,6 +5210,8 @@ brokers:
       region: eu
       category: marketing
       notes: Added 2026-09-12 from their data-protection contact page - German address/geo-marketing data broker (Deutsche Post subsidiary).
+      countries:
+        - DE
     - id: adform
       name: Adform A/S
       email: dpo@adform.com
@@ -5245,6 +5256,8 @@ brokers:
       region: global
       category: requires-id
       notes: 'Added 2026-09-12 from their Ley 25.326 data-rights page - Argentine commercial/credit intelligence bureau (reports, scoring, "Big Data Personas" on ~40M Argentinians). Suppression/rectification requests: web form at the opt_out_url or derechoacceso@nosis.com; DNI copy required (see notes on requires-id brokers).'
+      countries:
+        - AR
     - id: circulo-de-credito
       name: Círculo de Crédito S.A. de C.V. S.I.C.
       email: ""
@@ -5253,6 +5266,8 @@ brokers:
       region: global
       category: financial-b2b
       notes: Added 2026-09-12 from their LRSIC privacy notice - Mexican credit bureau (Sociedad de Información Crediticia) regulated by SHCP/CNBV/Banxico/CONDUSEF. No direct email; the reclamation procedure (art. 42 LRSIC) is web-form based at the opt_out_url. Statutory retention limits apply to suppression.
+      countries:
+        - MX
     - id: buro-de-credito-mx
       name: Buró de Crédito (Trans Union de México S.A. S.I.C.)
       email: ""
@@ -5261,6 +5276,8 @@ brokers:
       region: global
       category: financial-b2b
       notes: Added 2026-09-12 from their January 2026 privacy declaration - Mexican credit bureau (Trans Union de México, LRSIC-regulated SIC), the primary statutory credit database. No direct email; reclamation is the online process at the opt_out_url (official ID + supporting docs required). Distinct legal controller from the transunion-marketing entry.
+      countries:
+        - MX
     - id: datacredito-experian-co
       name: DataCrédito Experian Colombia
       email: ""
@@ -5269,6 +5286,8 @@ brokers:
       region: global
       category: financial-b2b
       notes: Added 2026-09-12 from their Habeas Data page - Colombian credit bureau operated by Experian Colombia S.A., supervised by the Superintendencia de Industria y Comercio. Claims/suppression via the SIC-regulated reclamos portal at the opt_out_url; servicioalcliente@experian.com is the general contact. Distinct Colombian controller from the experian-marketing entry.
+      countries:
+        - CO
       parent: Experian Colombia S.A.
       hq: Colombia
       sources:
@@ -5290,6 +5309,8 @@ brokers:
       region: global
       category: financial-b2b
       notes: Added 2026-09-12 from their privacy statement (Credit Reporting Privacy Code 2020) - New Zealand consumer credit bureau. Access/correction via helpdesk@centrix.co.nz or mycreditreport@centrix.co.nz; credit-file suppression has its own form at the opt_out_url.
+      countries:
+        - NZ
     - id: metropol-crb
       name: Metropol Credit Reference Bureau Limited
       email: data@metropol.co.ke
@@ -5298,3 +5319,5 @@ brokers:
       region: global
       category: financial-b2b
       notes: 'Added 2026-09-12 from their privacy policy - Kenyan credit bureau regulated by the Central Bank of Kenya. Data Privacy Office: data@metropol.co.ke; erasure/correction requests: disputes@metropol.co.ke (credit-bureau data may be retained per CRB Regulations).'
+      countries:
+        - KE

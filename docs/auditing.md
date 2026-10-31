@@ -14,6 +14,10 @@ go run golang.org/x/vuln/cmd/govulncheck@latest ./...    # known CVEs in reachab
 
 `golangci-lint` (config: `.golangci.yml` - errcheck, govet, staticcheck, unused) also runs in CI on every push/PR via `.github/workflows/ci.yml`, so a plain `go build`/`go vet`/`go test` pass locally isn't the whole picture - run the lint command above too before assuming a change is clean. The default `max-same-issues`/`max-issues-per-linter` caps hide duplicates past the first few, which reads as "mostly clean" when it isn't - always pass `--max-issues-per-linter=0 --max-same-issues=0` when actually auditing, not just spot-checking.
 
+## Country scope
+
+When a broker's own reply, privacy policy or registry entry says it holds data for one country only, add `countries: [XX]` (upper-case ISO code) to that entry, and note where that was stated. Don't scope on a guess from the domain or HQ: a wrong scope hides the broker from people it does hold data on.
+
 ## Growing the broker list from state registries
 
 The US state data-broker registries are public and worth mining for entries the

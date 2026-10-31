@@ -83,6 +83,9 @@ func runListBrokers(regions, categories []string, search string, missingEmail bo
 			fmt.Printf("  🔗 Opt-out: %s\n", b.OptOutURL)
 		}
 		fmt.Printf("  🌍 Region: %s\n", b.Region)
+		if len(b.Countries) > 0 {
+			fmt.Printf("  🗺  Only for: %s\n", strings.Join(b.Countries, ", "))
+		}
 		if b.Category != "" {
 			fmt.Printf("  📁 Category: %s\n", b.Category)
 		}

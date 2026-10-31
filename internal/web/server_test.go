@@ -270,3 +270,27 @@ func TestRequireLoopbackHostBlocksNonLoopback(t *testing.T) {
 		t.Errorf("loopback Host: got status %d, want 200", rec.Code)
 	}
 }
+
+func TestCountryHiddenCountsOutOfScopeBrokers(t *testing.T) {
+	cfg := testConfig("default")
+	cfg.Profiles[0].Country = "France"
+	s := newTestServer(t, cfg)
+	s.brokers().Brokers = []broker.Broker{
+		{ID: "de-only", Name: "DE Only", Countries: []string{"DE"}},
+		{ID: "anywhere", Name: "Anywhere"},
+	}
+	if n, c := s.countryHidden("default"); n != 1 || c != "France" {
+		t.Errorf("countryHidden = %d, %q; want 1, France", n, c)
+	}
+	cfg.Profiles[0].Country = ""
+	if n, _ := s.countryHidden("default"); n != 0 {
+		t.Errorf("unset country should hide nothing, got %d", n)
+	}
+	if n, _ := s.countryHidden("nobody"); n != 0 {
+		t.Errorf("unknown profile should hide nothing, got %d", n)
+	}
+	s.config.Store(nil)
+	if n, _ := s.countryHidden("default"); n != 0 {
+		t.Errorf("no config should hide nothing, got %d", n)
+	}
+}

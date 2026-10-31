@@ -150,7 +150,9 @@ func runSend() error {
 	}
 	excluded := append(append([]string{}, cfg.Options.ExcludedBrokers...), excludedIDs...)
 	brokers := brokerDB.Select(brokerIDs, selectedRegions, categories, excluded, cfg.Options.ExcludedCategories)
-	if inScope := broker.ForCountry(brokers, activeProfile.Country); len(inScope) < len(brokers) {
+	// Naming brokers with --broker is a deliberate choice (e.g. a past
+	// address in their country), so only the default selection is scoped.
+	if inScope := broker.ForCountry(brokers, activeProfile.Country); len(brokerIDs) == 0 && len(inScope) < len(brokers) {
 		fmt.Printf("Skipping %d broker(s) that only handle other countries than %q.\n", len(brokers)-len(inScope), activeProfile.Country)
 		brokers = inScope
 	}

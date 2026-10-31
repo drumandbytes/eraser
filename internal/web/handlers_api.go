@@ -28,11 +28,14 @@ func (s *Server) handleAPIBrokers(w http.ResponseWriter, r *http.Request) {
 
 	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, nil, nil, missingEmail, showExcluded)
 
+	hidden, country := s.countryHidden(s.activeProfile(r).ID)
 	s.renderPartial(w, "partials/broker-list.html", map[string]interface{}{
-		"Brokers":      brokers,
-		"Filtered":     len(brokers),
-		"Total":        len(s.brokers().Brokers),
-		"ShowExcluded": showExcluded,
+		"Brokers":       brokers,
+		"CountryHidden": hidden,
+		"Country":       country,
+		"Filtered":      len(brokers),
+		"Total":         len(s.brokers().Brokers),
+		"ShowExcluded":  showExcluded,
 	})
 }
 

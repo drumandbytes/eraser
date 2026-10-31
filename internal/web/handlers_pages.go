@@ -45,22 +45,25 @@ func (s *Server) handleBrokers(w http.ResponseWriter, r *http.Request) {
 	brokers := s.getBrokersWithStatus(s.activeProfile(r).ID, search, category, region, status, nil, nil, missingEmail, showExcluded)
 
 	dailyLimit := effectiveDailyLimit(s.getConfig())
+	hidden, country := s.countryHidden(s.activeProfile(r).ID)
 
 	data := map[string]interface{}{
-		"Title":        "Data Brokers",
-		"Brokers":      brokers,
-		"Categories":   s.getUniqueCategories(),
-		"Regions":      s.getUniqueRegions(),
-		"Search":       search,
-		"Category":     category,
-		"Region":       region,
-		"Status":       status,
-		"MissingEmail": missingEmail,
-		"ShowExcluded": showExcluded,
-		"Total":        len(s.brokers().Brokers),
-		"Filtered":     len(brokers),
-		"DailyLimit":   dailyLimit,
-		"ManualMode":   s.getConfig() != nil && s.getConfig().IsManualSend(),
+		"Title":         "Data Brokers",
+		"Brokers":       brokers,
+		"Categories":    s.getUniqueCategories(),
+		"Regions":       s.getUniqueRegions(),
+		"Search":        search,
+		"Category":      category,
+		"Region":        region,
+		"Status":        status,
+		"MissingEmail":  missingEmail,
+		"ShowExcluded":  showExcluded,
+		"Total":         len(s.brokers().Brokers),
+		"Filtered":      len(brokers),
+		"CountryHidden": hidden,
+		"Country":       country,
+		"DailyLimit":    dailyLimit,
+		"ManualMode":    s.getConfig() != nil && s.getConfig().IsManualSend(),
 	}
 	s.renderWithCSRF(w, r, "brokers.html", data)
 }

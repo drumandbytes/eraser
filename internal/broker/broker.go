@@ -28,6 +28,8 @@ const MinVerifiedBrokerCount = 20
 // knownRegions is the closed set of region values the rest of the code
 // branches on (see Filter). A typo like "usa" would silently drop a broker
 // from every region-filtered send.
+var countryCodeRe = regexp.MustCompile(`^[A-Z]{2}$`)
+
 var knownRegions = map[string]bool{"us": true, "eu": true, "global": true}
 
 // looseEmailRe is a deliberately permissive check - it only catches obvious
@@ -159,8 +161,8 @@ func (b Broker) Problems() []string {
 		problems = append(problems, fmt.Sprintf("unknown region %q", b.Region))
 	}
 	for _, c := range b.Countries {
-		if len(strings.TrimSpace(c)) != 2 || dpa.ForCountry(c) == nil {
-			problems = append(problems, fmt.Sprintf("countries entry is not a known ISO 3166-1 alpha-2 code: %q", c))
+		if !countryCodeRe.MatchString(c) {
+			problems = append(problems, fmt.Sprintf("countries entry is not an upper-case ISO 3166-1 alpha-2 code: %q", c))
 		}
 	}
 	if b.Email != "" && !looseEmailRe.MatchString(strings.TrimSpace(b.Email)) {

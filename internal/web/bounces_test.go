@@ -122,3 +122,9 @@ func TestBounceCheckWithNothingToClearAndClearFailures(t *testing.T) {
 		t.Error("a failed clear must not change the loaded list")
 	}
 }
+
+func TestBounceClearReportsAFailedScan(t *testing.T) {
+	if body := do(t, inboxServer(t), http.MethodPost, "/api/inbox/bounces/clear", true).Body.String(); !strings.Contains(body, "Bounce check failed") {
+		t.Errorf("unreachable inbox on clear: %s", body)
+	}
+}

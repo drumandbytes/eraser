@@ -373,13 +373,13 @@ func Load(path string) (*Config, error) {
 	}
 
 	plaintext := false
-	if err := cfg.secretFields(func(p *string) error {
+	cfg.eachSecret(func(p *string) {
 		if *p != "" && !isEncrypted(*p) {
 			plaintext = true
-			return nil
+			return
 		}
 		if strings.HasPrefix(*p, secretPrefixV2) {
-			return nil // decrypted by Reveal, when the passphrase is available
+			return // decrypted by Reveal, when the passphrase is available
 		}
 		plain, err := decryptSecret(*p)
 		if err != nil {
@@ -387,10 +387,7 @@ func Load(path string) (*Config, error) {
 			plain = ""
 		}
 		*p = plain
-		return nil
-	}); err != nil {
-		return nil, err
-	}
+	})
 	migrateFrom1x(path, data, &cfg, plaintext)
 	applyInboxDefaults(&cfg.Inbox)
 	for i := range cfg.Profiles {
@@ -524,18 +521,16 @@ func Save(path string, cfg *Config) error {
 
 	out := cfg.cloneForSecrets() // cfg may be the live config others read
 	if err := out.secretFields(func(p *string) error {
-		var enc string
-		var err error
 		if out.PassphraseProtected && *p != "" && !isEncrypted(*p) {
-			var pass string
-			if pass, err = passphrase(); err == nil {
-				enc, err = encryptV2(*p, pass)
+			pass, err := passphrase()
+			if err != nil {
+				return err
 			}
-		} else {
-			enc, err = encryptSecret(*p)
+			*p = encryptV2(*p, pass)
+			return nil
 		}
-		*p = enc
-		return err
+		*p = encryptSecret(*p)
+		return nil
 	}); err != nil {
 		return fmt.Errorf("failed to protect passwords: %w", err)
 	}

@@ -38,40 +38,38 @@ const (
 var machineID = readMachineID
 
 // machineSecret is the machine-and-user binding both key schemes start from.
-func machineSecret() ([]byte, error) {
+// It always yields something: the machine ID, else the hostname.
+func machineSecret() []byte {
 	id, err := machineID()
 	if err != nil || id == "" {
-		host, herr := os.Hostname()
-		if herr != nil {
-			return nil, errors.New("no machine identifier available to protect passwords")
-		}
+		host, _ := os.Hostname()
 		id = "host:" + host
 	}
 	who := "unknown"
 	if u, err := user.Current(); err == nil {
 		who = u.Uid + ":" + u.Username
 	}
-	return []byte(id + "\x00" + who), nil
+	return []byte(id + "\x00" + who)
 }
 
-func secretKey() ([]byte, error) {
-	ikm, err := machineSecret()
-	if err != nil {
-		return nil, err
-	}
-	return hkdf.Key(sha256.New, ikm, []byte("eraser/config-secret/v1"), "aes-256-gcm", 32)
+// The primitives below can't fail for the fixed sizes used here: HKDF and
+// PBKDF2 only error for an oversized output, AES takes any 32-byte key, GCM
+// wraps AES, and crypto/rand.Read never returns an error (Go 1.24+).
+func aeadFor(key []byte) cipher.AEAD {
+	block, _ := aes.NewCipher(key)
+	gcm, _ := cipher.NewGCM(block)
+	return gcm
 }
 
-func newGCM() (cipher.AEAD, error) {
-	key, err := secretKey()
-	if err != nil {
-		return nil, err
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	return cipher.NewGCM(block)
+func randomBytes(n int) []byte {
+	b := make([]byte, n)
+	_, _ = rand.Read(b)
+	return b
+}
+
+func machineKey() cipher.AEAD {
+	key, _ := hkdf.Key(sha256.New, machineSecret(), []byte("eraser/config-secret/v1"), "aes-256-gcm", 32)
+	return aeadFor(key)
 }
 
 func isEncrypted(s string) bool {
@@ -79,19 +77,13 @@ func isEncrypted(s string) bool {
 }
 
 // encryptSecret leaves "" and already-encrypted values alone.
-func encryptSecret(plain string) (string, error) {
+func encryptSecret(plain string) string {
 	if plain == "" || isEncrypted(plain) {
-		return plain, nil
+		return plain
 	}
-	gcm, err := newGCM()
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	return secretPrefix + base64.StdEncoding.EncodeToString(gcm.Seal(nonce, nonce, []byte(plain), nil)), nil
+	gcm := machineKey()
+	nonce := randomBytes(gcm.NonceSize())
+	return secretPrefix + base64.StdEncoding.EncodeToString(gcm.Seal(nonce, nonce, []byte(plain), nil))
 }
 
 // decryptSecret returns plaintext values (legacy configs) unchanged.
@@ -103,10 +95,7 @@ func decryptSecret(s string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("corrupt encrypted password: %w", err)
 	}
-	gcm, err := newGCM()
-	if err != nil {
-		return "", err
-	}
+	gcm := machineKey()
 	if len(raw) < gcm.NonceSize() {
 		return "", errors.New("corrupt encrypted password")
 	}
@@ -117,20 +106,27 @@ func decryptSecret(s string) (string, error) {
 	return string(plain), nil
 }
 
-// secretFields calls fn on every stored password: the shared SMTP and inbox
-// ones and each profile's mail override.
-func (c *Config) secretFields(fn func(*string) error) error {
-	ptrs := []*string{&c.Email.SMTP.Password, &c.Inbox.Password}
+// eachSecret calls fn on every stored password: the shared SMTP and inbox ones
+// and each profile's mail override.
+func (c *Config) eachSecret(fn func(*string)) {
+	fn(&c.Email.SMTP.Password)
+	fn(&c.Inbox.Password)
 	for i := range c.Profiles {
 		if m := c.Profiles[i].Mail; m != nil {
 			if m.Email != nil {
-				ptrs = append(ptrs, &m.Email.SMTP.Password)
+				fn(&m.Email.SMTP.Password)
 			}
 			if m.Inbox != nil {
-				ptrs = append(ptrs, &m.Inbox.Password)
+				fn(&m.Inbox.Password)
 			}
 		}
 	}
+}
+
+// secretFields is eachSecret for callbacks that can fail; it stops at the first error.
+func (c *Config) secretFields(fn func(*string) error) error {
+	var ptrs []*string
+	c.eachSecret(func(p *string) { ptrs = append(ptrs, p) })
 	for _, p := range ptrs {
 		if err := fn(p); err != nil {
 			return err
@@ -164,7 +160,7 @@ func (c *Config) cloneForSecrets() *Config {
 
 // ErrLocked means a passphrase-protected password was needed but nobody could
 // be asked (an unattended run).
-var ErrLocked = errors.New("the stored passwords are protected by a passphrase and this run can't ask for it; run `eraser auto loop` or `eraser serve` and enter it there, or remove it with `eraser passphrase clear`")
+var ErrLocked = errors.New("the stored passwords are protected by a passphrase and this run can't ask for it; run `eraser auto` or `eraser serve` and enter it there, or remove it with `eraser passphrase clear`")
 
 var (
 	unlockMu sync.Mutex
@@ -198,37 +194,17 @@ func passphrase() (string, error) {
 	return p, nil
 }
 
-func v2Key(pass string, salt []byte) ([]byte, error) {
-	ikm, err := machineSecret()
-	if err != nil {
-		return nil, err
-	}
-	return pbkdf2.Key(sha256.New, pass+"\x00"+string(ikm), salt, pbkdf2Rounds, 32)
+func v2AEAD(pass string, salt []byte) cipher.AEAD {
+	key, _ := pbkdf2.Key(sha256.New, pass+"\x00"+string(machineSecret()), salt, pbkdf2Rounds, 32)
+	return aeadFor(key)
 }
 
-func encryptV2(plain, pass string) (string, error) {
-	salt := make([]byte, saltSize)
-	if _, err := rand.Read(salt); err != nil {
-		return "", err
-	}
-	key, err := v2Key(pass, salt)
-	if err != nil {
-		return "", err
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
+func encryptV2(plain, pass string) string {
+	salt := randomBytes(saltSize)
+	gcm := v2AEAD(pass, salt)
+	nonce := randomBytes(gcm.NonceSize())
 	out := append(salt, nonce...)
-	return secretPrefixV2 + base64.StdEncoding.EncodeToString(gcm.Seal(out, nonce, []byte(plain), nil)), nil
+	return secretPrefixV2 + base64.StdEncoding.EncodeToString(gcm.Seal(out, nonce, []byte(plain), nil))
 }
 
 var errWrongPassphrase = errors.New("wrong passphrase (or the config was moved to another machine or user)")
@@ -238,18 +214,7 @@ func decryptV2(s, pass string) (string, error) {
 	if err != nil || len(raw) < saltSize {
 		return "", errors.New("corrupt encrypted password")
 	}
-	key, err := v2Key(pass, raw[:saltSize])
-	if err != nil {
-		return "", err
-	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
+	gcm := v2AEAD(pass, raw[:saltSize])
 	body := raw[saltSize:]
 	if len(body) < gcm.NonceSize() {
 		return "", errors.New("corrupt encrypted password")
@@ -280,7 +245,7 @@ func Reveal(stored string) (string, error) {
 }
 
 // Unlock asks for the passphrase now (up to three tries) and checks it against
-// every stored password, so a long-running `serve` or `auto loop` fails at
+// every stored password, so a long-running `serve` or `auto` fails at
 // startup instead of on the first send. No-op without a passphrase.
 func (c *Config) Unlock() error {
 	if !c.PassphraseProtected {

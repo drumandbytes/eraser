@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"errors"
 	"os"
 	"strings"
@@ -116,14 +117,14 @@ func TestPasswordFromAnotherMachineIsNotDecrypted(t *testing.T) {
 
 func TestSecretEdgeCases(t *testing.T) {
 	withMachineID(t, "m")
-	if got, err := encryptSecret(""); got != "" || err != nil {
-		t.Errorf("empty: %q %v", got, err)
+	if got := encryptSecret(""); got != "" {
+		t.Errorf("empty: %q", got)
 	}
-	enc, _ := encryptSecret("x")
-	if again, _ := encryptSecret(enc); again != enc {
+	enc := encryptSecret("x")
+	if again := encryptSecret(enc); again != enc {
 		t.Error("encrypting twice must be a no-op")
 	}
-	if a, _ := encryptSecret("x"); a == enc {
+	if a := encryptSecret("x"); a == enc {
 		t.Error("nonce must differ per encryption")
 	}
 	if got, err := decryptSecret("legacy"); got != "legacy" || err != nil {
@@ -141,10 +142,7 @@ func TestSecretEdgeCases(t *testing.T) {
 
 func TestRealMachineIDKey(t *testing.T) {
 	// No override: whatever this platform provides (or the hostname fallback) must work.
-	enc, err := encryptSecret("pw")
-	if err != nil {
-		t.Fatal(err)
-	}
+	enc := encryptSecret("pw")
 	if got, err := decryptSecret(enc); err != nil || got != "pw" {
 		t.Errorf("round trip with the real machine id: %q %v", got, err)
 	}
@@ -307,10 +305,7 @@ func TestMachineIDFallsBackToHostname(t *testing.T) {
 		"empty id": func() (string, error) { return "", nil },
 	} {
 		machineID = fn
-		enc, err := encryptSecret("pw")
-		if err != nil {
-			t.Fatalf("%s: %v", name, err)
-		}
+		enc := encryptSecret("pw")
 		if got, err := decryptSecret(enc); err != nil || got != "pw" {
 			t.Errorf("%s: round trip = %q, %v", name, got, err)
 		}
@@ -324,7 +319,7 @@ func TestDecryptSecretRejectsBadCiphertext(t *testing.T) {
 			t.Errorf("%q accepted", bad)
 		}
 	}
-	enc, _ := encryptSecret("pw")
+	enc := encryptSecret("pw")
 	withMachineID(t, "another machine")
 	if _, err := decryptSecret(enc); err == nil {
 		t.Error("a password from another machine must not decrypt")
@@ -334,10 +329,7 @@ func TestDecryptSecretRejectsBadCiphertext(t *testing.T) {
 func TestPassphraseProviderFailureMeansLocked(t *testing.T) {
 	withMachineID(t, "m")
 	resetPassphrase(t, func() (string, error) { return "", errors.New("not a terminal") })
-	enc, err := encryptV2("pw", "right-pass-1")
-	if err != nil {
-		t.Fatal(err)
-	}
+	enc := encryptV2("pw", "right-pass-1")
 	if _, err := Reveal(enc); !errors.Is(err, ErrLocked) {
 		t.Errorf("provider failure should read as locked, got %v", err)
 	}
@@ -349,7 +341,7 @@ func TestPassphraseProviderFailureMeansLocked(t *testing.T) {
 func TestRevealWrongPassphraseForgetsIt(t *testing.T) {
 	withMachineID(t, "m")
 	resetPassphrase(t, nil)
-	enc, _ := encryptV2("pw", "right-pass-1")
+	enc := encryptV2("pw", "right-pass-1")
 	SetPassphrase("wrong-pass-2")
 	if _, err := Reveal(enc); err == nil || PassphraseUnlocked() {
 		t.Errorf("a wrong passphrase must fail and be forgotten (err=%v unlocked=%v)", err, PassphraseUnlocked())
@@ -413,5 +405,40 @@ func TestSaveFailsWhenTheDirectoryCannotBeCreated(t *testing.T) {
 	file := writeCfg(t, "x") // a file, so nothing can be created under it
 	if err := Save(file+"/sub/config.yaml", &Config{}); err == nil {
 		t.Error("expected a directory error")
+	}
+}
+
+func TestV2RejectsATooShortBody(t *testing.T) {
+	short := secretPrefixV2 + base64.StdEncoding.EncodeToString(make([]byte, saltSize)) // salt only, no nonce
+	if _, err := decryptV2(short, "x"); err == nil {
+		t.Error("a ciphertext with no nonce must be rejected")
+	}
+}
+
+func TestChangingTheProtectionNeedsTheCurrentPassphrase(t *testing.T) {
+	withMachineID(t, "m")
+	resetPassphrase(t, nil)
+	_, cfg := baseSecretConfig(t)
+	cfg.Email.SMTP.Password = encryptV2("pw", "right-pass-1") // stored protected, process doesn't hold the passphrase
+	cfg.PassphraseProtected = true
+	SetPassphrase("")
+	if err := cfg.SetPassphraseProtection("another-pass-2"); !errors.Is(err, ErrLocked) {
+		t.Errorf("err = %v, want ErrLocked", err)
+	}
+	if cfg.PassphraseProtected != true {
+		t.Error("a failed change must leave the protection on")
+	}
+}
+
+func TestCheckPassphraseSkipsValuesThatAreNotProtected(t *testing.T) {
+	withMachineID(t, "m")
+	cfg := &Config{PassphraseProtected: true}
+	cfg.Email.SMTP.Password = "typed-but-not-yet-saved"
+	cfg.Inbox.Password = encryptV2("pw", "right-pass-1")
+	if err := cfg.CheckPassphrase("right-pass-1"); err != nil {
+		t.Errorf("a plain value next to a protected one: %v", err)
+	}
+	if err := cfg.CheckPassphrase("wrong-pass-2"); err == nil {
+		t.Error("the protected value must still be checked")
 	}
 }

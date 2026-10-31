@@ -2,7 +2,9 @@ package bounces
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -126,5 +128,55 @@ func TestEverSentCoversEveryProfile(t *testing.T) {
 	_ = store.Close()
 	if got := EverSent(cfg, store); len(got) != 0 {
 		t.Errorf("a broken store must yield nothing, got %v", got)
+	}
+}
+
+func skipWithoutPermissions(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs POSIX permissions and a non-root user")
+	}
+}
+
+func TestClearReportsSaveFailures(t *testing.T) {
+	skipWithoutPermissions(t)
+	shipped, err := broker.Load("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var target broker.Broker
+	for _, b := range shipped.Brokers {
+		if b.Email != "" {
+			target = b
+			break
+		}
+	}
+	dead := []Item{{Kind: Dead, Email: target.Email, Subject: "bounce", Broker: target}}
+
+	// The user's own entries can't be written: their folder is read-only.
+	home := t.TempDir()
+	eraserDir := filepath.Join(home, ".eraser")
+	if err := os.MkdirAll(eraserDir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(eraserDir, 0o700) })
+	testenv.SetHome(t, home)
+	if _, err := Clear("", dead); err == nil || !strings.Contains(err.Error(), "failed to save") {
+		t.Errorf("unwritable user entries: %v", err)
+	}
+
+	// The maintained list can't be saved: its directory is read-only.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "brokers.yaml")
+	if err := testBrokers().Save(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	item := Item{Kind: Dead, Email: "privacy@acme.example", Subject: "bounce", Broker: testBrokers().Brokers[0]}
+	if _, err := Clear(path, []Item{item}); err == nil {
+		t.Error("a read-only directory must fail the save")
 	}
 }

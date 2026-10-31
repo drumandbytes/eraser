@@ -34,7 +34,7 @@ func init() {
 
 const passphraseHeadsUp = `Heads-up: with a passphrase set, runs with nobody at the keyboard can't unlock your mail password.
   - 'eraser schedule install' (the OS scheduler) is refused, and an installed one will fail to send.
-  - 'eraser auto loop' and 'eraser serve' ask once at startup and then keep running; after a reboot you enter it again.
+  - 'eraser auto' and 'eraser serve' ask once at startup and then keep running; after a reboot you enter it again.
   - There is no recovery. If you forget it, re-enter your mail passwords with 'eraser init'.`
 
 func passphraseCmd() *cobra.Command {
@@ -101,7 +101,7 @@ func runPassphraseSet(yes bool) error {
 	}
 	fmt.Println("✅ Mail passwords are now protected by your passphrase.")
 	if schedule.Installed() {
-		fmt.Println("⚠️  The OS scheduler is installed and can no longer send. Run 'eraser schedule remove', then use 'eraser auto loop' or 'eraser serve'.")
+		fmt.Println("⚠️  The OS scheduler is installed and can no longer send. Run 'eraser schedule remove', then use 'eraser auto' or 'eraser serve'.")
 	}
 	return nil
 }

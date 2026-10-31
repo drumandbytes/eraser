@@ -517,3 +517,32 @@ func TestMonitorReclassify(t *testing.T) {
 		t.Errorf("no config: %v", err)
 	}
 }
+
+func TestMonitorReclassifyReportsBrokerAndStoreProblems(t *testing.T) {
+	e := newCLIEnv(t, manualConfig)
+	if _, err := runCLI(t, "", "--config", e.cfgPath, "--brokers", filepath.Join(t.TempDir(), "missing.yaml"), "monitor", "--reclassify"); err == nil || !strings.Contains(err.Error(), "failed to load brokers") {
+		t.Errorf("missing broker list: %v", err)
+	}
+}
+
+func TestCleanupBouncesReportsAnUnreachableInbox(t *testing.T) {
+	e := newCLIEnv(t, manualConfig+"inbox:\n  enabled: true\n  server: 127.0.0.1\n  port: 1\n  email: a@b.example\n  password: p\n")
+	if _, err := e.run(t, "", "cleanup-bounces"); err == nil || !strings.Contains(err.Error(), "failed to connect") {
+		t.Errorf("err = %v", err)
+	}
+}
+
+func TestDraftReportsAnUnwritableOutputFolder(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs POSIX permissions and a non-root user")
+	}
+	e := newCLIEnv(t, manualConfig)
+	out := filepath.Join(t.TempDir(), "out")
+	if err := os.MkdirAll(out, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(out, 0o700) })
+	if _, err := e.run(t, "", "draft", "acme", "--profile", "default", "-o", out); err == nil || !strings.Contains(err.Error(), "failed to write") {
+		t.Errorf("err = %v", err)
+	}
+}

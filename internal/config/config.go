@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/drumandbytes/eraser/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -386,6 +387,7 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg.normalizeProfiles()
+	migrateCountries(path, data, &cfg)
 	applyInboxDefaults(&cfg.Inbox)
 	for i := range cfg.Profiles {
 		if cfg.Profiles[i].Mail != nil && cfg.Profiles[i].Mail.Inbox != nil {
@@ -401,6 +403,40 @@ func Load(path string) (*Config, error) {
 	// clobbering an explicit false.
 
 	return &cfg, nil
+}
+
+// migrateCountries rewrites free-text profile countries ("Germany", "UK") as
+// ISO alpha-2 codes. Before the first rewrite the original file is kept as
+// <path>.1x.bak. Values that don't resolve are left alone and warned about.
+func migrateCountries(path string, orig []byte, cfg *Config) {
+	changed := false
+	for i := range cfg.Profiles {
+		p := &cfg.Profiles[i]
+		if p.Country == "" {
+			continue
+		}
+		code, ok := country.Code(p.Country)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "WARNING: profile %q: country %q isn't a known country; fix it with `eraser profile edit` (country-scoped brokers aren't filtered until then)\n", p.ID, p.Country)
+			continue
+		}
+		if code != p.Country {
+			p.Country, changed = code, true
+		}
+	}
+	if !changed {
+		return
+	}
+	bak := path + ".1x.bak"
+	if _, err := os.Stat(bak); err != nil {
+		if err := os.WriteFile(bak, orig, 0600); err != nil {
+			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating country to an ISO code: %v\n", err)
+			return
+		}
+	}
+	if err := Save(path, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: could not save migrated country codes: %v\n", err)
+	}
 }
 
 // applyInboxDefaults fills Folder/ArchiveFolder and, for known providers,

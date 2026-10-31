@@ -475,3 +475,21 @@ func TestHandleSettingsProfileEditRoundTripsIdentityFields(t *testing.T) {
 		t.Errorf("identity fields not saved as entered: %+v", p.Profile)
 	}
 }
+
+func TestBuildProfileFromFormResolvesCountry(t *testing.T) {
+	build := func(country string) (config.Profile, map[string]string) {
+		form := url.Values{"first_name": {"A"}, "last_name": {"B"}, "email": {"a@b.co"}, "country": {country}}
+		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(form.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		return buildProfileFromForm(req)
+	}
+	if p, errs := build("Germany"); p.Country != "DE" || errs["country"] != "" {
+		t.Errorf("Germany -> %q, %v", p.Country, errs)
+	}
+	if _, errs := build("Atlantis"); errs["country"] == "" {
+		t.Error("unknown country should be rejected")
+	}
+	if p, errs := build(""); p.Country != "" || errs["country"] != "" {
+		t.Errorf("empty country should be allowed, got %q %v", p.Country, errs)
+	}
+}

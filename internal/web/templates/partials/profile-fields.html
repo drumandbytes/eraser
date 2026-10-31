@@ -84,10 +84,12 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label for="country" class="label">Country</label>
-                <input type="text" name="country" id="country" autocomplete="country-name"
-                    value="{{.Profile.Country}}"
-                    class="input"
-                    placeholder="USA">
+                <select name="country" id="country" autocomplete="country" class="input">
+                    <option value="">-</option>
+                    {{$cur := countryCode .Profile.Country}}
+                    {{range countries}}<option value="{{.Code}}"{{if eq .Code $cur}} selected{{end}}>{{.Name}}</option>{{end}}
+                </select>
+                {{if .Errors.country}}<p class="mt-1 text-sm text-error">{{.Errors.country}}</p>{{end}}
             </div>
             <div>
                 <label for="phone" class="label">Phone</label>

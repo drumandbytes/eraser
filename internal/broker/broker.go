@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/data"
-	"github.com/drumandbytes/eraser/internal/dpa"
+	"github.com/drumandbytes/eraser/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -254,20 +254,20 @@ func toSet(items []string) map[string]bool {
 	return m
 }
 
-// AppliesTo reports whether a request from someone in country (a profile's
-// free-text country: name or ISO code) is in scope for the broker. Brokers
+// AppliesTo reports whether a request from someone in profileCountry (a profile's
+// country: ISO code, or a legacy name) is in scope for the broker. Brokers
 // without a countries list apply to everyone, and so does an empty or
 // unrecognised country - an unset profile never hides brokers.
-func (b Broker) AppliesTo(country string) bool {
+func (b Broker) AppliesTo(profileCountry string) bool {
 	if len(b.Countries) == 0 {
 		return true
 	}
-	a := dpa.ForCountry(country)
-	if a == nil {
+	code, ok := country.Code(profileCountry)
+	if !ok {
 		return true
 	}
 	for _, c := range b.Countries {
-		if strings.EqualFold(strings.TrimSpace(c), a.Code) {
+		if strings.EqualFold(strings.TrimSpace(c), code) {
 			return true
 		}
 	}
@@ -275,10 +275,10 @@ func (b Broker) AppliesTo(country string) bool {
 }
 
 // ForCountry drops brokers whose countries list excludes the given country.
-func ForCountry(brokers []Broker, country string) []Broker {
+func ForCountry(brokers []Broker, profileCountry string) []Broker {
 	out := make([]Broker, 0, len(brokers))
 	for _, b := range brokers {
-		if b.AppliesTo(country) {
+		if b.AppliesTo(profileCountry) {
 			out = append(out, b)
 		}
 	}

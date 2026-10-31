@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -165,7 +166,11 @@ func TestSettingsPassphraseNeedsConfigAndSurvivesFailures(t *testing.T) {
 
 	// A config path that can't be written: the change is refused, nothing is stored.
 	bad := newTestServer(t, testConfig("default"))
-	bad.configPath = "/dev/null/x/config.yaml"
+	blocker := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bad.configPath = filepath.Join(blocker, "sub", "config.yaml") // a directory can't be created under a file
 	config.SetPassphrase("")
 	t.Cleanup(func() { config.SetPassphrase("") })
 	rec := post(t, bad, "/settings/passphrase", url.Values{"action": {"set"}, "new": {"long enough 1"}, "confirm": {"long enough 1"}})

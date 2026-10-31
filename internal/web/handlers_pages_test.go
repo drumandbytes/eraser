@@ -55,7 +55,7 @@ func TestSettingsShowsOwnAccountBadgeForProfileMailOverride(t *testing.T) {
 				ID:      "spouse",
 				Profile: config.Profile{FirstName: "Spouse", LastName: "User", Email: "spouse@example.com"},
 				Mail: &config.MailConfig{
-					Email: &config.EmailConfig{Provider: "smtp", From: "spouse@gmail.com"},
+					Email: &config.EmailConfig{From: "spouse@gmail.com"},
 				},
 			},
 		},

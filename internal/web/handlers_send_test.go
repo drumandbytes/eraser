@@ -106,11 +106,6 @@ func TestSendOneRefusals(t *testing.T) {
 			s.config.Store(&c)
 		}, http.StatusBadRequest, "dry_run"},
 		{"no broker email", "/api/send/noemail", nil, http.StatusBadRequest, "No email on file"},
-		{"bad provider", "/api/send/spokeo", func(s *Server) {
-			c := *s.getConfig()
-			c.Email.Provider = "carrier-pigeon"
-			s.config.Store(&c)
-		}, http.StatusOK, "unknown email provider"},
 		{"bad template", "/api/send/spokeo", func(s *Server) {
 			c := *s.getConfig()
 			c.Options.Template = "nope"
@@ -211,11 +206,6 @@ func TestSendAllRefusals(t *testing.T) {
 		{"unknown ids", url.Values{"broker_ids": {"spokeo, ghost"}}, nil, http.StatusBadRequest, "Unknown broker IDs: ghost"},
 		{"nothing failed", url.Values{"status": {"failed"}}, nil, http.StatusBadRequest, "No failed brokers"},
 		{"only email-less", url.Values{"broker_ids": {"noemail"}}, nil, http.StatusBadRequest, "No pending brokers"},
-		{"bad provider", nil, func(s *Server) {
-			c := *s.getConfig()
-			c.Email.Provider = "carrier-pigeon"
-			s.config.Store(&c)
-		}, http.StatusInternalServerError, "unknown email provider"},
 		{"active job", nil, func(s *Server) { s.jobManager.Create(1, "default") }, http.StatusConflict, "already in progress"},
 	}
 	for _, c := range cases {
@@ -251,7 +241,8 @@ func TestProcessSendJobStopsOnRepeatedAuthFailures(t *testing.T) {
 	s := sendServer(t, relay)
 	s.brokers().Brokers = append(s.brokers().Brokers,
 		s.brokers().Brokers[0], s.brokers().Brokers[0], s.brokers().Brokers[0])
-	sender, _ := email.NewSender(s.getConfig().Email)
+	em := s.getConfig().Email
+	sender := email.NewSMTPSender(em.SMTP, em.From)
 
 	job := s.jobManager.Create(4, "default")
 	s.processSendJob(job, brokersToSend(s, "spokeo", "spokeo", "spokeo", "spokeo"), sender)
@@ -269,7 +260,8 @@ func TestProcessSendJobStopsOnRepeatedAuthFailures(t *testing.T) {
 func TestProcessSendJobProfileFallbackAndCancel(t *testing.T) {
 	relay := smtptest.Start(t)
 	s := sendServer(t, relay)
-	sender, _ := email.NewSender(s.getConfig().Email)
+	em := s.getConfig().Email
+	sender := email.NewSMTPSender(em.SMTP, em.From)
 
 	job := s.jobManager.Create(1, "deleted-profile")
 	s.processSendJob(job, brokersToSend(s, "spokeo"), sender)
@@ -294,7 +286,7 @@ func TestProcessSendJobTemplateError(t *testing.T) {
 	c := *s.getConfig()
 	c.Options.Template = "nope"
 	s.config.Store(&c)
-	sender, _ := email.NewSender(c.Email)
+	sender := email.NewSMTPSender(c.Email.SMTP, c.Email.From)
 
 	job := s.jobManager.Create(1, "default")
 	s.processSendJob(job, brokersToSend(s, "spokeo"), sender)

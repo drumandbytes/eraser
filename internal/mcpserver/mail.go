@@ -114,10 +114,7 @@ func (s *Service) send(ctx context.Context, in sendInput) (map[string]any, error
 	if !ec.Configured() {
 		return nil, fmt.Errorf("configure email in Eraser's Settings")
 	}
-	sender, err := email.NewSender(ec)
-	if err != nil {
-		return nil, err
-	}
+	sender := email.NewSMTPSender(ec.SMTP, ec.From)
 	// count bounces too: a new send must not collide with an accepted message later marked bounced
 	status, err := s.store.GetBrokerStatus(p.Profile.ID, b.ID)
 	if err != nil {

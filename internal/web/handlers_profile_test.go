@@ -157,8 +157,7 @@ func TestHandleSettingsProfileEditUnknownIDReturns404(t *testing.T) {
 }
 
 func TestHandleSettingsProfileEditPromotesLegacyProfileBlock(t *testing.T) {
-	// Legacy top-level profile: block only (an in-memory config; Load would
-	// already have normalized it). Editing writes it as profiles: [default].
+	// A single default profile; editing keeps it as profiles: [default].
 	s := newTestServer(t, testConfig())
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 
@@ -179,9 +178,6 @@ func TestHandleSettingsProfileEditPromotesLegacyProfileBlock(t *testing.T) {
 	cfg := s.getConfig()
 	if len(cfg.Profiles) != 1 || cfg.Profiles[0].ID != config.DefaultProfileID || cfg.Profiles[0].FirstName != "New" || cfg.Profiles[0].Email != "new@example.com" {
 		t.Errorf("expected profiles: [default] with the edit, got %+v", cfg.Profiles)
-	}
-	if cfg.Profile.FirstName != "" {
-		t.Errorf("expected the legacy profile: block cleared, got %+v", cfg.Profile)
 	}
 }
 
@@ -253,8 +249,7 @@ func profileWithMailOverride() *config.Config {
 		}
 		cfg.Profiles[i].Mail = &config.MailConfig{
 			Email: &config.EmailConfig{
-				Provider: "smtp",
-				From:     "spouse@gmail.com",
+				From: "spouse@gmail.com",
 				SMTP: config.SMTPConfig{
 					Host:     "smtp.gmail.com",
 					Port:     465,

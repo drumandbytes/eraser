@@ -198,14 +198,7 @@ func TestProcessSendJobRespectsRollingDailyLimit(t *testing.T) {
 	// tried to actually send, this would fail with a connection error
 	// (recorded as a failed send) rather than the pause this test expects,
 	// so a regression here fails loudly instead of silently passing.
-	sender, err := email.NewSender(config.EmailConfig{
-		Provider: "smtp",
-		From:     "test@example.com",
-		SMTP:     config.SMTPConfig{Host: "127.0.0.1", Port: 1},
-	})
-	if err != nil {
-		t.Fatalf("email.NewSender: %v", err)
-	}
+	sender := email.NewSMTPSender(config.SMTPConfig{Host: "127.0.0.1", Port: 1}, "test@example.com")
 
 	s.processSendJob(job, toSend, sender)
 

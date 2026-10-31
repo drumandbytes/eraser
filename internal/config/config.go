@@ -35,10 +35,6 @@ func checkFilePermissions(path string) error {
 }
 
 type Config struct {
-	// Profile is the pre-0.11 single-profile block. Load/Save move it into
-	// Profiles as "default", so nothing writes it any more; read profiles via
-	// GetProfiles/GetProfile.
-	Profile Profile `yaml:"profile,omitempty"`
 	// Profiles tracks removal requests for several people against the same
 	// brokers, mail account and options; history is kept per profile
 	// (profile_id). Takes precedence over Profile.
@@ -123,13 +119,13 @@ func (c *Config) ConfiguredInboxes() []InboxConfig {
 // history rows are attributed to after the profile_id migration.
 const DefaultProfileID = "default"
 
-// GetProfiles returns every profile. The legacy profile: fallback only
-// matters for configs built in memory; Load/Save normalize it away.
+// GetProfiles returns every profile; before setup that's one empty "default"
+// profile, so callers always have someone to edit.
 func (c *Config) GetProfiles() []NamedProfile {
 	if len(c.Profiles) > 0 {
 		return c.Profiles
 	}
-	return []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
+	return []NamedProfile{{ID: DefaultProfileID}}
 }
 
 // PrimaryProfile is the "default" profile if there is one, else the first:
@@ -152,16 +148,6 @@ func (c *Config) HasProfile() bool {
 		}
 	}
 	return false
-}
-
-// normalizeProfiles moves a legacy profile: block into profiles: as
-// "default". With both present the legacy block was already ignored by
-// GetProfiles; it's kept as-is rather than silently dropped.
-func (c *Config) normalizeProfiles() {
-	if len(c.Profiles) == 0 && !reflect.ValueOf(c.Profile).IsZero() {
-		c.Profiles = []NamedProfile{{ID: DefaultProfileID, Profile: c.Profile}}
-		c.Profile = Profile{}
-	}
 }
 
 // GetProfile resolves a profile by ID. Empty id works only when exactly one
@@ -288,11 +274,8 @@ func (p Profile) FullName() string {
 }
 
 type EmailConfig struct {
-	// Provider is optional and only "smtp" is accepted - SMTP is the only
-	// transport. Kept so pre-0.11 configs (which all say "smtp") still load.
-	Provider string     `yaml:"provider,omitempty"`
-	From     string     `yaml:"from"`
-	SMTP     SMTPConfig `yaml:"smtp,omitempty"`
+	From string     `yaml:"from"`
+	SMTP SMTPConfig `yaml:"smtp,omitempty"`
 }
 
 // Configured reports whether a sending account is set up at all.
@@ -386,8 +369,7 @@ func Load(path string) (*Config, error) {
 		cfg.Options.DailySendLimit = defaultDailySendLimit
 	}
 
-	cfg.normalizeProfiles()
-	migrateCountries(path, data, &cfg)
+	migrateFrom1x(path, data, &cfg)
 	applyInboxDefaults(&cfg.Inbox)
 	for i := range cfg.Profiles {
 		if cfg.Profiles[i].Mail != nil && cfg.Profiles[i].Mail.Inbox != nil {
@@ -405,11 +387,20 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-// migrateCountries rewrites free-text profile countries ("Germany", "UK") as
-// ISO alpha-2 codes. Before the first rewrite the original file is kept as
-// <path>.1x.bak. Values that don't resolve are left alone and warned about.
-func migrateCountries(path string, orig []byte, cfg *Config) {
+// migrateFrom1x upgrades a 1.x config in memory and on disk: the pre-0.11
+// top-level profile: block becomes profiles: [{id: default}], and free-text
+// profile countries become ISO alpha-2 codes. Before the first rewrite the
+// original file is kept as <path>.1x.bak. A country that doesn't resolve is
+// left alone and warned about. email.provider needs no step: it is no longer
+// read and drops out on the next save.
+func migrateFrom1x(path string, orig []byte, cfg *Config) {
 	changed := false
+	var legacy struct {
+		Profile Profile `yaml:"profile"`
+	}
+	if len(cfg.Profiles) == 0 && yaml.Unmarshal(orig, &legacy) == nil && !reflect.ValueOf(legacy.Profile).IsZero() {
+		cfg.Profiles, changed = []NamedProfile{{ID: DefaultProfileID, Profile: legacy.Profile}}, true
+	}
 	for i := range cfg.Profiles {
 		p := &cfg.Profiles[i]
 		if p.Country == "" {
@@ -430,12 +421,12 @@ func migrateCountries(path string, orig []byte, cfg *Config) {
 	bak := path + ".1x.bak"
 	if _, err := os.Stat(bak); err != nil {
 		if err := os.WriteFile(bak, orig, 0600); err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating country to an ISO code: %v\n", err)
+			fmt.Fprintf(os.Stderr, "WARNING: could not back up config before migrating it from 1.x: %v\n", err)
 			return
 		}
 	}
 	if err := Save(path, cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: could not save migrated country codes: %v\n", err)
+		fmt.Fprintf(os.Stderr, "WARNING: could not save the migrated config: %v\n", err)
 	}
 }
 
@@ -468,7 +459,6 @@ func Save(path string, cfg *Config) error {
 	}
 
 	out := *cfg // normalize a copy: cfg may be the live config others read
-	out.normalizeProfiles()
 	data, err := yaml.Marshal(&out)
 	if err != nil {
 		return fmt.Errorf("failed to serialize config: %w", err)
@@ -511,9 +501,6 @@ func (c *Config) Validate() error {
 }
 
 func validateEmailConfig(e EmailConfig) error {
-	if e.Provider != "" && e.Provider != "smtp" {
-		return fmt.Errorf("email: unknown provider %q (only smtp is supported; the line can be removed)", e.Provider)
-	}
 	if !e.Configured() {
 		return fmt.Errorf("email.smtp: host is required (or set options.send_mode: manual)")
 	}

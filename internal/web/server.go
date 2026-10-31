@@ -405,6 +405,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/history", s.handleHistory)
 	r.Get("/export", s.handleExport)
 	r.Get("/unlock", s.handleUnlock)
+	r.Post("/upgrade-notice/dismiss", s.handleDismissUpgradeNotice)
 	r.Post("/unlock", s.handleUnlock)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/passphrase", s.handleSettingsPassphrase)
@@ -822,6 +823,7 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	data["ActiveProfile"] = config.NamedProfile{}
 	data["CurrentPath"] = r.URL.Path
 	data["Version"] = Version
+	data["UpgradeNotice"] = s.upgradeNotice()
 	if cfg := s.getConfig(); cfg != nil {
 		data["Profiles"] = cfg.GetProfiles()
 		data["ActiveProfile"] = s.activeProfile(r)

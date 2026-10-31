@@ -489,7 +489,9 @@ func migrateFrom1x(path string, orig []byte, cfg *Config, plaintextSecrets bool)
 	}
 	if err := Save(path, cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: could not save the migrated config: %v\n", err)
+		return
 	}
+	fmt.Fprintf(os.Stderr, "Upgraded %s from 1.x (country codes, encrypted passwords). The original is kept as %s with passwords blanked.\n", filepath.Base(path), filepath.Base(bak))
 }
 
 // applyInboxDefaults fills Folder/ArchiveFolder and, for known providers,

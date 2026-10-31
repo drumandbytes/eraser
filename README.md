@@ -157,7 +157,7 @@ open confirmation links, fill forms, inspect receipts, and save notes and
 screenshots in the existing **Tasks** page. Email sending uses your existing
 settings, templates, limits, and history. Codex supplies the AI; Eraser needs no
 separate AI API key. This feature is experimental: it should work, but its
-commands and tools may change in a future 1.x release.
+commands and tools may change in a future minor release.
 
 Chrome/Chromium is required for forms. CAPTCHA, login, identity checks, uncertain
 submissions, and unexpected destinations need your intervention. A completed form

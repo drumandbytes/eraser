@@ -16,6 +16,9 @@ import (
 
 const minPassphraseLen = 8
 
+// scheduleInstalled reports whether the OS scheduler job exists. Replaceable in tests.
+var scheduleInstalled = schedule.Installed
+
 // readSecret reads a line from the terminal without echoing it. Replaceable in tests.
 var readSecret = func(label string) (string, error) {
 	fd := int(os.Stdin.Fd())
@@ -34,7 +37,7 @@ func init() {
 
 const passphraseHeadsUp = `Heads-up: with a passphrase set, runs with nobody at the keyboard can't unlock your mail password.
   - 'eraser schedule install' (the OS scheduler) is refused, and an installed one will fail to send.
-  - 'eraser auto loop' and 'eraser serve' ask once at startup and then keep running; after a reboot you enter it again.
+  - 'eraser auto' and 'eraser serve' ask once at startup and then keep running; after a reboot you enter it again.
   - There is no recovery. If you forget it, re-enter your mail passwords with 'eraser init'.`
 
 func passphraseCmd() *cobra.Command {
@@ -100,8 +103,8 @@ func runPassphraseSet(yes bool) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 	fmt.Println("✅ Mail passwords are now protected by your passphrase.")
-	if schedule.Installed() {
-		fmt.Println("⚠️  The OS scheduler is installed and can no longer send. Run 'eraser schedule remove', then use 'eraser auto loop' or 'eraser serve'.")
+	if scheduleInstalled() {
+		fmt.Println("⚠️  The OS scheduler is installed and can no longer send. Run 'eraser schedule remove', then use 'eraser auto' or 'eraser serve'.")
 	}
 	return nil
 }

@@ -196,3 +196,37 @@ func TestVerifyPassphraseNeedsAReadableConfig(t *testing.T) {
 		t.Error("a missing config file can't verify anything")
 	}
 }
+
+func badFormRequest(path string) *http.Request {
+	req := loopbackRequest(http.MethodPost, path, strings.NewReader("passphrase=%zz"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return req
+}
+
+func TestUnlockAndPassphraseRejectMalformedForms(t *testing.T) {
+	s := protectedServer(t)
+	rec := httptest.NewRecorder()
+	s.setupRouter().ServeHTTP(rec, badFormRequest("/unlock"))
+	if !strings.Contains(rec.Body.String(), "Failed to parse form") || config.PassphraseUnlocked() {
+		t.Errorf("unlock with a bad body = %d %.200s", rec.Code, rec.Body.String())
+	}
+
+	open := newTestServer(t, testConfig("default"))
+	rec = httptest.NewRecorder()
+	open.setupRouter().ServeHTTP(rec, badFormRequest("/settings/passphrase"))
+	if !strings.Contains(rec.Body.String(), "Failed to parse form") {
+		t.Errorf("settings with a bad body = %d", rec.Code)
+	}
+}
+
+func TestSettingsPassphraseWarnsWhenTheOSScheduleIsInstalled(t *testing.T) {
+	s := newTestServer(t, testConfig("default"))
+	s.configPath = t.TempDir() + "/config.yaml"
+	s.osInstalled = func() bool { return true }
+	config.SetPassphrase("")
+	t.Cleanup(func() { config.SetPassphrase("") })
+	rec := post(t, s, "/settings/passphrase", url.Values{"action": {"set"}, "new": {"long enough 1"}, "confirm": {"long enough 1"}})
+	if !strings.Contains(rec.Body.String(), "OS schedule can no longer send") {
+		t.Errorf("missing the scheduler warning: %.300s", rec.Body.String())
+	}
+}

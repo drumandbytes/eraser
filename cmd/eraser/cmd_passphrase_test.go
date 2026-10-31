@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -130,4 +131,90 @@ func TestPassphraseCommandsFailCleanly(t *testing.T) {
 	if raw, _ := os.ReadFile(e.cfgPath); !strings.Contains(string(raw), "enc:v2:") {
 		t.Error("a failed clear must leave the passphrase in place")
 	}
+}
+
+func skipWithoutPermissions(t *testing.T) {
+	t.Helper()
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs POSIX permissions and a non-root user")
+	}
+}
+
+func TestPassphraseSetWhenTheCurrentOneCannotBeEntered(t *testing.T) {
+	e := newCLIEnv(t, passphraseTestConfig)
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Changing it needs the old one to decrypt first; the third prompt fails.
+	calls := 0
+	old := readSecret
+	t.Cleanup(func() { readSecret = old; config.SetPassphrase("") })
+	config.SetPassphrase("")
+	readSecret = func(string) (string, error) {
+		calls++
+		if calls <= 2 {
+			return "another-long-pass", nil
+		}
+		return "", errors.New("not a terminal")
+	}
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err == nil || !errors.Is(err, config.ErrLocked) {
+		t.Errorf("want the old passphrase to be required, got %v", err)
+	}
+}
+
+func TestPassphraseCommandsReportASaveFailure(t *testing.T) {
+	skipWithoutPermissions(t)
+	e := newCLIEnv(t, passphraseTestConfig)
+
+	if err := os.Chmod(e.cfgPath, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err == nil || !strings.Contains(err.Error(), "failed to save config") {
+		t.Errorf("set on a read-only config: %v", err)
+	}
+
+	if err := os.Chmod(e.cfgPath, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(e.cfgPath, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	scriptedSecrets(t, "long-enough-pass")
+	if _, err := e.run(t, "", "passphrase", "clear"); err == nil || !strings.Contains(err.Error(), "failed to save config") {
+		t.Errorf("clear on a read-only config: %v", err)
+	}
+}
+
+func TestAutoLoopAndServeNeedThePassphrase(t *testing.T) {
+	e := newCLIEnv(t, passphraseTestConfig)
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	if _, err := e.run(t, "", "passphrase", "set", "--yes"); err != nil {
+		t.Fatal(err)
+	}
+	// Wrong three times: the loop refuses to start instead of stalling later.
+	scriptedSecrets(t, "wrong-one", "wrong-two", "wrong-three")
+	if _, err := e.run(t, "", "auto"); err == nil || !strings.Contains(err.Error(), "wrong passphrase") {
+		t.Errorf("auto with the wrong passphrase: %v", err)
+	}
+}
+
+func TestPassphraseSetWarnsWhenTheOSScheduleIsInstalled(t *testing.T) {
+	old := scheduleInstalled
+	scheduleInstalled = func() bool { return true }
+	t.Cleanup(func() { scheduleInstalled = old })
+
+	e := newCLIEnv(t, passphraseTestConfig)
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	out, err := e.run(t, "", "passphrase", "set", "--yes")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustContain(t, out, "The OS scheduler is installed and can no longer send", "eraser auto")
 }

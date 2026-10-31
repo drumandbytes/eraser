@@ -2,7 +2,9 @@ package reclassify
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/imaptest"
+	_ "modernc.org/sqlite"
 )
 
 func TestRunWithoutStoreOrResponses(t *testing.T) {
@@ -135,5 +138,29 @@ func TestRunCountsEveryKindOfReply(t *testing.T) {
 	}
 	if kinds < 4 {
 		t.Errorf("expected the replies to land in several categories, got %+v", sum)
+	}
+}
+
+// A write failure stops the run with a clear error instead of reporting success.
+func TestRunStopsWhenAnUpdateFails(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.db")
+	store, err := history.NewStore(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = store.Close() }()
+	seed(t, store, "1", "acme", "unknown", "Re: request", "We have deleted your data and removed all records as requested.")
+
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+	if _, err := db.Exec(`CREATE TRIGGER block_updates BEFORE UPDATE ON broker_responses BEGIN SELECT RAISE(ABORT, 'read-only for the test'); END`); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Run(context.Background(), store, nil, nil); err == nil || !strings.Contains(err.Error(), "failed to update response") {
+		t.Errorf("err = %v", err)
 	}
 }

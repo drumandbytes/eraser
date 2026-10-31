@@ -20,7 +20,7 @@ When this happens the CLI prints one line saying so, and the web UI shows a dism
 
 Mail passwords (`smtp.password`, `inbox.password`, and per-profile `mail` overrides) are no longer stored as plain text. The first load rewrites them as `enc:v1:...`, encrypted with a key derived from this machine's ID and your user, so Eraser still sends and monitors unattended. The `config.yaml.1x.bak` backup has every password blanked, so it can't leak one, which also means restoring it requires re-entering them. A config moved to another machine (or another user) loads with an empty password and a warning; re-enter it with `eraser init` or in Settings.
 
-Optionally add a passphrase with `eraser passphrase set`, so the passwords can't be decrypted without it, even by someone logged in as you. With one set, unattended runs can't unlock the password: `eraser schedule install` is refused, and `eraser auto loop` and `eraser serve` ask for it once at startup. `eraser passphrase clear` removes it.
+Optionally add a passphrase with `eraser passphrase set`, so the passwords can't be decrypted without it, even by someone logged in as you. With one set, unattended runs can't unlock the password: `eraser schedule install` is refused, and `eraser auto` and `eraser serve` ask for it once at startup. `eraser passphrase clear` removes it.
 
 Emails, browser form filling, MCP profile fields and the evidence report still show the country *name*; only the stored value is a code.
 

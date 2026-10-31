@@ -58,3 +58,16 @@ func keysOf(m map[string]string) []string {
 	}
 	return k
 }
+
+func TestDraftsZipSkipsBrokersWhoseTemplateFails(t *testing.T) {
+	s := smokeServer(t)
+	cfg := *s.getConfig()
+	cfg.Options.Template = "no-such-template"
+	s.config.Store(&cfg)
+	rec := httptest.NewRecorder()
+	s.setupRouter().ServeHTTP(rec, loopbackRequest(http.MethodGet, "/export/drafts.zip", nil))
+	zr, err := zip.NewReader(bytes.NewReader(rec.Body.Bytes()), int64(rec.Body.Len()))
+	if err != nil || len(zr.File) != 0 {
+		t.Errorf("a failing template should yield an empty zip, got %d files (err %v)", len(zr.File), err)
+	}
+}

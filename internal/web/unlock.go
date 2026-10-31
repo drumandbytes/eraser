@@ -150,7 +150,7 @@ func (s *Server) handleSettingsPassphrase(w http.ResponseWriter, r *http.Request
 	if next != "" {
 		msg = "Passphrase set. Your mail passwords can't be decrypted without it."
 		if s.osInstalled() {
-			msg += " The OS schedule can no longer send: remove it under Automation and use in-app automation, or run eraser auto loop."
+			msg += " The OS schedule can no longer send: remove it under Automation and use in-app automation, or run eraser auto."
 		}
 	}
 	s.renderSettings(w, r, map[string]interface{}{"PassphraseMessage": msg, "PassphraseSuccess": true})

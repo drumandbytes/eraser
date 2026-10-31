@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0](https://github.com/drumandbytes/eraser/compare/v1.7.1...v1.8.0) (2026-10-31)
+
+
+### Features
+
+* **brokers:** optional per-broker countries scope ([#229](https://github.com/drumandbytes/eraser/issues/229)) ([abaa46e](https://github.com/drumandbytes/eraser/commit/abaa46ef853c1bc1f685a7c4840aac904151b807))
+* **brokers:** show country scope in list-brokers and web, scope single-country brokers ([#234](https://github.com/drumandbytes/eraser/issues/234)) ([f994465](https://github.com/drumandbytes/eraser/commit/f994465b6831d8007ef9becdb34be55403b671c8))
+
 ## [1.7.1](https://github.com/drumandbytes/eraser/compare/v1.7.0...v1.7.1) (2026-10-30)
 
 

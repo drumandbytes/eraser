@@ -22,7 +22,6 @@ func smokeServer(t *testing.T) *Server {
 	t.Helper()
 
 	cfg := testConfig("default", "spouse")
-	cfg.Profile = config.Profile{FirstName: "Test", LastName: "User", Email: "test@example.com"}
 	s := newTestServer(t, cfg)
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 	if err := config.Save(s.configPath, cfg); err != nil {

@@ -53,11 +53,8 @@ func NewMonitor(cfg config.InboxConfig, brokerList []broker.Broker) *Monitor {
 			}
 		}
 		// Also map by website domain
-		if b.Website != "" {
-			domain := extractDomain(b.Website)
-			if domain != "" {
-				brokerMap[domain] = b
-			}
+		if domain := b.Domain(); domain != "" {
+			brokerMap[domain] = b
 		}
 	}
 
@@ -65,18 +62,6 @@ func NewMonitor(cfg config.InboxConfig, brokerList []broker.Broker) *Monitor {
 		config:  cfg,
 		brokers: brokerMap,
 	}
-}
-
-// extractDomain extracts the domain from a URL
-func extractDomain(url string) string {
-	url = strings.TrimPrefix(url, "https://")
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "www.")
-	parts := strings.Split(url, "/")
-	if len(parts) > 0 {
-		return strings.ToLower(parts[0])
-	}
-	return ""
 }
 
 // Connect establishes IMAP connection
@@ -92,7 +77,12 @@ func (m *Monitor) Connect(ctx context.Context) error {
 
 	log.Printf("Connected, logging in as %s...", m.config.Email)
 
-	if err := c.Login(m.config.Email, m.config.Password); err != nil {
+	password, err := config.Reveal(m.config.Password)
+	if err != nil {
+		_ = c.Logout()
+		return err
+	}
+	if err := c.Login(m.config.Email, password); err != nil {
 		_ = c.Logout()
 		return fmt.Errorf("failed to login: %w", err)
 	}

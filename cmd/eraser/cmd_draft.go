@@ -127,7 +127,7 @@ func runDraft(args []string, output string, regions, categories []string) error 
 			return fmt.Errorf("failed to render email for %s: %w", b.ID, err)
 		}
 		path := filepath.Join(output, b.ID+".eml")
-		if err := os.WriteFile(path, formatEML(from, b.Email, email), 0o600); err != nil {
+		if err := os.WriteFile(path, emailtmpl.FormatEML(from, b.Email, email), 0o600); err != nil {
 			return fmt.Errorf("failed to write %s: %w", path, err)
 		}
 		written++

@@ -7,26 +7,29 @@ import (
 	"strings"
 
 	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 	"github.com/spf13/cobra"
 )
 
 func listBrokersCmd() *cobra.Command {
 	var regions, categories []string
 	var search string
-	var missingEmail bool
+	var missingEmail, allCountries bool
 
 	cmd := &cobra.Command{
 		Use:   "list-brokers",
 		Short: "List all data brokers in the database",
 		Long:  "Show all data brokers that will receive removal requests.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runListBrokers(regions, categories, search, missingEmail)
+			return runListBrokers(regions, categories, search, missingEmail, allCountries)
 		},
 	}
 
 	cmd.Flags().StringSliceVar(&regions, "region", nil, "Only show brokers in these regions: us, eu, global (comma-separated or repeated)")
 	cmd.Flags().StringSliceVar(&categories, "category", nil, "Only show brokers in these categories (comma-separated or repeated)")
 	cmd.Flags().StringVar(&search, "search", "", "Only show brokers whose name or ID contains this text")
+	cmd.Flags().BoolVar(&allCountries, "all-countries", false, "Also show brokers that only handle countries other than your profile's")
 	cmd.Flags().BoolVar(&missingEmail, "missing-email", false, "Only show brokers with no email on file (need manual follow-up)")
 
 	return cmd
@@ -43,13 +46,25 @@ func addBrokerCmd() *cobra.Command {
 	}
 }
 
-func runListBrokers(regions, categories []string, search string, missingEmail bool) error {
+func runListBrokers(regions, categories []string, search string, missingEmail, allCountries bool) error {
 	brokerDB, err := broker.Load(brokerFile)
 	if err != nil {
 		return fmt.Errorf("failed to load brokers: %w", err)
 	}
 
 	search = strings.ToLower(strings.TrimSpace(search))
+
+	// Like the web list, hide brokers that only handle other countries than
+	// the active profile's (when there is a config and it names a country).
+	profileCountry := ""
+	if !allCountries {
+		if cfg, err := config.Load(resolveConfigPath()); err == nil {
+			if p, err := resolveProfile(cfg); err == nil {
+				profileCountry = p.Country
+			}
+		}
+	}
+	hidden := 0
 
 	matched := make([]broker.Broker, 0, len(brokerDB.Brokers))
 	for _, b := range brokerDB.Select(nil, regions, categories, nil, nil) {
@@ -59,6 +74,10 @@ func runListBrokers(regions, categories []string, search string, missingEmail bo
 		if missingEmail && b.Email != "" {
 			continue
 		}
+		if !b.AppliesTo(profileCountry) {
+			hidden++
+			continue
+		}
 		matched = append(matched, b)
 	}
 
@@ -66,6 +85,9 @@ func runListBrokers(regions, categories []string, search string, missingEmail bo
 		fmt.Printf("📋 Data Brokers (%d of %d total match your filters)\n", len(matched), len(brokerDB.Brokers))
 	} else {
 		fmt.Printf("📋 Data Brokers (%d total)\n", len(matched))
+	}
+	if hidden > 0 {
+		fmt.Printf("🗺  %d hidden: they only handle countries other than %s (--all-countries to show them)\n", hidden, country.Display(profileCountry))
 	}
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 

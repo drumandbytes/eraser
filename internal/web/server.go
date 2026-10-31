@@ -21,6 +21,7 @@ import (
 	csrf "filippo.io/csrf/gorilla"
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/schedule"
 	emaTemplate "github.com/drumandbytes/eraser/internal/template"
@@ -91,6 +92,8 @@ var Version = "dev"
 type Server struct {
 	config     atomic.Pointer[config.Config]
 	configPath string
+	reloadMu   sync.Mutex                            // guards cfgStamp
+	cfgStamp   string                                // version of config.yaml the current config came from
 	brokerDB   atomic.Pointer[broker.BrokerDatabase] // swapped by the "update broker list" action; read via brokers()
 	// BrokerOverride is serve's --brokers flag, so a reload resolves the list
 	// the same way startup did.
@@ -148,6 +151,13 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 		removeOS:     schedule.Remove,
 	}
 	s.config.Store(cfg)
+	if configPath != "" {
+		// "none" (no file yet) differs from any real stamp, so a config.yaml
+		// created later by the CLI is picked up.
+		if s.cfgStamp = fileStamp(configPath); s.cfgStamp == "" {
+			s.cfgStamp = "none"
+		}
+	}
 
 	// Paused send jobs used to be saved here for resume-on-restart; that's
 	// gone, so drop any leftovers.
@@ -204,6 +214,11 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return t.Format("Jan 2, 2006")
 		},
 		"providerName": config.ProviderName,
+		"countries":    country.All,
+		"countryCode": func(s string) string {
+			c, _ := country.Code(s)
+			return c
+		},
 		"add": func(a, b int) int {
 			return a + b
 		},
@@ -366,6 +381,8 @@ func (s *Server) setupRouter() *chi.Mux {
 	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(s.reloadConfigOnChange)
+	r.Use(s.requireUnlock)
 	r.Use(middleware.Compress(5))
 	r.Use(requireLoopbackHost)
 	r.Use(securityHeaders)
@@ -387,7 +404,13 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
 	r.Get("/export", s.handleExport)
+	r.Get("/export/drafts.zip", s.handleDraftsZip)
+	r.Get("/unlock", s.handleUnlock)
+	r.Post("/upgrade-notice/dismiss", s.handleDismissUpgradeNotice)
+	r.Post("/whats-new/dismiss", s.handleDismissWhatsNew)
+	r.Post("/unlock", s.handleUnlock)
 	r.Get("/settings", s.handleSettings)
+	r.Post("/settings/passphrase", s.handleSettingsPassphrase)
 	r.Post("/settings/inbox", s.handleSettingsInbox)
 	r.Post("/settings/options", s.handleSettingsOptions)
 	r.Post("/settings/automation", s.handleSettingsAutomation)
@@ -442,6 +465,8 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Post("/inbox/scan", s.handleAPIInboxScan)
 		r.Post("/inbox/rescan", s.handleAPIInboxRescan)
 		r.Post("/inbox/reclassify", s.handleAPIReclassify)
+		r.Post("/inbox/bounces", s.handleAPIBounces)
+		r.Post("/inbox/bounces/clear", s.handleAPIBouncesClear)
 		r.Post("/profile", s.handleAPISwitchProfile)
 	})
 
@@ -578,16 +603,6 @@ type BrokerWithStatus struct {
 	lastSentAt time.Time
 }
 
-func stringSet(items []string) map[string]bool {
-	set := make(map[string]bool, len(items))
-	for _, item := range items {
-		if value := strings.ToLower(strings.TrimSpace(item)); value != "" {
-			set[value] = true
-		}
-	}
-	return set
-}
-
 // countryHidden counts brokers the profile's country takes out of its list, for
 // the "N hidden" note on the brokers page. Zero when the country is unset.
 func (s *Server) countryHidden(profileID string) (n int, country string) {
@@ -637,14 +652,14 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		for _, c := range cfg.Options.ExcludedCategories {
 			excludedCats[strings.ToLower(strings.TrimSpace(c))] = true
 		}
-		configuredRegions = stringSet(cfg.Options.Regions)
+		configuredRegions = broker.Set(cfg.Options.Regions)
 	}
 
 	search = strings.ToLower(strings.TrimSpace(search))
 	category = strings.ToLower(strings.TrimSpace(category))
 	region = strings.ToLower(strings.TrimSpace(region))
 	statusFilter = strings.ToLower(strings.TrimSpace(statusFilter))
-	includeSet, runExcludeSet := stringSet(includeIDs), stringSet(excludeIDs)
+	includeSet, runExcludeSet := broker.Set(includeIDs), broker.Set(excludeIDs)
 
 	manualMode := false
 	if cfg := s.getConfig(); cfg != nil {
@@ -681,7 +696,7 @@ func (s *Server) getBrokersWithStatus(profileID, search, category, region, statu
 		}
 
 		brokerRegion := strings.ToLower(b.Region)
-		if len(configuredRegions) > 0 && !configuredRegions["global"] && !configuredRegions[brokerRegion] && brokerRegion != "global" {
+		if !b.InRegions(configuredRegions) {
 			continue
 		}
 		if region != "" && brokerRegion != region {
@@ -802,6 +817,7 @@ func (s *Server) renderWithCSRF(w http.ResponseWriter, r *http.Request, name str
 	data["ActiveProfile"] = config.NamedProfile{}
 	data["CurrentPath"] = r.URL.Path
 	data["Version"] = Version
+	data["UpgradeNotice"] = s.upgradeNotice()
 	if cfg := s.getConfig(); cfg != nil {
 		data["Profiles"] = cfg.GetProfiles()
 		data["ActiveProfile"] = s.activeProfile(r)

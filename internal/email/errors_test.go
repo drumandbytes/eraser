@@ -11,17 +11,6 @@ import (
 	"github.com/drumandbytes/eraser/internal/config"
 )
 
-func TestNewSender(t *testing.T) {
-	for _, p := range []string{"", "smtp"} {
-		if s, err := NewSender(config.EmailConfig{Provider: p}); err != nil || s == nil {
-			t.Errorf("provider %q: %v", p, err)
-		}
-	}
-	if _, err := NewSender(config.EmailConfig{Provider: "sendgrid"}); err == nil {
-		t.Error("unknown provider accepted")
-	}
-}
-
 // Raw SMTP errors can echo credentials or server internals; the user gets
 // a short category instead.
 func TestSanitizeSMTPError(t *testing.T) {

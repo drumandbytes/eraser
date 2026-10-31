@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"github.com/drumandbytes/eraser/internal/country"
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/broker"
@@ -26,7 +27,7 @@ type batchPlan struct {
 }
 
 func profileFields(p config.Profile) map[string]string {
-	return map[string]string{"first_name": p.FirstName, "last_name": p.LastName, "full_name": p.FullName(), "email": p.Email, "phone": p.Phone, "address": p.Address, "city": p.City, "state": p.State, "zip_code": p.ZipCode, "country": p.Country, "date_of_birth": p.DateOfBirth}
+	return map[string]string{"first_name": p.FirstName, "last_name": p.LastName, "full_name": p.FullName(), "email": p.Email, "phone": p.Phone, "address": p.Address, "city": p.City, "state": p.State, "zip_code": p.ZipCode, "country": country.Display(p.Country), "date_of_birth": p.DateOfBirth}
 }
 
 func (s *Service) prepare(_ context.Context, in prepareInput) (map[string]any, error) {

@@ -12,10 +12,12 @@ go test ./...
 # CLI
 ./eraser init                          # Interactive config setup
 ./eraser send [--dry-run] [--resend] [--ignore-daily-limit] [--list full|verified] [--broker id] [--region eu] [--category financial-b2b] [--exclude id] [--status eligible|never|failed|all]
-./eraser list-brokers [--region eu,global] [--category financial-b2b] [--search kargo] [--missing-email]
+./eraser list-brokers [--region eu,global] [--category financial-b2b] [--search kargo] [--missing-email] [--all-countries]  # hides brokers that only handle other countries than your profile's; --all-countries shows them
+./eraser monitor [--days 7] [--watch] [--reclassify]   # scan the inbox for replies; --reclassify re-runs the classifier over every saved reply
 ./eraser status [--limit 50]
 ./eraser draft [<broker-id>...] [--region eu] [--category people-search] [-o ./out]  # render emails to send by hand
 ./eraser mark-sent <broker-id>... [--region eu] [--category ...] [--dry-run]         # record a hand-sent request
+./eraser passphrase set|clear       # optional extra gate on the stored mail passwords (see README, Security Notes)
 ./eraser send --manual                 # walk the list, mark each one as you send it yourself
 ./eraser add-broker
 ./eraser mark-bounced <broker-id>...   # correct the record when an email actually bounced
@@ -57,13 +59,13 @@ verification. `--demo` uses an isolated temporary profile and five local forms;
 it never accesses real mail or broker sites. Batches and retries start only after
 you approve them, on the web UI's Automation page or with `mcp approve <id>` in a
 terminal; `mcp pending` lists what is waiting. `mcp` is experimental and outside
-the 1.x stability contract. See [mcp.md](mcp.md) for the tool reference.
+the stability contract. See [mcp.md](mcp.md) for the tool reference.
 
-Which of these keys and commands are covered by the 1.x compatibility promise: [stability.md](stability.md).
+Which of these keys and commands are covered by the compatibility promise: [stability.md](stability.md).
 
 User config is stored at `~/.eraser/config.yaml` (see `config.example.yaml` for the full schema). Key sections:
 
-- `profiles` - one entry per person: `id` (stable, stored in history - `default` for the one `eraser init` creates) + name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities (editable in `eraser init` / `eraser profile edit` and on the web profile form, one per line). Each entry can set its own `mail.email`/`mail.inbox` to send/monitor through a dedicated account instead of the shared blocks below - see [multi-profile.md](multi-profile.md). A pre-0.11 top-level `profile:` block still loads and is rewritten as `profiles: [{id: default, ...}]` on the next save
+- `profiles` - one entry per person: `id` (stable, stored in history - `default` for the one `eraser init` creates) + name/address/email + `additional_emails`/`name_variants`/`previous_addresses`/`additional_phones` for catching records indexed under old identities (editable in `eraser init` / `eraser profile edit` and on the web profile form, one per line). Each entry can set its own `mail.email`/`mail.inbox` to send/monitor through a dedicated account instead of the shared blocks below - see [multi-profile.md](multi-profile.md). `passphrase_protected` (top level) is set by `eraser passphrase set` and marks mail passwords as passphrase-protected. `country` is an ISO 3166-1 alpha-2 code (`init` and the web form accept a name and store the code). A 1.x config (top-level `profile:` block, free-text country, `email.provider`) is migrated on first load; see [upgrading-to-2.0.md](upgrading-to-2.0.md)
 - `email` - `from` + `smtp` (`host`, `port`, `username`, `password`). TLS is on by default: port 465 = implicit TLS, any other port = mandatory STARTTLS; `use_tls: false` is only accepted without a username (a local relay). Loopback hosts (Proton Mail Bridge) skip certificate verification. `provider:` is optional (only `smtp` is accepted). Setup presets live in `internal/config/providers.go`
 - `options` - `template` (`gdpr`/`ccpa`/`generic`, or `custom` to use your own `custom_template` text: Go template with the built-in fields, optional first line `Subject: ...`), `rate_limit_ms`, `daily_send_limit`, `broker_list` (`full`/`verified`), `broker_file` (path to your own list), `regions`, `excluded_brokers`, `excluded_categories` (skip every broker in a category, e.g. `requires-id`), `send_mode` (`manual` = Eraser never sends; render with `draft` / `send --manual`, record with `mark-sent`; no `email:` block needed)
 - `inbox` - IMAP settings (`provider` = a preset id that fills `server`/`port`, or set them directly; 993 = TLS, other ports = STARTTLS), for `monitor`/`pipeline`/the web UI's inbox scan. Shared by default across every profile that doesn't set its own `mail.inbox` override (see [multi-profile.md](multi-profile.md#shared-inbox)); `monitor` scans every distinct inbox in one run, the web UI's scan/rescan only the active profile's own

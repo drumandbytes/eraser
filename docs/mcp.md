@@ -1,7 +1,7 @@
 # Local MCP automation
 
 > **Experimental.** This feature should work, but it is still new: its commands,
-> tool names and arguments may change in a future 1.x release without a major
+> tool names and arguments may change in a future minor release without a major
 > version bump. See [stability](stability.md).
 
 Eraser's MCP server lets a local Codex agent work through removal follow-ups

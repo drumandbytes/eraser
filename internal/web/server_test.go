@@ -42,7 +42,7 @@ func newTestServer(t *testing.T, cfg *config.Config) *Server {
 func testConfig(profileIDs ...string) *config.Config {
 	if len(profileIDs) == 0 {
 		return &config.Config{
-			Profile: config.Profile{FirstName: "Test", LastName: "User", Email: "test@example.com"},
+			Profiles: []config.NamedProfile{{ID: config.DefaultProfileID, Profile: config.Profile{FirstName: "Test", LastName: "User", Email: "test@example.com"}}},
 		}
 	}
 	cfg := &config.Config{}

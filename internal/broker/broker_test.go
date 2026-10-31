@@ -162,3 +162,41 @@ func TestProblemsBadCountry(t *testing.T) {
 		t.Errorf("name instead of code not flagged: %v", p)
 	}
 }
+
+func TestDomainsAndInRegions(t *testing.T) {
+	b := Broker{Website: "https://WWW.Example.com/privacy?x=1"}
+	if b.Domain() != "example.com" {
+		t.Errorf("Domain() = %q", b.Domain())
+	}
+	if d := b.Domains(); len(d) != 2 || d[0] != "example.com" || d[1] != "www.example.com" {
+		t.Errorf("Domains() = %v", d)
+	}
+	for _, w := range []string{"", "::bad::"} {
+		if (Broker{Website: w}).Domain() != "" || (Broker{Website: w}).Domains() != nil {
+			t.Errorf("website %q should yield no domain", w)
+		}
+	}
+
+	set := func(rs ...string) map[string]bool {
+		m := map[string]bool{}
+		for _, r := range rs {
+			m[r] = true
+		}
+		return m
+	}
+	for _, tc := range []struct {
+		region string
+		set    map[string]bool
+		want   bool
+	}{
+		{"us", nil, true},
+		{"us", set("global"), true},
+		{"us", set("eu"), false},
+		{"EU", set("eu"), true},
+		{"global", set("eu"), true},
+	} {
+		if got := (Broker{Region: tc.region}).InRegions(tc.set); got != tc.want {
+			t.Errorf("%q in %v = %v, want %v", tc.region, tc.set, got, tc.want)
+		}
+	}
+}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 )
 
 //go:embed templates/*.tmpl
@@ -166,7 +167,7 @@ func (e *Engine) Render(templateName string, profile config.Profile, b broker.Br
 		City:           profile.City,
 		State:          profile.State,
 		ZipCode:        profile.ZipCode,
-		Country:        profile.Country,
+		Country:        country.Display(profile.Country),
 		Phone:          profile.Phone,
 		OtherPhones:    strings.Join(profile.AdditionalPhones, ", "),
 		DateOfBirth:    profile.DateOfBirth,

@@ -104,7 +104,7 @@ func runScheduleStatus() error {
 		fmt.Println("Last cycle:   none yet")
 		return nil
 	}
-	via := map[string]string{"os": "OS scheduler", "once": "eraser auto --once", "loop": "eraser auto loop", "serve": "eraser serve"}[state.Mode]
+	via := map[string]string{"os": "OS scheduler", "once": "eraser auto --once", "loop": "eraser auto", "serve": "eraser serve"}[state.Mode]
 	if via == "" {
 		via = state.Mode
 	}

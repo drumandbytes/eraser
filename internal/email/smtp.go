@@ -53,7 +53,11 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 
 	var auth smtp.Auth
 	if s.config.TLS() {
-		auth = smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
+		password, err := config.Reveal(s.config.Password)
+		if err != nil {
+			return Result{Success: false, Error: err}
+		}
+		auth = smtp.PlainAuth("", s.config.Username, password, s.config.Host)
 	} else if s.config.Username != "" {
 		return Result{Success: false, Error: fmt.Errorf("SMTP auth requires TLS")}
 	}

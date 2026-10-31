@@ -312,6 +312,12 @@ func TestNewJob(t *testing.T) {
 		t.Errorf("manual without inbox: %v", err)
 	}
 
+	locked := *valid
+	locked.PassphraseProtected = true
+	if _, err := NewJob(&locked, "c.yaml"); err == nil || !strings.Contains(err.Error(), "passphrase") {
+		t.Errorf("a passphrase-protected config can't run from the OS scheduler: %v", err)
+	}
+
 	stubExecutable(t, "", errors.New("gone"))
 	if _, err := NewJob(valid, "c.yaml"); err == nil {
 		t.Error("executable error swallowed")

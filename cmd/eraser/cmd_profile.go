@@ -142,7 +142,7 @@ func runProfileAdd() error {
 	np.City = prompt(reader, "City (optional): ")
 	np.State = prompt(reader, "State/Province (optional): ")
 	np.ZipCode = prompt(reader, "ZIP/Postal code (optional): ")
-	np.Country = prompt(reader, "Country (optional): ")
+	np.Country = promptCountry(reader, "Country (optional)", "")
 	np.Phone = prompt(reader, "Phone number (optional): ")
 	np.Mail = promptMailOverride(reader, nil)
 
@@ -187,7 +187,7 @@ func runProfileEdit(id string) error {
 	updated.City = promptWithDefault(reader, "City (optional)", existing.City)
 	updated.State = promptWithDefault(reader, "State/Province (optional)", existing.State)
 	updated.ZipCode = promptWithDefault(reader, "ZIP/Postal code (optional)", existing.ZipCode)
-	updated.Country = promptWithDefault(reader, "Country (optional)", existing.Country)
+	updated.Country = promptCountry(reader, "Country (optional)", existing.Country)
 	updated.Phone = promptWithDefault(reader, "Phone number (optional)", existing.Phone)
 	updated.Mail = promptMailOverride(reader, existing.Mail)
 
@@ -197,7 +197,7 @@ func runProfileEdit(id string) error {
 			profiles[i] = updated
 		}
 	}
-	cfg.Profiles, cfg.Profile = profiles, config.Profile{}
+	cfg.Profiles = profiles
 
 	if err := config.Save(configPath, cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)

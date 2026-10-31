@@ -157,7 +157,7 @@ open confirmation links, fill forms, inspect receipts, and save notes and
 screenshots in the existing **Tasks** page. Email sending uses your existing
 settings, templates, limits, and history. Codex supplies the AI; Eraser needs no
 separate AI API key. This feature is experimental: it should work, but its
-commands and tools may change in a future 1.x release.
+commands and tools may change in a future minor release.
 
 Chrome/Chromium is required for forms. CAPTCHA, login, identity checks, uncertain
 submissions, and unexpected destinations need your intervention. A completed form
@@ -243,7 +243,7 @@ profiles:
     city: "San Francisco"
     state: "CA"
     zip_code: "94102"
-    country: "USA"
+    country: US  # ISO 3166-1 alpha-2 code; `init` and the web form accept a name and store the code
     phone: "+1-555-123-4567"
     date_of_birth: "1990-01-15"
     # Optional: other identities/addresses brokers may have indexed you under
@@ -363,6 +363,7 @@ domains automatically and opens a PR for review.
 ## Security Notes
 
 - **Your config file contains personal data.** Don't commit it to git. The file is created with restricted permissions (readable only by you).
+- **Mail passwords are never stored in plain text.** `smtp.password` and `inbox.password` are saved in `config.yaml` as `enc:v1:...` (AES-256-GCM, key derived from this machine's ID and your user). A copied config, backup or synced dotfile can't be decrypted on another machine, so after moving to a new machine re-enter the passwords with `eraser init` or in Settings. Someone logged in as you on the same machine can still use Eraser, and therefore the password, unless you add a passphrase: `eraser passphrase set` makes the passwords undecryptable without it. **Heads-up:** with a passphrase, runs with nobody at the keyboard can't unlock them. `eraser schedule install` (the OS scheduler) is refused, while `eraser auto` and `eraser serve` ask once at startup. There is no recovery; if you forget it, re-enter the passwords with `eraser init`.
 - **Use app passwords, not your real password.** Most providers require one for SMTP/IMAP access; where they don't, it's still a good idea.
 - **Consider using a dedicated email.** This keeps your removal request activity separate from your main inbox.
 

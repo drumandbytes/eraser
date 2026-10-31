@@ -53,6 +53,17 @@
                     <p class="text-xs text-secondary">Re-analyzes previously scanned emails to extract form URLs that may have been missed. Use if forms aren't showing up.</p>
                 </div>
             </div>
+            <div class="relative group">
+                <button id="bounces-btn" class="btn btn-secondary"
+                    hx-post="/api/inbox/bounces"
+                    hx-target="#scan-result"
+                    hx-swap="innerHTML">
+                    Check bounces
+                </button>
+                <div class="absolute right-0 mt-2 w-64 p-3 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10" style="background: var(--bg-elevated); border: 1px solid var(--border);">
+                    <p class="text-xs text-secondary">Looks for undeliverable-mail notices for brokers you emailed, and lets you clear their dead addresses.</p>
+                </div>
+            </div>
             {{else}}
             <a href="/settings" class="btn btn-secondary">
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -61,6 +61,13 @@ func TestMonitor(t *testing.T) {
 	out, _ = e.run(t, "", "monitor")
 	mustContain(t, out, "Found 2 emails from data brokers", "0 new")
 
+	// Web parity: the Reclassify button as a flag.
+	out, err = e.run(t, "", "monitor", "--reclassify")
+	if err != nil {
+		t.Fatalf("monitor --reclassify: %v\n%s", err, out)
+	}
+	mustContain(t, out, "Reclassified 2 saved replies", "Success:")
+
 	// --once was removed in 2.0 (a single scan is the default).
 	if _, err := e.run(t, "", "monitor", "--once"); err == nil {
 		t.Error("monitor --once should be an unknown flag")

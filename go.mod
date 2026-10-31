@@ -2,6 +2,8 @@ module github.com/drumandbytes/eraser
 
 go 1.26.0
 
+toolchain go1.26.9
+
 require (
 	filippo.io/csrf v0.2.1
 	github.com/chromedp/cdproto v0.0.0-20260804232424-e85f50dbfd32
@@ -13,6 +15,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/net v0.61.0
 	golang.org/x/sys v0.49.0
+	golang.org/x/term v0.47.0
 	golang.org/x/text v0.43.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.61.0
@@ -38,7 +41,6 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/term v0.47.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

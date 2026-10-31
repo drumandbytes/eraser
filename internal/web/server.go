@@ -404,6 +404,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
 	r.Get("/export", s.handleExport)
+	r.Get("/export/drafts.zip", s.handleDraftsZip)
 	r.Get("/unlock", s.handleUnlock)
 	r.Post("/upgrade-notice/dismiss", s.handleDismissUpgradeNotice)
 	r.Post("/unlock", s.handleUnlock)

@@ -407,6 +407,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/export/drafts.zip", s.handleDraftsZip)
 	r.Get("/unlock", s.handleUnlock)
 	r.Post("/upgrade-notice/dismiss", s.handleDismissUpgradeNotice)
+	r.Post("/whats-new/dismiss", s.handleDismissWhatsNew)
 	r.Post("/unlock", s.handleUnlock)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/passphrase", s.handleSettingsPassphrase)

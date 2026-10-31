@@ -1,5 +1,27 @@
 {{define "content"}}
 <div class="fade-in-up">
+    {{with .WhatsNew}}
+    <section class="card p-6 mb-8" aria-labelledby="whats-new-title">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 id="whats-new-title" class="font-display text-xl font-semibold text-primary">What's new in Eraser 2.0</h2>
+                <p class="text-sm text-secondary mt-1">A few things changed with this version. Nothing needs doing, but they're worth knowing.</p>
+            </div>
+            <form method="POST" action="/whats-new/dismiss"><button type="submit" class="btn btn-secondary btn-sm">Got it</button></form>
+        </div>
+        <ul class="mt-4 space-y-2 text-sm text-secondary list-disc pl-5">
+            <li><strong class="text-primary">Countries.</strong> Your profile's country is stored as an ISO code, and brokers that only cover one market (a German credit bureau, say) are skipped if you're elsewhere. The Brokers page says how many are hidden.</li>
+            <li><strong class="text-primary">Passwords are encrypted.</strong> Mail passwords are no longer stored as plain text, and Settings has an optional passphrase for an extra gate. With a passphrase set, the OS schedule can't send; <code>eraser serve</code> and <code>eraser auto loop</code> ask once at startup.</li>
+            <li><strong class="text-primary">More in the web UI.</strong> Check bounces and Reclassify on the Pipeline page, and download all drafts as a zip from Brokers. The same things exist in the CLI.</li>
+            <li><strong class="text-primary">Settings changed in the CLI</strong> now show up here without restarting.</li>
+            <li><strong class="text-primary">Removed:</strong> the old top-level <code>profile:</code> block, <code>email.provider</code> and <code>monitor --once</code>.</li>
+        </ul>
+        {{with .Upgraded}}
+        <p class="mt-4 text-sm text-primary"><strong>Your config was upgraded.</strong> The original is kept as <code>{{.Backup}}</code> with passwords blanked; delete it when you're happy. Moved to a new machine? Re-enter your mail passwords in Settings.</p>
+        {{end}}
+        <p class="mt-4 text-sm"><a class="underline" href="https://github.com/drumandbytes/eraser/blob/main/docs/upgrading-to-2.0.md" target="_blank" rel="noopener">Read the upgrade guide</a></p>
+    </section>
+    {{end}}
     <!-- Hero Section -->
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10">
         <div class="flex items-center gap-4">

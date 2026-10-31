@@ -80,6 +80,8 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	rootCmd.PersistentFlags().StringVar(&brokerFile, "brokers", "", "broker list file (default: ~/.eraser/brokers.yaml if `update-brokers` has written one, else the list built into the binary)")
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "Profile ID to operate as (default: the only configured profile; required if you've configured more than one via 'eraser profile add')")
 
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) { announceTwoPointZero(cmd) }
+
 	rootCmd.AddCommand(initCmd())
 	rootCmd.AddCommand(sendCmd())
 	rootCmd.AddCommand(serveCmd())

@@ -254,6 +254,26 @@ func toSet(items []string) map[string]bool {
 	return m
 }
 
+// Domain is the broker website's lower-case host without a leading "www.", or
+// "" when it has no usable website.
+func (b Broker) Domain() string {
+	u, err := url.Parse(strings.TrimSpace(b.Website))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimPrefix(strings.ToLower(u.Hostname()), "www.")
+}
+
+// Domains lists the website host with and without "www." (nil without a
+// website), for matching links against a broker's own site.
+func (b Broker) Domains() []string {
+	d := b.Domain()
+	if d == "" {
+		return nil
+	}
+	return []string{d, "www." + d}
+}
+
 // AppliesTo reports whether a request from someone in profileCountry (a profile's
 // country: ISO code, or a legacy name) is in scope for the broker. Brokers
 // without a countries list apply to everyone, and so does an empty or
@@ -291,17 +311,25 @@ func ForCountry(brokers []Broker, profileCountry string) []Broker {
 // brokers that demand a government ID document before acting on a request.
 func (db *BrokerDatabase) Filter(regions []string, excluded []string, excludedCategories []string) []Broker {
 	regionSet := toSet(regions)
-	if len(regionSet) == 0 || regionSet["global"] {
-		return db.Select(nil, nil, nil, excluded, excludedCategories)
-	}
 	selected := db.Select(nil, nil, nil, excluded, excludedCategories)
 	result := selected[:0]
 	for _, b := range selected {
-		if regionSet[strings.ToLower(b.Region)] || strings.EqualFold(b.Region, "global") {
+		if b.InRegions(regionSet) {
 			result = append(result, b)
 		}
 	}
 	return result
+}
+
+// InRegions reports whether b is in scope for a configured region set
+// (lower-case keys). An empty set or one containing "global" means every
+// broker, and global brokers are in scope for any set.
+func (b Broker) InRegions(set map[string]bool) bool {
+	if len(set) == 0 || set["global"] {
+		return true
+	}
+	r := strings.ToLower(b.Region)
+	return r == "global" || set[r]
 }
 
 func (db *BrokerDatabase) Select(ids, regions, categories, excluded, excludedCategories []string) []Broker {

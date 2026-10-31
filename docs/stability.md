@@ -14,7 +14,7 @@ This page defines what counts as "a working setup".
 - **CLI commands and flags** shown by `eraser --help` and `eraser <command> --help`:
   - Names, arguments and meaning stay the same.
   - Exit codes: 0 means success and non-zero means failure. Two flags use them deliberately: `update-brokers --check` exits 1 when an update is available, and `audit-brokers --fail-on-dead` exits non-zero when a broker is dead.
-  - A flag that's retired keeps working, with a deprecation warning, until 2.0. Example: `monitor --once`, which is now the default behaviour.
+  - A flag that's retired keeps working, with a deprecation warning, until the next major version. (`monitor --once`, retired in 1.x, was removed in 2.0; `auto --once` is a different, current flag.)
 - **`history.db`**: upgrades migrate automatically on first run with no manual step. Downgrading to an older version after an upgrade isn't supported.
 - **`brokers.yaml` format** (`id`, `name`, `email`, `website`, `opt_out_url`, `region`, `category`, `notes`): `update-brokers` on any 1.x release fetches the current list from `main`, so the format may only gain optional fields. Your own `options.broker_file` lists stay valid.
 - **`eraser export --format json`** field names: fields may be added, never renamed or removed. Tools that process the evidence report can rely on them. 1.3 added `pipeline_set_by` and the `no_data_held` response and pipeline value; consumers should ignore values they don't know.

@@ -155,7 +155,7 @@ func autoCycle(cfgPath string, start time.Time) error {
 	}
 
 	if len(cfg.ConfiguredInboxes()) > 0 {
-		if err := runMonitor(autoInboxDays, true, false); err != nil {
+		if err := runMonitor(autoInboxDays, false); err != nil {
 			errs = append(errs, fmt.Errorf("inbox: %w", err))
 		}
 	}

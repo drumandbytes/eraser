@@ -53,11 +53,8 @@ func NewMonitor(cfg config.InboxConfig, brokerList []broker.Broker) *Monitor {
 			}
 		}
 		// Also map by website domain
-		if b.Website != "" {
-			domain := extractDomain(b.Website)
-			if domain != "" {
-				brokerMap[domain] = b
-			}
+		if domain := b.Domain(); domain != "" {
+			brokerMap[domain] = b
 		}
 	}
 
@@ -65,18 +62,6 @@ func NewMonitor(cfg config.InboxConfig, brokerList []broker.Broker) *Monitor {
 		config:  cfg,
 		brokers: brokerMap,
 	}
-}
-
-// extractDomain extracts the domain from a URL
-func extractDomain(url string) string {
-	url = strings.TrimPrefix(url, "https://")
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "www.")
-	parts := strings.Split(url, "/")
-	if len(parts) > 0 {
-		return strings.ToLower(parts[0])
-	}
-	return ""
 }
 
 // Connect establishes IMAP connection

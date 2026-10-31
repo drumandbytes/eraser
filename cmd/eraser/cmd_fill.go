@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/drumandbytes/eraser/internal/country"
 	"os"
 	"path/filepath"
 	"strings"
@@ -259,7 +260,7 @@ func runFill(brokerID, formURL string, headless, headlessFlagSet, autoSubmit boo
 				"city":      activeProfile.City,
 				"state":     activeProfile.State,
 				"zipCode":   activeProfile.ZipCode,
-				"country":   activeProfile.Country,
+				"country":   country.Display(activeProfile.Country),
 			}
 			profileJSON, _ := json.Marshal(profileData)
 

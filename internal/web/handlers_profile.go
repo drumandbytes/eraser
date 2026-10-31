@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 	"github.com/drumandbytes/eraser/internal/email"
 	"github.com/go-chi/chi/v5"
 )
@@ -78,6 +79,13 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 		errors["email"] = "Email is required"
 	} else if err := email.ValidateEmail(profile.Email); err != nil {
 		errors["email"] = "Please enter a valid email address"
+	}
+	if profile.Country != "" {
+		if code, ok := country.Code(profile.Country); ok {
+			profile.Country = code
+		} else {
+			errors["country"] = "Choose a country from the list"
+		}
 	}
 	if profile.DateOfBirth != "" {
 		if _, err := time.Parse("2006-01-02", profile.DateOfBirth); err != nil {

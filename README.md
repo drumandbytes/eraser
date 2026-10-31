@@ -243,7 +243,7 @@ profiles:
     city: "San Francisco"
     state: "CA"
     zip_code: "94102"
-    country: "USA"
+    country: US  # ISO 3166-1 alpha-2 code; `init` and the web form accept a name and store the code
     phone: "+1-555-123-4567"
     date_of_birth: "1990-01-15"
     # Optional: other identities/addresses brokers may have indexed you under

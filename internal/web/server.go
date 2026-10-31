@@ -21,6 +21,7 @@ import (
 	csrf "filippo.io/csrf/gorilla"
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/eraser/internal/country"
 	"github.com/drumandbytes/eraser/internal/history"
 	"github.com/drumandbytes/eraser/internal/schedule"
 	emaTemplate "github.com/drumandbytes/eraser/internal/template"
@@ -204,6 +205,11 @@ func (s *Server) parseTemplates() (map[string]*template.Template, error) {
 			return t.Format("Jan 2, 2006")
 		},
 		"providerName": config.ProviderName,
+		"countries":    country.All,
+		"countryCode": func(s string) string {
+			c, _ := country.Code(s)
+			return c
+		},
 		"add": func(a, b int) int {
 			return a + b
 		},

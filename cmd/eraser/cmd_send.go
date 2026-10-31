@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/drumandbytes/eraser/internal/country"
 	"os"
 	"strings"
 	"time"
@@ -153,7 +154,7 @@ func runSend() error {
 	// Naming brokers with --broker is a deliberate choice (e.g. a past
 	// address in their country), so only the default selection is scoped.
 	if inScope := broker.ForCountry(brokers, activeProfile.Country); len(brokerIDs) == 0 && len(inScope) < len(brokers) {
-		fmt.Printf("Skipping %d broker(s) that only handle other countries than %q.\n", len(brokers)-len(inScope), activeProfile.Country)
+		fmt.Printf("Skipping %d broker(s) that only handle other countries than %q.\n", len(brokers)-len(inScope), country.Display(activeProfile.Country))
 		brokers = inScope
 	}
 	if len(brokers) == 0 {

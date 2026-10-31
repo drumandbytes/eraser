@@ -27,7 +27,7 @@ func TestForCountry(t *testing.T) {
 		"USA":                      "US",
 		"United States":            "US",
 		"United States of America": "US",
-		"California":               "US-CA",
+		"US-CA":                    "US-CA",
 		"Canada":                   "CA",
 		"Australia":                "AU",
 	}

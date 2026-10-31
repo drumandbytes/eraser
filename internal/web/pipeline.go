@@ -12,7 +12,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/drumandbytes/eraser/internal/history"
-	"golang.org/x/net/html"
+	"github.com/drumandbytes/eraser/internal/inbox"
 )
 
 const pipelinePageSize = 50
@@ -107,30 +107,7 @@ func pipelineLabel(kind string) string {
 // responsePreview is plain text, still escaped by html/template. Matching
 // snippets let a body-only search explain why a reply was returned.
 func responsePreview(body, search string) string {
-	z := html.NewTokenizer(strings.NewReader(body))
-	var b strings.Builder
-	skip := 0
-	for {
-		tt := z.Next()
-		if tt == html.ErrorToken {
-			break
-		}
-		if tt == html.StartTagToken || tt == html.EndTagToken {
-			name, _ := z.TagName()
-			if string(name) == "script" || string(name) == "style" {
-				if tt == html.StartTagToken {
-					skip++
-				} else if skip > 0 {
-					skip--
-				}
-			}
-			b.WriteByte(' ')
-		}
-		if tt == html.TextToken && skip == 0 {
-			b.Write(z.Text())
-		}
-	}
-	text := strings.Join(strings.Fields(b.String()), " ")
+	text := inbox.PlainText(body)
 	runes := []rune(text)
 	start := 0
 	if search != "" {

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/drumandbytes/eraser/data"
+	"github.com/drumandbytes/eraser/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,44 +37,20 @@ func All() []Authority {
 	return f.Authorities
 }
 
-// countryAliases maps common profile `country` values to the entry's canonical
-// name in authorities.yaml.
-var countryAliases = map[string]string{
-	"uk":                       "united kingdom",
-	"u.k.":                     "united kingdom",
-	"great britain":            "united kingdom",
-	"britain":                  "united kingdom",
-	"england":                  "united kingdom",
-	"scotland":                 "united kingdom",
-	"wales":                    "united kingdom",
-	"northern ireland":         "united kingdom",
-	"czechia":                  "czech republic",
-	"the netherlands":          "netherlands",
-	"holland":                  "netherlands",
-	"usa":                      "united states (federal)",
-	"us":                       "united states (federal)",
-	"u.s.":                     "united states (federal)",
-	"u.s.a.":                   "united states (federal)",
-	"united states":            "united states (federal)",
-	"united states of america": "united states (federal)",
-	"america":                  "united states (federal)",
-	"california":               "united states (california)",
-}
-
-// ForCountry looks an authority up by the country name or ISO code a user
-// might have in their profile (case-insensitive, tolerant of common variants).
-// Returns nil if there's no match.
+// ForCountry looks an authority up by the ISO code or country name a profile
+// holds (see package country for the accepted spellings), or by an entry's own
+// code or name, e.g. "US-CA". Returns nil if there's no match.
 func ForCountry(name string) *Authority {
-	q := strings.ToLower(strings.TrimSpace(name))
+	q := strings.TrimSpace(name)
 	if q == "" {
 		return nil
 	}
-	if alias, ok := countryAliases[q]; ok {
-		q = alias
+	if code, ok := country.Code(q); ok {
+		q = code
 	}
 	all := All()
 	for i := range all {
-		if strings.ToLower(all[i].Country) == q || strings.ToLower(all[i].Code) == q {
+		if strings.EqualFold(all[i].Code, q) || strings.EqualFold(all[i].Country, q) {
 			return &all[i]
 		}
 	}

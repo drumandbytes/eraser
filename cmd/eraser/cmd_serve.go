@@ -51,6 +51,8 @@ func runServe(port int) error {
 			fmt.Printf("⚠️  Config exists but failed to load: %v\n", err)
 			fmt.Println("The setup wizard will help you reconfigure.")
 			cfg = nil
+		} else if err := cfg.Unlock(); err != nil {
+			return err
 		}
 	}
 

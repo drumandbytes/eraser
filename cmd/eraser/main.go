@@ -103,6 +103,7 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	rootCmd.AddCommand(guidesCmd())
 	rootCmd.AddCommand(autoCmd())
 	rootCmd.AddCommand(scheduleCmd())
+	rootCmd.AddCommand(passphraseCmd())
 
 	return rootCmd
 }

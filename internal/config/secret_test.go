@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -146,5 +147,154 @@ func TestRealMachineIDKey(t *testing.T) {
 	}
 	if got, err := decryptSecret(enc); err != nil || got != "pw" {
 		t.Errorf("round trip with the real machine id: %q %v", got, err)
+	}
+}
+
+// resetPassphrase clears the process-wide passphrase state around a test.
+func resetPassphrase(t *testing.T, provider func() (string, error)) {
+	t.Helper()
+	oldProvider := PassphraseProvider
+	SetPassphrase("")
+	PassphraseProvider = provider
+	t.Cleanup(func() { PassphraseProvider = oldProvider; SetPassphrase("") })
+}
+
+func baseSecretConfig(t *testing.T) (string, *Config) {
+	t.Helper()
+	p := writeCfg(t, "profiles:\n  - id: default\n    first_name: A\n    last_name: B\n    email: a@b.co\nemail:\n  from: a@b.co\n  smtp: {host: h, port: 587, username: u, password: smtp-pw}\ninbox:\n  enabled: true\n  server: i\n  port: 993\n  email: a@b.co\n  password: imap-pw\n")
+	cfg, err := Load(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p, cfg
+}
+
+func TestPassphraseProtectsPasswordsAndRoundTrips(t *testing.T) {
+	withMachineID(t, "m1")
+	resetPassphrase(t, nil)
+	p, cfg := baseSecretConfig(t)
+
+	if err := cfg.SetPassphraseProtection("correct horse"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(p, cfg); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(p)
+	if strings.Contains(string(raw), "smtp-pw") || strings.Count(string(raw), secretPrefixV2) != 2 || !strings.Contains(string(raw), "passphrase_protected: true") {
+		t.Fatalf("expected two v2 secrets and the flag:\n%s", raw)
+	}
+
+	// A fresh process: Load works without the passphrase, secrets stay opaque.
+	SetPassphrase("")
+	loaded, err := Load(p)
+	if err != nil || !loaded.PassphraseProtected {
+		t.Fatalf("load = %v, protected=%v", err, loaded != nil && loaded.PassphraseProtected)
+	}
+	if _, err := Reveal(loaded.Email.SMTP.Password); !errors.Is(err, ErrLocked) {
+		t.Fatalf("no provider: want ErrLocked, got %v", err)
+	}
+
+	asked := 0
+	PassphraseProvider = func() (string, error) { asked++; return "correct horse", nil }
+	if got, err := Reveal(loaded.Email.SMTP.Password); err != nil || got != "smtp-pw" {
+		t.Fatalf("Reveal = %q, %v", got, err)
+	}
+	if got, _ := Reveal(loaded.Inbox.Password); got != "imap-pw" || asked != 1 {
+		t.Errorf("second reveal = %q, prompts = %d (want 1)", got, asked)
+	}
+}
+
+func TestPassphraseWrongThenRightAndUnlock(t *testing.T) {
+	withMachineID(t, "m1")
+	resetPassphrase(t, nil)
+	p, cfg := baseSecretConfig(t)
+	if err := cfg.SetPassphraseProtection("right-pass-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(p, cfg); err != nil {
+		t.Fatal(err)
+	}
+	loaded, _ := Load(p)
+
+	SetPassphrase("")
+	answers := []string{"wrong-1", "wrong-2", "right-pass-1"}
+	PassphraseProvider = func() (string, error) {
+		a := answers[0]
+		answers = answers[1:]
+		return a, nil
+	}
+	if err := loaded.Unlock(); err != nil {
+		t.Fatalf("Unlock with the third try right: %v", err)
+	}
+
+	SetPassphrase("")
+	PassphraseProvider = func() (string, error) { return "nope", nil }
+	if err := loaded.Unlock(); err == nil || !strings.Contains(err.Error(), "wrong passphrase") {
+		t.Errorf("three wrong tries should fail, got %v", err)
+	}
+	plain := &Config{}
+	if err := plain.Unlock(); err != nil {
+		t.Errorf("no passphrase set: Unlock must be a no-op, got %v", err)
+	}
+}
+
+func TestPassphraseNewPasswordsAndClear(t *testing.T) {
+	withMachineID(t, "m1")
+	resetPassphrase(t, nil)
+	p, cfg := baseSecretConfig(t)
+	if err := cfg.SetPassphraseProtection("right-pass-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(p, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	// A password typed in later (web form, init) is encrypted under the passphrase too.
+	loaded, _ := Load(p)
+	loaded.Email.SMTP.Password = "new-smtp-pw"
+	if err := Save(p, loaded); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(p)
+	if strings.Contains(string(raw), "new-smtp-pw") || strings.Count(string(raw), secretPrefixV2) != 2 {
+		t.Fatalf("new password not protected:\n%s", raw)
+	}
+
+	// Clearing goes back to machine-bound v1 and keeps every password.
+	again, _ := Load(p)
+	if err := again.SetPassphraseProtection(""); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(p, again); err != nil {
+		t.Fatal(err)
+	}
+	SetPassphrase("")
+	final, err := Load(p)
+	if err != nil || final.PassphraseProtected || final.Email.SMTP.Password != "new-smtp-pw" || final.Inbox.Password != "imap-pw" {
+		t.Fatalf("after clear: %v %+v", err, final.Email.SMTP)
+	}
+	raw, _ = os.ReadFile(p)
+	if strings.Contains(string(raw), secretPrefixV2) || strings.Contains(string(raw), "passphrase_protected") {
+		t.Errorf("v2 leftovers after clear:\n%s", raw)
+	}
+}
+
+func TestSavingProtectedConfigWithoutPassphraseFails(t *testing.T) {
+	withMachineID(t, "m1")
+	resetPassphrase(t, nil)
+	p, cfg := baseSecretConfig(t)
+	cfg.PassphraseProtected = true
+	cfg.Email.SMTP.Password = "plain-new"
+	if err := Save(p, cfg); err == nil || !errors.Is(err, ErrLocked) {
+		t.Fatalf("want ErrLocked, got %v", err)
+	}
+}
+
+func TestV2CorruptInputs(t *testing.T) {
+	for _, bad := range []string{secretPrefixV2 + "!!!", secretPrefixV2 + "AAAA", secretPrefixV2 + "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="} {
+		if _, err := decryptV2(bad, "x"); err == nil {
+			t.Errorf("%q should be rejected", bad)
+		}
 	}
 }

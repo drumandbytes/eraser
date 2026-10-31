@@ -75,6 +75,9 @@ func NewJob(cfg *config.Config, configPath string) (Job, error) {
 	if err := cfg.Validate(); err != nil {
 		return Job{}, fmt.Errorf("fix your config before scheduling: %w", err)
 	}
+	if cfg.PassphraseProtected {
+		return Job{}, fmt.Errorf("a passphrase protects your mail password, and an OS job can't enter it; use `eraser auto loop` or `eraser serve` (they ask once at startup), or run `eraser passphrase clear`")
+	}
 	if cfg.IsManualSend() && len(cfg.ConfiguredInboxes()) == 0 {
 		return Job{}, fmt.Errorf("nothing to automate: send_mode is manual and no inbox is configured")
 	}

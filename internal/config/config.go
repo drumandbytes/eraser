@@ -39,11 +39,14 @@ type Config struct {
 	// brokers, mail account and options; history is kept per profile
 	// (profile_id). Takes precedence over Profile.
 	Profiles []NamedProfile `yaml:"profiles,omitempty"`
-	Email    EmailConfig    `yaml:"email"`
-	Options  Options        `yaml:"options"`
-	Inbox    InboxConfig    `yaml:"inbox,omitempty"`
-	Pipeline Pipeline       `yaml:"pipeline,omitempty"`
-	Schedule Schedule       `yaml:"schedule,omitempty"`
+	// PassphraseProtected: mail passwords are encrypted with a passphrase on
+	// top of the machine binding (see secret.go). Set with `eraser passphrase set`.
+	PassphraseProtected bool        `yaml:"passphrase_protected,omitempty"`
+	Email               EmailConfig `yaml:"email"`
+	Options             Options     `yaml:"options"`
+	Inbox               InboxConfig `yaml:"inbox,omitempty"`
+	Pipeline            Pipeline    `yaml:"pipeline,omitempty"`
+	Schedule            Schedule    `yaml:"schedule,omitempty"`
 }
 
 // Schedule is the in-app fallback for automated cycles when the OS scheduler
@@ -375,6 +378,9 @@ func Load(path string) (*Config, error) {
 			plaintext = true
 			return nil
 		}
+		if strings.HasPrefix(*p, secretPrefixV2) {
+			return nil // decrypted by Reveal, when the passphrase is available
+		}
 		plain, err := decryptSecret(*p)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v; re-enter it with `eraser init` or in Settings\n", err)
@@ -516,7 +522,16 @@ func Save(path string, cfg *Config) error {
 
 	out := cfg.cloneForSecrets() // cfg may be the live config others read
 	if err := out.secretFields(func(p *string) error {
-		enc, err := encryptSecret(*p)
+		var enc string
+		var err error
+		if out.PassphraseProtected && *p != "" && !isEncrypted(*p) {
+			var pass string
+			if pass, err = passphrase(); err == nil {
+				enc, err = encryptV2(*p, pass)
+			}
+		} else {
+			enc, err = encryptSecret(*p)
+		}
 		*p = enc
 		return err
 	}); err != nil {

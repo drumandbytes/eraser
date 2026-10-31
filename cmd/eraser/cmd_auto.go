@@ -70,6 +70,12 @@ func runAutoLoop(every time.Duration) error {
 	if schedule.Installed() {
 		return fmt.Errorf("the OS scheduler already runs these cycles ('eraser schedule status'); run 'eraser schedule remove' first to loop here instead")
 	}
+	// Ask for the passphrase (if one is set) once, up front, so the loop never stalls on it later.
+	if cfg, err := config.Load(resolveConfigPath()); err == nil {
+		if err := cfg.Unlock(); err != nil {
+			return err
+		}
+	}
 
 	for {
 		if err := runAutoCycle("loop"); err != nil {

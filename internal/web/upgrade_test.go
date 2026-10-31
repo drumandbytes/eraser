@@ -31,6 +31,14 @@ func TestUpgradeNoticeShowsUntilDismissed(t *testing.T) {
 	if strings.Contains(rec.Body.String(), "Config upgraded") {
 		t.Error("notice shown again after dismissal")
 	}
+	// Dismissing returns to the page it was clicked on.
+	req := loopbackRequest(http.MethodPost, "/upgrade-notice/dismiss", nil)
+	req.Header.Set("Referer", "http://localhost:8080/brokers?x=1")
+	rec = httptest.NewRecorder()
+	s.setupRouter().ServeHTTP(rec, req)
+	if rec.Header().Get("Location") != "/brokers" {
+		t.Errorf("dismiss redirect = %q, want /brokers", rec.Header().Get("Location"))
+	}
 	noPath := newTestServer(t, testConfig("default"))
 	noPath.handleDismissUpgradeNotice(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/", nil))
 	if noPath.upgradeNotice() != nil {

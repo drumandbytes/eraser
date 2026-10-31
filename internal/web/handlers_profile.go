@@ -199,7 +199,7 @@ func (s *Server) handleSettingsProfileNew(w http.ResponseWriter, r *http.Request
 			Mail:    mail,
 		})
 
-		if err := config.Save(s.configPath, &newCfg); err != nil {
+		if err := s.saveConfig(&newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-new.html", map[string]interface{}{
 				"Title":   "Add Profile",
 				"Profile": profile,
@@ -270,7 +270,7 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 		}
 		newCfg.Profiles = updated
 
-		if err := config.Save(s.configPath, &newCfg); err != nil {
+		if err := s.saveConfig(&newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{
 				"Title":     "Edit Profile",
 				"ProfileID": id,
@@ -329,7 +329,7 @@ func (s *Server) handleSettingsProfileDelete(w http.ResponseWriter, r *http.Requ
 	newCfg := *cfg
 	newCfg.Profiles = remaining
 
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		http.Error(w, "Failed to save configuration: "+err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -257,7 +257,7 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 		cfg.Email = config.Email{}
 	}
 
-	if err := config.Save(s.configPath, cfg); err != nil {
+	if err := s.saveConfig(cfg); err != nil {
 		data := map[string]interface{}{
 			"Title": "Setup - Error",
 			"Error": err.Error(),

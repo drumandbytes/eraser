@@ -74,7 +74,7 @@ func (s *Server) handleSettingsAutomation(w http.ResponseWriter, r *http.Request
 		}
 		newCfg := *cfg
 		newCfg.Schedule.Enabled = r.FormValue("action") == "enable"
-		if err := config.Save(s.configPath, &newCfg); err != nil {
+		if err := s.saveConfig(&newCfg); err != nil {
 			s.renderAutomationMessage(w, r, "Failed to save configuration: "+err.Error(), false)
 			return
 		}
@@ -169,7 +169,7 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 	config.ApplyInboxDefaults(&inbox)
 	newCfg.Inbox = inbox
 
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		s.renderSettingsWithMessage(w, r, "Failed to save configuration: "+err.Error(), false)
 		return
 	}
@@ -275,7 +275,7 @@ func (s *Server) handleSettingsOptions(w http.ResponseWriter, r *http.Request) {
 	o.SendMode = sendMode
 	o.Template, o.CustomTemplate, o.RateLimitMs, o.DailySendLimit = tmpl, custom, rate, daily
 	o.Regions, o.BrokerList, o.ExcludedCategories = regions, list, cats
-	if err := config.Save(s.configPath, &newCfg); err != nil {
+	if err := s.saveConfig(&newCfg); err != nil {
 		fail("Failed to save configuration: " + err.Error())
 		return
 	}

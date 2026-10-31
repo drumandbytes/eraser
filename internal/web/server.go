@@ -92,6 +92,8 @@ var Version = "dev"
 type Server struct {
 	config     atomic.Pointer[config.Config]
 	configPath string
+	reloadMu   sync.Mutex                            // guards cfgStamp
+	cfgStamp   string                                // version of config.yaml the current config came from
 	brokerDB   atomic.Pointer[broker.BrokerDatabase] // swapped by the "update broker list" action; read via brokers()
 	// BrokerOverride is serve's --brokers flag, so a reload resolves the list
 	// the same way startup did.
@@ -149,6 +151,13 @@ func NewServer(port int, cfg *config.Config, configPath string, brokerDB *broker
 		removeOS:     schedule.Remove,
 	}
 	s.config.Store(cfg)
+	if configPath != "" {
+		// "none" (no file yet) differs from any real stamp, so a config.yaml
+		// created later by the CLI is picked up.
+		if s.cfgStamp = fileStamp(configPath); s.cfgStamp == "" {
+			s.cfgStamp = "none"
+		}
+	}
 
 	// Paused send jobs used to be saved here for resume-on-restart; that's
 	// gone, so drop any leftovers.
@@ -372,6 +381,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	// Middleware
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(s.reloadConfigOnChange)
 	r.Use(middleware.Compress(5))
 	r.Use(requireLoopbackHost)
 	r.Use(securityHeaders)

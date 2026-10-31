@@ -100,3 +100,40 @@ func TestRunBackfillsMissingBodiesFromTheInbox(t *testing.T) {
 		t.Error("a closed store must be an error")
 	}
 }
+
+func TestRunCountsEveryKindOfReply(t *testing.T) {
+	store, err := history.NewStore(filepath.Join(t.TempDir(), "history.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = store.Close() }()
+	bodies := []string{
+		"We have deleted your data and removed all records as requested.",
+		"Please use our web form to submit your request: https://acme.example/optout",
+		"Please confirm your request by clicking this link: https://acme.example/confirm?token=abc123",
+		"We have no record of you in our systems and were unable to locate any data about you.",
+		"We are not a data broker and do not hold consumer data. This request is not in scope.",
+		"Thanks, we received your request and will respond within 30 days.",
+		"hello there",
+	}
+	for i, body := range bodies {
+		seed(t, store, "", "broker"+string(rune('a'+i)), "unknown", "Re: your request", body)
+	}
+	sum, err := Run(context.Background(), store, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	counted := sum.Success + sum.FormRequired + sum.ConfirmRequired + sum.Pending + sum.Rejected + sum.NoData + sum.Unknown
+	if sum.Total != len(bodies) || counted != len(bodies) {
+		t.Fatalf("summary = %+v", sum)
+	}
+	kinds := 0
+	for _, n := range []int{sum.Success, sum.FormRequired, sum.ConfirmRequired, sum.Pending, sum.Rejected, sum.NoData, sum.Unknown} {
+		if n > 0 {
+			kinds++
+		}
+	}
+	if kinds < 4 {
+		t.Errorf("expected the replies to land in several categories, got %+v", sum)
+	}
+}

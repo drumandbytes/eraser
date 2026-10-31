@@ -5,8 +5,10 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/drumandbytes/eraser/internal/config"
 )
@@ -137,5 +139,60 @@ func TestSettingsPassphraseSetChangeClear(t *testing.T) {
 	rec = post(t, s, "/settings/passphrase", url.Values{"action": {"clear"}})
 	if !strings.Contains(body(rec), "No passphrase is set") {
 		t.Errorf("clear when none set: %s", body(rec))
+	}
+}
+
+func TestUnlockAndPassphraseEndpointsRateLimit(t *testing.T) {
+	s := protectedServer(t)
+	s.rateLimiter = NewRateLimiter(0, time.Minute)
+	if rec := post(t, s, "/unlock", url.Values{"passphrase": {"correct horse"}}); rec.Code != http.StatusTooManyRequests || config.PassphraseUnlocked() {
+		t.Errorf("unlock over the limit = %d unlocked=%v", rec.Code, config.PassphraseUnlocked())
+	}
+
+	open := newTestServer(t, testConfig("default"))
+	open.rateLimiter = NewRateLimiter(0, time.Minute)
+	rec := post(t, open, "/settings/passphrase", url.Values{"action": {"set"}, "new": {"long enough 1"}, "confirm": {"long enough 1"}})
+	if rec.Code != http.StatusTooManyRequests || !strings.Contains(rec.Body.String(), "Too many attempts") {
+		t.Errorf("passphrase over the limit = %d", rec.Code)
+	}
+}
+
+func TestSettingsPassphraseNeedsConfigAndSurvivesFailures(t *testing.T) {
+	none := newTestServer(t, testConfig("default"))
+	none.config.Store(nil)
+	if rec := post(t, none, "/settings/passphrase", url.Values{"action": {"set"}}); !strings.Contains(rec.Body.String(), "No configuration found") {
+		t.Errorf("no config: %s", rec.Body.String())
+	}
+
+	// A config path that can't be written: the change is refused, nothing is stored.
+	bad := newTestServer(t, testConfig("default"))
+	blocker := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bad.configPath = filepath.Join(blocker, "sub", "config.yaml") // a directory can't be created under a file
+	config.SetPassphrase("")
+	t.Cleanup(func() { config.SetPassphrase("") })
+	rec := post(t, bad, "/settings/passphrase", url.Values{"action": {"set"}, "new": {"long enough 1"}, "confirm": {"long enough 1"}})
+	if !strings.Contains(rec.Body.String(), "Failed to save") || bad.getConfig().PassphraseProtected {
+		t.Errorf("unwritable config: %s", rec.Body.String())
+	}
+
+	// Changing a passphrase while this process doesn't hold the current one fails cleanly.
+	locked := protectedServer(t)
+	req := loopbackRequest(http.MethodPost, "/settings/passphrase", strings.NewReader(url.Values{"action": {"clear"}, "current": {"correct horse"}}.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	locked.handleSettingsPassphrase(w, req)
+	if !strings.Contains(w.Body.String(), "change the passphrase") {
+		t.Errorf("locked process: code=%d", w.Code)
+	}
+}
+
+func TestVerifyPassphraseNeedsAReadableConfig(t *testing.T) {
+	s := newTestServer(t, testConfig("default"))
+	s.configPath = t.TempDir() + "/missing.yaml"
+	if err := s.verifyPassphrase("x"); err == nil {
+		t.Error("a missing config file can't verify anything")
 	}
 }

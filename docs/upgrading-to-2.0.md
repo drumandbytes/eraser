@@ -6,6 +6,8 @@
 
 When `config.yaml` is in a 1.x shape, Eraser rewrites it once and saves the untouched original as `config.yaml.1x.bak` next to it. The backup is never overwritten by later runs. If the backup can't be written, Eraser warns, leaves the file alone and still runs with the migrated values in memory.
 
+When this happens the CLI prints one line saying so, and the web UI shows a dismissible "Config upgraded" notice until you dismiss it. Delete the backup when you are happy with the migration.
+
 ## What changed
 
 | Change | Before | Now |

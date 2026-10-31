@@ -61,7 +61,7 @@ func noDataReplyText(content string) string {
 			lines = append(lines, line)
 		}
 	}
-	return stripHTML(strings.Join(lines, "\n"))
+	return PlainText(strings.Join(lines, "\n"))
 }
 
 // noDataVerdict returns a separate, conservative terminal verdict. Generic

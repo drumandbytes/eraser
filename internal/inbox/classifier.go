@@ -231,7 +231,7 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 
 	content := email.Body
 	if content == "" {
-		content = stripHTML(email.HTMLBody)
+		content = PlainText(email.HTMLBody)
 	}
 	content = strings.ToLower(content)
 
@@ -428,37 +428,6 @@ func getClassificationReason(responseType ResponseType, score int) string {
 	default:
 		return "Unknown classification"
 	}
-}
-
-// Compiled once at package init rather than on every stripHTML() call - this
-// runs on every classified email, so recompiling these on each call was
-// wasted regex-compilation work per email for no benefit (none of them
-// depend on the input).
-var (
-	htmlScriptTagRe     = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
-	htmlStyleTagRe      = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
-	htmlAnyTagRe        = regexp.MustCompile(`<[^>]+>`)
-	htmlWhitespaceRunRe = regexp.MustCompile(`\s+`)
-)
-
-// stripHTML removes HTML tags from content (simple version)
-func stripHTML(html string) string {
-	// Remove script and style elements (Go regex doesn't support backreferences)
-	html = htmlScriptTagRe.ReplaceAllString(html, "")
-	html = htmlStyleTagRe.ReplaceAllString(html, "")
-
-	html = htmlAnyTagRe.ReplaceAllString(html, " ")
-
-	html = strings.ReplaceAll(html, "&nbsp;", " ")
-	html = strings.ReplaceAll(html, "&amp;", "&")
-	html = strings.ReplaceAll(html, "&lt;", "<")
-	html = strings.ReplaceAll(html, "&gt;", ">")
-	html = strings.ReplaceAll(html, "&quot;", "\"")
-
-	// Collapse whitespace
-	html = htmlWhitespaceRunRe.ReplaceAllString(html, " ")
-
-	return strings.TrimSpace(html)
 }
 
 // ClassifyBySubjectOnly classifies based on subject line only (for reclassifying database records)

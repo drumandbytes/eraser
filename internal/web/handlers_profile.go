@@ -268,7 +268,7 @@ func (s *Server) handleSettingsProfileEdit(w http.ResponseWriter, r *http.Reques
 				updated[i].Mail = mail
 			}
 		}
-		newCfg.Profiles, newCfg.Profile = updated, config.Profile{}
+		newCfg.Profiles = updated
 
 		if err := config.Save(s.configPath, &newCfg); err != nil {
 			s.renderWithCSRF(w, r, "settings/profile-edit.html", map[string]interface{}{

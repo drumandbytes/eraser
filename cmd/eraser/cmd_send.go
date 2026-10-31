@@ -234,10 +234,7 @@ func runSend() error {
 	// Initialize email sender (unless dry-run)
 	var sender *email.SMTPSender
 	if !cfg.Options.DryRun {
-		sender, err = email.NewSender(emailCfg)
-		if err != nil {
-			return fmt.Errorf("failed to initialize email sender: %w", err)
-		}
+		sender = email.NewSMTPSender(emailCfg.SMTP, emailCfg.From)
 	}
 
 	if cfg.Options.DryRun {

@@ -97,3 +97,34 @@ func TestLoadCountryMigrationSurvivesWriteFailures(t *testing.T) {
 		}
 	})
 }
+
+func TestLoadMigratesLegacyProfileBlockAndDropsProvider(t *testing.T) {
+	orig := "profile:\n  first_name: Old\n  last_name: Style\n  email: o@s.co\n  country: UK\nemail:\n  provider: smtp\n  from: o@s.co\n  smtp:\n    host: smtp.example.com\n    port: 587\n"
+	p := writeCfg(t, orig)
+
+	cfg, err := Load(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Profiles) != 1 || cfg.Profiles[0].ID != DefaultProfileID || cfg.Profiles[0].FirstName != "Old" || cfg.Profiles[0].Country != "GB" {
+		t.Fatalf("profiles = %+v", cfg.Profiles)
+	}
+	if bak, _ := os.ReadFile(p + ".1x.bak"); string(bak) != orig {
+		t.Error("original config not backed up")
+	}
+	saved, _ := os.ReadFile(p)
+	if strings.Contains(string(saved), "provider:") || strings.Contains(string(saved), "\nprofile:") {
+		t.Errorf("legacy keys survived the rewrite:\n%s", saved)
+	}
+	if !strings.Contains(string(saved), "profiles:") {
+		t.Errorf("profiles: missing after rewrite:\n%s", saved)
+	}
+}
+
+func TestLoadIgnoresLegacyProfileWhenProfilesExist(t *testing.T) {
+	p := writeCfg(t, "profile:\n  first_name: Old\nprofiles:\n  - id: me\n    first_name: New\n    last_name: X\n    email: n@x.co\n")
+	cfg, err := Load(p)
+	if err != nil || len(cfg.Profiles) != 1 || cfg.Profiles[0].FirstName != "New" {
+		t.Fatalf("load = %+v, %v", cfg, err)
+	}
+}

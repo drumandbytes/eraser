@@ -15,8 +15,8 @@ import (
 func manualTestServer(t *testing.T) *Server {
 	t.Helper()
 	s := newTestServer(t, &config.Config{
-		Profile: config.Profile{FirstName: "Jane", LastName: "Doe", Email: "jane@example.com"},
-		Options: config.Options{Template: "gdpr", SendMode: "manual"},
+		Profiles: []config.NamedProfile{{ID: config.DefaultProfileID, Profile: config.Profile{FirstName: "Jane", LastName: "Doe", Email: "jane@example.com"}}},
+		Options:  config.Options{Template: "gdpr", SendMode: "manual"},
 	})
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")
 	s.brokerDB.Store(&broker.BrokerDatabase{Brokers: []broker.Broker{
@@ -42,7 +42,7 @@ func TestSetupCompleteManual(t *testing.T) {
 	}
 	s.sessions.Update(id, func(sess *Session) {
 		sess.Profile = config.Profile{FirstName: "Jane", LastName: "Doe", Email: "jane@example.com"}
-		sess.Email = config.Email{Provider: "manual"}
+		sess.Email = config.Email{From: "stale@example.com"}
 		sess.ManualSend = true
 		sess.Step = "complete"
 	})
@@ -59,8 +59,8 @@ func TestSetupCompleteManual(t *testing.T) {
 	if !cfg.IsManualSend() {
 		t.Errorf("saved config send_mode = %q, want manual", cfg.Options.SendMode)
 	}
-	if cfg.Email.Provider != "" {
-		t.Errorf("manual setup should leave email empty, got provider %q", cfg.Email.Provider)
+	if cfg.Email.From != "" {
+		t.Errorf("manual setup should leave email empty, got from %q", cfg.Email.From)
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Errorf("manual config should validate: %v", err)
@@ -91,7 +91,7 @@ func TestBrokersPageManualMode(t *testing.T) {
 func TestBrokerEmailPageHiddenOutsideCountryScope(t *testing.T) {
 	s := manualTestServer(t)
 	s.brokers().FindByID("acme").Countries = []string{"DE"}
-	s.getConfig().Profile.Country = "France"
+	s.getConfig().Profiles[0].Country = "FR"
 
 	req := withURLParam(httptest.NewRequest(http.MethodGet, "/brokers/acme/email", nil), "brokerID", "acme")
 	w := httptest.NewRecorder()
@@ -147,7 +147,7 @@ func TestBrokerEmailPageUsesProfileMailOverrideFrom(t *testing.T) {
 			ID:      "spouse",
 			Profile: config.Profile{FirstName: "Spouse", LastName: "User", Email: "spouse@example.com"},
 			Mail: &config.MailConfig{
-				Email: &config.EmailConfig{Provider: "smtp", From: "spouse@gmail.com"},
+				Email: &config.EmailConfig{From: "spouse@gmail.com"},
 			},
 		}},
 		Options: config.Options{Template: "gdpr", SendMode: "manual"},

@@ -166,16 +166,7 @@ func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sender, err := email.NewSender(session.Email)
-	if err != nil {
-		_, _ = fmt.Fprintf(w, `
-			<div class="alert alert-error">
-				<strong>Configuration error:</strong> %s
-				<p class="mt-2 text-sm">Please check your email settings and try again.</p>
-			</div>
-		`, template.HTMLEscapeString(err.Error()))
-		return
-	}
+	sender := email.NewSMTPSender(session.Email.SMTP, session.Email.From)
 
 	testMsg := email.Message{
 		To:      session.Profile.Email,
@@ -257,7 +248,6 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 				updated.Profiles[i].Profile = applyProfileForm(updated.Profiles[i].Profile, session.Profile)
 			}
 		}
-		updated.Profile = config.Profile{}
 		cfg = &updated
 	}
 	cfg.Email = session.Email

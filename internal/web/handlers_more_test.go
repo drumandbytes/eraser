@@ -80,7 +80,6 @@ func TestSetupTestSend(t *testing.T) {
 		want string
 	}{
 		{"no session", nil, http.StatusBadRequest, "Email not configured"},
-		{"bad provider", withEmail(config.Email{Provider: "fax", SMTP: config.SMTPConfig{Host: "x"}}), http.StatusOK, "Configuration error"},
 		{"delivered", withEmail(relay.Email("test@example.com")), http.StatusOK, "Test email sent"},
 	}
 	for _, c := range cases {
@@ -103,7 +102,7 @@ func TestSetupTestSend(t *testing.T) {
 // validConfig passes config.Validate, so schedule.NewJob accepts it.
 func validConfig() *config.Config {
 	cfg := testConfig()
-	cfg.Profile.Country = "Latvia"
+	cfg.Profiles[0].Country = "LV"
 	cfg.Email = config.EmailConfig{From: "test@example.com", SMTP: config.SMTPConfig{Host: "smtp.example.com", Port: 465, Username: "u", Password: "p"}}
 	cfg.Options.Template = "gdpr"
 	return cfg

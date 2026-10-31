@@ -65,11 +65,7 @@ func (s *Server) handleAPISendOne(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sender, err := email.NewSender(emailCfg)
-	if err != nil {
-		_, _ = fmt.Fprintf(w, `<span class="text-error">Error: %s</span>`, template.HTMLEscapeString(err.Error()))
-		return
-	}
+	sender := email.NewSMTPSender(emailCfg.SMTP, emailCfg.From)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
@@ -188,12 +184,7 @@ func (s *Server) handleAPISendAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create email sender (validate config before starting job)
-	sender, err := email.NewSender(emailCfg)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-		return
-	}
+	sender := email.NewSMTPSender(emailCfg.SMTP, emailCfg.From)
 
 	// GetActive above is only a fast-fail; CreateIfNoActive re-checks under the lock
 	// An automatic cycle (in-app, CLI or OS job) sends to the same brokers;

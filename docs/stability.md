@@ -7,8 +7,8 @@ This page defines what counts as "a working setup".
 ## Stable: won't break within 1.x
 
 - **`config.yaml`**: every key in the schema in [commands.md](commands.md#configuration). A config that works on 1.0 keeps loading and behaving the same on every 1.x. New keys are optional and default to the old behaviour. Older formats still load and are rewritten in the current shape on the next save:
-  - the pre-0.11 top-level `profile:` block becomes `profiles: [{id: default}]`
-  - `email.provider: smtp` is accepted
+  - 1.x formats are migrated on first load (the original is kept as `config.yaml.1x.bak`): the pre-0.11 top-level `profile:` block becomes `profiles: [{id: default}]`, and a free-text `country` becomes an ISO code
+  - `email.provider` is no longer read; it drops out on the next save
   - `smtp.use_tls` can be set explicitly
   - removed keys such as `pipeline.auto_confirm` are ignored
 - **CLI commands and flags** shown by `eraser --help` and `eraser <command> --help`:

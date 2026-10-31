@@ -371,7 +371,7 @@ func TestLegacyConfigLoadsAndSavesInCurrentFormat(t *testing.T) {
 	}
 }
 
-// The minimal current-format config: no provider:, no use_tls.
+// The minimal current-format config: no use_tls.
 func TestMinimalEmailConfigDefaultsToTLS(t *testing.T) {
 	e := EmailConfig{From: "a@example.org", SMTP: SMTPConfig{Host: "smtp.example.org", Port: 587, Username: "a", Password: "p"}}
 	if err := validateEmailConfig(e); err != nil || !e.SMTP.TLS() {
@@ -380,10 +380,6 @@ func TestMinimalEmailConfigDefaultsToTLS(t *testing.T) {
 	e.SMTP.UseTLS = new(false)
 	if err := validateEmailConfig(e); err == nil {
 		t.Fatal("use_tls: false with a username must be rejected")
-	}
-	e.Provider = "sendgrid"
-	if err := validateEmailConfig(e); err == nil || !strings.Contains(err.Error(), "only smtp") {
-		t.Fatalf("unknown provider: %v", err)
 	}
 }
 

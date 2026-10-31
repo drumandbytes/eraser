@@ -197,7 +197,7 @@ func runProfileEdit(id string) error {
 			profiles[i] = updated
 		}
 	}
-	cfg.Profiles, cfg.Profile = profiles, config.Profile{}
+	cfg.Profiles = profiles
 
 	if err := config.Save(configPath, cfg); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)

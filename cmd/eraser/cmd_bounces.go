@@ -3,12 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/drumandbytes/eraser/internal/bounces"
 	"github.com/drumandbytes/eraser/internal/broker"
 	"github.com/drumandbytes/eraser/internal/config"
 	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/inbox"
 	"github.com/spf13/cobra"
 )
 
@@ -55,7 +54,8 @@ func runCleanupBounces(remove bool, days int) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	if !cfg.Inbox.Enabled {
+	inboxes := cfg.ConfiguredInboxes()
+	if len(inboxes) == 0 {
 		return fmt.Errorf("inbox monitoring not configured. Run 'eraser init' to set up")
 	}
 
@@ -80,69 +80,35 @@ func runCleanupBounces(remove bool, days int) error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 	fmt.Println()
 
-	monitor := inbox.NewMonitor(cfg.Inbox, brokerDB.Brokers)
-
-	ctx := context.Background()
-	if err := monitor.Connect(ctx); err != nil {
-		return fmt.Errorf("failed to connect to inbox: %w", err)
-	}
-	defer func() { _ = monitor.Disconnect() }()
-
-	bounceEmails, err := monitor.FetchBounceEmails(ctx, days)
+	rep, err := bounces.Scan(context.Background(), inboxes, brokerDB, everSentBrokerIDs(cfg, store), days)
 	if err != nil {
-		return fmt.Errorf("failed to fetch bounce emails: %w", err)
+		return err
 	}
-
-	if len(bounceEmails) == 0 {
+	if rep.Total == 0 {
 		fmt.Println("✓ No bounced emails found!")
 		return nil
 	}
 
-	fmt.Printf("Found %d bounced email(s):\n\n", len(bounceEmails))
-
-	everSent := everSentBrokerIDs(cfg, store)
-
-	// Track brokers to remove
-	type bouncedBroker struct {
-		email      string
-		broker     *broker.Broker
-		subject    string
-		receivedAt time.Time
-	}
-	var bouncedBrokers []bouncedBroker
-
-	for _, email := range bounceEmails {
-		bouncedRecipient := inbox.ExtractBouncedRecipient(&email)
-		if bouncedRecipient == "" {
-			fmt.Printf("⚠️  Could not extract bounced address from: %s\n", email.Subject)
-			continue
+	fmt.Printf("Found %d bounced email(s):\n\n", rep.Total)
+	for _, it := range rep.Items {
+		switch it.Kind {
+		case bounces.NoRecipient:
+			fmt.Printf("⚠️  Could not extract bounced address from: %s\n", it.Subject)
+		case bounces.NotInList:
+			fmt.Printf("⚠️  %s - not found in broker database\n", it.Email)
+		case bounces.NeverSent:
+			fmt.Printf("⚠️  %s - looks like a bounce for %s (%s), but there's no record of ever emailing them - skipping as a likely misclassified or spoofed message\n", it.Email, it.Broker.Name, it.Broker.ID)
+		case bounces.Dead:
+			fmt.Printf("❌ %s\n", it.Email)
+			fmt.Printf("   Broker: %s (%s)\n", it.Broker.Name, it.Broker.ID)
+			fmt.Printf("   Subject: %s\n", truncateString(it.Subject, 60))
+			fmt.Printf("   Date: %s\n", it.ReceivedAt.Format("2006-01-02"))
+			fmt.Println()
 		}
-
-		b := brokerDB.FindByEmail(bouncedRecipient)
-		if b == nil {
-			fmt.Printf("⚠️  %s - not found in broker database\n", bouncedRecipient)
-			continue
-		}
-		if !everSent[b.ID] {
-			fmt.Printf("⚠️  %s - looks like a bounce for %s (%s), but there's no record of ever emailing them - skipping as a likely misclassified or spoofed message\n", bouncedRecipient, b.Name, b.ID)
-			continue
-		}
-
-		fmt.Printf("❌ %s\n", bouncedRecipient)
-		fmt.Printf("   Broker: %s (%s)\n", b.Name, b.ID)
-		fmt.Printf("   Subject: %s\n", truncateString(email.Subject, 60))
-		fmt.Printf("   Date: %s\n", email.ReceivedAt.Format("2006-01-02"))
-		fmt.Println()
-
-		bouncedBrokers = append(bouncedBrokers, bouncedBroker{
-			email:      bouncedRecipient,
-			broker:     b,
-			subject:    email.Subject,
-			receivedAt: email.ReceivedAt,
-		})
 	}
 
-	if len(bouncedBrokers) == 0 {
+	dead := rep.Dead()
+	if len(dead) == 0 {
 		fmt.Println("✓ No broker email addresses need to be removed")
 		return nil
 	}
@@ -150,38 +116,28 @@ func runCleanupBounces(remove bool, days int) error {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	if !remove {
-		fmt.Printf("\n📊 Found %d broker(s) with invalid email addresses\n", len(bouncedBrokers))
+		fmt.Printf("\n📊 Found %d broker(s) with invalid email addresses\n", len(dead))
 		fmt.Println("Run with --remove to clear these addresses in the database")
 		return nil
 	}
 
 	// Clear the dead addresses (the broker entries themselves are kept)
-	fmt.Printf("\n🧹 Clearing %d broker email address(es)...\n\n", len(bouncedBrokers))
-
-	cleared := 0
-	for _, bb := range bouncedBrokers {
-		b := brokerDB.MarkEmailUnreachable(bb.email, bb.subject)
-		if b == nil {
-			continue
-		}
-		if !maintaining {
-			if err := broker.SaveLocal(*b); err != nil {
-				return fmt.Errorf("failed to save %s: %w", b.ID, err)
-			}
-		}
-		fmt.Printf("✓ Cleared %s (%s)\n", bb.broker.Name, bb.email)
-		cleared++
-	}
-
+	fmt.Printf("\n🧹 Clearing %d broker email address(es)...\n\n", len(dead))
+	listPath := ""
 	if maintaining {
-		if err := brokerDB.SaveWithBackup(brokerPath); err != nil {
-			return fmt.Errorf("failed to save broker database: %w", err)
-		}
+		listPath = brokerPath
+	}
+	cleared, err := bounces.Clear(listPath, dead)
+	for _, it := range cleared {
+		fmt.Printf("✓ Cleared %s (%s)\n", it.Broker.Name, it.Email)
+	}
+	if err != nil {
+		return err
 	}
 
 	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Printf("✓ Cleared %d broker email address(es) - entries kept, ready for a new address\n", cleared)
+	fmt.Printf("✓ Cleared %d broker email address(es) - entries kept, ready for a new address\n", len(cleared))
 	fmt.Println("  Run 'eraser list-brokers --missing-email' to see them")
 	fmt.Printf("  Backup saved to: %s.bak\n", brokerPath)
 
@@ -279,17 +235,7 @@ func runMarkBounced(brokerIDs []string, note string) error {
 // clear a real contact. Limiting to brokers we've actually emailed shrinks
 // that to the user's own contacts.
 func everSentBrokerIDs(cfg *config.Config, store *history.Store) map[string]bool {
-	everSent := map[string]bool{}
-	for _, p := range cfg.GetProfiles() {
-		times, err := store.LastSuccessfulSendTimes(p.ID)
-		if err != nil {
-			continue // don't fail the whole scan over one profile's history
-		}
-		for id := range times {
-			everSent[id] = true
-		}
-	}
-	return everSent
+	return bounces.EverSent(cfg, store)
 }
 
 // truncateString truncates a string to the specified length

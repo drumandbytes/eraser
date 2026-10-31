@@ -404,6 +404,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/brokers/{brokerID}/email", s.handleBrokerEmail)
 	r.Get("/history", s.handleHistory)
 	r.Get("/export", s.handleExport)
+	r.Get("/export/drafts.zip", s.handleDraftsZip)
 	r.Get("/unlock", s.handleUnlock)
 	r.Post("/upgrade-notice/dismiss", s.handleDismissUpgradeNotice)
 	r.Post("/unlock", s.handleUnlock)
@@ -463,6 +464,8 @@ func (s *Server) setupRouter() *chi.Mux {
 		r.Post("/inbox/scan", s.handleAPIInboxScan)
 		r.Post("/inbox/rescan", s.handleAPIInboxRescan)
 		r.Post("/inbox/reclassify", s.handleAPIReclassify)
+		r.Post("/inbox/bounces", s.handleAPIBounces)
+		r.Post("/inbox/bounces/clear", s.handleAPIBouncesClear)
 		r.Post("/profile", s.handleAPISwitchProfile)
 	})
 

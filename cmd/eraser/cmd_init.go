@@ -189,7 +189,11 @@ func promptWithDefault(reader *bufio.Reader, label, current string) string {
 	if current != "" {
 		msg = fmt.Sprintf("%s [%s]", label, current)
 	}
-	input := prompt(reader, msg+": ")
+	// Never echo a password; fall back to a plain read when stdin isn't a terminal.
+	input, err := readSecret(msg + ": ")
+	if err != nil {
+		input = prompt(reader, msg+": ")
+	}
 	if input == "" {
 		return current
 	}

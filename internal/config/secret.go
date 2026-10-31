@@ -315,3 +315,30 @@ func (c *Config) SetPassphraseProtection(pass string) error {
 	SetPassphrase(pass)
 	return nil
 }
+
+// PassphraseUnlocked reports whether this process holds the passphrase.
+func PassphraseUnlocked() bool {
+	unlockMu.Lock()
+	defer unlockMu.Unlock()
+	return unlocked != ""
+}
+
+// CheckPassphrase verifies pass against every stored password without
+// touching the passphrase this process holds, so a typo in a form can't lock
+// a running app. Nil when no passphrase is set.
+func (c *Config) CheckPassphrase(pass string) error {
+	if !c.PassphraseProtected {
+		return nil
+	}
+	return c.secretFields(func(p *string) error {
+		if !strings.HasPrefix(*p, secretPrefixV2) {
+			return nil
+		}
+		_, err := decryptV2(*p, pass)
+		return err
+	})
+}
+
+// Clone copies the parts of the config that hold passwords, for callers that
+// change them without touching the live config others are reading.
+func (c *Config) Clone() *Config { return c.cloneForSecrets() }

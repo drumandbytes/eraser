@@ -1,5 +1,30 @@
 # Changelog
 
+## [2.0.0](https://github.com/drumandbytes/eraser/compare/v1.8.0...v2.0.0) (2026-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop the legacy top-level profile: block and email.provider
+* remove the deprecated monitor --once flag
+* encrypt mail passwords at rest, with an optional passphrase (eraser passphrase set|clear)
+* store the profile country as an ISO 3166-1 code (existing configs are migrated on first load; the original is kept as config.yaml.1x.bak)
+
+### Features
+
+* **brokers:** country-scoped brokers via an optional countries list in brokers.yaml, applied across send, draft, mark-sent, the web UI and MCP ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+* **cli:** monitor --reclassify, list-brokers --all-countries, first-run 2.0 notice ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+* drop the legacy top-level profile: block and email.provider ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+* encrypt mail passwords at rest, with an optional passphrase (eraser passphrase set|clear) ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+* remove the deprecated monitor --once flag ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+* store the profile country as an ISO 3166-1 code (existing configs are migrated on first load; the original is kept as config.yaml.1x.bak) ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+* **web:** passphrase settings and unlock page, live reload of config.yaml, check and clear bounced broker addresses, download all drafts as a zip, one-time What's new and upgrade notices ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+
+
+### Bug Fixes
+
+* eraser auto (not "auto loop") in messages and docs; release builds use Go 1.26.9 ([c7dad85](https://github.com/drumandbytes/eraser/commit/c7dad8545d19391df07b2c33018c671ee74b0784))
+
 ## [1.8.0](https://github.com/drumandbytes/eraser/compare/v1.7.1...v1.8.0) (2026-10-31)
 
 

@@ -1,6 +1,9 @@
 # Eraser Configuration Example
 # Copy this file to ~/.eraser/config.yaml and fill in your details
 
+# Mail passwords are stored encrypted (enc:v1:...). `eraser passphrase set` adds a passphrase
+# on top and sets `passphrase_protected: true` here; do not edit that by hand.
+
 profiles:
   # One entry per person; most installs only need this one. More via
   # `eraser profile add` (see docs/multi-profile.md).

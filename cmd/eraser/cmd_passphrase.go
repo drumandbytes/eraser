@@ -16,6 +16,9 @@ import (
 
 const minPassphraseLen = 8
 
+// scheduleInstalled reports whether the OS scheduler job exists. Replaceable in tests.
+var scheduleInstalled = schedule.Installed
+
 // readSecret reads a line from the terminal without echoing it. Replaceable in tests.
 var readSecret = func(label string) (string, error) {
 	fd := int(os.Stdin.Fd())
@@ -100,7 +103,7 @@ func runPassphraseSet(yes bool) error {
 		return fmt.Errorf("failed to save config: %w", err)
 	}
 	fmt.Println("✅ Mail passwords are now protected by your passphrase.")
-	if schedule.Installed() {
+	if scheduleInstalled() {
 		fmt.Println("⚠️  The OS scheduler is installed and can no longer send. Run 'eraser schedule remove', then use 'eraser auto' or 'eraser serve'.")
 	}
 	return nil

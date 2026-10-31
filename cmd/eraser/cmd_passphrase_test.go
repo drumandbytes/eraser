@@ -204,3 +204,17 @@ func TestAutoLoopAndServeNeedThePassphrase(t *testing.T) {
 		t.Errorf("auto with the wrong passphrase: %v", err)
 	}
 }
+
+func TestPassphraseSetWarnsWhenTheOSScheduleIsInstalled(t *testing.T) {
+	old := scheduleInstalled
+	scheduleInstalled = func() bool { return true }
+	t.Cleanup(func() { scheduleInstalled = old })
+
+	e := newCLIEnv(t, passphraseTestConfig)
+	scriptedSecrets(t, "long-enough-pass", "long-enough-pass")
+	out, err := e.run(t, "", "passphrase", "set", "--yes")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustContain(t, out, "The OS scheduler is installed and can no longer send", "eraser auto")
+}

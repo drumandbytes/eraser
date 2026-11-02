@@ -161,6 +161,11 @@ settings, templates, limits, and history. Codex supplies the AI; Eraser needs no
 separate AI API key. This feature is experimental: it should work, but its
 commands and tools may change in a future minor release.
 
+MCP tools exposed by `eraser mcp`: `get_status`, `list_brokers`, `list_tasks`,
+`get_task`, `prepare_batch`, `begin_batch`, `end_batch`, `scan_inbox`,
+`send_request`, `open_task`, `observe_page`, `get_screenshot`, `browser_action`,
+`record_result`, `retry_action`. See [docs/mcp.md](docs/mcp.md#tools) for what each does.
+
 Chrome/Chromium is required for forms. CAPTCHA, login, identity checks, uncertain
 submissions, and unexpected destinations need your intervention. A completed form
 means the request was accepted, not that the broker has erased your data.

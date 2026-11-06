@@ -11,7 +11,7 @@ brokers:
         - GB
     - id: acxiom
       name: Acxiom
-      email: consumeradvo@acxiom.com
+      email: askprivacy@acxiom.com
       website: https://www.acxiom.com
       opt_out_url: https://isapps.acxiom.com/optout/optout.aspx
       region: global

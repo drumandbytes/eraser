@@ -155,8 +155,8 @@ brokers:
       opt_out_url: https://isapps.acxiom.com/optout/optout.aspx
       region: global
       category: marketing
-      verification: Verifies identity before acting on right-to-know requests; may phone you with an authentication quiz and deletes the verification data afterwards
       notes: Contact email changed to askprivacy@acxiom.com (2026-11-06).
+      verification: Verifies identity before acting on right-to-know requests; may phone you with an authentication quiz and deletes the verification data afterwards
       sources:
         - https://www.acxiom.com/privacy/privacy-policy-www-acxiom-com/
       researched: "2026-10-25"

@@ -16,7 +16,7 @@ brokers:
       opt_out_url: https://isapps.acxiom.com/optout/optout.aspx
       region: global
       category: marketing
-      notes: Well-known data broker with a published first-party privacy channel.
+      notes: Well-known data broker with a published first-party privacy channel; contact email changed to askprivacy@acxiom.com (2026-11-06).
     - id: advancedbackgroundchecks
       name: AdvancedBackgroundChecks
       email: privacy@advancedbackgroundchecks.com

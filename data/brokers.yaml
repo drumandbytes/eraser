@@ -150,7 +150,7 @@ brokers:
       notes: privacy@searchpeoplefree.com replied 2026-08-20 pointing to their self-service opt-out page instead of processing the request directly; email cleared, use opt_out_url.
     - id: acxiom
       name: Acxiom
-      email: consumeradvo@acxiom.com
+      email: askprivacy@acxiom.com
       website: https://www.acxiom.com
       opt_out_url: https://isapps.acxiom.com/optout/optout.aspx
       region: global

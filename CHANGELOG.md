@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/drumandbytes/eraser/compare/v2.0.0...v2.0.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **brokers:** update Acxiom contact email ([#256](https://github.com/drumandbytes/eraser/issues/256)) ([1836709](https://github.com/drumandbytes/eraser/commit/1836709e516f90728ca059755b8ee1c3ce97b5ae))
+
 ## [2.0.0](https://github.com/drumandbytes/eraser/compare/v1.8.0...v2.0.0) (2026-10-31)
 
 

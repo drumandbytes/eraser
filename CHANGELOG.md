@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/drumandbytes/eraser/compare/v2.0.1...v2.1.0) (2026-11-07)
+
+
+### Features
+
+* **web:** start the UI on double-click and add a beginner setup guide ([#259](https://github.com/drumandbytes/eraser/issues/259)) ([4d6e15f](https://github.com/drumandbytes/eraser/commit/4d6e15f1b30041e50e579cc8d1827605a1a24be9))
+
 ## [2.0.1](https://github.com/drumandbytes/eraser/compare/v2.0.0...v2.0.1) (2026-11-06)
 
 

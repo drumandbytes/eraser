@@ -24,7 +24,7 @@ import (
 )
 
 // pages are the user-facing docs. Developer notes stay out of the site.
-var pages = []string{"commands", "multi-profile", "mcp", "stability", "broker-replies"}
+var pages = []string{"getting-started", "commands", "multi-profile", "mcp", "stability", "broker-replies"}
 
 const repoURL = "https://github.com/drumandbytes/eraser"
 
@@ -198,11 +198,12 @@ func render(name, body string, v Version) string {
 // first paragraphs of the markdown are code blocks or callouts, so they can't
 // be lifted automatically.
 var docDescriptions = map[string]string{
-	"commands":       "Every Eraser command, flag and config.yaml key: sending removal requests, monitoring your inbox, and running the local web UI.",
-	"broker-replies": "How to handle data broker replies to your removal requests: confirmations, ID checks, refusals, and what Eraser classifies automatically.",
-	"mcp":            "Run Eraser's local MCP server so an agent can work through broker follow-ups while you review batches and handle verification.",
-	"multi-profile":  "Send and track removal requests for more than one person from a single Eraser install, with fully separate history per profile.",
-	"stability":      "What Eraser's semantic versioning promises in 1.x: the config, CLI, data and API surface that will not break between minor releases.",
+	"getting-started": "Step-by-step setup for first-time users: download Eraser, create a Gmail app password, run the setup wizard and send your first removal requests.",
+	"commands":        "Every Eraser command, flag and config.yaml key: sending removal requests, monitoring your inbox, and running the local web UI.",
+	"broker-replies":  "How to handle data broker replies to your removal requests: confirmations, ID checks, refusals, and what Eraser classifies automatically.",
+	"mcp":             "Run Eraser's local MCP server so an agent can work through broker follow-ups while you review batches and handle verification.",
+	"multi-profile":   "Send and track removal requests for more than one person from a single Eraser install, with fully separate history per profile.",
+	"stability":       "What Eraser's semantic versioning promises in 1.x: the config, CLI, data and API surface that will not break between minor releases.",
 }
 
 func git(repo string, args ...string) ([]byte, error) {

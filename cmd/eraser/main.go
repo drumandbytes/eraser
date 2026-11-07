@@ -141,8 +141,8 @@ var serveFn = runServe
 func runBare(serve func(port int) error, goos string, in io.Reader, errOut io.Writer) error {
 	err := serve(8080)
 	if err != nil && goos == "windows" {
-		fmt.Fprintln(errOut, "Eraser could not start:", err)
-		fmt.Fprint(errOut, "Press Enter to close.")
+		_, _ = fmt.Fprintln(errOut, "Eraser could not start:", err)
+		_, _ = fmt.Fprint(errOut, "Press Enter to close.")
 		_, _ = bufio.NewReader(in).ReadString('\n')
 	}
 	return err

@@ -2,7 +2,14 @@
 
 This guide is for people who have never used a command line or a self-hosted tool. It takes about 15 minutes. If you get stuck, jump to [Troubleshooting](#troubleshooting).
 
-Eraser runs on your own computer. It does not have an account system or a server of ours: your details and your email password never leave your machine except to talk to your own email provider.
+Eraser runs on your own computer and has no server of ours. Where your data goes:
+
+- **Your email provider** (Gmail, etc.): receives the emails Eraser sends and lets it read replies, using your app password.
+- **The data brokers**: receive your removal requests, which contain your name and any details you entered. That is the point of the tool. Opt-out forms and confirmation links also open broker websites.
+- **GitHub**: only if you click "update broker list" (or run `eraser update-brokers`), and then Eraser downloads a public file. None of your details are sent.
+- **Your AI agent**: only if you turn on the experimental [MCP feature](mcp.md).
+
+Nothing goes to the Eraser project, and there is no tracking or telemetry.
 
 ## Before you start
 

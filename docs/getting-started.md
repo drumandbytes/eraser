@@ -70,31 +70,15 @@ Windows may show a blue "Windows protected your PC" screen the first time becaus
 
 ## Step 4: Start Eraser
 
-Eraser has no icon to click. You start it from a terminal window, once. Don't worry, it is one command.
+**Windows:** double-click the `.exe` you downloaded. A black window opens and your browser opens Eraser. Leave the black window open: closing it stops Eraser.
 
-**Windows**
+**macOS (downloaded file):** double-click the unpacked `eraser` file. Terminal opens and your browser opens Eraser. If macOS refuses, see [Troubleshooting](#troubleshooting).
 
-1. Open the folder with `eraser…windows_amd64.exe`.
-2. Click the folder path bar at the top of the window, type `cmd` and press Enter. A black window opens in that folder.
-3. Type this and press Enter (replace the file name with yours, or press Tab to auto-complete it):
+**macOS or Linux with Homebrew:** open the **Terminal** app (press Cmd+Space, type `Terminal`, press Enter), type `eraser` and press Enter.
 
-   ```text
-   .\eraser_2.0.1_windows_amd64.exe serve
-   ```
+**Linux (downloaded file):** open a terminal in the folder with the file and run `./eraser`.
 
-**macOS**
-
-1. Open the **Terminal** app (press Cmd+Space, type `Terminal`, press Enter).
-2. If you installed with Homebrew, type `eraser serve` and press Enter.
-3. If you downloaded the file, type `cd ~/Downloads`, press Enter, then `./eraser serve` and press Enter.
-
-**Linux**
-
-Open a terminal in the folder with the file and run `./eraser serve`.
-
-The window will print a few lines and stay busy. Leave it open: closing it stops Eraser.
-
-Now open your browser and go to **<http://localhost:8080>**. This address only works on your own computer.
+If your browser doesn't open by itself, open **<http://localhost:8080>**. This address only works on your own computer. To use a different port, run `eraser serve -p 3000` instead.
 
 ## Step 5: Run the setup wizard
 
@@ -102,7 +86,12 @@ The page walks you through three screens.
 
 **1. Welcome.** Click **Get Started**.
 
+
+![Your Information screen](https://raw.githubusercontent.com/drumandbytes/eraser/main/docs/images/wizard-profile.png)
+
 **2. Your Information.** Enter your name, email address and, ideally, your address and country. Brokers match requests to records using these, so the more accurate they are, the more records get found. This stays on your computer. Optional fields (phone, date of birth, former names) help but are not required.
+
+![Connect Your Email screen with Gmail selected](https://raw.githubusercontent.com/drumandbytes/eraser/main/docs/images/wizard-email.png)
 
 **3. Connect Your Email.**
 
@@ -143,9 +132,9 @@ With the Skip option chosen, Eraser never sends anything. On the **Brokers** pag
 xattr -dr com.apple.quarantine ./eraser
 ```
 
-**`localhost:8080` doesn't load.** Make sure the Terminal/command window from Step 4 is still open and is still open. If another program uses port 8080, run `eraser serve -p 3000` and visit `http://localhost:3000`.
+**`localhost:8080` doesn't load.** Make sure the black or Terminal window from Step 4 is still open. If another program uses port 8080, run `eraser serve -p 3000` and visit `http://localhost:3000`.
 
-**I closed the window and Eraser stopped.** Run the start command from Step 4 again. Your settings and history are saved and come back.
+**I closed the window and Eraser stopped.** Start it again as in Step 4. Your settings and history are saved and come back.
 
 **I'd rather not leave a window open.** Use **Settings > Automation** to have your computer run Eraser on a schedule in the background.
 

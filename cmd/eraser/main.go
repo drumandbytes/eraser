@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/drumandbytes/eraser/internal/broker"
@@ -70,6 +71,21 @@ requests to data brokers, helping you protect your privacy.
 
 It supports GDPR, CCPA, and generic removal request templates, and can
 send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
+	}
+	// Bare `eraser` (e.g. double-clicking the binary) starts the web UI, which
+	// opens the browser. Subcommands and --help behave as before.
+	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return cmd.Help()
+		}
+		err := runServe(8080)
+		if err != nil && runtime.GOOS == "windows" {
+			// a double-clicked console closes at once; keep the error readable
+			fmt.Fprintln(os.Stderr, "Eraser could not start:", err)
+			fmt.Fprint(os.Stderr, "Press Enter to close.")
+			_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
+		}
+		return err
 	}
 	// So a standalone binary (no LICENSE file alongside it) still points at
 	// the MIT terms it ships under.

@@ -6,7 +6,7 @@
 
 - [Home]({{ "/" | absURL }}): what Eraser is and how it compares with paid removal services
 - [Broker directory]({{ "/brokers/" | absURL }}): every broker Eraser contacts, with region, category and opt-out route
-- [Docs]({{ with index (where hugo.Data.docs_versions.versions "latest" true) 0 }}{{ printf "/docs/%s/" .slug | absURL }}{{ end }}): commands, configuration, broker replies, multi-profile, MCP, stability policy
+- [Docs]({{ with index (where hugo.Data.docs_versions.versions "latest" true) 0 }}{{ printf "/docs/%s/" .slug | absURL }}{{ end }}): step-by-step setup for beginners, commands, configuration, broker replies, multi-profile, MCP, stability policy
 - [EU/EEA data protection authorities]({{ "/authorities/" | absURL }}): where to complain if a broker ignores you
 
 ## Guides

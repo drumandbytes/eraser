@@ -17,6 +17,8 @@ You know those sites like Spokeo, BeenVerified, and Whitepages that have your ho
 📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev/?ref=eraser-readme)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
 🔗 [More Drumandbytes projects](https://drumandbytes.com/projects/?ref=eraser-readme)
 
+**New here and not technical? Start with the [step-by-step setup guide](docs/getting-started.md).** It covers downloading Eraser, creating a Gmail app password, and the setup wizard, with a fix for every common error.
+
 > **Upgrading from 1.x?** 2.0 stores your profile's country as an ISO code, encrypts your mail passwords (with an optional passphrase), skips country-specific brokers that don't apply to you, and removes a few old settings. Your config is upgraded automatically on first run and the original is kept as `config.yaml.1x.bak`. See the [upgrade guide](docs/upgrading-to-2.0.md).
 
 ### What to Expect
@@ -121,7 +123,7 @@ Eraser sends removal requests from your own email account over SMTP, and can rea
 
 | Provider | What you need | Notes |
 |---|---|---|
-| Gmail | [App password](https://myaccount.google.com/apppasswords) (needs 2-Step Verification) | ~500 emails/day |
+| Gmail | [App password](https://myaccount.google.com/apppasswords) (needs 2-Step Verification) | ~500 emails/day. Not your Google password, and no "Sign in with Google" ([step by step](docs/getting-started.md#step-2-get-an-app-password-gmail)) |
 | Proton Mail | [Proton Mail Bridge](https://proton.me/mail/bridge) running on the same machine, paid plan | Use the password Bridge shows. Bridge's self-signed certificate is accepted because it only listens on localhost. Confirmed working by a user (paid plan, Bridge on the same machine). |
 | Fastmail | App password with IMAP + SMTP access | |
 | mailbox.org | Application password | |

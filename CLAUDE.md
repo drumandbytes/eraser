@@ -8,6 +8,7 @@ Eraser is a CLI + web tool that sends data removal requests to data brokers. Thi
 
 This file is intentionally slim. Read the doc(s) relevant to what you're touching rather than everything up front:
 
+- [docs/getting-started.md](docs/getting-started.md) - plain-language setup guide for non-technical users (Gmail app password, wizard, troubleshooting); keep it in step with the setup wizard wording
 - [docs/architecture.md](docs/architecture.md) - tech stack, project structure, broker/template/send-flow concepts
 - [docs/commands.md](docs/commands.md) - full CLI command reference, config.yaml schema
 - [docs/broker-replies.md](docs/broker-replies.md) - reading data-broker email replies and turning each response type into the right brokers.yaml edit

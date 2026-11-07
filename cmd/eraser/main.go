@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/drumandbytes/eraser/internal/broker"
@@ -71,6 +73,11 @@ requests to data brokers, helping you protect your privacy.
 It supports GDPR, CCPA, and generic removal request templates, and can
 send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	}
+	// Bare `eraser` (e.g. double-clicking the binary) starts the web UI, which
+	// opens the browser. Subcommands and --help behave as before.
+	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		return runBare(serveFn, runtime.GOOS, os.Stdin, os.Stderr)
+	}
 	// So a standalone binary (no LICENSE file alongside it) still points at
 	// the MIT terms it ships under.
 	rootCmd.SetVersionTemplate("eraser {{.Version}}\nMIT licensed - https://github.com/drumandbytes/eraser/blob/main/LICENSE\n")
@@ -124,4 +131,19 @@ func prompt(reader *bufio.Reader, message string) string {
 		return ""
 	}
 	return strings.TrimSpace(input)
+}
+
+// serveFn starts the web UI; tests replace it.
+var serveFn = runServe
+
+// runBare is the no-argument launch. On Windows a startup error waits for
+// Enter, because a double-clicked console closes at once.
+func runBare(serve func(port int) error, goos string, in io.Reader, errOut io.Writer) error {
+	err := serve(8080)
+	if err != nil && goos == "windows" {
+		_, _ = fmt.Fprintln(errOut, "Eraser could not start:", err)
+		_, _ = fmt.Fprint(errOut, "Press Enter to close.")
+		_, _ = bufio.NewReader(in).ReadString('\n')
+	}
+	return err
 }

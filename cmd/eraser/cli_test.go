@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -149,3 +150,38 @@ options:
   template: gdpr
   send_mode: manual
 `
+
+func TestRunBare(t *testing.T) {
+	boom := errors.New("port in use")
+	var port int
+	serve := func(p int) error { port = p; return boom }
+
+	var out strings.Builder
+	if err := runBare(serve, "windows", strings.NewReader("\n"), &out); !errors.Is(err, boom) {
+		t.Fatalf("err = %v", err)
+	}
+	if port != 8080 || !strings.Contains(out.String(), "port in use") || !strings.Contains(out.String(), "Press Enter") {
+		t.Errorf("port %d, windows output %q", port, out.String())
+	}
+
+	out.Reset()
+	if err := runBare(serve, "linux", strings.NewReader(""), &out); !errors.Is(err, boom) || out.Len() != 0 {
+		t.Errorf("linux: err %v, output %q", err, out.String())
+	}
+	if err := runBare(func(int) error { return nil }, "windows", strings.NewReader(""), &out); err != nil || out.Len() != 0 {
+		t.Errorf("ok: err %v, output %q", err, out.String())
+	}
+}
+
+func TestBareEraserStartsWebUI(t *testing.T) {
+	orig := serveFn
+	t.Cleanup(func() { serveFn = orig })
+	var port int
+	serveFn = func(p int) error { port = p; return nil }
+	if _, err := runCLI(t, ""); err != nil {
+		t.Fatal(err)
+	}
+	if port != 8080 {
+		t.Errorf("bare eraser served on %d, want 8080", port)
+	}
+}

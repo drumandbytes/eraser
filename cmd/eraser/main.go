@@ -76,10 +76,7 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	// Bare `eraser` (e.g. double-clicking the binary) starts the web UI, which
 	// opens the browser. Subcommands and --help behave as before.
 	rootCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if len(args) > 0 {
-			return cmd.Help()
-		}
-		return runBare(runServe, runtime.GOOS, os.Stdin, os.Stderr)
+		return runBare(serveFn, runtime.GOOS, os.Stdin, os.Stderr)
 	}
 	// So a standalone binary (no LICENSE file alongside it) still points at
 	// the MIT terms it ships under.
@@ -135,6 +132,9 @@ func prompt(reader *bufio.Reader, message string) string {
 	}
 	return strings.TrimSpace(input)
 }
+
+// serveFn starts the web UI; tests replace it.
+var serveFn = runServe
 
 // runBare is the no-argument launch. On Windows a startup error waits for
 // Enter, because a double-clicked console closes at once.

@@ -172,3 +172,16 @@ func TestRunBare(t *testing.T) {
 		t.Errorf("ok: err %v, output %q", err, out.String())
 	}
 }
+
+func TestBareEraserStartsWebUI(t *testing.T) {
+	orig := serveFn
+	t.Cleanup(func() { serveFn = orig })
+	var port int
+	serveFn = func(p int) error { port = p; return nil }
+	if _, err := runCLI(t, ""); err != nil {
+		t.Fatal(err)
+	}
+	if port != 8080 {
+		t.Errorf("bare eraser served on %d, want 8080", port)
+	}
+}

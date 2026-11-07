@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -78,14 +79,7 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 		if len(args) > 0 {
 			return cmd.Help()
 		}
-		err := runServe(8080)
-		if err != nil && runtime.GOOS == "windows" {
-			// a double-clicked console closes at once; keep the error readable
-			fmt.Fprintln(os.Stderr, "Eraser could not start:", err)
-			fmt.Fprint(os.Stderr, "Press Enter to close.")
-			_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
-		}
-		return err
+		return runBare(runServe, runtime.GOOS, os.Stdin, os.Stderr)
 	}
 	// So a standalone binary (no LICENSE file alongside it) still points at
 	// the MIT terms it ships under.
@@ -140,4 +134,16 @@ func prompt(reader *bufio.Reader, message string) string {
 		return ""
 	}
 	return strings.TrimSpace(input)
+}
+
+// runBare is the no-argument launch. On Windows a startup error waits for
+// Enter, because a double-clicked console closes at once.
+func runBare(serve func(port int) error, goos string, in io.Reader, errOut io.Writer) error {
+	err := serve(8080)
+	if err != nil && goos == "windows" {
+		fmt.Fprintln(errOut, "Eraser could not start:", err)
+		fmt.Fprint(errOut, "Press Enter to close.")
+		_, _ = bufio.NewReader(in).ReadString('\n')
+	}
+	return err
 }

@@ -69,6 +69,21 @@ type FormResult struct {
 // Chrome without its sandbox on CI runners that can't provide one.
 var extraAllocatorOptions []chromedp.ExecAllocatorOption
 
+// containerAllocatorOptions returns the Chrome flags a container needs (see
+// config.ContainerEnv), and nothing on a desktop install. Chrome's sandbox
+// needs user namespaces, which Docker's default seccomp profile denies to an
+// unprivileged process; the non-root container is the boundary instead. The
+// default 64 MB /dev/shm crashes renderers on heavy pages.
+func containerAllocatorOptions(inContainer bool) []chromedp.ExecAllocatorOption {
+	if !inContainer {
+		return nil
+	}
+	return []chromedp.ExecAllocatorOption{
+		chromedp.NoSandbox,
+		chromedp.Flag("disable-dev-shm-usage", true),
+	}
+}
+
 // New creates a new Browser instance. allowedDomains restricts the hosts
 // NavigateAndFill is willing to navigate to and autofill with profile PII
 // (see matchesAllowedDomain); pass nil/empty to skip that check entirely
@@ -85,6 +100,7 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 	if cfg.Headless {
 		opts = append(opts, chromedp.Headless)
 	}
+	opts = append(opts, containerAllocatorOptions(config.InContainer())...)
 	opts = append(opts, extraAllocatorOptions...)
 	if cfg.ExecutablePath != "" {
 		opts = append(opts, chromedp.ExecPath(cfg.ExecutablePath))

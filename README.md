@@ -89,6 +89,18 @@ go install github.com/drumandbytes/eraser/cmd/eraser@latest
 On Windows, build it as `eraser.exe` (`go build -o eraser.exe ./cmd/eraser`) —
 Windows won't run a downloaded file with no extension.
 
+**Docker** (everything included, headless Chromium for `fill` too):
+
+```bash
+git clone https://github.com/drumandbytes/eraser.git
+cd eraser
+docker compose up -d   # then open http://localhost:8080
+```
+
+Keep the port published to `127.0.0.1` as `compose.yaml` does: the web UI has
+no login. Data, backups, CLI commands and scheduling in a container are covered
+in [docs/docker.md](docs/docker.md).
+
 **Step 2: Start the Web Interface**
 
 ```bash
@@ -450,6 +462,7 @@ eraser/
 │                                 # hold the actual page/API handlers by resource
 ├── data/brokers.yaml           # 700+ broker database
 ├── config.example.yaml         # Example configuration
+├── Dockerfile, compose.yaml    # Container image with headless Chromium (docs/docker.md)
 └── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```
 

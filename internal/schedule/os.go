@@ -123,6 +123,11 @@ func StableExecutable() (string, error) {
 
 // Supported reports whether Install can set up an OS job on this platform.
 func Supported() bool {
+	// a container has no launchd/systemd: use serve's in-app scheduler or
+	// `eraser auto` there instead
+	if config.InContainer() {
+		return false
+	}
 	return goos == "darwin" || goos == "linux"
 }
 

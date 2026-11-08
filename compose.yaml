@@ -1,0 +1,24 @@
+# Eraser web UI in Docker. See docs/docker.md.
+#
+#   docker compose up -d                          # http://localhost:8080
+#   docker compose run --rm eraser send --dry-run # any CLI command
+#   docker compose run --rm eraser fill --pending # headless Chromium form fill
+services:
+  eraser:
+    build: .
+    image: eraser:local
+    container_name: eraser
+    # 127.0.0.1 only: the web UI has no login and holds your mail credentials.
+    # Never change this to "8080:8080" (that publishes it to your whole network).
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - eraser-data:/home/eraser/.eraser
+    # Chromium's renderers use shared memory; Docker's 64 MB default is small.
+    shm_size: "1gb"
+    environment:
+      TZ: UTC # set your own, e.g. Europe/Berlin, so times in the UI match your clock
+    restart: unless-stopped
+
+volumes:
+  eraser-data:

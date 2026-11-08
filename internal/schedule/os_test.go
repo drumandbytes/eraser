@@ -365,3 +365,12 @@ func TestLoadStateCorrupt(t *testing.T) {
 		t.Errorf("corrupt state: %v", err)
 	}
 }
+
+// The Docker image has no launchd/systemd, so the OS option is hidden there.
+func TestUnsupportedInContainer(t *testing.T) {
+	fakeOS(t, "linux")
+	t.Setenv(config.ContainerEnv, "1")
+	if Supported() {
+		t.Error("linux in a container reported as supported")
+	}
+}

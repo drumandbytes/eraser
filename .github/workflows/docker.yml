@@ -1,0 +1,72 @@
+name: Docker
+
+# Builds the image and smoke-tests it: the web UI answers on the published
+# loopback port and still refuses a non-loopback Host, Chromium starts as the
+# image's unprivileged user under Docker's default seccomp profile, and the
+# machine ID survives container recreation. Not a required check; ci.yml
+# covers the Go code itself.
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - compose.yaml
+      - .dockerignore
+      - docker/**
+      - go.mod
+      - go.sum
+      - cmd/eraser/cmd_serve.go
+      - internal/web/server.go
+      - internal/browser/browser.go
+      - internal/config/container.go
+      - .github/workflows/docker.yml
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    name: Build and smoke-test the image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build
+        run: docker build -t eraser:ci .
+
+      - name: CLI runs
+        run: docker run --rm eraser:ci --version
+
+      - name: Chromium starts as the image user
+        run: |
+          docker run --rm --entrypoint sh eraser:ci -c \
+            'chromium --headless --no-sandbox --disable-dev-shm-usage --disable-gpu --dump-dom "data:text/html,<p>ok</p>"' \
+            | grep -q '<p>ok</p>'
+
+      - name: Web UI on loopback, Host check, machine ID
+        run: |
+          docker volume create eraser-ci
+          run() { docker run -d --name eraser-ci -p 127.0.0.1:8080:8080 -v eraser-ci:/home/eraser/.eraser eraser:ci; }
+          run
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/setup && break; sleep 1; done
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          [ "$code" = 302 ] || { echo "GET / = $code, want 302 to /setup"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: 192.168.1.20:8080' http://localhost:8080/)
+          [ "$code" = 403 ] || { echo "non-loopback Host = $code, want 403"; exit 1; }
+          id1=$(docker exec eraser-ci cat /home/eraser/.eraser/machine-id)
+          docker rm -f eraser-ci
+          run
+          id2=$(docker exec eraser-ci cat /home/eraser/.eraser/machine-id)
+          [ -n "$id1" ] && [ "$id1" = "$id2" ] || { echo "machine-id changed: $id1 -> $id2"; exit 1; }
+
+      - name: Logs
+        if: always()
+        run: docker logs eraser-ci || true

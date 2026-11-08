@@ -1,0 +1,28 @@
+# Keep the build context small and never bake personal data into an image.
+.git
+.github
+site
+dist
+coverage.txt
+*.test
+*.out
+
+# Personal data (same as .gitignore)
+config.yaml
+*.local.yaml
+*.db
+*.bak
+screenshots/
+browser-data/
+pending_job.json
+eraser-evidence-*
+manual_review_*.xlsx
+
+# Local binaries
+/eraser
+*.exe
+
+# Docker files themselves
+Dockerfile
+compose.yaml
+.dockerignore

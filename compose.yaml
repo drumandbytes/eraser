@@ -22,3 +22,6 @@ services:
 
 volumes:
   eraser-data:
+    # a fixed name, so `docker run -v eraser-data:...` (backups, mcp) reaches
+    # the same data as compose instead of a new, empty volume
+    name: eraser-data

@@ -1,28 +1,24 @@
-# Keep the build context small and never bake personal data into an image.
-.git
-.github
-site
-dist
-coverage.txt
-*.test
-*.out
+# Allowlist: the build only needs the Go module and the entrypoint. Anything
+# else in the checkout (a config.yaml, history.db, an eraser-backup.tgz from
+# docs/docker.md, screenshots, logs) never reaches the build context.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+!data/
+!docker/
 
-# Personal data (same as .gitignore)
-config.yaml
-*.local.yaml
-*.db
-*.bak
-screenshots/
-browser-data/
-pending_job.json
-eraser-evidence-*
-manual_review_*.xlsx
-
-# Local binaries
-/eraser
-*.exe
-
-# Docker files themselves
-Dockerfile
-compose.yaml
-.dockerignore
+# Personal data that could sit inside an allowed directory
+**/config.yaml
+**/*.local.yaml
+**/*.db
+**/*.db-*
+**/*.bak
+**/*.backup
+**/*.orig
+**/*.log
+**/*.tgz
+**/screenshots/
+**/browser-data/
+**/eraser-evidence-*

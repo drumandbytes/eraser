@@ -6,10 +6,10 @@ import (
 )
 
 // ContainerEnv is set to "1" by the Docker image (see docs/docker.md). It
-// switches on what only holds inside a container: Chrome runs without its own
-// sandbox (Docker's default seccomp profile denies it the user namespaces it
-// needs) and with /dev/shm disabled, and there's no launchd/systemd to install
-// a schedule into. A desktop install never sets it.
+// switches on what only holds inside a container: Chrome always runs headless
+// (no display) and without its own sandbox (Docker's default seccomp profile
+// denies it the user namespaces it needs) and with /dev/shm disabled, and
+// there's no launchd/systemd to install a schedule into. A desktop install never sets it.
 const ContainerEnv = "ERASER_CONTAINER"
 
 // InContainer reports whether ContainerEnv is "1" or "true".

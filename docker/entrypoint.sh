@@ -11,8 +11,15 @@ set -eu
 
 id_file="$HOME/.eraser/machine-id"
 if [ ! -s "$id_file" ]; then
+	# Write it whole under a temp name, then hard-link it into place: ln
+	# never replaces an existing file, so when two containers start on a
+	# fresh volume at once the first ID wins and nobody sees a partial one.
 	umask 077
-	tr -d '-' </proc/sys/kernel/random/uuid >"$id_file"
+	tmp="$id_file.$$"
+	tr -d '-' </proc/sys/kernel/random/uuid >"$tmp"
+	ln "$tmp" "$id_file" 2>/dev/null || true
+	rm -f "$tmp"
+	[ -s "$id_file" ] || { echo "eraser: can't create $id_file" >&2; exit 1; }
 fi
 
 exec eraser "$@"

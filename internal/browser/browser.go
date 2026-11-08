@@ -70,15 +70,18 @@ type FormResult struct {
 var extraAllocatorOptions []chromedp.ExecAllocatorOption
 
 // containerAllocatorOptions returns the Chrome flags a container needs (see
-// config.ContainerEnv), and nothing on a desktop install. Chrome's sandbox
-// needs user namespaces, which Docker's default seccomp profile denies to an
-// unprivileged process; the non-root container is the boundary instead. The
-// default 64 MB /dev/shm crashes renderers on heavy pages.
+// config.ContainerEnv), and nothing on a desktop install. A container has no
+// display, so Chrome is always headless there, whatever --headless or
+// pipeline.browser_headless say. Chrome's sandbox needs user namespaces,
+// which Docker's default seccomp profile denies to an unprivileged process;
+// the non-root container is the boundary instead. The default 64 MB /dev/shm
+// crashes renderers on heavy pages.
 func containerAllocatorOptions(inContainer bool) []chromedp.ExecAllocatorOption {
 	if !inContainer {
 		return nil
 	}
 	return []chromedp.ExecAllocatorOption{
+		chromedp.Headless,
 		chromedp.NoSandbox,
 		chromedp.Flag("disable-dev-shm-usage", true),
 	}

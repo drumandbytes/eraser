@@ -54,7 +54,9 @@ COPY --from=build /out/eraser /usr/local/bin/eraser
 COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/eraser-entrypoint
 
 USER eraser
-WORKDIR /home/eraser
+# The volume, so files commands write to the current directory (export's
+# eraser-evidence-*.html, draft output) outlive a `run --rm` container.
+WORKDIR /home/eraser/.eraser
 ENV HOME=/home/eraser \
     ERASER_CONTAINER=1
 

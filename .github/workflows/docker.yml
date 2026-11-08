@@ -67,6 +67,17 @@ jobs:
           id2=$(docker exec eraser-ci cat /home/eraser/.eraser/machine-id)
           [ -n "$id1" ] && [ "$id1" = "$id2" ] || { echo "machine-id changed: $id1 -> $id2"; exit 1; }
 
+      - name: Concurrent first start agrees on one machine ID
+        run: |
+          docker volume create eraser-race
+          for i in 1 2 3 4; do
+            docker run --rm -v eraser-race:/home/eraser/.eraser --entrypoint sh eraser:ci \
+              -c 'eraser-entrypoint --version >/dev/null && cat ~/.eraser/machine-id' >"id$i" &
+          done
+          wait
+          sort -u id1 id2 id3 id4 | tee ids
+          [ "$(wc -l <ids)" = 1 ] && [ -s ids ] || { echo "containers disagree on machine-id"; exit 1; }
+
       - name: Logs
         if: always()
         run: docker logs eraser-ci || true

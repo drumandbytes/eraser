@@ -133,8 +133,9 @@ func prompt(reader *bufio.Reader, message string) string {
 	return strings.TrimSpace(input)
 }
 
-// serveFn starts the web UI; tests replace it.
-var serveFn = runServe
+// serveFn starts the web UI on loopback (the bare launch has no --listen);
+// tests replace it.
+var serveFn = func(port int) error { return runServe(port, "127.0.0.1") }
 
 // runBare is the no-argument launch. On Windows a startup error waits for
 // Enter, because a double-clicked console closes at once.

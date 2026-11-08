@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -97,7 +98,10 @@ type Server struct {
 	brokerDB   atomic.Pointer[broker.BrokerDatabase] // swapped by the "update broker list" action; read via brokers()
 	// BrokerOverride is serve's --brokers flag, so a reload resolves the list
 	// the same way startup did.
-	BrokerOverride  string
+	BrokerOverride string
+	// ListenHost is serve's --listen flag: the interface to bind. Empty means
+	// 127.0.0.1. Only a container should set anything else (see listenAddr).
+	ListenHost      string
 	brokerUpdateURL string // broker.DefaultUpdateURL; tests point it at a local server
 	historyStore    *history.Store
 	tmplEngine      *emaTemplate.Engine
@@ -329,7 +333,7 @@ func (s *Server) Start() error {
 		return nil
 	}
 	s.httpServer = &http.Server{
-		Addr:         fmt.Sprintf("127.0.0.1:%d", s.port),
+		Addr:         listenAddr(s.ListenHost, s.port),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -348,7 +352,10 @@ func (s *Server) Start() error {
 	}
 
 	go s.runScheduler(ctx)
-	go OpenBrowser(fmt.Sprintf("http://localhost:%d", s.port))
+	// a non-loopback bind means a container: there's no browser to open
+	if IsLoopbackListen(s.ListenHost) {
+		go OpenBrowser(fmt.Sprintf("http://localhost:%d", s.port))
+	}
 
 	fmt.Printf("Starting Eraser web UI at http://localhost:%d\n", s.port)
 	fmt.Println("Press Ctrl+C to stop")
@@ -484,8 +491,28 @@ func requireLoopbackHost(next http.Handler) http.Handler {
 	})
 }
 
+// listenAddr is the address Start binds: host (default 127.0.0.1) and port.
+func listenAddr(host string, port int) string {
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, strconv.Itoa(port))
+}
+
+// IsLoopbackListen reports whether host (serve's --listen) binds loopback only.
+func IsLoopbackListen(host string) bool {
+	if host == "" || strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
 // hostAllowed reports whether a Host header names loopback. We bind
-// 127.0.0.1, so anything else can only be DNS rebinding.
+// 127.0.0.1 by default, so anything else can only be DNS rebinding. With
+// serve --listen 0.0.0.0 in a container, Docker forwards the host's
+// localhost:PORT and the browser still sends Host: localhost, so the check
+// stays as it is; it isn't authentication, only a rebinding guard.
 func hostAllowed(host string) bool {
 	h := host
 	if hh, _, err := net.SplitHostPort(host); err == nil {

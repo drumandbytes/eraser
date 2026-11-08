@@ -34,7 +34,7 @@ go test ./...
 ./eraser confirm                       # click confirmation links from broker emails
 ./eraser fill                          # browser-automate opt-out forms
 ./eraser                              # same as serve (what double-clicking the binary runs)
-./eraser serve [-p 3000]               # web UI
+./eraser serve [-p 3000] [--listen 0.0.0.0]  # web UI; --listen is for a container only (docs/docker.md)
 ./eraser mcp [--demo] [--headless] [--chrome-path /path/to/chrome]  # local MCP over stdio (experimental)
 ./eraser mcp approve <id>              # approve a batch or retry the agent prepared (needs a terminal)
 ./eraser mcp pending                   # list batches and retries waiting for approval

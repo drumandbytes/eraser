@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/drumandbytes/eraser/compare/v2.2.0...v2.2.1) (2026-11-09)
+
+
+### Performance Improvements
+
+* **docker:** cross-compile the binary instead of emulating arm64 ([#266](https://github.com/drumandbytes/eraser/issues/266)) ([d33b0b6](https://github.com/drumandbytes/eraser/commit/d33b0b682468832d25e7d6bdd2ea603b419c78b3))
+
 ## [2.2.0](https://github.com/drumandbytes/eraser/compare/v2.1.0...v2.2.0) (2026-11-09)
 
 

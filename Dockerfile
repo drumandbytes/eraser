@@ -14,7 +14,8 @@
 ARG GO_VERSION=1.26
 ARG DEBIAN_VERSION=trixie
 
-FROM golang:${GO_VERSION}-${DEBIAN_VERSION} AS build
+# Runs on the builder's own platform and cross-compiles: no QEMU for the arm64 image.
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-${DEBIAN_VERSION} AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./
@@ -22,10 +23,11 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
 COPY . .
 ARG VERSION=dev
+ARG TARGETOS TARGETARCH
 # Same flags as .goreleaser.yaml: pure Go (modernc SQLite), no cgo.
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/eraser ./cmd/eraser
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/eraser ./cmd/eraser
 # The data directory, pre-created so a new named volume inherits its owner
 # (distroless has no shell to mkdir or chown with).
 RUN install -d -m 0700 -o 65532 -g 65532 /rootfs/home/nonroot/.eraser

@@ -100,7 +100,9 @@ docker compose up -d   # then open http://localhost:8080
 Keep the port published to `127.0.0.1` as `compose.yaml` does: the web UI has
 no login. Releases also publish the image as `ghcr.io/drumandbytes/eraser`
 (`linux/amd64`, `linux/arm64`), so you can pull instead of building. Data, backups, CLI commands and scheduling in a container are covered
-in [docs/docker.md](docs/docker.md).
+in [docs/docker.md](docs/docker.md). Releases also publish the image as
+`ghcr.io/drumandbytes/eraser` (`linux/amd64`, `linux/arm64`), so you can pull it
+instead of building.
 
 **Step 2: Start the Web Interface**
 

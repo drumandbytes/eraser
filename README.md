@@ -5,6 +5,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/drumandbytes/eraser.svg)](https://pkg.go.dev/github.com/drumandbytes/eraser)
 [![Release](https://img.shields.io/github/v/release/drumandbytes/eraser)](https://github.com/drumandbytes/eraser/releases)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/drumandbytes/eraser)](go.mod)
+[![Docker image](https://img.shields.io/badge/ghcr.io-drumandbytes%2Feraser-2496ED?logo=docker&logoColor=white)](https://github.com/drumandbytes/eraser/pkgs/container/eraser)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 

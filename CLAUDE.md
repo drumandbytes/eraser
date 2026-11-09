@@ -13,6 +13,8 @@ This file is intentionally slim. Read the doc(s) relevant to what you're touchin
 - [docs/commands.md](docs/commands.md) - full CLI command reference, config.yaml schema
 - [docs/broker-replies.md](docs/broker-replies.md) - reading data-broker email replies and turning each response type into the right brokers.yaml edit
 - [docs/multi-profile.md](docs/multi-profile.md) - the `--profile`/`profiles:` feature: config model, history scoping, shared-inbox attribution, web UI switcher
+- [docs/docker.md](docs/docker.md) - the Docker image (distroless `Dockerfile`, `compose.yaml` with the stock `chromedp/headless-shell` Chromium sidecar): `serve --listen`, `ERASER_CONTAINER`, `ERASER_CHROME_URL` (remote Chrome), the volume-held `ERASER_MACHINE_ID_FILE` that keeps encrypted passwords readable across container recreation
+- [docs/kubernetes.md](docs/kubernetes.md) - a single-pod Kubernetes manifest for the Docker image (PVC, `fsGroup`, Chromium as a second container) and what to avoid (exposing the UI, NFS for `history.db`, more than one replica)
 - [docs/mcp.md](docs/mcp.md) - the experimental `eraser mcp` agent server: batch approval, shared-platform host scope, and what it may and may not do
 - [docs/code-patterns.md](docs/code-patterns.md) - conventions to follow, plus known quirks/gotchas worth reading before touching related code
 - [docs/auditing.md](docs/auditing.md) - how to re-run the dead-code/security sweep, and what's already been removed

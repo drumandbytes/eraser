@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
 
 	"github.com/drumandbytes/eraser/internal/config"
@@ -28,6 +29,7 @@ type Browser struct {
 // BrowserConfig holds browser automation settings
 type BrowserConfig struct {
 	ExecutablePath string // Optional Chrome/Chromium executable override.
+	RemoteURL      string // Attach to an already-running Chrome's DevTools endpoint instead of launching one; defaults to $ERASER_CHROME_URL.
 	Headless       bool
 	Timeout        time.Duration
 	ScreenshotDir  string
@@ -74,23 +76,36 @@ var extraAllocatorOptions []chromedp.ExecAllocatorOption
 // (see matchesAllowedDomain); pass nil/empty to skip that check entirely
 // (e.g. for callers that don't yet have a broker domain list).
 func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*Browser, error) {
-	opts := []chromedp.ExecAllocatorOption{
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-		chromedp.DisableGPU,
-		chromedp.UserAgent(cfg.UserAgent),
-		chromedp.WindowSize(cfg.WindowWidth, cfg.WindowHeight),
+	// An explicit Chrome path (mcp --chrome-path) means launch it locally,
+	// whatever the environment says.
+	if cfg.RemoteURL == "" && cfg.ExecutablePath == "" {
+		cfg.RemoteURL = os.Getenv(config.ChromeURLEnv)
 	}
 
-	if cfg.Headless {
-		opts = append(opts, chromedp.Headless)
+	var allocCtx context.Context
+	var allocCancel context.CancelFunc
+	if cfg.RemoteURL != "" {
+		// Chrome runs elsewhere (a separate container), so the launch flags
+		// below don't apply; start() sets the user agent and window size
+		// over CDP instead.
+		allocCtx, allocCancel = chromedp.NewRemoteAllocator(context.Background(), cfg.RemoteURL)
+	} else {
+		opts := []chromedp.ExecAllocatorOption{
+			chromedp.NoFirstRun,
+			chromedp.NoDefaultBrowserCheck,
+			chromedp.DisableGPU,
+			chromedp.UserAgent(cfg.UserAgent),
+			chromedp.WindowSize(cfg.WindowWidth, cfg.WindowHeight),
+		}
+		if cfg.Headless {
+			opts = append(opts, chromedp.Headless)
+		}
+		opts = append(opts, extraAllocatorOptions...)
+		if cfg.ExecutablePath != "" {
+			opts = append(opts, chromedp.ExecPath(cfg.ExecutablePath))
+		}
+		allocCtx, allocCancel = chromedp.NewExecAllocator(context.Background(), opts...)
 	}
-	opts = append(opts, extraAllocatorOptions...)
-	if cfg.ExecutablePath != "" {
-		opts = append(opts, chromedp.ExecPath(cfg.ExecutablePath))
-	}
-
-	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 
 	ctx, cancel := chromedp.NewContext(allocCtx)
 
@@ -103,6 +118,27 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 		profile:        profile,
 		allowedDomains: allowedDomains,
 	}, nil
+}
+
+// start connects to (or launches) Chrome on b.ctx. The first Run's context
+// owns the browser, so it must be b.ctx and not a per-call timeout context,
+// which would close Chrome when the call returns. Safe to call repeatedly:
+// later runs reuse the connection and just re-apply the (idempotent) emulation.
+func (b *Browser) start() error {
+	var acts []chromedp.Action
+	if b.config.RemoteURL != "" {
+		acts = append(acts,
+			emulation.SetUserAgentOverride(b.config.UserAgent),
+			chromedp.EmulateViewport(int64(b.config.WindowWidth), int64(b.config.WindowHeight)),
+		)
+	}
+	if err := chromedp.Run(b.ctx, acts...); err != nil {
+		if b.config.RemoteURL == "" && config.InContainer() {
+			return fmt.Errorf("%w (this image has no browser: set %s to a Chrome DevTools endpoint, see docs/docker.md)", err, config.ChromeURLEnv)
+		}
+		return err
+	}
+	return nil
 }
 
 // Close cleans up browser resources
@@ -137,9 +173,9 @@ func (b *Browser) NavigateAndFill(url string, brokerID string, autoSubmit bool) 
 		}
 	}
 
-	// Start Chrome on b.ctx: the first Run's context owns the browser, so the
-	// per-call timeout ctx below would close it after one form (fill --pending).
-	if err := chromedp.Run(b.ctx); err != nil {
+	// Start Chrome on b.ctx, not the per-call timeout ctx below, which would
+	// close it after one form (fill --pending).
+	if err := b.start(); err != nil {
 		result.ErrorMessage = fmt.Sprintf("browser failed to start: %v", err)
 		return result, err
 	}

@@ -209,7 +209,7 @@ func (s *AutomationSession) Open(caller context.Context, raw string) (*Snapshot,
 		return nil, err
 	}
 	// The first Run must own the lifetime context, not a single tool call.
-	if err := chromedp.Run(s.b.ctx); err != nil {
+	if err := s.b.start(); err != nil {
 		return nil, fmt.Errorf("start Chrome: %w", err)
 	}
 	chromedp.ListenTarget(s.b.ctx, func(event any) {

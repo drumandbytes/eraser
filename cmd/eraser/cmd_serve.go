@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,6 +20,7 @@ import (
 
 func serveCmd() *cobra.Command {
 	var port int
+	var listen string
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -33,16 +35,17 @@ This opens a visual dashboard where you can:
 
 The server runs locally on your machine - no data is sent to external servers.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(port)
+			return runServe(port, listen)
 		},
 	}
 
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
+	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1", "Interface to bind. Leave it on loopback; 0.0.0.0 is for a container whose port is published to the host's 127.0.0.1 only (the web UI has no login)")
 
 	return cmd
 }
 
-func runServe(port int) error {
+func runServe(port int, listen string) error {
 	web.Version = version
 	configPath := resolveConfigPath()
 	var cfg *config.Config
@@ -87,6 +90,8 @@ func runServe(port int) error {
 		return fmt.Errorf("failed to create web server: %w", err)
 	}
 	server.BrokerOverride = brokerFile
+	server.ListenHost = listen
+	warnNonLoopback(os.Stdout, listen)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -100,4 +105,14 @@ func runServe(port int) error {
 	}()
 
 	return server.Start()
+}
+
+// warnNonLoopback tells the user the UI is reachable beyond this machine when
+// listen isn't a loopback address; it prints nothing for loopback.
+func warnNonLoopback(w io.Writer, listen string) {
+	if web.IsLoopbackListen(listen) {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "⚠️  Listening on %s, not loopback. The web UI has no login and holds your mail credentials:\n", listen)
+	_, _ = fmt.Fprintln(w, "   only do this inside a container whose port is published to 127.0.0.1 (docker run -p 127.0.0.1:8080:8080).")
 }

@@ -32,9 +32,9 @@ go test ./...
 ./eraser pipeline                      # which brokers need manual follow-up
 ./eraser export [-o file] [--format html|json] [--since 2026-01-01]  # evidence report for a DPA/noyb complaint
 ./eraser confirm                       # click confirmation links from broker emails
-./eraser fill                          # browser-automate opt-out forms
+./eraser fill                          # browser-automate opt-out forms (ERASER_CHROME_URL=http://host:9222 attaches to an existing Chrome instead of launching one; docs/docker.md)
 ./eraser                              # same as serve (what double-clicking the binary runs)
-./eraser serve [-p 3000]               # web UI
+./eraser serve [-p 3000] [--listen 0.0.0.0]  # web UI; --listen is for a container only (docs/docker.md)
 ./eraser mcp [--demo] [--headless] [--chrome-path /path/to/chrome]  # local MCP over stdio (experimental)
 ./eraser mcp approve <id>              # approve a batch or retry the agent prepared (needs a terminal)
 ./eraser mcp pending                   # list batches and retries waiting for approval

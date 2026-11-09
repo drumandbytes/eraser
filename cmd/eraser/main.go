@@ -133,14 +133,14 @@ func prompt(reader *bufio.Reader, message string) string {
 	return strings.TrimSpace(input)
 }
 
-// serveFn starts the web UI on loopback (the bare launch has no --listen);
-// tests replace it.
-var serveFn = func(port int) error { return runServe(port, "127.0.0.1") }
+// serveFn starts the web UI; tests replace it.
+var serveFn = runServe
 
 // runBare is the no-argument launch. On Windows a startup error waits for
 // Enter, because a double-clicked console closes at once.
-func runBare(serve func(port int) error, goos string, in io.Reader, errOut io.Writer) error {
-	err := serve(8080)
+func runBare(serve func(port int, listen string) error, goos string, in io.Reader, errOut io.Writer) error {
+	// the bare launch has no --listen: always loopback
+	err := serve(8080, "127.0.0.1")
 	if err != nil && goos == "windows" {
 		_, _ = fmt.Fprintln(errOut, "Eraser could not start:", err)
 		_, _ = fmt.Fprint(errOut, "Press Enter to close.")

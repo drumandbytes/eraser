@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -90,10 +91,7 @@ func runServe(port int, listen string) error {
 	}
 	server.BrokerOverride = brokerFile
 	server.ListenHost = listen
-	if !web.IsLoopbackListen(listen) {
-		fmt.Printf("⚠️  Listening on %s, not loopback. The web UI has no login and holds your mail credentials:\n", listen)
-		fmt.Println("   only do this inside a container whose port is published to 127.0.0.1 (docker run -p 127.0.0.1:8080:8080).")
-	}
+	warnNonLoopback(os.Stdout, listen)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -107,4 +105,14 @@ func runServe(port int, listen string) error {
 	}()
 
 	return server.Start()
+}
+
+// warnNonLoopback tells the user the UI is reachable beyond this machine when
+// listen isn't a loopback address; it prints nothing for loopback.
+func warnNonLoopback(w io.Writer, listen string) {
+	if web.IsLoopbackListen(listen) {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "⚠️  Listening on %s, not loopback. The web UI has no login and holds your mail credentials:\n", listen)
+	_, _ = fmt.Fprintln(w, "   only do this inside a container whose port is published to 127.0.0.1 (docker run -p 127.0.0.1:8080:8080).")
 }

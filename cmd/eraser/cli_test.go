@@ -154,11 +154,15 @@ options:
 func TestRunBare(t *testing.T) {
 	boom := errors.New("port in use")
 	var port int
-	serve := func(p int) error { port = p; return boom }
+	var listen string
+	serve := func(p int, l string) error { port, listen = p, l; return boom }
 
 	var out strings.Builder
 	if err := runBare(serve, "windows", strings.NewReader("\n"), &out); !errors.Is(err, boom) {
 		t.Fatalf("err = %v", err)
+	}
+	if listen != "127.0.0.1" {
+		t.Errorf("bare launch listens on %q, want loopback", listen)
 	}
 	if port != 8080 || !strings.Contains(out.String(), "port in use") || !strings.Contains(out.String(), "Press Enter") {
 		t.Errorf("port %d, windows output %q", port, out.String())
@@ -168,7 +172,7 @@ func TestRunBare(t *testing.T) {
 	if err := runBare(serve, "linux", strings.NewReader(""), &out); !errors.Is(err, boom) || out.Len() != 0 {
 		t.Errorf("linux: err %v, output %q", err, out.String())
 	}
-	if err := runBare(func(int) error { return nil }, "windows", strings.NewReader(""), &out); err != nil || out.Len() != 0 {
+	if err := runBare(func(int, string) error { return nil }, "windows", strings.NewReader(""), &out); err != nil || out.Len() != 0 {
 		t.Errorf("ok: err %v, output %q", err, out.String())
 	}
 }
@@ -177,7 +181,7 @@ func TestBareEraserStartsWebUI(t *testing.T) {
 	orig := serveFn
 	t.Cleanup(func() { serveFn = orig })
 	var port int
-	serveFn = func(p int) error { port = p; return nil }
+	serveFn = func(p int, _ string) error { port = p; return nil }
 	if _, err := runCLI(t, ""); err != nil {
 		t.Fatal(err)
 	}

@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -29,9 +28,9 @@ func readMachineID() (string, error) {
 }
 
 // ensureMachineIDFile returns the ID in path, creating it if missing. The ID
-// is written under a temp name and hard-linked into place: os.Link never
-// replaces an existing file, so when several containers start on a fresh
-// volume at once the first ID wins and nobody reads a partial one.
+// is written under a unique temp name and hard-linked into place: os.Link
+// never replaces an existing file, so when several containers start on a
+// fresh volume at once the first ID wins and nobody reads a partial one.
 func ensureMachineIDFile(path string) (string, error) {
 	read := func() string {
 		b, _ := os.ReadFile(path)
@@ -40,23 +39,17 @@ func ensureMachineIDFile(path string) (string, error) {
 	if id := read(); id != "" {
 		return id, nil
 	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".machine-id-*")
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = os.Remove(tmp.Name()) }()
 	raw := make([]byte, 16)
 	_, _ = rand.Read(raw)
-	if _, err := tmp.WriteString(hex.EncodeToString(raw) + "\n"); err != nil {
-		_ = tmp.Close()
+	id := hex.EncodeToString(raw)
+	tmp := path + "." + id // unique per process, so PID 1 in every container is fine
+	if err := os.WriteFile(tmp, []byte(id+"\n"), 0o600); err != nil {
 		return "", err
 	}
-	if err := tmp.Close(); err != nil {
-		return "", err
-	}
-	_ = os.Link(tmp.Name(), path) // EEXIST: another process won, read its ID
-	if id := read(); id != "" {
-		return id, nil
+	defer func() { _ = os.Remove(tmp) }()
+	_ = os.Link(tmp, path) // EEXIST: another process won, read its ID
+	if won := read(); won != "" {
+		return won, nil
 	}
 	return "", os.ErrNotExist
 }

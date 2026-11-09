@@ -44,11 +44,11 @@ func ensureMachineIDFile(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer os.Remove(tmp.Name())
-	defer tmp.Close()
+	defer func() { _ = os.Remove(tmp.Name()) }()
 	raw := make([]byte, 16)
 	_, _ = rand.Read(raw)
 	if _, err := tmp.WriteString(hex.EncodeToString(raw) + "\n"); err != nil {
+		_ = tmp.Close()
 		return "", err
 	}
 	if err := tmp.Close(); err != nil {

@@ -42,7 +42,7 @@ jobs:
           {
             echo "code=$(hit '^(cmd|internal|data|scripts)/|^(go\.mod|go\.sum|codecov\.yml|mise\.toml|\.github/workflows/ci\.yml)$')"
             echo "site=$(hit '^(site|docs)/|^\.github/workflows/ci\.yml$')"
-            echo "workflows=$(hit '^\.github/(workflows/|actions/|zizmor\.yml$)')"
+            echo "workflows=$(hit '^\.github/(workflows/|actions/|(zizmor|actionlint)\.ya?ml$)')"
           } | tee -a "$GITHUB_OUTPUT"
 
   ci:

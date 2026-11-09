@@ -175,7 +175,7 @@ the browser container:
 
 ```bash
 docker run -i --rm --network eraser_default -e ERASER_CHROME_URL=http://chrome:9222 \
-  -v eraser-data:/home/nonroot/.eraser eraser:local mcp
+  -v eraser-data:/home/nonroot/.eraser "${ERASER_IMAGE:-eraser:local}" mcp
 ```
 
 Approve batches in the web UI's Automation page (with `docker compose up`
@@ -202,7 +202,7 @@ git pull
 docker compose --profile browser up -d --build   # drop --profile browser if you don't use it
 ```
 
-`--build` rebuilds the Eraser image; the browser container is a stock image
+`--build` rebuilds the Eraser image from the clone; the browser container is a stock image
 pinned in `compose.yaml`, so it updates when that pin changes.
 
 The volume is untouched. `history.db` and `config.yaml` migrate on first run,

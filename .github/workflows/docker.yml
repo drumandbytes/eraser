@@ -1,10 +1,10 @@
 name: Docker
 
-# Builds the image and smoke-tests it: the web UI answers on the published
-# loopback port and still refuses a non-loopback Host, Chromium starts as the
-# image's unprivileged user under Docker's default seccomp profile, and the
-# machine ID survives container recreation. Not a required check; ci.yml
-# covers the Go code itself.
+# Builds the image and smoke-tests it: the distroless eraser image serves the
+# web UI on the published loopback port and still refuses a non-loopback Host,
+# and eraser's browser and MCP test suites run against the stock Chromium image
+# from compose.yaml over the DevTools port. Not a required check; ci.yml covers
+# the Go code itself.
 
 on:
   pull_request:
@@ -12,13 +12,13 @@ on:
       - Dockerfile
       - compose.yaml
       - .dockerignore
-      - docker/**
       - go.mod
       - go.sum
       - cmd/eraser/cmd_serve.go
       - internal/web/server.go
-      - internal/browser/browser.go
+      - internal/browser/**
       - internal/config/container.go
+      - internal/config/machineid_linux.go
       - .github/workflows/docker.yml
   workflow_dispatch:
 
@@ -31,7 +31,7 @@ permissions:
 
 jobs:
   image:
-    name: Build and smoke-test the image
+    name: Build and smoke-test the images
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -39,45 +39,35 @@ jobs:
         with:
           persist-credentials: false
 
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
       - name: Build
-        run: docker build -t eraser:ci .
-
-      - name: CLI runs
-        run: docker run --rm eraser:ci --version
-
-      - name: Chromium starts as the image user
         run: |
-          docker run --rm --entrypoint sh eraser:ci -c \
-            'chromium --headless --no-sandbox --disable-dev-shm-usage --disable-gpu --dump-dom "data:text/html,<p>ok</p>"' \
-            | grep -q '<p>ok</p>'
+          docker build -t eraser:ci .
 
-      - name: Web UI on loopback, Host check, machine ID
+      - name: Web UI on loopback, Host check, volume ownership
         run: |
           docker volume create eraser-ci
-          run() { docker run -d --name eraser-ci -p 127.0.0.1:8080:8080 -v eraser-ci:/home/eraser/.eraser eraser:ci; }
-          run
+          docker run -d --name eraser-ci --read-only --cap-drop ALL -p 127.0.0.1:8080:8080 -v eraser-ci:/home/nonroot/.eraser eraser:ci
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/setup && break; sleep 1; done
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
           [ "$code" = 302 ] || { echo "GET / = $code, want 302 to /setup"; exit 1; }
           code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: 192.168.1.20:8080' http://localhost:8080/)
           [ "$code" = 403 ] || { echo "non-loopback Host = $code, want 403"; exit 1; }
-          id1=$(docker exec eraser-ci cat /home/eraser/.eraser/machine-id)
-          docker rm -f eraser-ci
-          run
-          id2=$(docker exec eraser-ci cat /home/eraser/.eraser/machine-id)
-          [ -n "$id1" ] && [ "$id1" = "$id2" ] || { echo "machine-id changed: $id1 -> $id2"; exit 1; }
 
-      - name: Concurrent first start agrees on one machine ID
+      - name: Eraser drives the Chromium image
+        # Host networking: the Go tests serve their pages on the runner's
+        # localhost, which the browser must reach too.
         run: |
-          docker volume create eraser-race
-          for i in 1 2 3 4; do
-            docker run --rm -v eraser-race:/home/eraser/.eraser --entrypoint sh eraser:ci \
-              -c 'eraser-entrypoint --version >/dev/null && cat ~/.eraser/machine-id' >"id$i" &
-          done
-          wait
-          sort -u id1 id2 id3 id4 | tee ids
-          [ "$(wc -l <ids)" = 1 ] && [ -s ids ] || { echo "containers disagree on machine-id"; exit 1; }
+          image=$(sed -n 's/^ *image: \(chromedp\/headless-shell:.*\)$/\1/p' compose.yaml)
+          docker run -d --name eraser-chrome-ci --read-only --tmpfs /tmp --cap-drop ALL --shm-size=1g --network host "$image"
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:9222/json/version && break; sleep 1; done
+          ERASER_CHROME_URL=http://127.0.0.1:9222 go test ./internal/browser ./internal/mcpserver
 
       - name: Logs
         if: always()
-        run: docker logs eraser-ci || true
+        run: |
+          docker logs eraser-ci || true
+          docker logs eraser-chrome-ci || true

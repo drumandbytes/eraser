@@ -89,7 +89,7 @@ go install github.com/drumandbytes/eraser/cmd/eraser@latest
 On Windows, build it as `eraser.exe` (`go build -o eraser.exe ./cmd/eraser`) —
 Windows won't run a downloaded file with no extension.
 
-**Docker** (everything included, headless Chromium for `fill` too):
+**Docker** (distroless image; add `--profile browser` for headless Chromium and `fill`):
 
 ```bash
 git clone https://github.com/drumandbytes/eraser.git
@@ -462,7 +462,7 @@ eraser/
 │                                 # hold the actual page/API handlers by resource
 ├── data/brokers.yaml           # 700+ broker database
 ├── config.example.yaml         # Example configuration
-├── Dockerfile, compose.yaml    # Container image with headless Chromium (docs/docker.md)
+├── Dockerfile, compose.yaml    # Distroless eraser image + Chromium container (docs/docker.md)
 └── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```
 

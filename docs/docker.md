@@ -1,9 +1,13 @@
 # Running Eraser in Docker
 
-The image runs every Eraser command, including the ones that drive a browser
-(`fill` and the `mcp` browser tools): it ships headless Chromium. Your config,
-history and screenshots live in a volume, so the container can be recreated or
-upgraded without losing anything.
+The Eraser image is distroless (about 40 MB): the static binary and nothing
+else. It runs every command except the browser ones: the web UI, `send`,
+`confirm`, `status`, scheduling. `fill` and the `mcp` browser tools use a
+second, optional container with headless Chromium (the stock
+`chromedp/headless-shell` image) that Eraser reaches over the DevTools port.
+
+Your config, history and screenshots live in a volume, so containers can be
+recreated or upgraded without losing anything.
 
 ## Quick start
 
@@ -22,27 +26,22 @@ Any CLI command runs the same way:
 ```bash
 docker compose run --rm eraser send --dry-run
 docker compose run --rm eraser status
-docker compose run --rm eraser fill --pending        # headless Chromium
+docker compose --profile browser run --rm eraser fill --pending   # headless Chromium
 docker compose exec eraser eraser mcp pending        # while the web UI is running
 ```
 
 Interactive commands (`init`, `profile add`, `passphrase set`, `mcp approve`)
 work too: `docker compose run --rm eraser init`.
 
-Commands run in the data volume (`/home/eraser/.eraser`), so files they write
+Commands run in the data volume (`/home/nonroot/.eraser`), so files they write
 to the current directory, like `export`'s `eraser-evidence-*.html`, are kept
 there after a `run --rm` container exits. Copy one out with
-`docker cp eraser:/home/eraser/.eraser/<file> .` while the web UI container is
+`docker cp eraser:/home/nonroot/.eraser/<file> .` while the web UI container is
 running, or pass `-o` with a path you can reach.
 
-Without compose (on its own network, see the security section):
-
-```bash
-docker build -t eraser:local .
-docker network create eraser-net
-docker run -d --name eraser --network eraser-net -p 127.0.0.1:8080:8080 \
-  --shm-size=1g -v eraser-data:/home/eraser/.eraser eraser:local
-```
+Without compose, `compose.yaml` is the reference for the flags: a private
+network, the loopback-only port, the `eraser-data` volume, and for the browser
+`--shm-size=1g` plus `-e ERASER_CHROME_URL=http://chrome:9222`.
 
 ## Security: keep the port on 127.0.0.1
 
@@ -68,7 +67,7 @@ shares.
 
 ## Where your data lives
 
-Everything is in `/home/eraser/.eraser` inside the container, which is the
+Everything is in `/home/nonroot/.eraser` inside the container, which is the
 `eraser-data` named volume:
 
 | File | What |
@@ -91,18 +90,25 @@ docker run --rm -v eraser-data:/data -v "$PWD":/backup debian:trixie-slim \
 docker compose -f /path/to/eraser/compose.yaml start
 ```
 
+To restore into a new volume, extract the archive the same way and then run
+`chown -R 65532:65532 /data` in that helper container. A volume whose first
+mount was a root-owned helper, instead of the Eraser image, is root-owned, and
+Eraser then fails with `permission denied` on `history.db`.
+
 Prefer the named volume to a bind mount of a host folder. On Windows and macOS
 a bind mount can't keep the file permissions Eraser checks (it warns when
 `config.yaml` is readable by others), and on Linux the folder must be owned by
-uid 1000.
+uid 65532.
 
 ### Encrypted passwords and `machine-id`
 
 Eraser encrypts `smtp.password` and `inbox.password` with a key derived from
 the machine ID and the user (see "Security Notes" in the README). A container
 has no `/etc/machine-id` of its own and gets a new hostname on every run, so the
-image links `/etc/machine-id` to `machine-id` in the volume, created once by the
-entrypoint. Recreating the container or upgrading the image keeps the same key.
+image sets `ERASER_MACHINE_ID_FILE` to `machine-id` in the volume. Eraser
+creates it on first use (safe when several containers start at once) and reuses
+it afterwards. Recreating the container or upgrading the image keeps the same
+key.
 
 This means the key sits in the same volume as the config it unlocks: a copied
 `config.yaml` alone is still useless, but a copy of the whole volume can be
@@ -116,11 +122,38 @@ so a passphrase and unattended sending don't mix.
 
 ## Browser automation (Chromium)
 
-`fill` and the `mcp` browser tools use the bundled Chromium, always headless:
-there's no screen in a container. With `ERASER_CONTAINER=1` (set by the image)
-Eraser starts Chromium headless whatever `--headless`,
-`pipeline.browser_headless` or `mcp`'s visible-by-default setting say, so a
-config shared with a desktop install still works. What you lose:
+`fill` and the `mcp` browser tools drive Chromium in a second container:
+
+```bash
+docker compose --profile browser up -d
+docker compose --profile browser run --rm eraser fill --pending
+```
+
+The image sets `ERASER_CHROME_URL=http://chrome:9222` (compose passes it), and
+Eraser attaches to that DevTools endpoint instead of launching a local Chrome.
+The browser container is the stock
+[`chromedp/headless-shell`](https://hub.docker.com/r/chromedp/headless-shell)
+image, pinned by tag and digest in `compose.yaml`: Chromium without the desktop
+UI, the smallest full browser build I found (Alpine's and Browserless's are far larger). It runs with `--no-sandbox`
+because Chromium's own sandbox needs user namespaces, which Docker's default
+seccomp profile doesn't give an unprivileged process; the container (read-only
+filesystem, no capabilities) is the boundary instead. The stock image runs
+Chromium as root inside that container. Because Chromium is a
+separate container, a browser exploit from a broker page doesn't reach your
+Eraser volume or config.
+
+The DevTools port is not published to the host. It controls the browser with
+no authentication, so only containers on the compose network can reach it
+(treat those as trusted, as with the web UI).
+
+Any DevTools endpoint works, not only this image: set `ERASER_CHROME_URL` to an
+`http://host:9222` or `ws://` URL. That includes a hosted service like
+[Browserless](https://github.com/browserless/browserless) (check its license
+for your use, and put its token in the URL) or Chrome on your desktop started
+with `--remote-debugging-port`. Eraser sets the user agent and window size
+itself on a remote browser.
+
+The browser is always headless, so what you lose against the desktop app:
 
 - `fill --wait` (solve a CAPTCHA by hand in the browser window). A form with a
   CAPTCHA becomes a manual task in the web UI, as it does in headless mode on
@@ -131,23 +164,18 @@ config shared with a desktop install still works. What you lose:
   the web UI's Tasks page. `mcp` in Docker suits the brokers whose forms need
   no intervention.
 
-The same switch (and the scheduling change below) starts Chromium with
-`--no-sandbox` and `--disable-dev-shm-usage`. Chromium's own sandbox needs user
-namespaces, which Docker's default seccomp profile doesn't give an unprivileged
-process; the container (non-root user, no extra capabilities) is the isolation
-boundary instead. That protects your host, not your Eraser data: Chromium runs
-as the same user as Eraser and can read the volume, so a browser exploit from a
-broker page would reach your config. Eraser's own limits on browser automation still apply: it only
-navigates to the selected broker's domains (see [mcp.md](mcp.md)). Compose sets
-`shm_size: 1gb` as well, since Docker's 64 MB `/dev/shm` is small for Chromium.
+Eraser's own limits on browser automation still apply: it only navigates to the
+selected broker's domains (see [mcp.md](mcp.md)). Compose sets `shm_size: 1gb`
+on the browser container, since Docker's 64 MB `/dev/shm` is small for Chromium.
 
 ## Using `eraser mcp` from an agent
 
-An MCP client launches the server over stdio. Point it at:
+An MCP client launches the server over stdio. Point it at the same network as
+the browser container:
 
 ```bash
-docker run -i --rm -v eraser-data:/home/eraser/.eraser --shm-size=1g \
-  eraser:local mcp
+docker run -i --rm --network eraser_default -e ERASER_CHROME_URL=http://chrome:9222 \
+  -v eraser-data:/home/nonroot/.eraser eraser:local mcp
 ```
 
 Approve batches in the web UI's Automation page (with `docker compose up`
@@ -171,11 +199,19 @@ Use one of these instead:
 
 ```bash
 git pull
-docker compose up -d --build
+docker compose --profile browser up -d --build   # drop --profile browser if you don't use it
 ```
+
+`--build` rebuilds the Eraser image; the browser container is a stock image
+pinned in `compose.yaml`, so it updates when that pin changes.
 
 The volume is untouched. `history.db` and `config.yaml` migrate on first run,
 as on the desktop ([stability.md](stability.md)).
+
+## Kubernetes
+
+A pod manifest (PVC, Deployment, Service, Chromium as a second container) is in
+[kubernetes.md](kubernetes.md).
 
 ## Timezone
 

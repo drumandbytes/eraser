@@ -1,4 +1,4 @@
-# Allowlist: the build only needs the Go module and the entrypoint. Anything
+# Allowlist: the build only needs the Go module and the sources. Anything
 # else in the checkout (a config.yaml, history.db, an eraser-backup.tgz from
 # docs/docker.md, screenshots, logs) never reaches the build context.
 *
@@ -7,18 +7,3 @@
 !cmd/
 !internal/
 !data/
-!docker/
-
-# Personal data that could sit inside an allowed directory
-**/config.yaml
-**/*.local.yaml
-**/*.db
-**/*.db-*
-**/*.bak
-**/*.backup
-**/*.orig
-**/*.log
-**/*.tgz
-**/screenshots/
-**/browser-data/
-**/eraser-evidence-*

@@ -43,7 +43,9 @@ those tools on a prompt in your client.
 
 Use `--config /absolute/path/config.yaml` if the web UI uses a non-default
 configuration. Use `--profile <id>` when several profiles exist; Eraser refuses
-to guess. `--chrome-path` selects a nonstandard browser executable. Leave Chrome
+to guess. `--chrome-path` selects a nonstandard browser executable (it wins over
+`ERASER_CHROME_URL`, which attaches to an already-running Chrome's DevTools
+endpoint instead, as in the [Docker setup](docker.md)). Leave Chrome
 visible for manual verification; `--headless` is intended for fixture tests or
 workflows that do not need intervention. Keep stdout reserved for MCP messages;
 diagnostics go to stderr.

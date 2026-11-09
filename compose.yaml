@@ -1,11 +1,24 @@
 # Eraser web UI in Docker. See docs/docker.md.
 #
-#   docker compose up -d                          # http://localhost:8080
-#   docker compose run --rm eraser send --dry-run # any CLI command
-#   docker compose run --rm eraser fill --pending # headless Chromium form fill
+#   docker compose up -d                                  # http://localhost:8080
+#   docker compose run --rm eraser send --dry-run         # any CLI command
+#
+# `fill` and the `mcp` browser tools need Chromium, which runs as its own
+# container behind the "browser" profile:
+#
+#   docker compose --profile browser up -d
+#   docker compose --profile browser run --rm eraser fill --pending
+# Both containers: read-only filesystem, no capabilities, no privilege gain.
+x-hardened: &hardened
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
 services:
   eraser:
-    build: .
+    build:
+      context: .
+      target: eraser
     image: eraser:local
     container_name: eraser
     # 127.0.0.1 only: the web UI has no login and holds your mail credentials.
@@ -13,11 +26,26 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
-      - eraser-data:/home/eraser/.eraser
-    # Chromium's renderers use shared memory; Docker's 64 MB default is small.
-    shm_size: "1gb"
+      - eraser-data:/home/nonroot/.eraser
     environment:
       TZ: UTC # set your own, e.g. Europe/Berlin, so times in the UI match your clock
+      ERASER_CHROME_URL: http://chrome:9222
+    <<: *hardened
+    restart: unless-stopped
+
+  chrome:
+    profiles: [browser]
+    # Stock headless Chromium (chromedp's headless-shell), pinned by tag and
+    # digest. Dependabot's docker-compose ecosystem bumps both.
+    image: chromedp/headless-shell:158.0.8127.18@sha256:830fa77e0602cb42e5cb2cbd9237ba27b649ad69d5fb82b54713aac8b7ab4f29
+    container_name: eraser-chrome
+    # No published port: the DevTools endpoint controls the browser, and only
+    # the eraser container on this compose network may reach it.
+    expose: ["9222"]
+    # Chromium's renderers use shared memory; Docker's 64 MB default is small.
+    shm_size: "1gb"
+    tmpfs: [/tmp]
+    <<: *hardened
     restart: unless-stopped
 
 volumes:

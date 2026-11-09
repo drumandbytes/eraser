@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   # What did this PR touch? `code` is anything the Go build, tests or shipped
-  # binary depend on; `site` is the website, docs and their build scripts. A
+  # binary depend on; `site` is the website, docs and their build scripts; `workflows` is the workflow files. A
   # change to this file counts as both, so editing the gates re-tests everything.
   # Any error falls back to running everything.
   changes:
@@ -27,6 +27,7 @@ jobs:
     outputs:
       code: ${{ steps.diff.outputs.code }}
       site: ${{ steps.diff.outputs.site }}
+      workflows: ${{ steps.diff.outputs.workflows }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -41,6 +42,7 @@ jobs:
           {
             echo "code=$(hit '^(cmd|internal|data|scripts)/|^(go\.mod|go\.sum|codecov\.yml|mise\.toml|\.github/workflows/ci\.yml)$')"
             echo "site=$(hit '^(site|docs)/|^\.github/workflows/ci\.yml$')"
+            echo "workflows=$(hit '^\.github/(workflows/|actions/|zizmor\.yml$)')"
           } | tee -a "$GITHUB_OUTPUT"
 
   ci:
@@ -51,10 +53,14 @@ jobs:
       test-race: true
 
   zizmor:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
     uses: drumandbytes/reusable-actions/.github/workflows/zizmor.yml@v1
 
   # Workflow syntax, expressions and embedded shell (zizmor covers security).
   actionlint:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

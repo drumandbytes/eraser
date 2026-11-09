@@ -205,14 +205,20 @@ docker compose --profile browser up -d --build   # drop --profile browser if you
 `--build` rebuilds the Eraser image from the clone; the browser container is a stock image
 pinned in `compose.yaml`, so it updates when that pin changes.
 
+The volume is untouched. `history.db` and `config.yaml` migrate on first run,
+as on the desktop ([stability.md](stability.md)).
+
+If you run the published image instead, see the next section.
+
 ## Using the published image
 
 Each release pushes `ghcr.io/drumandbytes/eraser` (`linux/amd64`, `linux/arm64`)
-with the tags `v2.1.0`, `2.1`, and `latest`. To run it from the same
+with the tags `v2.2.0` (exact release), `2.2` (latest patch of that minor,
+no `v`) and `latest`. To run it from the same
 `compose.yaml` without building, set `ERASER_IMAGE`:
 
 ```bash
-export ERASER_IMAGE=ghcr.io/drumandbytes/eraser:v2.1.0
+export ERASER_IMAGE=ghcr.io/drumandbytes/eraser:v2.2.0
 docker compose up -d --pull always --no-build
 ```
 
@@ -220,9 +226,6 @@ docker compose up -d --pull always --no-build
 doesn't work. Upgrading is a new tag in `ERASER_IMAGE` and the same command.
 Keep `ERASER_IMAGE` exported (or in a `.env` file next to `compose.yaml`) for
 later `docker compose run` calls, so they use the same image.
-
-The volume is untouched. `history.db` and `config.yaml` migrate on first run,
-as on the desktop ([stability.md](stability.md)).
 
 ## Kubernetes
 

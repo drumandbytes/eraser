@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.0](https://github.com/drumandbytes/eraser/compare/v2.1.0...v2.2.0) (2026-11-09)
+
+
+### Features
+
+* **docker:** add a Docker image with headless Chromium ([#262](https://github.com/drumandbytes/eraser/issues/262)) ([a2d061a](https://github.com/drumandbytes/eraser/commit/a2d061acb14c5aa3b3364befa83953d53dafb20e)), closes [#261](https://github.com/drumandbytes/eraser/issues/261)
+* **docker:** publish the image to ghcr.io on release ([#263](https://github.com/drumandbytes/eraser/issues/263)) ([5d393cc](https://github.com/drumandbytes/eraser/commit/5d393ccf8558d4e37b3b95b03350af904086ecbe))
+
 ## [2.1.0](https://github.com/drumandbytes/eraser/compare/v2.0.1...v2.1.0) (2026-11-07)
 
 

@@ -1,0 +1,7 @@
+# actionlint 1.7.12 bundles create-github-app-token's pre-v3 inputs (app-id);
+# v3 takes client-id. Drop this when a newer actionlint knows v3.
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'missing input "app-id" which is required by action "actions/create-github-app-token@v3"'
+      - 'input "client-id" is not defined in action "actions/create-github-app-token@v3"'

@@ -19,7 +19,9 @@ services:
     build:
       context: .
       target: eraser
-    image: eraser:local
+    # Builds from this clone by default. To run the published image instead:
+    #   ERASER_IMAGE=ghcr.io/drumandbytes/eraser:v2.1.0 docker compose up -d --pull always --no-build
+    image: ${ERASER_IMAGE:-eraser:local}
     container_name: eraser
     # 127.0.0.1 only: the web UI has no login and holds your mail credentials.
     # Never change this to "8080:8080" (that publishes it to your whole network).

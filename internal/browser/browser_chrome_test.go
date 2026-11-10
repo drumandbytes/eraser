@@ -10,7 +10,7 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 func testProfile() *config.Profile {
@@ -109,7 +109,7 @@ func TestSubmitButtonTextPattern_MirrorsJSRegex(t *testing.T) {
 
 // Ubuntu 24.04 runners can't give Chrome its sandbox; pages are local fixtures.
 func init() {
-	if path := os.Getenv("ERASER_TEST_CHROME"); path != "" {
+	if path := os.Getenv("DELISTD_TEST_CHROME"); path != "" {
 		extraAllocatorOptions = append(extraAllocatorOptions, chromedp.ExecPath(path))
 	}
 	if os.Getenv("GITHUB_ACTIONS") == "true" {

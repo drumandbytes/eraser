@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/email"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/email"
 )
 
 // mailForm is what partials/mail-account.html posts. The provider preset only

@@ -1,21 +1,21 @@
 // Package evidence builds the per-profile evidence report (every removal
 // request and reply, deadlines, the supervisory authority) shared by
-// `eraser export` and the web UI's export download.
+// `delistd export` and the web UI's export download.
 package evidence
 
 import (
 	"fmt"
-	"github.com/drumandbytes/eraser/internal/country"
+	"github.com/drumandbytes/delistd/internal/country"
 	"html/template"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/dpa"
-	"github.com/drumandbytes/eraser/internal/history"
-	emailtmpl "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/dpa"
+	"github.com/drumandbytes/delistd/internal/history"
+	emailtmpl "github.com/drumandbytes/delistd/internal/template"
 )
 
 // ---- report model ----
@@ -410,8 +410,8 @@ period and are candidates for a complaint to a supervisory authority
 {{end}}
 
 <h2>Notes</h2>
-<p class="disclaimer">This report is generated from Eraser's local history database
-(<code>~/.eraser/history.db</code>). "Reply received" entries are Eraser's automatic
+<p class="disclaimer">This report is generated from Delistd's local history database
+(<code>~/.eraser/history.db</code>). "Reply received" entries are Delistd's automatic
 classification of inbound email and may not capture every message. Reconstructed
 emails are regenerated from the request template, not retrieved from a sent-mail
 archive. You are responsible for what you submit to any authority, and this report

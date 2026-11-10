@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // protectedServer is a server whose config holds a passphrase-protected mail
@@ -57,7 +57,7 @@ func TestLockedServerRedirectsToUnlock(t *testing.T) {
 	}
 	rec = httptest.NewRecorder()
 	s.setupRouter().ServeHTTP(rec, loopbackRequest(http.MethodGet, "/unlock", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Unlock Eraser") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Unlock Delistd") {
 		t.Errorf("unlock page = %d", rec.Code)
 	}
 }

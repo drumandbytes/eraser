@@ -1,18 +1,18 @@
 ---
 title: "Privacy"
-description: "What this website collects (cookieless, aggregate visit counts), and what the Eraser tool on your machine doesn't — nothing about your use reaches us."
+description: "What this website collects (cookieless, aggregate visit counts), and what the Delistd tool on your machine doesn't — nothing about your use reaches us."
 ---
 
 Two different things live under this name, and they have very different answers.
 
 ## The tool
 
-Eraser runs on your own machine. Your profile, the brokers you've contacted, and
+Delistd runs on your own machine. Your profile, the brokers you've contacted, and
 every response you've received stay in a local database on that machine. Removal
 requests go straight from your mail account to the broker.
 
 Nothing is sent to us. There is no account, no sync, no telemetry, and no
-server of ours in the path. We could not tell you how many people use Eraser, or
+server of ours in the path. We could not tell you how many people use Delistd, or
 which brokers they've written to, because we never receive any of it.
 
 That isn't a promise about our intentions — it's a property of how the thing is
@@ -56,12 +56,12 @@ the database and it's gone.
 
 ## Who is responsible
 
-Eraser is run by Drumandbytes OÜ (registry code 17599202), Uus-Sadama tn 21-207,
+Delistd is run by Drumandbytes OÜ (registry code 17599202), Uus-Sadama tn 21-207,
 10120 Tallinn, Estonia. Write to <privacy@drumandbytes.com> about anything on
 this page, including any of the rights above.
 
 You can also raise anything publicly as a
-[GitHub issue](https://github.com/drumandbytes/eraser/issues/new).
+[GitHub issue](https://github.com/drumandbytes/delistd/issues/new).
 
 If you're in the EU or EEA and think we've got this wrong, you can complain to
 your national data protection authority — see [Privacy authorities](/authorities/).

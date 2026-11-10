@@ -9,10 +9,10 @@ import (
 )
 
 const profile = `mode: set
-github.com/drumandbytes/eraser/internal/a/a.go:10.1,12.2 3 1
-github.com/drumandbytes/eraser/internal/a/a.go:14.1,16.2 2 0
-github.com/drumandbytes/eraser/scripts/tool/main.go:1.1,9.2 50 0
-github.com/drumandbytes/eraser/internal/imaptest/x.go:1.1,9.2 50 0
+github.com/drumandbytes/delistd/internal/a/a.go:10.1,12.2 3 1
+github.com/drumandbytes/delistd/internal/a/a.go:14.1,16.2 2 0
+github.com/drumandbytes/delistd/scripts/tool/main.go:1.1,9.2 50 0
+github.com/drumandbytes/delistd/internal/imaptest/x.go:1.1,9.2 50 0
 `
 
 func TestParseProfileDropsIgnoredFiles(t *testing.T) {

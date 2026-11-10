@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/template"
 )
 
 func TestSendRemoval(t *testing.T) {

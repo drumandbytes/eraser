@@ -19,7 +19,7 @@
             </div>
             <div class="whatsnew-item">
                 <h3>Encrypted passwords</h3>
-                <p>Mail passwords are no longer stored as plain text. Settings has an optional passphrase for an extra gate; with one set, the OS schedule can't send, and <code>eraser serve</code> asks once at startup.</p>
+                <p>Mail passwords are no longer stored as plain text. Settings has an optional passphrase for an extra gate; with one set, the OS schedule can't send, and <code>delistd serve</code> asks once at startup.</p>
             </div>
             <div class="whatsnew-item">
                 <h3>More in the web UI</h3>
@@ -34,7 +34,18 @@
         <p class="notice-text" style="margin-top: 16px;"><strong style="color: var(--text-primary);">Your config was upgraded.</strong> The original is saved as <code title="{{.Backup}}">{{.BackupName}}</code> with passwords blanked; delete it when you're happy. Moved to a new machine? Re-enter your mail passwords in Settings.</p>
         {{end}}
         <div class="whatsnew-foot">
-            <a class="btn btn-secondary" href="https://github.com/drumandbytes/eraser/blob/main/docs/upgrading-to-2.0.md" target="_blank" rel="noopener">Read the upgrade guide</a>
+            <a class="btn btn-secondary" href="https://github.com/drumandbytes/delistd/blob/main/docs/upgrading-to-2.0.md" target="_blank" rel="noopener">Read the upgrade guide</a>
+        </div>
+    </section>
+    {{end}}
+    {{if .RenameNotice}}
+    <section class="whatsnew mb-8" aria-labelledby="renamed-title">
+        <div class="whatsnew-head">
+            <div class="notice-body">
+                <h2 id="renamed-title" class="notice-title" style="font-size: 18px;">Eraser is now Delistd</h2>
+                <p class="notice-text">Same app, new name. Your settings and history are untouched and the <code>eraser</code> command keeps working for now. Use <code>delistd</code> from here on, and re-run <code>delistd schedule install</code> if you set up an OS schedule. <a href="https://delistd.dev/" target="_blank" rel="noopener">Details</a></p>
+            </div>
+            <form method="POST" action="/renamed/dismiss"><button type="submit" class="btn btn-primary">Got it</button></form>
         </div>
     </section>
     {{end}}

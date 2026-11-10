@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/email"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/email"
 )
 
 // Setup wizard handlers
@@ -171,15 +171,15 @@ func (s *Server) handleSetupTestSend(w http.ResponseWriter, r *http.Request) {
 	testMsg := email.Message{
 		To:      session.Profile.Email,
 		From:    session.Email.From,
-		Subject: "Eraser Test Email",
+		Subject: "Delistd Test Email",
 		Body: fmt.Sprintf(`Hello %s,
 
-This is a test email from Eraser to verify your email configuration is working correctly.
+This is a test email from Delistd to verify your email configuration is working correctly.
 
 If you received this email, your setup is complete and you're ready to start sending data removal requests!
 
 Best,
-Eraser`, session.Profile.FirstName),
+Delistd`, session.Profile.FirstName),
 	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
@@ -269,6 +269,7 @@ func (s *Server) handleSetupComplete(w http.ResponseWriter, r *http.Request) {
 	s.config.Store(cfg)
 	// Someone who just finished setup has nothing to be told about 2.0.
 	config.MarkWhatsNewSeen(s.configPath)
+	config.MarkRenameNoticeSeen(s.configPath) // they never knew the old name
 
 	// Clear session - credentials are now saved to config file
 	s.clearSession(w, r)

@@ -1,0 +1,359 @@
+package main
+
+import (
+	"fmt"
+	"net"
+	"net/http"
+	"net/url"
+	"sort"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/spf13/cobra"
+)
+
+type auditVerdict string
+
+const (
+	verdictAlive       auditVerdict = "alive"
+	verdictEmailDead   auditVerdict = "email-dead"
+	verdictWebsiteDead auditVerdict = "website-dead"
+	verdictUnknown     auditVerdict = "unknown"
+	verdictSkipped     auditVerdict = "skipped"
+)
+
+// auditChecker is the network-touching part of the audit, injected so tests
+// can exercise the verdict logic in auditOne without making real DNS/HTTP
+// calls.
+type auditChecker struct {
+	lookupMX   func(domain string) ([]*net.MX, error)
+	lookupHost func(domain string) ([]string, error)
+	httpHead   func(url string) (*http.Response, error)
+}
+
+// A browser User-Agent, because plenty of brokers' WAFs reject Go's default
+// "Go-http-client/2.0" outright. This is about not looking like a broken bot,
+// not about defeating bot protection -- anything that still blocks us is
+// reported as "unknown", never as evidence the broker is gone.
+const auditUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " +
+	"AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"
+
+// auditCheckerFor builds the checker runAuditBrokers uses; tests swap in a
+// stub so they don't hit DNS or the network.
+var auditCheckerFor = newAuditChecker
+
+func newAuditChecker(timeout time.Duration) *auditChecker {
+	client := &http.Client{
+		Timeout: timeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 5 {
+				return http.ErrUseLastResponse
+			}
+			return nil
+		},
+	}
+	return &auditChecker{
+		lookupMX:   net.LookupMX,
+		lookupHost: net.LookupHost,
+		httpHead: func(url string) (*http.Response, error) {
+			// HEAD first (cheap), then GET on failure: a fair number of sites
+			// never implement HEAD and drop the connection rather than answering
+			// 405, which is indistinguishable from being dead.
+			for _, method := range []string{http.MethodHead, http.MethodGet} {
+				req, err := http.NewRequest(method, url, nil)
+				if err != nil {
+					return nil, err
+				}
+				req.Header.Set("User-Agent", auditUserAgent)
+				req.Header.Set("Accept", "text/html,application/xhtml+xml,*/*;q=0.8")
+				resp, err := client.Do(req)
+				if err == nil {
+					return resp, nil
+				}
+				if method == http.MethodGet {
+					return nil, err
+				}
+			}
+			return nil, nil // unreachable: the loop always returns
+		},
+	}
+}
+
+func auditBrokersCmd() *cobra.Command {
+	var regions, categories []string
+	var timeoutSec int
+	var failOnDead, fix bool
+
+	cmd := &cobra.Command{
+		Use:   "audit-brokers",
+		Short: "Check broker websites and email domains for signs of life",
+		Long: `Checks each broker's email domain (MX/host lookup) and website
+(HTTP HEAD) to find entries that may have gone defunct - useful for
+maintaining a large, hand-curated broker database over time.
+
+By default this is read-only. Use the reported IDs to investigate and
+update the database manually - e.g. feed email-dead ones into
+'cleanup-bounces' (once bounce mail confirms it), or look into a
+website-dead one before assuming it's actually gone.
+
+--fix clears the email address of every broker whose mail domain is dead
+(MX and host lookup both fail - the reliable signal; website checks are
+never acted on) and appends a dated note, keeping the row. It writes the
+resolved broker file (see --brokers) and is what the weekly CI audit runs
+to open a prune PR.
+
+A non-2xx/3xx website response is reported as "unknown" rather than dead -
+many privacy-request pages block headless/bot requests, so an inconclusive
+check isn't treated as evidence the broker is gone.
+
+Examples:
+  delistd audit-brokers
+  delistd audit-brokers --region eu
+  delistd audit-brokers --region eu,global
+  delistd audit-brokers --category people-search --timeout 15`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runAuditBrokers(regions, categories, time.Duration(timeoutSec)*time.Second, failOnDead, fix)
+		},
+	}
+
+	cmd.Flags().StringSliceVar(&regions, "region", nil, "Only audit brokers in these regions: us, eu, global (comma-separated or repeated)")
+	cmd.Flags().StringSliceVar(&categories, "category", nil, "Only audit brokers in these categories (comma-separated or repeated)")
+	cmd.Flags().IntVar(&timeoutSec, "timeout", 10, "Per-check timeout in seconds")
+	cmd.Flags().BoolVar(&failOnDead, "fail-on-dead", false, "Exit non-zero if any broker has a dead email domain or unreachable website (for scheduled CI)")
+	cmd.Flags().BoolVar(&fix, "fix", false, "Clear the email of every broker with a dead mail domain (keeps the row, adds a dated note) and save the broker file")
+
+	return cmd
+}
+
+type auditResult struct {
+	broker  broker.Broker
+	verdict auditVerdict
+	// noChannel: dead email, unreachable website and no opt-out URL, so --fix
+	// would leave the entry with no way to contact the broker.
+	noChannel bool
+}
+
+func runAuditBrokers(regions, categories []string, timeout time.Duration, failOnDead, fix bool) error {
+	var brokerDB *broker.BrokerDatabase
+	var writePath string
+	var err error
+	if fix {
+		// --fix mutates and saves, so it needs a real file, never the
+		// embedded copy that broker.Load can fall back to.
+		writePath = resolveBrokerWritePath()
+		brokerDB, err = broker.LoadFromFile(writePath)
+		if err != nil {
+			return fmt.Errorf("--fix needs a writable broker file (%s): %w", writePath, err)
+		}
+	} else {
+		brokerDB, err = broker.Load(brokerFile)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to load brokers: %w", err)
+	}
+
+	targets := brokerDB.Select(nil, regions, categories, nil, nil)
+
+	fmt.Printf("🔍 Auditing %d broker(s)...\n", len(targets))
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+	results := auditConcurrently(targets, auditCheckerFor(timeout), 20)
+	printAuditResults(results)
+
+	if fix {
+		cleared := applyAuditFix(brokerDB, results)
+		if cleared > 0 {
+			if err := brokerDB.SaveWithBackup(writePath); err != nil {
+				return fmt.Errorf("failed to save %s: %w", writePath, err)
+			}
+			fmt.Printf("\n🧹 Cleared %d dead email address(es) in %s (entries kept, backup at %s.bak)\n", cleared, writePath, writePath)
+		} else {
+			fmt.Println("\n✓ Nothing to fix - no dead email domains.")
+		}
+	}
+
+	if failOnDead {
+		// fail on email-dead only: website-dead can't tell "gone" from "blocks CI",
+		// so failing on it makes an alarm that always fires
+		dead := 0
+		for _, r := range results {
+			if r.verdict == verdictEmailDead {
+				dead++
+			}
+		}
+		if dead > 0 {
+			return fmt.Errorf("%d broker(s) have a dead email domain - see the list above", dead)
+		}
+	}
+
+	return nil
+}
+
+// applyAuditFix blanks the email of every broker the audit found to have a
+// dead mail domain (email-dead only - website verdicts are never acted on),
+// keeping the row and recording a dated note. Returns how many were cleared.
+func applyAuditFix(db *broker.BrokerDatabase, results []auditResult) int {
+	cleared := 0
+	for _, r := range results {
+		if r.verdict != verdictEmailDead || r.broker.Email == "" {
+			continue
+		}
+		if db.MarkEmailUnreachable(r.broker.Email, "audit-brokers: MX and host lookup both failed") != nil {
+			cleared++
+		}
+	}
+	return cleared
+}
+
+// auditConcurrently runs auditOne for each broker with a bounded worker
+// pool - checking 700+ brokers one at a time over DNS/HTTP would be slow.
+func auditConcurrently(targets []broker.Broker, checker *auditChecker, workers int) []auditResult {
+	results := make([]auditResult, len(targets))
+	sem := make(chan struct{}, workers)
+	var wg sync.WaitGroup
+	for i, b := range targets {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int, b broker.Broker) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			r := auditResult{broker: b, verdict: auditOne(b, checker)}
+			// auditOne stops at email-dead; check the site too so entries
+			// with nothing left get reported.
+			if r.verdict == verdictEmailDead && b.OptOutURL == "" && b.Website != "" {
+				r.noChannel = checkWebsiteVerdict(b.Website, checker) == verdictWebsiteDead
+			}
+			results[i] = r
+		}(i, b)
+	}
+	wg.Wait()
+	return results
+}
+
+// auditOne classifies a single broker. email-dead takes priority over the
+// website verdict when both are checked - a dead email address is the more
+// actionable, more certain signal (an unreachable send target) than a
+// website that merely failed to respond to a headless HEAD request.
+func auditOne(b broker.Broker, checker *auditChecker) auditVerdict {
+	hasEmail := b.Email != ""
+	hasWebsite := b.Website != ""
+
+	if !hasEmail && !hasWebsite {
+		return verdictSkipped
+	}
+
+	if hasEmail && !checkEmailAlive(b.Email, checker) {
+		return verdictEmailDead
+	}
+
+	if hasWebsite {
+		return checkWebsiteVerdict(b.Website, checker)
+	}
+
+	// Email present and alive, no website to check.
+	return verdictAlive
+}
+
+func checkEmailAlive(email string, checker *auditChecker) bool {
+	at := strings.LastIndex(email, "@")
+	if at < 0 || at == len(email)-1 {
+		return false // malformed - can't be a valid mail destination regardless of DNS
+	}
+	domain := email[at+1:]
+
+	if mxs, err := checker.lookupMX(domain); err == nil && len(mxs) > 0 {
+		// null MX (RFC 7505, a lone ".") explicitly refuses mail: dead, not unknown
+		if len(mxs) == 1 && (mxs[0].Host == "." || mxs[0].Host == "") {
+			return false
+		}
+		return true
+	}
+	// Some domains route mail without a dedicated MX record (implicit MX
+	// via the A/AAAA record) - only call it dead if both lookups fail.
+	if hosts, err := checker.lookupHost(domain); err == nil && len(hosts) > 0 {
+		return true
+	}
+	return false
+}
+
+func checkWebsiteVerdict(website string, checker *auditChecker) auditVerdict {
+	resp, err := checker.httpHead(website)
+	if err != nil {
+		// Transport errors are "gone" only if DNS no longer resolves; brokers
+		// routinely block CI ranges (73 false positives vs 1 real on the first run).
+		if host := hostOf(website); host != "" {
+			if addrs, lookupErr := checker.lookupHost(host); lookupErr == nil && len(addrs) > 0 {
+				return verdictUnknown
+			}
+		}
+		return verdictWebsiteDead
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+		return verdictAlive
+	}
+	// Many privacy/opt-out pages block bot/headless requests (403, etc.) -
+	// that's not evidence the broker is gone, just an inconclusive check.
+	return verdictUnknown
+}
+
+// hostOf extracts the hostname from a broker's website URL, empty if unparseable.
+func hostOf(website string) string {
+	u, err := url.Parse(website)
+	if err != nil {
+		return ""
+	}
+	return u.Hostname()
+}
+
+func printAuditResults(results []auditResult) {
+	counts := map[auditVerdict]int{}
+	var emailDead, websiteDead, noChannel []string
+	for _, r := range results {
+		counts[r.verdict]++
+		if r.noChannel {
+			noChannel = append(noChannel, r.broker.ID)
+		}
+		switch r.verdict {
+		case verdictEmailDead:
+			emailDead = append(emailDead, r.broker.ID)
+		case verdictWebsiteDead:
+			websiteDead = append(websiteDead, r.broker.ID)
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("✓ alive: %d\n", counts[verdictAlive])
+	fmt.Printf("✗ email-dead: %d\n", counts[verdictEmailDead])
+	fmt.Printf("✗ website-dead: %d\n", counts[verdictWebsiteDead])
+	fmt.Printf("? unknown: %d\n", counts[verdictUnknown])
+	fmt.Printf("- skipped: %d\n", counts[verdictSkipped])
+
+	if len(emailDead) > 0 {
+		sort.Strings(emailDead)
+		fmt.Println()
+		fmt.Println("Email domain appears dead (MX and host lookup both failed):")
+		for _, id := range emailDead {
+			fmt.Printf("  - %s\n", id)
+		}
+	}
+	if len(noChannel) > 0 {
+		sort.Strings(noChannel)
+		fmt.Println()
+		fmt.Println("No working channel left (dead email, unreachable website, no opt-out URL) - consider removing:")
+		for _, id := range noChannel {
+			fmt.Printf("  - %s\n", id)
+		}
+	}
+	if len(websiteDead) > 0 {
+		sort.Strings(websiteDead)
+		fmt.Println()
+		fmt.Println("Website appears unreachable:")
+		for _, id := range websiteDead {
+			fmt.Printf("  - %s\n", id)
+		}
+	}
+}

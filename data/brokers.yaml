@@ -2601,7 +2601,7 @@ brokers:
       opt_out_url: https://www.kargo.com/privacy-portal
       region: us
       category: device-id-only
-      notes: 'Kargo splits privacy rights into two flows (checked their portal 2026-08-20): (1) Opt-out of sale/share/targeted-ads - check the box at opt_out_url, or just send a GPC signal from your browser; no identifiers needed. (2) Access/deletion - they track by cookie/device ID, not name, so they can''t look you up from a standard request; email privacyinfo@kargo.com with your Digital Identifiers instead (the ktcid/krg_uid/krg_crb cookies set on kargo.com, or your phone''s IDFA/Android Ad ID) plus what you''re requesting. Email left blank since eraser''s standard template has no way to include those identifiers.'
+      notes: 'Kargo splits privacy rights into two flows (checked their portal 2026-08-20): (1) Opt-out of sale/share/targeted-ads - check the box at opt_out_url, or just send a GPC signal from your browser; no identifiers needed. (2) Access/deletion - they track by cookie/device ID, not name, so they can''t look you up from a standard request; email privacyinfo@kargo.com with your Digital Identifiers instead (the ktcid/krg_uid/krg_crb cookies set on kargo.com, or your phone''s IDFA/Android Ad ID) plus what you''re requesting. Email left blank since delistd''s standard template has no way to include those identifiers.'
       parent: Kargo Global, LLC
       verification: May verify your identity and any agent's authorization
       response_time: Within 45 days, or as applicable law requires

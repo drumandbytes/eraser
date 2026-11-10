@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/email"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/smtptest"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/email"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/smtptest"
 )
 
 // sendServer is smokeServer with email pointed at relay (plaintext, no auth).

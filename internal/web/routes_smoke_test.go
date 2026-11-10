@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 // smokeServer is a Server wired up the way a running instance is: a real

@@ -8,10 +8,10 @@ set -euo pipefail
 tag=${1:?usage: release-smoke.sh <tag> <asset suffix>}
 suffix=${2:?usage: release-smoke.sh <tag> <asset suffix>}
 version=${tag#v}
-asset="eraser_${version}_${suffix}"
+asset="delistd_${version}_${suffix}"
 
 cd "$(mktemp -d)"
-gh release download "$tag" --repo "${GITHUB_REPOSITORY:-drumandbytes/eraser}" --pattern "$asset" --pattern checksums.txt
+gh release download "$tag" --repo "${GITHUB_REPOSITORY:-drumandbytes/delistd}" --pattern "$asset" --pattern checksums.txt
 
 expected=$(awk -v a="$asset" '$2 == a { print $1 }' checksums.txt)
 [ -n "$expected" ] || { echo "checksums.txt lists no $asset"; exit 1; }
@@ -23,7 +23,7 @@ fi
 [ "$expected" = "$actual" ] || { echo "checksum mismatch for $asset"; exit 1; }
 
 case "$asset" in
-  *.tar.gz) tar -xzf "$asset"; bin=./eraser ;;
+  *.tar.gz) tar -xzf "$asset"; bin=./delistd ;;
   *.exe) bin="./$asset" ;;
   *) echo "unknown asset type $asset"; exit 1 ;;
 esac

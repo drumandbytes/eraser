@@ -16,7 +16,7 @@
             <span id="mail_provider_note">{{range .Providers}}{{if eq .ID $.Provider}}{{.Note}}{{end}}{{end}}</span>
             <a id="mail_provider_help" href="{{range .Providers}}{{if eq .ID $.Provider}}{{.HelpURL}}{{end}}{{end}}" target="_blank" rel="noopener" class="text-accent hover:underline">Setup guide</a>
         </p>
-        <p class="mt-1 text-xs text-muted">Missing your provider? <a href="https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml" target="_blank" rel="noopener" class="text-accent hover:underline">Request it</a> or use "Other".</p>
+        <p class="mt-1 text-xs text-muted">Missing your provider? <a href="https://github.com/drumandbytes/delistd/issues/new?template=mail_provider.yml" target="_blank" rel="noopener" class="text-accent hover:underline">Request it</a> or use "Other".</p>
     </div>
 
     <div>
@@ -70,7 +70,7 @@
             </div>
             {{if .Errors.imap_host}}<p class="text-sm text-error">{{.Errors.imap_host}}</p>{{end}}
             {{end}}
-            <p class="text-xs text-muted">Ports 465 (SMTP) and 993 (IMAP) use TLS directly; any other port must support STARTTLS. Eraser never logs in without encryption.</p>
+            <p class="text-xs text-muted">Ports 465 (SMTP) and 993 (IMAP) use TLS directly; any other port must support STARTTLS. Delistd never logs in without encryption.</p>
         </div>
     </details>
 </div>

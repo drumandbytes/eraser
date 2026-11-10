@@ -48,7 +48,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <p class="text-sm">
-                <strong>Manual mode.</strong> Eraser won't send anything. For each broker,
+                <strong>Manual mode.</strong> Delistd won't send anything. For each broker,
                 open <em>Email</em>, send it from your own mail client, then click
                 <em>Mark sent</em>.
             </p>
@@ -66,7 +66,7 @@
             <div>
                 <p class="text-sm">
                     <strong>Sending {{.Filtered}} emails will take multiple days.</strong>
-                    To avoid email provider rate limits, Eraser sends up to {{.DailyLimit}} emails per day.
+                    To avoid email provider rate limits, Delistd sends up to {{.DailyLimit}} emails per day.
                     The rest go out with the next automatic run (<a href="/settings#automation" class="underline">Settings &rarr; Automation</a>), or click Send all again the next day.
                 </p>
             </div>
@@ -210,11 +210,11 @@
 </div>
 
 <script>
-// Job tracking comes from window.eraserJobPoll (layout.html); this page only
-// reacts to "eraser:job-update". eraserJobPoll.jobId is the source of truth.
+// Job tracking comes from window.delistdJobPoll (layout.html); this page only
+// reacts to "delistd:job-update". delistdJobPoll.jobId is the source of truth.
 let lastSeenBrokerId = null;
 
-window.addEventListener('eraser:job-update', (e) => handleJobUpdate(e.detail));
+window.addEventListener('delistd:job-update', (e) => handleJobUpdate(e.detail));
 
 function handleJobUpdate(job) {
     // build the card on the first update, whatever its status: the job may
@@ -332,7 +332,7 @@ async function startSendAll(statusOverride) {
         }
 
         showProgressUI();
-        window.eraserJobPoll.start(data.job_id);
+        window.delistdJobPoll.start(data.job_id);
 
     } catch (err) {
         showError('Network error: ' + err.message);
@@ -442,7 +442,7 @@ function showCompletionMessage(job) {
 }
 
 async function cancelJob() {
-    const jobId = window.eraserJobPoll.jobId;
+    const jobId = window.delistdJobPoll.jobId;
     if (!jobId) return;
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';

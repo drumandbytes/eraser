@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/template"
 )
 
 // SendRemoval renders the removal request for b, sends it from `from`, and

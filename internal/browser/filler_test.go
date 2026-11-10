@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // Both mistakes matter: a timeout read as "not found" reports Success after

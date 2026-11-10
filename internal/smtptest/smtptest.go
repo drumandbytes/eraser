@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 type Relay struct {

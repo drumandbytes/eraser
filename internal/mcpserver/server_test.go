@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/browser"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/smtptest"
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/browser"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/smtptest"
+	"github.com/drumandbytes/delistd/internal/testenv"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -71,7 +71,7 @@ func approvedRetry(t *testing.T, s *Service, in retryInput) {
 	}
 }
 
-// approveTestPlan stands in for the web UI or `eraser mcp approve`.
+// approveTestPlan stands in for the web UI or `delistd mcp approve`.
 func approveTestPlan(t *testing.T, s *Service, planID string) {
 	t.Helper()
 	if err := s.store.ApproveBatch(planID, "test"); err != nil {
@@ -108,7 +108,7 @@ func TestMCPTransportDiscoverySchemasAndCredentialRedaction(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = cs.Close() }()
-	if info := cs.InitializeResult().ServerInfo; info.Name != "eraser" || info.Version != Version || !strings.Contains(info.Title, "experimental") {
+	if info := cs.InitializeResult().ServerInfo; info.Name != "delistd" || info.Version != Version || !strings.Contains(info.Title, "experimental") {
 		t.Fatalf("server info = %+v", info)
 	}
 	list, err := cs.ListTools(ctx, nil)
@@ -337,7 +337,7 @@ func TestEmailUnknownRetryAndBounceRecovery(t *testing.T) {
 }
 
 func TestDemoIsolation(t *testing.T) {
-	s, cleanup, err := NewDemo(true, os.Getenv("ERASER_TEST_CHROME"))
+	s, cleanup, err := NewDemo(true, os.Getenv("DELISTD_TEST_CHROME"))
 	if err != nil {
 		t.Fatal(err)
 	}

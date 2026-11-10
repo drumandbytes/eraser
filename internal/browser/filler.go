@@ -8,8 +8,8 @@ import (
 
 	"github.com/chromedp/chromedp"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/country"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/country"
 )
 
 // isContextErr reports a context cancel/deadline, as opposed to chromedp's

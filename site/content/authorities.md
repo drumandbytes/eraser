@@ -5,7 +5,7 @@ layout: authorities
 ---
 
 If a broker blows past the statutory deadline or refuses without a valid basis,
-you can escalate to the regulator for your country. `eraser export` names the
+you can escalate to the regulator for your country. `delistd export` names the
 one for your profile's country and lists the brokers that are overdue.
 
 - **EU / EEA** — under GDPR Article 77 you complain to the authority where you
@@ -17,4 +17,4 @@ one for your profile's country and lists the brokers that are overdue.
 
 This list is not exhaustive — it covers the jurisdictions with a practical
 complaint route — and links move. If an entry is wrong or your country is
-missing, please [open an issue or a pull request](https://github.com/drumandbytes/eraser/issues/new).
+missing, please [open an issue or a pull request](https://github.com/drumandbytes/delistd/issues/new).

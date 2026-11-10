@@ -10,11 +10,11 @@ trap 'kill "${pids[@]}" 2>/dev/null || true; rm -rf "$work"' EXIT
 chrome=${1:-${CHROME:-$(command -v google-chrome || command -v chromium || echo "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")}}
 
 "$root/site/build.sh" -d "$work/site" >/dev/null
-(cd "$root" && go build -o "$work/eraser" ./cmd/eraser && go run ./scripts/a11y/seed "$work/home")
+(cd "$root" && go build -o "$work/delistd" ./cmd/delistd && go run ./scripts/a11y/seed "$work/home")
 (cd "$root/scripts/a11y" && npm ci --silent)
 
 python3 -m http.server 4000 --directory "$work/site" >/dev/null 2>&1 & pids+=($!)
-HOME="$work/home" "$work/eraser" serve -p 3999 >"$work/serve.log" 2>&1 & pids+=($!)
+HOME="$work/home" "$work/delistd" serve -p 3999 >"$work/serve.log" 2>&1 & pids+=($!)
 for port in 4000 3999; do
   for _ in $(seq 50); do curl -fs -o /dev/null "localhost:$port/" && break; sleep 0.2; done
 done

@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/drumandbytes/eraser/internal/country"
+	"github.com/drumandbytes/delistd/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -40,7 +40,7 @@ type Config struct {
 	// (profile_id). Takes precedence over Profile.
 	Profiles []NamedProfile `yaml:"profiles,omitempty"`
 	// PassphraseProtected: mail passwords are encrypted with a passphrase on
-	// top of the machine binding (see secret.go). Set with `eraser passphrase set`.
+	// top of the machine binding (see secret.go). Set with `delistd passphrase set`.
 	PassphraseProtected bool        `yaml:"passphrase_protected,omitempty"`
 	Email               EmailConfig `yaml:"email"`
 	Options             Options     `yaml:"options"`
@@ -50,9 +50,9 @@ type Config struct {
 }
 
 // Schedule is the in-app fallback for automated cycles when the OS scheduler
-// ('eraser schedule install') isn't set up.
+// ('delistd schedule install') isn't set up.
 type Schedule struct {
-	// Enabled makes a running 'eraser serve' run a cycle every 6 hours.
+	// Enabled makes a running 'delistd serve' run a cycle every 6 hours.
 	// Ignored while the OS job is installed.
 	Enabled bool `yaml:"enabled,omitempty"`
 }
@@ -132,7 +132,7 @@ func (c *Config) GetProfiles() []NamedProfile {
 }
 
 // PrimaryProfile is the "default" profile if there is one, else the first:
-// the one `eraser init` edits and fresh-profile forms prefill from.
+// the one `delistd init` edits and fresh-profile forms prefill from.
 func (c *Config) PrimaryProfile() NamedProfile {
 	profiles := c.GetProfiles()
 	for _, p := range profiles {
@@ -311,9 +311,9 @@ type Options struct {
 	// line "Subject: ..." sets the subject. Used when Template is "custom".
 	CustomTemplate string `yaml:"custom_template,omitempty"`
 	// SendMode:
-	//   "" / "smtp" - Eraser sends over the configured SMTP account.
-	//   "manual"    - Eraser renders the emails for you to send yourself and
-	//                 record with `eraser mark-sent` / "Mark sent". No email:
+	//   "" / "smtp" - Delistd sends over the configured SMTP account.
+	//   "manual"    - Delistd renders the emails for you to send yourself and
+	//                 record with `delistd mark-sent` / "Mark sent". No email:
 	//                 block needed; for users who won't share mailbox credentials.
 	SendMode    string `yaml:"send_mode,omitempty"`
 	DryRun      bool   `yaml:"dry_run,omitempty"`
@@ -383,7 +383,7 @@ func Load(path string) (*Config, error) {
 		}
 		plain, err := decryptSecret(*p)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: %v; re-enter it with `eraser init` or in Settings\n", err)
+			fmt.Fprintf(os.Stderr, "WARNING: %v; re-enter it with `delistd init` or in Settings\n", err)
 			plain = ""
 		}
 		*p = plain
@@ -462,7 +462,7 @@ func migrateFrom1x(path string, orig []byte, cfg *Config, plaintextSecrets bool)
 		}
 		code, ok := country.Code(p.Country)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "WARNING: profile %q: country %q isn't a known country; fix it with `eraser profile edit` (country-scoped brokers aren't filtered until then)\n", p.ID, p.Country)
+			fmt.Fprintf(os.Stderr, "WARNING: profile %q: country %q isn't a known country; fix it with `delistd profile edit` (country-scoped brokers aren't filtered until then)\n", p.ID, p.Country)
 			continue
 		}
 		if code != p.Country {
@@ -592,7 +592,7 @@ func validateEmailConfig(e EmailConfig) error {
 }
 
 // IsManualSend reports whether the user opted out of automated sending -
-// Eraser renders the emails but never transmits them.
+// Delistd renders the emails but never transmits them.
 func (c *Config) IsManualSend() bool {
 	return strings.EqualFold(c.Options.SendMode, "manual")
 }

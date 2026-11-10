@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/imaptest"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/imaptest"
 )
 
 // imapServer serves INBOX with the given (from, subject, body) messages.

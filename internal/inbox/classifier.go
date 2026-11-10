@@ -158,8 +158,9 @@ var (
 
 	// Test email patterns (should be skipped from review)
 	testEmailPatterns = []*regexp.Regexp{
-		regexp.MustCompile(`(?i)eraser\s+test\s+email`),
-		regexp.MustCompile(`(?i)test\s+email\s+from\s+eraser`),
+		// "eraser" is the pre-rename name: test mails already sitting in inboxes still say it
+		regexp.MustCompile(`(?i)(?:delistd|eraser)\s+test\s+email`),
+		regexp.MustCompile(`(?i)test\s+email\s+from\s+(?:delistd|eraser)`),
 		regexp.MustCompile(`(?i)this\s+is\s+a\s+test\s+email`),
 	}
 
@@ -241,7 +242,7 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 	if isTestEmail(subject, content) {
 		result.Type = ResponseSuccess
 		result.Confidence = 1.0
-		result.Reason = "Test email from Eraser - email configuration verified"
+		result.Reason = "Test email from Delistd - email configuration verified"
 		result.NeedsReview = false
 		return result
 	}
@@ -398,7 +399,7 @@ func ClassifyResponse(email *Email) ClassifiedResponse {
 
 	// Flag for manual review if unknown, low confidence, or an ambiguous
 	// terminal verdict. `rejected` and `success` are the states that remove a
-	// broker from the overdue list feeding an `eraser export` / DPA complaint,
+	// broker from the overdue list feeding an `delistd export` / DPA complaint,
 	// so a wrong one is costly - hold those to a higher confidence bar.
 	terminalVerdict := result.Type == ResponseRejected || result.Type == ResponseSuccess
 	result.NeedsReview = result.Type == ResponseUnknown ||
@@ -562,7 +563,7 @@ func SummarizeResponses(responses []ClassifiedResponse) Summary {
 	return summary
 }
 
-// isTestEmail checks if an email is a test email from Eraser
+// isTestEmail checks if an email is a test email from Delistd
 func isTestEmail(subject, content string) bool {
 	for _, pattern := range testEmailPatterns {
 		if pattern.MatchString(subject) || pattern.MatchString(content) {

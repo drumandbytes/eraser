@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // hangingSMTPServer accepts one connection and then never writes anything -

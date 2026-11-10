@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Prefer a PR? `eraser add-broker` writes the entry and `eraser validate-brokers` checks it (see [CONTRIBUTING.md](https://github.com/drumandbytes/eraser/blob/main/CONTRIBUTING.md#adding-or-updating-a-broker)). Responding to a broker's reply? [docs/broker-replies.md](https://github.com/drumandbytes/eraser/blob/main/docs/broker-replies.md) explains what each reply type means.
+        Prefer a PR? `delistd add-broker` writes the entry and `delistd validate-brokers` checks it (see [CONTRIBUTING.md](https://github.com/drumandbytes/delistd/blob/main/CONTRIBUTING.md#adding-or-updating-a-broker)). Responding to a broker's reply? [docs/broker-replies.md](https://github.com/drumandbytes/delistd/blob/main/docs/broker-replies.md) explains what each reply type means.
         **Redact your personal data** (name, address, email, case numbers) from anything you paste.
   - type: dropdown
     id: change

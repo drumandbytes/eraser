@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Two stores on one file stand in for `eraser serve` and a CLI/scheduled run
+// Two stores on one file stand in for `delistd serve` and a CLI/scheduled run
 // writing at once, each with a few concurrent writers (send job, inbox scan).
 // Without busy_timeout, one side gets SQLITE_BUSY.
 func TestConcurrentStoresOnOneFile(t *testing.T) {

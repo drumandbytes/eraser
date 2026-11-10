@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/evidence"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/evidence"
+	"github.com/drumandbytes/delistd/internal/history"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -29,6 +29,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		"RecentHistory": s.getRecentHistory(active.ID, 10),
 		"Stats":         s.getStats(active.ID),
 		"WhatsNew":      s.whatsNew(),
+		"RenameNotice":  s.renameNotice(),
 		"PipelineStats": s.getPipelineStats(active.ID),
 	}
 
@@ -393,7 +394,7 @@ func (s *Server) handleTaskHelper(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleExport downloads the active profile's evidence report, the same one
-// `eraser export` writes (?format=html|json, optional ?since=YYYY-MM-DD).
+// `delistd export` writes (?format=html|json, optional ?since=YYYY-MM-DD).
 func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 	format := r.URL.Query().Get("format")
 	if format == "" {
@@ -444,6 +445,6 @@ func (s *Server) handleExport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="eraser-evidence-%s-%s.%s"`, profile.ID, now.Format("2006-01-02"), format))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="delistd-evidence-%s-%s.%s"`, profile.ID, now.Format("2006-01-02"), format))
 	_, _ = w.Write(data)
 }

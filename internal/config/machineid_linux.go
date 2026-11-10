@@ -13,10 +13,10 @@ import (
 // use. The Docker image sets it to a path in the data volume: a container has
 // no /etc/machine-id and a new hostname on every recreate, so without it the
 // key for the encrypted mail passwords would change with the container.
-const MachineIDFileEnv = "ERASER_MACHINE_ID_FILE"
+const MachineIDFileEnv = "DELISTD_MACHINE_ID_FILE"
 
 func readMachineID() (string, error) {
-	if p := os.Getenv(MachineIDFileEnv); p != "" {
+	if p := Getenv(MachineIDFileEnv); p != "" {
 		return ensureMachineIDFile(p)
 	}
 	for _, p := range []string{"/etc/machine-id", "/var/lib/dbus/machine-id"} {

@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/email"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/inbox"
-	"github.com/drumandbytes/eraser/internal/schedule"
-	"github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/email"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/inbox"
+	"github.com/drumandbytes/delistd/internal/schedule"
+	"github.com/drumandbytes/delistd/internal/template"
 )
 
 func (s *Service) scan(ctx context.Context, _ emptyInput) (map[string]any, error) {
@@ -23,12 +23,12 @@ func (s *Service) scan(ctx context.Context, _ emptyInput) (map[string]any, error
 	}
 	ic := cfg.InboxForProfile(p)
 	if !ic.Enabled || ic.Server == "" {
-		return nil, fmt.Errorf("configure Inbox Monitoring in Eraser's existing Settings page")
+		return nil, fmt.Errorf("configure Inbox Monitoring in Delistd's existing Settings page")
 	}
 	ic.AutoArchive = false
 	monitor := inbox.NewMonitor(ic, db.Brokers)
 	if err := monitor.Connect(ctx); err != nil {
-		return nil, fmt.Errorf("inbox connection failed; check Eraser's mail settings")
+		return nil, fmt.Errorf("inbox connection failed; check Delistd's mail settings")
 	}
 	defer func() { _ = monitor.Disconnect() }()
 	emails, err := monitor.FetchBrokerEmails(ctx, 30)
@@ -68,7 +68,7 @@ func (s *Service) send(ctx context.Context, in sendInput) (map[string]any, error
 		return map[string]any{"demo": true, "sent": false, "note": "The demo does not send email."}, nil
 	}
 	if p.Config.IsManualSend() {
-		return nil, fmt.Errorf("manual send mode is enabled; use Eraser's existing draft/email UI")
+		return nil, fmt.Errorf("manual send mode is enabled; use Delistd's existing draft/email UI")
 	}
 	if p.Config.Options.DryRun {
 		return map[string]any{"dry_run": true, "sent": false}, nil
@@ -112,7 +112,7 @@ func (s *Service) send(ctx context.Context, in sendInput) (map[string]any, error
 	}
 	ec := p.Config.EmailForProfile(p.Profile)
 	if !ec.Configured() {
-		return nil, fmt.Errorf("configure email in Eraser's Settings")
+		return nil, fmt.Errorf("configure email in Delistd's Settings")
 	}
 	sender := email.NewSMTPSender(ec.SMTP, ec.From)
 	// count bounces too: a new send must not collide with an accepted message later marked bounced

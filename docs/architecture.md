@@ -8,13 +8,13 @@
 - **Database**: SQLite (for history tracking via `modernc.org/sqlite`)
 - **Config**: YAML (`gopkg.in/yaml.v3`)
 - **Browser automation**: chromedp, for `fill`/`confirm` commands and CAPTCHA detection
-- **Local agent connection**: official Go MCP SDK, STDIO transport (`eraser mcp`)
+- **Local agent connection**: official Go MCP SDK, STDIO transport (`delistd mcp`)
 
 ## Project Structure
 
 ```
-eraser/
-├── cmd/eraser/
+delistd/
+├── cmd/delistd/
 │   ├── main.go                # Root cobra.Command wiring + shared helpers (config/profile/
 │   │                           # broker path resolution) - each command's own flags and Run
 │   │                           # logic live in their own cmd_*.go file, one per command:
@@ -48,7 +48,7 @@ eraser/
 │       │                        # pipeline/tasks), handlers_api.go (HTMX JSON/fragment
 │       │                        # endpoints), handlers_jobs.go (send-job API + background
 │       │                        # send processing), handlers_settings.go, handlers_setup.go;
-│       │                        # scheduler.go runs `eraser auto --once` for schedule.enabled
+│       │                        # scheduler.go runs `delistd auto --once` for schedule.enabled
 │       │                        # (setup wizard), handlers_profile.go (profile switching)
 │       ├── job.go               # Job/JobManager - background send-job state, mutex-protected
 │       └── session.go           # Setup-wizard session store
@@ -59,7 +59,7 @@ eraser/
 └── EU-NOTES.md                  # GDPR/EU-specific setup and customization notes
 ```
 
-CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR, plus `zizmor` and `actionlint` (config: `.github/actionlint.yaml`) when workflow files change. `.github/workflows/release-please.yml` watches Conventional Commits on `main` and keeps an open release PR with the version bump and `CHANGELOG.md`; merging it tags `vX.Y.Z` and publishes a GitHub Release. That tag push fires `.github/workflows/release.yml`, which runs GoReleaser (`.goreleaser.yaml`) to cross-compile `linux/darwin/windows × amd64/arm64` (`CGO_ENABLED=0`, pure-Go SQLite) and append archives + checksums to the release release-please already created. A parallel `docker` job in the same workflow builds the distroless `Dockerfile` for `linux/amd64` and `linux/arm64` and pushes it to `ghcr.io/drumandbytes/eraser` (`vX.Y.Z`, `X.Y`, `latest`, with provenance and SBOM; no build cache), and `docker-smoke` pulls and runs it per architecture. Both smoke jobs alarm without gating the release. `main.version` is set via `-ldflags` at that point; it's `"dev"` otherwise.
+CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `golangci-lint` (config: `.golangci.yml`) on every push/PR, plus `zizmor` and `actionlint` (config: `.github/actionlint.yaml`) when workflow files change. `.github/workflows/release-please.yml` watches Conventional Commits on `main` and keeps an open release PR with the version bump and `CHANGELOG.md`; merging it tags `vX.Y.Z` and publishes a GitHub Release. That tag push fires `.github/workflows/release.yml`, which runs GoReleaser (`.goreleaser.yaml`) to cross-compile `linux/darwin/windows × amd64/arm64` (`CGO_ENABLED=0`, pure-Go SQLite) and append archives + checksums to the release release-please already created. A parallel `docker` job in the same workflow builds the distroless `Dockerfile` for `linux/amd64` and `linux/arm64` and pushes it to `ghcr.io/drumandbytes/delistd` (`vX.Y.Z`, `X.Y`, `latest`, with provenance and SBOM; no build cache), and `docker-smoke` pulls and runs it per architecture. Both smoke jobs alarm without gating the release. `main.version` is set via `-ldflags` at that point; it's `"dev"` otherwise.
 
 ## Key Concepts
 
@@ -69,7 +69,7 @@ CI (`.github/workflows/ci.yml`) runs `go build`/`go vet`/`go test -race` and `go
 server is local and serves one client session. The client supplies the AI.
 `begin_batch` and `retry_action` work only after a person approves a stored
 preview (`batch_approvals`: single use, expiring, bound to the preview's digest)
-on the web UI's Automation page or with `eraser mcp approve`; the server then
+on the web UI's Automation page or with `delistd mcp approve`; the server then
 enforces the resulting profile/task/broker scope. Changing settings invalidates
 that scope.
 
@@ -95,7 +95,7 @@ explicitly resolved owner. See [mcp.md](mcp.md) for operational limits.
 ### Broker
 `data/brokers.yaml` is compiled into the binary (`data/embed.go`, `//go:embed`).
 `broker.Load(override)` resolves it from `--brokers`, then `~/.eraser/brokers.yaml`
-(written by `eraser update-brokers`, a conditional download), then the embedded
+(written by `delistd update-brokers`, a conditional download), then the embedded
 copy - no implicit `./data` scanning. `add-broker`/`cleanup-bounces` write to a
 real path via `resolveBrokerWritePath()`.
 
@@ -121,7 +121,7 @@ Each broker in `data/brokers.yaml` (top-level key `brokers:`) has:
 - `countries`: Optional list of upper-case ISO 3166-1 alpha-2 codes (e.g. `[DE]`). When set, the default selection in `send`, `draft`, `mark-sent`, the web UI (list, send, email page) and the MCP server only includes the broker for profiles whose `country` is one of them. An empty or unrecognised profile country never hides a broker, and naming a broker with `send --broker` bypasses the scope (for example when you have a past address in that country). `list-brokers` shows the scope and the web list marks scoped brokers and says how many are hidden. For brokers that only hold one market's data and ask not to be sent requests from elsewhere
 - `notes`: Free-text, optional - used to record why an entry looks unusual (e.g. "use the form, not email")
 
-**Brokers with `email: ""`** can't be reached by `send` at all - they only take requests through a web form/DSR portal, or the address bounced and was cleared by `cleanup-bounces`/`mark-bounced`. Use `eraser list-brokers --missing-email` to see them; they need manual follow-up outside the tool.
+**Brokers with `email: ""`** can't be reached by `send` at all - they only take requests through a web form/DSR portal, or the address bounced and was cleared by `cleanup-bounces`/`mark-bounced`. Use `delistd list-brokers --missing-email` to see them; they need manual follow-up outside the tool.
 
 ### Templates
 Three email templates (`internal/template/templates/`):

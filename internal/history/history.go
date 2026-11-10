@@ -68,7 +68,7 @@ type Record struct {
 	CreatedAt      time.Time
 	PipelineStatus PipelineStatus // Current stage in pipeline
 	PipelineActor  string         // "human", "mcp:<client>", or empty for automated updates
-	SentMethod     string         // "smtp" (Eraser sent it) or "manual" (user did)
+	SentMethod     string         // "smtp" (Delistd sent it) or "manual" (user did)
 }
 
 // BrokerResponse stores a classified response from a broker
@@ -203,8 +203,8 @@ func (s *Store) migrate() error {
 	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN pipeline_status TEXT DEFAULT 'email_sent'`); err != nil {
 		return err
 	}
-	// sent_method: "smtp" (Eraser sent it) or "manual" (the user sent it by
-	// hand and recorded it with `eraser mark-sent`). Existing rows predate
+	// sent_method: "smtp" (Delistd sent it) or "manual" (the user sent it by
+	// hand and recorded it with `delistd mark-sent`). Existing rows predate
 	// manual mode, so they default to "smtp".
 	if err := addColumnIfMissing(s.db, `ALTER TABLE removal_requests ADD COLUMN sent_method TEXT DEFAULT 'smtp'`); err != nil {
 		return err
@@ -396,7 +396,7 @@ func (s *Store) GetRecentRequests(profileID string, limit int) ([]Record, error)
 
 // GetAllRequests returns every removal request for one profile, oldest first,
 // with pipeline_status included (unlike GetRecentRequests, which caps at a limit
-// and omits it). Used by `eraser export` to build the evidence report.
+// and omits it). Used by `delistd export` to build the evidence report.
 func (s *Store) GetAllRequests(profileID string) ([]Record, error) {
 	query := `
 	SELECT id, profile_id, broker_id, broker_name, email, template, status,
@@ -885,7 +885,7 @@ func (s *Store) GetAllBrokerResponses() ([]BrokerResponse, error) {
 }
 
 // GetBrokerResponsesForExport returns one profile's responses, oldest first,
-// including email_body. Used by `eraser export`.
+// including email_body. Used by `delistd export`.
 func (s *Store) GetBrokerResponsesForExport(profileID string) ([]BrokerResponse, error) {
 	return s.queryBrokerResponses(`SELECT `+brokerResponseCols+` FROM broker_responses
 		WHERE profile_id = ? ORDER BY received_at ASC, id ASC`, normalizeProfileID(profileID))

@@ -41,7 +41,7 @@ func TestLoadPreservesExplicitBrowserHeadlessFalse(t *testing.T) {
 	}
 
 	// Round-trip through Save to make sure re-saving doesn't lose it either -
-	// this is what `eraser init` now does on every update-mode run.
+	// this is what `delistd init` now does on every update-mode run.
 	savedPath := filepath.Join(t.TempDir(), "resaved.yaml")
 	if err := Save(savedPath, cfg); err != nil {
 		t.Fatalf("Save: %v", err)

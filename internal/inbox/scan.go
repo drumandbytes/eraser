@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 // ScanOptions picks what ScanAndStore reads and how it treats replies it
@@ -13,7 +13,7 @@ import (
 type ScanOptions struct {
 	Days int
 	// IncludeArchive also reads the archive folder, where earlier scans
-	// moved replies (the web UI's scans; `eraser monitor` reads INBOX only).
+	// moved replies (the web UI's scans; `delistd monitor` reads INBOX only).
 	IncludeArchive bool
 	// Reclassify re-runs the classifier on replies already stored and
 	// updates them in place (the web UI's rescan).

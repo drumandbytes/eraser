@@ -1,9 +1,9 @@
-# Contributing to Eraser
+# Contributing to Delistd
 
 Thanks for taking the time to contribute. The most helpful things:
 
-- **Adding brokers** — the database at `data/brokers.yaml` can always use more entries; broker contact details also go stale. Not up for a PR? [Report a broker](https://github.com/drumandbytes/eraser/issues/new?template=broker.yml) (new, changed, dead, or an unusual reply)
-- **Mail providers** — a preset for an email provider that isn't in the setup wizard yet, or a report that one doesn't work: [open a mail provider issue](https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml) or see [Adding a mail provider](#adding-a-mail-provider)
+- **Adding brokers** — the database at `data/brokers.yaml` can always use more entries; broker contact details also go stale. Not up for a PR? [Report a broker](https://github.com/drumandbytes/delistd/issues/new?template=broker.yml) (new, changed, dead, or an unusual reply)
+- **Mail providers** — a preset for an email provider that isn't in the setup wizard yet, or a report that one doesn't work: [open a mail provider issue](https://github.com/drumandbytes/delistd/issues/new?template=mail_provider.yml) or see [Adding a mail provider](#adding-a-mail-provider)
 - **Privacy authorities** — `data/authorities.yaml` isn't exhaustive and links move; corrections and additions welcome
 - **Template improvements** — better wording for removal requests
 - **Bug fixes** — found something broken? PRs welcome
@@ -16,7 +16,7 @@ Open an issue first for anything non-trivial (a feature, a refactor, a behavior 
 Needs [Go](https://go.dev/dl/). Then:
 
 ```bash
-go build -o eraser ./cmd/eraser
+go build -o delistd ./cmd/delistd
 go vet ./...
 go test ./...
 ```
@@ -25,7 +25,7 @@ go test ./...
 
 ## Adding or updating a broker
 
-`data/brokers.yaml` is compiled into the binary, so a downloaded `eraser` is self-contained. Each entry:
+`data/brokers.yaml` is compiled into the binary, so a downloaded `delistd` is self-contained. Each entry:
 
 ```yaml
 - id: example-broker
@@ -37,17 +37,17 @@ go test ./...
   category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, device-id-only, or requires-id
 ```
 
-`./eraser add-broker` does this interactively. Before opening a PR, run:
+`./delistd add-broker` does this interactively. Before opening a PR, run:
 
 ```bash
-go run ./cmd/eraser validate-brokers
+go run ./cmd/delistd validate-brokers
 ```
 
 This checks ids, names, regions, emails, and URLs, and rejects a list with fewer than 200 entries (a sign it was truncated). If you're editing an entry in response to a broker's reply to an actual removal request, [docs/broker-replies.md](docs/broker-replies.md) has the classification table (which reply types need `email: ""`, a `notes:` line, or removing the entry entirely).
 
 ## Adding a mail provider
 
-Eraser talks plain SMTP (sending) and IMAP (reply monitoring) to any provider. The setup wizard, `eraser init`, and `eraser profile` offer presets so users only type an address and an app password. Adding one is one entry in `Providers` in [`internal/config/providers.go`](internal/config/providers.go):
+Delistd talks plain SMTP (sending) and IMAP (reply monitoring) to any provider. The setup wizard, `delistd init`, and `delistd profile` offer presets so users only type an address and an app password. Adding one is one entry in `Providers` in [`internal/config/providers.go`](internal/config/providers.go):
 
 ```go
 {ID: "example", Name: "Example Mail", SMTPHost: "smtp.example.org", SMTPPort: 465, IMAPHost: "imap.example.org", IMAPPort: 993,
@@ -57,7 +57,7 @@ Eraser talks plain SMTP (sending) and IMAP (reply monitoring) to any provider. T
 - There's no TLS setting: ports 465/993 use TLS from the start, any other port must offer STARTTLS. Hosts on localhost (bridges like Proton's) skip certificate verification.
 - Leave `IMAPHost` empty for send-only services (like Amazon SES); replies then go to a separate inbox.
 - If you can't test the preset with a real account, put "unverified" in its `Name` and ask for reports in its `Note` (the Proton preset did until a user confirmed it). Remove the label once someone confirms it works.
-- Keep `custom` last. The CLI menu is numbered in slice order, so if you insert before an existing entry, update `cmd/eraser/mail_prompt_test.go`.
+- Keep `custom` last. The CLI menu is numbered in slice order, so if you insert before an existing entry, update `cmd/delistd/mail_prompt_test.go`.
 - Add a row to the provider table in the README ("Setting Up Your Email Account").
 - Providers that only allow OAuth sign-in (e.g. Outlook.com) can't be a preset yet: there's no OAuth support.
 
@@ -75,7 +75,7 @@ This is a single-maintainer project, so PRs aren't blocked on a second approval,
 
 ## Reporting a security issue
 
-See the org-wide [Security Policy](https://github.com/drumandbytes/.github/blob/main/SECURITY.md) — please don't open a public issue for a vulnerability. See the [Security Notes](README.md#security-notes) section of the README for how Eraser itself handles your credentials and personal data locally.
+See the org-wide [Security Policy](https://github.com/drumandbytes/.github/blob/main/SECURITY.md) — please don't open a public issue for a vulnerability. See the [Security Notes](README.md#security-notes) section of the README for how Delistd itself handles your credentials and personal data locally.
 
 ## License
 

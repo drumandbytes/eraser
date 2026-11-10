@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/history"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -93,7 +93,7 @@ func (s *Server) handleAPIMarkSent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleAPIMarkBounced is `eraser mark-bounced` for one broker: flips the
+// handleAPIMarkBounced is `delistd mark-bounced` for one broker: flips the
 // active profile's latest "sent" record to failed so the next send retries it.
 func (s *Server) handleAPIMarkBounced(w http.ResponseWriter, r *http.Request) {
 	brokerID := chi.URLParam(r, "brokerID")
@@ -114,7 +114,7 @@ func (s *Server) handleAPIMarkBounced(w http.ResponseWriter, r *http.Request) {
 	s.handleAPIBrokerStatus(w, r)
 }
 
-// handleBrokerNew is `eraser add-broker`: the entry goes to the user's own
+// handleBrokerNew is `delistd add-broker`: the entry goes to the user's own
 // brokers file (broker.LocalPath), which update-brokers never touches.
 func (s *Server) handleBrokerNew(w http.ResponseWriter, r *http.Request) {
 	render := func(b broker.Broker, errors map[string]string) {

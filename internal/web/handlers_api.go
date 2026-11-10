@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/inbox"
-	"github.com/drumandbytes/eraser/internal/reclassify"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/inbox"
+	"github.com/drumandbytes/delistd/internal/reclassify"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -239,7 +239,7 @@ func (s *Server) inboxConfigured(r *http.Request) bool {
 }
 
 // scanInbox scans the active profile's own inbox (its mail.inbox override,
-// or the shared inbox: block) - `eraser monitor` and automated cycles cover
+// or the shared inbox: block) - `delistd monitor` and automated cycles cover
 // every configured inbox.
 func (s *Server) scanInbox(w http.ResponseWriter, r *http.Request, opt inbox.ScanOptions, timeout time.Duration) {
 	if !s.inboxConfigured(r) {
@@ -307,7 +307,7 @@ func writeScanAlert(w http.ResponseWriter, kind, title, detail string) {
 }
 
 // handleAPIReclassify reclassifies all saved replies (shared with
-// `eraser monitor --reclassify`).
+// `delistd monitor --reclassify`).
 func (s *Server) handleAPIReclassify(w http.ResponseWriter, r *http.Request) {
 	if s.historyStore == nil {
 		writeScanAlert(w, "error", "Database not available.", "")

@@ -20,7 +20,7 @@ import (
 // AES-256-GCM under a key derived from this machine's ID and the current
 // user. A config copied to another machine (backup, dotfile sync, a pasted
 // file) can't be decrypted there; someone logged in as you on this machine
-// still can, as they could by running Eraser. That is the trade for sending
+// still can, as they could by running Delistd. That is the trade for sending
 // unattended without a passphrase or keychain.
 const secretPrefix = "enc:v1:"
 
@@ -160,7 +160,7 @@ func (c *Config) cloneForSecrets() *Config {
 
 // ErrLocked means a passphrase-protected password was needed but nobody could
 // be asked (an unattended run).
-var ErrLocked = errors.New("the stored passwords are protected by a passphrase and this run can't ask for it; run `eraser auto` or `eraser serve` and enter it there, or remove it with `eraser passphrase clear`")
+var ErrLocked = errors.New("the stored passwords are protected by a passphrase and this run can't ask for it; run `delistd auto` or `delistd serve` and enter it there, or remove it with `delistd passphrase clear`")
 
 var (
 	unlockMu sync.Mutex

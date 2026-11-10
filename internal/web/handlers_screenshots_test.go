@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 func TestTaskScreenshotOwnershipAndFileBoundary(t *testing.T) {

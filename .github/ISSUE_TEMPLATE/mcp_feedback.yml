@@ -1,11 +1,11 @@
 name: MCP feedback
-description: Tell us how the experimental eraser mcp agent integration worked, or what broke
+description: Tell us how the experimental delistd mcp agent integration worked, or what broke
 labels: [mcp]
 body:
   - type: markdown
     attributes:
       value: |
-        `eraser mcp` is experimental, so reports of what worked are as useful as bugs. See [docs/mcp.md](https://github.com/drumandbytes/eraser/blob/main/docs/mcp.md) for the known limits.
+        `delistd mcp` is experimental, so reports of what worked are as useful as bugs. See [docs/mcp.md](https://github.com/drumandbytes/delistd/blob/main/docs/mcp.md) for the known limits.
 
         **Don't paste personal data**: no profile details, mailbox content or screenshots that show your information. Report security problems privately, not here.
   - type: dropdown
@@ -31,8 +31,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Eraser version
-      description: Run `eraser --version`.
+      label: Delistd version
+      description: Run `delistd --version`.
       placeholder: e.g. 1.3.1
     validations:
       required: true

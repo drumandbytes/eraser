@@ -1,9 +1,9 @@
 {{- /* <title> and og:title. Keeps the whole title within 60 characters (Truncate may append " …" to its limit, hence 58): the
-       " · Eraser" suffix is dropped when a long page title leaves no room for it. */ -}}
-{{- $title := "Eraser — data broker removal" -}}
+       " · Delistd" suffix is dropped when a long page title leaves no room for it. */ -}}
+{{- $title := "Delistd — data broker removal" -}}
 {{- if not .IsHome -}}
   {{- $title = strings.Truncate 58 .Title -}}
-  {{- $full := printf "%s · Eraser" $title -}}
+  {{- $full := printf "%s · Delistd" $title -}}
   {{- if le (strings.RuneCount $full) 60 }}{{ $title = $full }}{{ end -}}
 {{- end -}}
 {{- return $title -}}

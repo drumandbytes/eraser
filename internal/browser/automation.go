@@ -19,7 +19,7 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // URLPolicy is scoped to one broker, never the whole directory. Only the hosts in
@@ -344,7 +344,7 @@ func (s *AutomationSession) Observe(caller context.Context) (*Snapshot, error) {
 		if err != nil {
 			return err
 		}
-		s.world, err = page.CreateIsolatedWorld(tree.Frame.ID).WithWorldName("eraser-automation").Do(ctx)
+		s.world, err = page.CreateIsolatedWorld(tree.Frame.ID).WithWorldName("delistd-automation").Do(ctx)
 		return err
 	})); err != nil {
 		return nil, err
@@ -397,7 +397,7 @@ func (s *AutomationSession) Act(caller context.Context, snapshot, ref, action, v
 		URL   string `json:"url"`
 		Error string `json:"error"`
 	}
-	if err := s.evaluate(ctx, `((a) => { const e = globalThis.__eraserNodes?.[Number(a.ref.slice(1))]; if (!e || !e.isConnected || !/^e\d+$/.test(a.ref)) return {error:'Control changed; observe again'}; return {url: e.href || e.formAction || e.form?.action || location.href}; })(`+string(arg)+`)`, &target); err != nil {
+	if err := s.evaluate(ctx, `((a) => { const e = globalThis.__delistdNodes?.[Number(a.ref.slice(1))]; if (!e || !e.isConnected || !/^e\d+$/.test(a.ref)) return {error:'Control changed; observe again'}; return {url: e.href || e.formAction || e.form?.action || location.href}; })(`+string(arg)+`)`, &target); err != nil {
 		return nil, err
 	}
 	if target.Error != "" {
@@ -432,7 +432,7 @@ func (s *AutomationSession) Act(caller context.Context, snapshot, ref, action, v
 const observeAutomationJS = `(() => {
  const visible = e => !!(e.getClientRects().length) && getComputedStyle(e).visibility !== 'hidden';
  const nodes = Array.from(document.querySelectorAll('input,select,textarea,button,a[href],[role="button"]')).filter(visible).slice(0,150);
- globalThis.__eraserNodes = nodes;
+ globalThis.__delistdNodes = nodes;
  const label = e => { if(e.labels?.[0]) { const l=e.labels[0].cloneNode(true); l.querySelectorAll('input,select,textarea,button').forEach(n=>n.remove()); return l.textContent; } return e.getAttribute('aria-label')||e.innerText||e.placeholder||e.name||''; };
  const sensitive = e => ['password','file'].includes(e.type)||['one-time-code','current-password','new-password'].includes(e.autocomplete)||/^(otp|passcode|ssn|passport|national.?id|id.?number)$/i.test(e.name||e.id||'');
  const controls = nodes.map((e,i) => ({ref:'e'+i, tag:e.tagName.toLowerCase(), type:e.type||'', label:label(e).trim().replace(/\s+/g,' ').slice(0,200), value:sensitive(e)?'':String(e.value||'').slice(0,500), required:!!e.required, options:e.options?Array.from(e.options).map(o=>o.text):undefined}));
@@ -447,7 +447,7 @@ const observeAutomationJS = `(() => {
 })()`
 
 const actAutomationJS = `(a) => {
- const e = globalThis.__eraserNodes?.[Number(a.ref.slice(1))];
+ const e = globalThis.__delistdNodes?.[Number(a.ref.slice(1))];
  if (!e || !e.isConnected || e.disabled || !e.getClientRects().length) return 'Control unavailable; observe again';
  if (['password','file'].includes(e.type)||['one-time-code','current-password','new-password'].includes(e.autocomplete)||/^(otp|passcode|ssn|passport|national.?id|id.?number)$/i.test(e.name||e.id||'')) return 'This field requires the user';
  if (a.action==='click') {

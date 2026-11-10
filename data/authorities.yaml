@@ -1,7 +1,7 @@
 # Privacy / data protection authorities, worldwide.
 #
 # Where to complain if a data broker ignores or refuses a deletion request.
-# `eraser export` names the authority for the data subject's `country`; the
+# `delistd export` names the authority for the data subject's `country`; the
 # docs site renders the whole table grouped by `region`.
 #
 # EU/EEA entries are the GDPR supervisory authorities from the EDPB members

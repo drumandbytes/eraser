@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // optOutSite serves one opt-out page and records the submitted form.
@@ -107,7 +107,7 @@ func TestNavigateAndFillSubmitsForm(t *testing.T) {
 	}
 }
 
-// One Browser fills several forms in a row, as `eraser fill --pending` does.
+// One Browser fills several forms in a row, as `delistd fill --pending` does.
 func TestNavigateAndFillReusesBrowser(t *testing.T) {
 	b := chromeBrowser(t, chromeConfig(t))
 	for i := 0; i < 2; i++ {

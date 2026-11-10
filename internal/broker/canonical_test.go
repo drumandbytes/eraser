@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/drumandbytes/eraser/data"
+	"github.com/drumandbytes/delistd/data"
 	"gopkg.in/yaml.v3"
 )
 

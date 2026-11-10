@@ -36,7 +36,7 @@ func TestIsLoopbackListen(t *testing.T) {
 		"0.0.0.0":   false,
 		"::":        false,
 		"10.0.0.5":  false,
-		"eraser":    false,
+		"delistd":   false,
 	} {
 		if got := IsLoopbackListen(host); got != want {
 			t.Errorf("IsLoopbackListen(%q) = %v, want %v", host, got, want)

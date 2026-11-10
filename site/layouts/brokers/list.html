@@ -1,14 +1,14 @@
 {{ define "main" }}
 <article class="prose">
   <h1>Broker directory</h1>
-  <p>Eraser sends removal requests to {{ len .Site.Data.brokers.brokers }} data brokers. {{ len .Pages }} of them
+  <p>Delistd sends removal requests to {{ len .Site.Data.brokers.brokers }} data brokers. {{ len .Pages }} of them
   have a full opt-out guide, listed below and marked <strong>guide</strong> in the
   full list. The rest are mostly advertising / data-append brokers you remove with
   the same GDPR or CCPA email — see
   <a href="{{ "/guides/opting-out-of-advertising-data-brokers/" | relURL }}">the adtech guide</a>.</p>
   <p class="meta">The list is a work in progress — new brokers appear, contact
   details change. Missing one, or spotted a bad address?
-  <a href="https://github.com/drumandbytes/eraser/issues/new">Let us know.</a></p>
+  <a href="https://github.com/drumandbytes/delistd/issues/new">Let us know.</a></p>
 
   <h2>Opt-out guides</h2>
   <ul class="guide-links">

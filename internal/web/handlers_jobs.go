@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/email"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/email"
+	"github.com/drumandbytes/delistd/internal/history"
 	"github.com/go-chi/chi/v5"
 )
 

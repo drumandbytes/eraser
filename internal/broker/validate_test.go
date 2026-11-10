@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/data"
+	"github.com/drumandbytes/delistd/data"
 )
 
 // TestEmbeddedBrokerDataValid is the CI guard: the broker list shipped in the

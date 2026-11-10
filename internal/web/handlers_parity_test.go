@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 func parityServer(t *testing.T) *Server {
@@ -36,13 +36,13 @@ func parityServer(t *testing.T) *Server {
 	return s
 }
 
-// The web download is the same report `eraser export` writes.
+// The web download is the same report `delistd export` writes.
 func TestHandleExportDownloadsActiveProfileReport(t *testing.T) {
 	s := parityServer(t)
 
 	rec := httptest.NewRecorder()
 	s.handleExport(rec, httptest.NewRequest(http.MethodGet, "/export?format=json", nil))
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Header().Get("Content-Disposition"), `attachment; filename="eraser-evidence-default-`) {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Header().Get("Content-Disposition"), `attachment; filename="delistd-evidence-default-`) {
 		t.Fatalf("got %d, disposition %q", rec.Code, rec.Header().Get("Content-Disposition"))
 	}
 	var rep struct {
@@ -69,7 +69,7 @@ func TestHandleExportDownloadsActiveProfileReport(t *testing.T) {
 	}
 }
 
-// Same as `eraser mark-bounced`: the latest sent record becomes failed.
+// Same as `delistd mark-bounced`: the latest sent record becomes failed.
 func TestHandleAPIMarkBounced(t *testing.T) {
 	s := parityServer(t)
 
@@ -91,7 +91,7 @@ func TestHandleAPIMarkBounced(t *testing.T) {
 	}
 }
 
-// Same as `eraser update-brokers`, plus the running server switches to the
+// Same as `delistd update-brokers`, plus the running server switches to the
 // new list without a restart.
 func TestHandleSettingsBrokersUpdateReloadsList(t *testing.T) {
 	testenv.SetHome(t, t.TempDir())
@@ -119,7 +119,7 @@ func TestHandleSettingsBrokersUpdateReloadsList(t *testing.T) {
 	}
 }
 
-// Same as `eraser add-broker`: saved to the user's own brokers file and live
+// Same as `delistd add-broker`: saved to the user's own brokers file and live
 // in the running server's list straight away.
 func TestHandleBrokerNew(t *testing.T) {
 	testenv.SetHome(t, t.TempDir())

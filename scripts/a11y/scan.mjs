@@ -14,7 +14,7 @@ for (const url of urls) {
     const page = await browser.newPage();
     await page.setBypassCSP(true);
     await page.emulateMediaFeatures([{ name: "prefers-color-scheme", value: scheme }, { name: "prefers-reduced-motion", value: "reduce" }]);
-    await page.evaluateOnNewDocument((s) => { try { localStorage.setItem("eraser-theme", s); } catch {} }, scheme);
+    await page.evaluateOnNewDocument((s) => { try { localStorage.setItem("delistd-theme", s); } catch {} }, scheme);
     await page.goto(url, { waitUntil: "networkidle0" });
     await new Promise((r) => setTimeout(r, 1000)); // let entrance animations settle, axe reads mid-fade colours
     await page.evaluate(axe);

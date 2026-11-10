@@ -1,13 +1,13 @@
 # Merge these tables into your Codex config; replace the absolute command path.
-# Do not put email credentials in this file. Eraser reads its existing config.
+# Do not put email credentials in this file. Delistd reads its existing config.
 [mcp_servers.eraser]
-command = "/absolute/path/to/eraser"
+command = "/absolute/path/to/delistd"
 args = ["mcp"]
 startup_timeout_sec = 20
 tool_timeout_sec = 60
 default_tools_approval_mode = "approve"
 
-# Optional: Eraser already needs approval in its web UI or `eraser mcp approve`
+# Optional: Delistd already needs approval in its web UI or `delistd mcp approve`
 # for these two. Keep the prompts if you want a second check in Codex too.
 [mcp_servers.eraser.tools.begin_batch]
 approval_mode = "prompt"

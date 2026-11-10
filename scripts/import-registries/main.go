@@ -6,7 +6,7 @@
 // websites, not stable APIs, so fetching those is a manual step - see
 // docs/auditing.md for the URLs. The IAB GVL is a public JSON the tool fetches
 // itself. Either way this tool does the tedious half: it normalises the rows,
-// diffs them against the list already embedded in eraser, and writes two files:
+// diffs them against the list already embedded in delistd, and writes two files:
 //
 //	candidates.yaml - rows with no obvious match in the current list, in
 //	                  brokers.yaml shape, ready for you to add email/opt_out_url
@@ -41,7 +41,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/delistd/internal/broker"
 	"gopkg.in/yaml.v3"
 )
 
@@ -237,7 +237,7 @@ func readGVL(src string, includeAll bool) ([]row, error) {
 	if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
 		client := &http.Client{Timeout: 30 * time.Second}
 		req, _ := http.NewRequest(http.MethodGet, src, nil)
-		req.Header.Set("User-Agent", "eraser-import-registries")
+		req.Header.Set("User-Agent", "delistd-import-registries")
 		resp, e := client.Do(req)
 		if e != nil {
 			return nil, fmt.Errorf("fetching GVL: %w", e)

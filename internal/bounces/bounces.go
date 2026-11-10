@@ -1,4 +1,4 @@
-// Package bounces finds broker addresses that bounced, and clears them. `eraser
+// Package bounces finds broker addresses that bounced, and clears them. `delistd
 // cleanup-bounces` and the web UI's bounce check share it.
 package bounces
 
@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/inbox"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/inbox"
 )
 
 // Kind says what a scanned bounce turned out to be.

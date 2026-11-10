@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	emailtmpl "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	emailtmpl "github.com/drumandbytes/delistd/internal/template"
 )
 
 func testProfile() config.Profile {

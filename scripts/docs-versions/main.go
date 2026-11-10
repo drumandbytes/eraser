@@ -26,7 +26,7 @@ import (
 // pages are the user-facing docs. Developer notes stay out of the site.
 var pages = []string{"getting-started", "commands", "multi-profile", "mcp", "stability", "broker-replies"}
 
-const repoURL = "https://github.com/drumandbytes/eraser"
+const repoURL = "https://github.com/drumandbytes/delistd"
 
 type Version struct {
 	Slug   string   `json:"slug"`
@@ -198,12 +198,12 @@ func render(name, body string, v Version) string {
 // first paragraphs of the markdown are code blocks or callouts, so they can't
 // be lifted automatically.
 var docDescriptions = map[string]string{
-	"getting-started": "Step-by-step setup for first-time users: download Eraser, create a Gmail app password, run the setup wizard and send your first removal requests.",
-	"commands":        "Every Eraser command, flag and config.yaml key: sending removal requests, monitoring your inbox, and running the local web UI.",
-	"broker-replies":  "How to handle data broker replies to your removal requests: confirmations, ID checks, refusals, and what Eraser classifies automatically.",
-	"mcp":             "Run Eraser's local MCP server so an agent can work through broker follow-ups while you review batches and handle verification.",
-	"multi-profile":   "Send and track removal requests for more than one person from a single Eraser install, with fully separate history per profile.",
-	"stability":       "What Eraser's semantic versioning promises in 1.x: the config, CLI, data and API surface that will not break between minor releases.",
+	"getting-started": "Step-by-step setup for first-time users: download Delistd, create a Gmail app password, run the setup wizard and send your first removal requests.",
+	"commands":        "Every Delistd command, flag and config.yaml key: sending removal requests, monitoring your inbox, and running the local web UI.",
+	"broker-replies":  "How to handle data broker replies to your removal requests: confirmations, ID checks, refusals, and what Delistd classifies automatically.",
+	"mcp":             "Run Delistd's local MCP server so an agent can work through broker follow-ups while you review batches and handle verification.",
+	"multi-profile":   "Send and track removal requests for more than one person from a single Delistd install, with fully separate history per profile.",
+	"stability":       "What Delistd's semantic versioning promises in 1.x: the config, CLI, data and API surface that will not break between minor releases.",
 }
 
 func git(repo string, args ...string) ([]byte, error) {
@@ -255,7 +255,7 @@ func run(repo, siteDir string) error {
 			}
 			v.Pages = append(v.Pages, page)
 		}
-		index := fmt.Sprintf("---\ntitle: %s\ndescription: %s\ndocs_version: %s\ndocs_status: %s\n", strconv.Quote("Eraser "+v.Label+" documentation"), strconv.Quote("Documentation for Eraser "+v.Label+": commands and configuration, broker replies, multi-profile setup, MCP automation and the stability policy."), strconv.Quote(v.Slug), strconv.Quote(v.Status))
+		index := fmt.Sprintf("---\ntitle: %s\ndescription: %s\ndocs_version: %s\ndocs_status: %s\n", strconv.Quote("Delistd "+v.Label+" documentation"), strconv.Quote("Documentation for Delistd "+v.Label+": commands and configuration, broker replies, multi-profile setup, MCP automation and the stability policy."), strconv.Quote(v.Slug), strconv.Quote(v.Status))
 		if !v.Latest {
 			index += "robots: noindex\nsitemap:\n  disable: true\n"
 		}

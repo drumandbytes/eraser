@@ -34,7 +34,7 @@ func (s *Store) CreateBatchApproval(a BatchApproval) error {
 	return err
 }
 
-// ApproveBatch is the web UI / `eraser mcp approve` side: pending and unexpired only, once.
+// ApproveBatch is the web UI / `delistd mcp approve` side: pending and unexpired only, once.
 func (s *Store) ApproveBatch(planID, approver string) error {
 	r, err := s.db.Exec(`UPDATE batch_approvals SET approved_at = ?, approved_by = ?
 		WHERE plan_id = ? AND approved_at IS NULL AND consumed_at IS NULL AND expires_at > ?`,

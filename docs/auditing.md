@@ -38,12 +38,12 @@ go run ./scripts/import-registries -csv registry.csv \
 It diffs the rows against the embedded list and writes `candidates.yaml` (likely
 new, in `brokers.yaml` shape) and `review.md` (fuzzy matches to eyeball). Fill in
 `category` and a working `email`/`opt_out_url` for the candidates you keep, move
-them into `data/brokers.yaml`, then run `eraser audit-brokers` to drop any that
+them into `data/brokers.yaml`, then run `delistd audit-brokers` to drop any that
 are already dead. Both output files are gitignored.
 
 ### The verified list (`data/brokers-verified.yaml`)
 
-A second, smaller embedded list offered as `eraser send --list verified` /
+A second, smaller embedded list offered as `delistd send --list verified` /
 `options.broker_list: verified`. The bar for an entry: a company we can
 confidently call a data broker (US: cross-checkable against a state registry;
 elsewhere: a regulator-recognized credit bureau or established data-intelligence
@@ -64,7 +64,7 @@ go run ./scripts/import-registries -csv ca-registry.csv -name-col "Data Broker N
 go run ./scripts/import-registries -gvl https://vendor-list.consensu.org/v3/vendor-list.json
 ```
 
-`eraser validate-brokers` (no arg) checks this list too, with a lower entry-count
+`delistd validate-brokers` (no arg) checks this list too, with a lower entry-count
 floor (`MinVerifiedBrokerCount`).
 
 ### The EU/EEA side
@@ -103,12 +103,12 @@ public. So EU expansion is per-country research. The sources worth mining:
 
 Two checks, both also wired into CI:
 
-- **Structure** - `eraser validate-brokers` (or `go test ./internal/broker/...`,
+- **Structure** - `delistd validate-brokers` (or `go test ./internal/broker/...`,
   which runs `Validate` against the embedded copy on every PR): a sane entry
   count, required `id`/`name`, unique ids, known `region` values, plausible
-  emails, well-formed URLs. Run `eraser validate-brokers candidates.yaml` before
+  emails, well-formed URLs. Run `delistd validate-brokers candidates.yaml` before
   merging a batch from the importer.
-- **Liveness** - `.github/workflows/broker-audit.yml` runs `eraser audit-brokers
+- **Liveness** - `.github/workflows/broker-audit.yml` runs `delistd audit-brokers
   --fix` every Monday. `--fix` clears the email of any broker whose mail domain is
   dead (MX and host lookup both fail) - keeping the row, blanking the address, and
   appending a dated note - then the workflow opens a PR against `data/brokers.yaml`
@@ -117,7 +117,7 @@ Two checks, both also wired into CI:
   auto-edited) by hand. A "No working channel left" section lists entries whose
   email is dead *and* whose website is unreachable with no `opt_out_url` - remove
   those by hand rather than keeping a row nobody can contact. Also runnable from
-  the Actions tab on demand. Run `eraser audit-brokers --fix` locally with
+  the Actions tab on demand. Run `delistd audit-brokers --fix` locally with
   `--brokers <path>` to do the same to a working copy.
 - **Canonical formatting** - `--fix` (and the bounce tooling) save with
   `yaml.Marshal`, so a hand-edited list that isn't already in that form is

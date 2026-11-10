@@ -14,7 +14,7 @@ import (
 // DefaultUpdateURL is where `update-brokers` and the web UI's update button
 // fetch the current list from. Every 1.x release reads it, so the format may
 // only gain optional fields (docs/stability.md).
-const DefaultUpdateURL = "https://raw.githubusercontent.com/drumandbytes/eraser/main/data/brokers.yaml"
+const DefaultUpdateURL = "https://raw.githubusercontent.com/drumandbytes/delistd/main/data/brokers.yaml"
 
 // UpdateResult reports what Update did. Changed is false when the server
 // answered 304 (nothing new); with checkOnly, Changed means "an update is
@@ -57,7 +57,7 @@ func Update(ctx context.Context, url string, checkOnly bool) (UpdateResult, erro
 	if saved, _ := os.ReadFile(etagPath()); len(saved) > 0 {
 		req.Header.Set("If-None-Match", strings.TrimSpace(string(saved)))
 	}
-	req.Header.Set("User-Agent", "eraser-update-brokers")
+	req.Header.Set("User-Agent", "delistd-update-brokers")
 
 	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {

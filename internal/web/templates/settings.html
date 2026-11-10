@@ -252,7 +252,7 @@
                 </form>
             </div>
             <p class="text-xs text-muted mt-3">
-                Each broker is re-sent 25 days after its last request, within your daily limit. {{if .Supported}}The OS schedule keeps working with this app closed; the in-app option only runs while it's open.{{else}}Your OS has no supported scheduler, so automation runs while this app is open (or run <code>eraser auto</code> in a terminal).{{end}}
+                Each broker is re-sent 25 days after its last request, within your daily limit. {{if .Supported}}The OS schedule keeps working with this app closed; the in-app option only runs while it's open.{{else}}Your OS has no supported scheduler, so automation runs while this app is open (or run <code>delistd auto</code> in a terminal).{{end}}
             </p>
 
             {{if .Message}}
@@ -278,7 +278,7 @@
             </div>
             <p class="text-sm text-secondary mb-3">Mail passwords are always encrypted for this machine and user. A passphrase also stops someone logged in as you from using them.</p>
             <div class="alert alert-warning mb-4 text-sm">
-                <strong>Heads-up:</strong> with a passphrase, runs with nobody at the keyboard can't unlock your mail password. The OS schedule (<em>Schedule with my OS</em>) is refused, and <code>eraser serve</code> or <code>eraser auto</code> ask once at startup. There is no recovery; if you forget it, re-enter your mail passwords.
+                <strong>Heads-up:</strong> with a passphrase, runs with nobody at the keyboard can't unlock your mail password. The OS schedule (<em>Schedule with my OS</em>) is refused, and <code>delistd serve</code> or <code>delistd auto</code> ask once at startup. There is no recovery; if you forget it, re-enter your mail passwords.
             </div>
             <form method="POST" action="/settings/passphrase#passphrase" class="space-y-4">
                 {{$.CSRFField}}
@@ -341,7 +341,7 @@
                     </div>
                     <label class="flex items-start gap-2 text-secondary">
                         <input type="checkbox" name="manual_send" value="1" class="mt-1"{{if .Config.IsManualSend}} checked{{end}}>
-                        <span>I send the emails myself <span class="block text-xs text-muted">Eraser renders each email for you to send from your own mail client and you mark it sent. No email account needed; any saved one is kept.</span></span>
+                        <span>I send the emails myself <span class="block text-xs text-muted">Delistd renders each email for you to send from your own mail client and you mark it sent. No email account needed; any saved one is kept.</span></span>
                     </label>
                     <div>
                         <label for="opt-daily" class="text-sm text-muted">Daily send limit</label>
@@ -375,7 +375,7 @@
             {{end}}
         </div>
 
-        <!-- Broker List Section: same as `eraser update-brokers` -->
+        <!-- Broker List Section: same as `delistd update-brokers` -->
         <div class="card p-6" id="broker-list">
             <div class="flex items-center gap-3 mb-6">
                 <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: var(--accent-muted);">
@@ -391,7 +391,7 @@
                     <p class="text-secondary">{{.BrokerCount}} brokers{{if .OwnBrokers}}, including {{.OwnBrokers}} you added (kept across updates){{end}}</p>
                 </div>
             </div>
-            <p class="text-sm text-secondary mb-4">The list ships with Eraser and is updated in the public repository as brokers appear, move or shut down. Fetching it only downloads the list - nothing about you is sent.</p>
+            <p class="text-sm text-secondary mb-4">The list ships with Delistd and is updated in the public repository as brokers appear, move or shut down. Fetching it only downloads the list - nothing about you is sent.</p>
             <form method="POST" action="/settings/brokers/update">
                 {{.CSRFField}}
                 <button type="submit" class="btn btn-secondary w-full">Check for broker list updates</button>

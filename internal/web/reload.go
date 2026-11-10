@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // fileStamp identifies a config file version cheaply; "" when it can't be read.
@@ -19,8 +19,8 @@ func fileStamp(path string) string {
 }
 
 // refreshConfig reloads config.yaml when it changed on disk, so edits made
-// with the CLI (`eraser init`, `profile edit`, ...) show up in a running
-// `eraser serve` without a restart. A file that fails to load keeps the
+// with the CLI (`delistd init`, `profile edit`, ...) show up in a running
+// `delistd serve` without a restart. A file that fails to load keeps the
 // current config; the next change is tried again.
 func (s *Server) refreshConfig() {
 	if s.configPath == "" {

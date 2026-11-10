@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/browser"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/browser"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 // stepPage is a form with a second step: a click moves to a new page that still

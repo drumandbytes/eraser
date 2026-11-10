@@ -5,7 +5,7 @@
 {{- $desc := or .Description .Site.Params.description -}}
 {{- $org := dict "@type" "Organization" "name" "Drum and Bytes" "url" "https://drumandbytes.com" -}}
 <meta property="og:type" content="{{ cond .IsPage "article" "website" }}">
-<meta property="og:site_name" content="Eraser">
+<meta property="og:site_name" content="Delistd">
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ $desc }}">
 <meta property="og:url" content="{{ .Permalink }}">
@@ -13,7 +13,7 @@
 <meta property="og:image" content="{{ $img }}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Eraser: send data removal requests to 700+ data brokers">
+<meta property="og:image:alt" content="Delistd: send data removal requests to 700+ data brokers">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="{{ $img }}">
 <meta name="twitter:title" content="{{ $title }}">
@@ -23,8 +23,8 @@
   {{- $ld = dict
       "@context" "https://schema.org"
       "@graph" (slice
-        (dict "@type" "WebSite" "name" "Eraser" "url" .Site.BaseURL "description" $desc "publisher" $org)
-        (dict "@type" "SoftwareApplication" "name" "Eraser"
+        (dict "@type" "WebSite" "name" "Delistd" "url" .Site.BaseURL "description" $desc "publisher" $org)
+        (dict "@type" "SoftwareApplication" "name" "Delistd"
               "applicationCategory" "SecurityApplication"
               "operatingSystem" "macOS, Linux, Windows"
               "url" .Site.BaseURL
@@ -53,7 +53,7 @@
       "name" .Title
       "description" $desc
       "url" .Permalink
-      "isPartOf" (dict "@type" "WebSite" "name" "Eraser" "url" .Site.BaseURL)
+      "isPartOf" (dict "@type" "WebSite" "name" "Delistd" "url" .Site.BaseURL)
   -}}
 {{- end -}}
 <script type="application/ld+json">{{ $ld | jsonify | safeJS }}</script>

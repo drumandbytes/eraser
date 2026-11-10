@@ -35,14 +35,14 @@ You do not have to give a reason. "The data is no longer necessary for the
 purpose it was collected" and "I object to the processing" (Article 17(1)(a) and
 (c)) both apply to a broker by default.
 
-Eraser's `gdpr` template covers all of this. To send it yourself, run
-`eraser draft <broker-id>` (or open the **Email** page in the web UI) and paste
+Delistd's `gdpr` template covers all of this. To send it yourself, run
+`delistd draft <broker-id>` (or open the **Email** page in the web UI) and paste
 the result into your mail client.
 
 ## Who to send it to
 
 The broker's privacy or data-protection address. The [broker directory](/brokers/)
-lists the address Eraser has on file for each one; where a broker only takes
+lists the address Delistd has on file for each one; where a broker only takes
 requests through a web form or a dedicated portal, that link is shown instead.
 Using their form is fine — the legal deadline is the same.
 

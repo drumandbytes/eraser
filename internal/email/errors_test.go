@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // Raw SMTP errors can echo credentials or server internals; the user gets

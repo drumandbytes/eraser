@@ -19,7 +19,7 @@ import (
 	"github.com/emersion/go-imap/backend/memory"
 	"github.com/emersion/go-imap/server"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 type Server struct {

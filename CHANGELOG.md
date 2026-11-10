@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.2](https://github.com/drumandbytes/delistd/compare/v2.3.1...v2.3.2) (2026-11-10)
+
+
+### Bug Fixes
+
+* **site:** share image says Delistd ([#272](https://github.com/drumandbytes/delistd/issues/272)) ([3e56f2b](https://github.com/drumandbytes/delistd/commit/3e56f2bce44ecaacc7fc07046ef74681d28f63bd))
+
 ## [2.3.1](https://github.com/drumandbytes/delistd/compare/v2.3.0...v2.3.1) (2026-11-10)
 
 

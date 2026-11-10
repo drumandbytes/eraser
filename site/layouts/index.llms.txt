@@ -5,6 +5,7 @@
 ## Start here
 
 - [Home]({{ "/" | absURL }}): what Delistd is and how it compares with paid removal services
+- [Delistd vs Incogni and DeleteMe]({{ "/vs-incogni/" | absURL }}): price, data custody, coverage and when a paid service is the better choice
 - [Broker directory]({{ "/brokers/" | absURL }}): every broker Delistd contacts, with region, category and opt-out route
 - [Docs]({{ with index (where hugo.Data.docs_versions.versions "latest" true) 0 }}{{ printf "/docs/%s/" .slug | absURL }}{{ end }}): step-by-step setup for beginners, commands, configuration, broker replies, multi-profile, MCP, stability policy
 - [EU/EEA data protection authorities]({{ "/authorities/" | absURL }}): where to complain if a broker ignores you

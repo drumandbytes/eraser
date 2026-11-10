@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/drumandbytes/delistd/compare/v2.2.1...v2.3.0) (2026-11-10)
+
+
+### Features
+
+* **rename:** rename Eraser to Delistd, keeping every old name working ([#269](https://github.com/drumandbytes/delistd/issues/269)) ([1690cba](https://github.com/drumandbytes/delistd/commit/1690cba8b7595dd61fbd177522a74e98f9fa8a1b))
+
 ## [2.2.1](https://github.com/drumandbytes/eraser/compare/v2.2.0...v2.2.1) (2026-11-09)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.4](https://github.com/drumandbytes/delistd/compare/v2.3.3...v2.3.4) (2026-11-10)
+
+
+### Bug Fixes
+
+* **site:** docs links to upgrading-to-2.0.md no longer 404 ([#280](https://github.com/drumandbytes/delistd/issues/280)) ([5a983ad](https://github.com/drumandbytes/delistd/commit/5a983ad8c1dba146063cf40eff1469ac48301f0e))
+
 ## [2.3.3](https://github.com/drumandbytes/delistd/compare/v2.3.2...v2.3.3) (2026-11-10)
 
 

@@ -73,8 +73,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # the Pages project keeps its pre-rename name (projects can't be renamed); delistd.dev is bound to it
-          command: pages deploy site/public --project-name=eraser --branch=main
+          command: pages deploy site/public --project-name=delistd --branch=main
 
   indexnow:
     needs: deploy

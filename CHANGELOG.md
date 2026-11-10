@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.3](https://github.com/drumandbytes/delistd/compare/v2.3.2...v2.3.3) (2026-11-10)
+
+
+### Bug Fixes
+
+* **web:** hide the Sending pill when no job is running ([#276](https://github.com/drumandbytes/delistd/issues/276)) ([f8cb64c](https://github.com/drumandbytes/delistd/commit/f8cb64c776a70039e78ef57d176a072788cbebb7))
+
 ## [2.3.2](https://github.com/drumandbytes/delistd/compare/v2.3.1...v2.3.2) (2026-11-10)
 
 

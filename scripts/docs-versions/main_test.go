@@ -78,6 +78,11 @@ func TestRender(t *testing.T) {
 	if strings.Contains(out, "# Commands") || strings.Contains(out, "noindex") {
 		t.Errorf("heading kept or latest page hidden:\n%s", out)
 	}
+	// a file name with a dot in it (upgrading-to-2.0.md) is a doc link too, not a path under the page
+	out = render("stability", "# S\n\nsee [guide](upgrading-to-2.0.md)", Version{Slug: "2.3", Latest: true, ref: "v2.3.2"})
+	if !strings.Contains(out, "](https://github.com/drumandbytes/delistd/blob/v2.3.2/docs/upgrading-to-2.0.md)") {
+		t.Errorf("dotted doc link not rewritten:\n%s", out)
+	}
 	out = render("commands", "no heading, see [x](architecture.md)", Version{Slug: "next"})
 	if !strings.Contains(out, `title: "commands"`) || !strings.Contains(out, "robots: noindex") || !strings.Contains(out, "disable: true") || !strings.Contains(out, "/blob/main/") {
 		t.Errorf("fallback title, noindex or main ref wrong:\n%s", out)

@@ -21,5 +21,5 @@ done
 
 site=http://localhost:4000 ui=http://localhost:3999
 node "$root/scripts/a11y/scan.mjs" "$chrome" \
-  $site/ $site/brokers/ $site/guides/ $site/docs/next/ $site/docs/next/mcp/ $site/authorities/ $site/privacy/ $site/vs-incogni/ \
+  $site/ $site/brokers/ $site/guides/ $site/docs/next/ $site/docs/next/mcp/ $site/authorities/ $site/privacy/ $site/compare/ \
   $ui/ $ui/brokers $ui/pipeline "$ui/pipeline?view=actions" $ui/history $ui/tasks $ui/settings $ui/automation

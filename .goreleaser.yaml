@@ -41,6 +41,8 @@ builds:
 archives:
   - id: delistd
     formats: [tar.gz]
+    # the eraser alias isn't built for Windows, so its archives hold one binary and the rest two
+    allow_different_binary_count: true
     format_overrides:
       - goos: windows
         formats: [zip, binary]

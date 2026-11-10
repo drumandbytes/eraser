@@ -11,13 +11,13 @@ Incogni and DeleteMe are services that remove your data for you. Delistd is a to
 
 | | Incogni | DeleteMe | Delistd |
 |---|---|---|---|
-| Price | $95.88/year (Standard, billed annually); $179.88/year (Unlimited) | About $129/year for one person ($209 for two years) | Free, MIT licence |
+| Price | $95.88/year (Standard) or $179.88/year (Unlimited) when billed annually; $15.98 or $29.98 a month when billed monthly | About $129/year for one person ($209 for two years) | Free, MIT licence |
 | Who sends the requests | Incogni, on your behalf | DeleteMe, with human privacy advisors for custom removals | You, from your own email account on your own machine |
 | Where your details are kept | With the service | With the service | On your machine only |
 | Coverage | 420+ data broker sites; custom removals on the Unlimited plans only | Automated opt-outs plus manual custom removals; coverage figures vary by source | 700+ brokers in a published list you can read and add to, with a focus on the US and the EU/EEA |
-| Progress reporting | Recurring removals and exposure checks | Quarterly privacy reports | A local dashboard of each broker's reply, and an evidence report you can export |
+| Progress reporting | Recurring removals on every plan; the Unlimited plans add an exposure scanner and a privacy score | Quarterly privacy reports | A local dashboard of each broker's reply, and an evidence report you can export |
 | Replies, ID checks and confirmation links | Handled by the service | Handled by the service and its advisors | Flagged to you as tasks that need action |
-| Support | From the vendor | From the vendor | Community, through GitHub issues |
+| Support | Live phone support on the Unlimited plans | From the vendor | Community, through GitHub issues |
 | Money-back guarantee | 30 days | Yes (terms on their site) | Not applicable |
 
 ## What a paid service gives you
@@ -29,7 +29,7 @@ Incogni and DeleteMe are services that remove your data for you. Delistd is a to
 ## What it costs you
 
 - **Your details live with the service.** To find and remove your records, a removal service needs your name, address, email address and similar identifiers, so it holds them. That is inherent to how those services work, not a criticism of them.
-- **A subscription.** Roughly $96 to $180 a year per person for Incogni and about $129 for DeleteMe, and the removals only continue while you keep paying.
+- **A subscription.** Roughly $96 to $180 a year per person for Incogni when billed annually and about $129 for DeleteMe, and the removals only continue while you keep paying.
 
 ## What Delistd gives you
 
@@ -60,6 +60,6 @@ Being honest about the trade-off:
 
 Checked on 10 November 2026. Vendors change prices and coverage, so use these to verify the figures above before you buy.
 
-- Incogni plans, prices, 420+ site coverage, custom removals and 30-day guarantee: [incogni.com/pricing](https://incogni.com/pricing)
+- Incogni plans, annual and monthly prices, 420+ site coverage, custom removals, exposure scanner, live phone support (Unlimited plans) and the 30-day guarantee: [incogni.com/pricing](https://incogni.com/pricing)
 - DeleteMe plans and quarterly reports: [joindeleteme.com/pricing](https://joindeleteme.com/pricing/). The $129 and $209 prices come from an independent review, [security.org's DeleteMe review](https://www.security.org/data-removal/deleteme/) (updated 2 October 2026), because DeleteMe's page did not show the price when checked.
 - Delistd: [source code and documentation](https://github.com/drumandbytes/delistd).

@@ -83,11 +83,13 @@ cd delistd
 go build -o delistd ./cmd/delistd
 ```
 
-Or install straight from the module path (the broker list is baked in):
+Or install the current `main` straight from the module path (the broker list is baked in; the binary reports its version as `dev`):
 
 ```bash
-go install github.com/drumandbytes/delistd/cmd/delistd@latest
+go install github.com/drumandbytes/delistd/cmd/delistd@main
 ```
+
+`@latest` doesn't work: Go only resolves v2+ tags for a module path ending in `/v2`, and this module's path doesn't. For a tagged release use Homebrew, the Docker image or a [release download](https://github.com/drumandbytes/delistd/releases).
 
 On Windows, build it as `delistd.exe` (`go build -o delistd.exe ./cmd/delistd`) —
 Windows won't run a downloaded file with no extension.

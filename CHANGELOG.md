@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/drumandbytes/delistd/compare/v2.3.0...v2.3.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **release:** allow archives with different binary counts ([#271](https://github.com/drumandbytes/delistd/issues/271)) ([dd1ab42](https://github.com/drumandbytes/delistd/commit/dd1ab425f05e8b03a4fa40dcdc6ed270c9a4ca93))
+
 ## [2.3.0](https://github.com/drumandbytes/delistd/compare/v2.2.1...v2.3.0) (2026-11-10)
 
 

@@ -18,7 +18,7 @@ You know those sites like Spokeo, BeenVerified, and Whitepages that have your ho
 📖 **[delistd.dev](https://delistd.dev/?ref=delistd-readme)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
 🔗 [More Drumandbytes projects](https://drumandbytes.com/projects/?ref=delistd-readme)
 
-<a href="https://alternativeto.net/software/delistd/about/?utm_source=badge&utm_medium=referral" target="_blank"><img src="https://alternativeto.net/static/badges/badge-compact-color.svg" alt="delistd | AlternativeTo" width="122"></a>
+<a href="https://alternativeto.net/software/delistd/about/?utm_source=badge&utm_medium=referral" target="_blank"><img src="https://alternativeto.net/static/badges/badge-wide-color.svg" alt="delistd | AlternativeTo" width="320"></a>
 
 **New here and not technical? Start with the [step-by-step setup guide](docs/getting-started.md).** It covers downloading Delistd, creating a Gmail app password, and the setup wizard, with a fix for every common error.
 

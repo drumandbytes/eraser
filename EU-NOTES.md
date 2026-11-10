@@ -1,6 +1,6 @@
 # GDPR (EU / EEA) notes
 
-This fork of [delistd](https://github.com/digisamroc/eraser) is set up for an EU/EEA resident exercising GDPR rights (right to erasure, Article 17), not the original US/CCPA use case. It defaults to the `gdpr` template and this file covers the EU-specific details.
+Delistd is set up for an EU/EEA resident exercising GDPR rights (right to erasure, Article 17); CCPA requests are supported too. It defaults to the `gdpr` template and this file covers the EU-specific details.
 
 ## What changed
 

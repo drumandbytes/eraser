@@ -357,7 +357,7 @@ Or use the interactive command:
 
 ### Choosing a broker list
 
-The full list is broad and inherited from upstream, so it carries some noise (dead
+The full list is broad, so it carries some noise (dead
 addresses, companies that turn out not to be brokers). If you'd rather email only
 companies that are confirmed data brokers with a current first-party privacy
 email or rights portal — built from registries and authoritative privacy notices
@@ -436,11 +436,13 @@ upgrade.
 
 ---
 
-## About This Fork
+## EU / GDPR
 
-This is a maintained fork of [digisamroc/eraser](https://github.com/digisamroc/eraser), which has been inactive since early 2026. It includes bug fixes, performance cleanups, and GDPR/EU-specific customizations on top of the original CCPA-focused tool.
+If you're an EU resident exercising GDPR rights, read [EU-NOTES.md](EU-NOTES.md) first — it covers which template to pick, safe send-volume behavior, and what to do if a broker ignores your request.
 
-If you're an EU resident exercising GDPR rights rather than a US CCPA use case, read [EU-NOTES.md](EU-NOTES.md) first — it covers which template to pick, safe send-volume behavior, and what to do if a broker ignores your request.
+## Credits
+
+Delistd started as a fork of [digisamroc/eraser](https://github.com/digisamroc/eraser) (MIT); see [LICENSE](LICENSE).
 
 ---
 

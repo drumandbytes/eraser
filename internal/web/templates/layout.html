@@ -372,6 +372,8 @@
 
         /* WCAG 2.5.8: 24px minimum target for standalone links */
         .site-nav-inner a, footer a, main a.text-sm, main a.text-xs { display: inline-flex; align-items: center; min-height: 24px; }
+        /* the rule above outranks .hidden, which left the "Sending..." pill showing with no job running */
+        .site-nav-inner a.hidden { display: none; }
 
         .badge-neutral {
             background: var(--bg-elevated);

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 func TestMigrateNoDataResponsesRelabelsLocalReplies(t *testing.T) {

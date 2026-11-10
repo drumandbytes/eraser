@@ -5,10 +5,10 @@ change; the ones that do are broker-level facts, recorded in `data/brokers.yaml`
 
 ## How replies reach you
 
-Replies land in the mailbox you sent from. `eraser monitor` is the automated path:
+Replies land in the mailbox you sent from. `delistd monitor` is the automated path:
 it pulls broker-domain mail over IMAP, classifies each one
 (`internal/inbox/classifier.go`), and writes SQLite history + pipeline rows
-(`eraser pipeline` shows what still needs a human). Reading the inbox by hand is
+(`delistd pipeline` shows what still needs a human). Reading the inbox by hand is
 the same job without the database writes.
 
 Per-request status (sent, acknowledged, confirmed, overdue) lives in your mailbox and the
@@ -31,14 +31,14 @@ Classifications match `ResponseType` in `internal/inbox/classifier.go`.
 | "We won't process this by email - use our web form / portal" | `form_required` | set `email: ""`, set/refresh `opt_out_url` to the form they name, add a dated `notes:` line |
 | "We only hold data for country X; stop sending us requests from elsewhere" | - | set `countries: [XX]` (ISO code) and add a dated `notes:` line; remove the entry instead if they ask for removal |
 | Won't act without a government-ID document | - | set `category: requires-id`, add a dated `notes:` line (users exclude this category in bulk) |
-| Confirmation / identity link to click | `confirmation_required` | click it (or run `eraser confirm`) - no data change |
-| Bounce / dead address | `bounced` | `eraser mark-bounced <id>`, or set `email: ""` + dated note by hand. Never delete a real broker over a bounce - `MarkEmailUnreachable` in `internal/broker/broker.go` exists so the record survives for a later working address |
+| Confirmation / identity link to click | `confirmation_required` | click it (or run `delistd confirm`) - no data change |
+| Bounce / dead address | `bounced` | `delistd mark-bounced <id>`, or set `email: ""` + dated note by hand. Never delete a real broker over a bounce - `MarkEmailUnreachable` in `internal/broker/broker.go` exists so the record survives for a later working address |
 | Refuses on a real statutory exemption (FCRA / GLBA / DPPA), genuine dead end | `rejected` | set `email: ""`, add a dated `notes:` line citing the basis; keep the row (see the `goodhire` entry) |
 
 Clear no-record replies are separate from deletion confirmations and refusals.
 Triage a `no_data_held` reply as no action, but check it first: the request moves to "No data held" only when the reply is confident (at least 0.7) and not flagged for review. Subject lines like "not found", "no record" or "unable to locate" no longer score as rejections from the subject line alone; the body decides. Use the reclassify action on any older reply that still shows `rejected` and reads as no-record.
 Conditional replies or requests for identity verification still need review.
-On upgrade, Eraser reclassifies qualifying saved replies once, using their stored
+On upgrade, Delistd reclassifies qualifying saved replies once, using their stored
 text without fetching mail. It only resolves the current request and superseded
 pending work when the latest reply is confident; newer requests, newer tasks,
 completed/skipped work, and manual pipeline progress are preserved. Original
@@ -53,5 +53,5 @@ remembering.
 
 - **Dated notes**: `notes: '<summary> (YYYY-MM-DD): <detail, quoting the reply where useful>'`. Append to an existing note rather than replacing its history.
 - **Commits**: one entry's worth of change per commit where practical, scoped `fix(brokers):` or `chore(brokers):`. Conventional Commits - release-please reads them.
-- **Generated files**: `site/content/brokers/**` and `site/static/brokers.json` are produced by `eraser guides` and git-ignored. Don't regenerate them for a data edit.
+- **Generated files**: `site/content/brokers/**` and `site/static/brokers.json` are produced by `delistd guides` and git-ignored. Don't regenerate them for a data edit.
 - **Count floor**: after any add/remove, run `grep -c '^    - id:' data/brokers.yaml`. `README.md`, `docs/architecture.md`, and `EU-NOTES.md` all claim "700+" - keep the true count at or above 700 or fix those docs. `internal/broker` CI also fails below `MinSaneBrokerCount` (200).

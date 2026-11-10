@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/delistd/internal/broker"
 )
 
 func TestGetBrokersWithStatusRecipientFilters(t *testing.T) {

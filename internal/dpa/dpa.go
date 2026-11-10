@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/drumandbytes/eraser/data"
-	"github.com/drumandbytes/eraser/internal/country"
+	"github.com/drumandbytes/delistd/data"
+	"github.com/drumandbytes/delistd/internal/country"
 	"gopkg.in/yaml.v3"
 )
 

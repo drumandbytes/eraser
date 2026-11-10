@@ -1,8 +1,8 @@
 name: Docker
 
-# Builds the image and smoke-tests it: the distroless eraser image serves the
+# Builds the image and smoke-tests it: the distroless delistd image serves the
 # web UI on the published loopback port and still refuses a non-loopback Host,
-# and eraser's browser and MCP test suites run against the stock Chromium image
+# and delistd's browser and MCP test suites run against the stock Chromium image
 # from compose.yaml over the DevTools port. Not a required check; ci.yml covers
 # the Go code itself.
 
@@ -14,7 +14,7 @@ on:
       - .dockerignore
       - go.mod
       - go.sum
-      - cmd/eraser/cmd_serve.go
+      - cmd/delistd/cmd_serve.go
       - internal/web/server.go
       - internal/browser/**
       - internal/config/container.go
@@ -45,29 +45,29 @@ jobs:
 
       - name: Build
         run: |
-          docker build -t eraser:ci .
+          docker build -t delistd:ci .
 
       - name: Web UI on loopback, Host check, volume ownership
         run: |
-          docker volume create eraser-ci
-          docker run -d --name eraser-ci --read-only --cap-drop ALL -p 127.0.0.1:8080:8080 -v eraser-ci:/home/nonroot/.eraser eraser:ci
+          docker volume create delistd-ci
+          docker run -d --name delistd-ci --read-only --cap-drop ALL -p 127.0.0.1:8080:8080 -v delistd-ci:/home/nonroot/.eraser delistd:ci
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/setup && break; sleep 1; done
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
           [ "$code" = 302 ] || { echo "GET / = $code, want 302 to /setup"; exit 1; }
           code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: 192.168.1.20:8080' http://localhost:8080/)
           [ "$code" = 403 ] || { echo "non-loopback Host = $code, want 403"; exit 1; }
 
-      - name: Eraser drives the Chromium image
+      - name: Delistd drives the Chromium image
         # Host networking: the Go tests serve their pages on the runner's
         # localhost, which the browser must reach too.
         run: |
           image=$(sed -n 's/^ *image: \(chromedp\/headless-shell:.*\)$/\1/p' compose.yaml)
-          docker run -d --name eraser-chrome-ci --read-only --tmpfs /tmp --cap-drop ALL --shm-size=1g --network host "$image"
+          docker run -d --name delistd-chrome-ci --read-only --tmpfs /tmp --cap-drop ALL --shm-size=1g --network host "$image"
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:9222/json/version && break; sleep 1; done
-          ERASER_CHROME_URL=http://127.0.0.1:9222 go test ./internal/browser ./internal/mcpserver
+          DELISTD_CHROME_URL=http://127.0.0.1:9222 go test ./internal/browser ./internal/mcpserver
 
       - name: Logs
         if: always()
         run: |
-          docker logs eraser-ci || true
-          docker logs eraser-chrome-ci || true
+          docker logs delistd-ci || true
+          docker logs delistd-chrome-ci || true

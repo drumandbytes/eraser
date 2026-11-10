@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/imaptest"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/imaptest"
 )
 
 func itoa(n int64) string { return strconv.FormatInt(n, 10) }

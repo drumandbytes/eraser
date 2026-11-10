@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/schedule"
-	emaTemplate "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/schedule"
+	emaTemplate "github.com/drumandbytes/delistd/internal/template"
 )
 
 func (s *Server) handleSettings(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +45,7 @@ func (s *Server) automationView() automationView {
 	}
 	if st, err := schedule.LoadState(s.dataDir); err == nil && st != nil {
 		v.Last = st
-		v.LastVia = map[string]string{"os": "OS scheduler", "serve": "this web app", "once": "eraser auto --once", "loop": "eraser auto"}[st.Mode]
+		v.LastVia = map[string]string{"os": "OS scheduler", "serve": "this web app", "once": "delistd auto --once", "loop": "delistd auto"}[st.Mode]
 		if v.Enabled && !v.Installed {
 			v.Next = st.LastRun.Add(schedule.Interval)
 		}
@@ -80,7 +80,7 @@ func (s *Server) handleSettingsAutomation(w http.ResponseWriter, r *http.Request
 		}
 		s.config.Store(&newCfg)
 		if newCfg.Schedule.Enabled {
-			s.renderAutomationMessage(w, r, "Automation is on. Eraser runs "+schedule.Every+" while this web app is open.", true)
+			s.renderAutomationMessage(w, r, "Automation is on. Delistd runs "+schedule.Every+" while this web app is open.", true)
 		} else {
 			s.renderAutomationMessage(w, r, "In-app automation is off.", true)
 		}
@@ -103,7 +103,7 @@ func (s *Server) handleSettingsAutomation(w http.ResponseWriter, r *http.Request
 			s.renderAutomationMessage(w, r, "Couldn't install the scheduled job: "+err.Error(), false)
 			return
 		}
-		s.renderAutomationMessage(w, r, "Scheduled. Your OS now runs Eraser "+schedule.Every+", even when this web app is closed.", true)
+		s.renderAutomationMessage(w, r, "Scheduled. Your OS now runs Delistd "+schedule.Every+", even when this web app is closed.", true)
 
 	case "remove":
 		if err := s.removeOS(); err != nil {
@@ -335,7 +335,7 @@ func inboxFormView(cfg *config.Config) mailFormView {
 	return v
 }
 
-// handleSettingsBrokersUpdate is `eraser update-brokers`: fetch the published
+// handleSettingsBrokersUpdate is `delistd update-brokers`: fetch the published
 // list into ~/.eraser/brokers.yaml, then reload the list this server uses.
 func (s *Server) handleSettingsBrokersUpdate(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 45*time.Second)

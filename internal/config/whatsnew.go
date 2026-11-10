@@ -17,3 +17,18 @@ func WhatsNewSeen(configPath string) bool {
 func MarkWhatsNewSeen(configPath string) {
 	_ = os.WriteFile(whatsNewMarker(configPath), nil, 0o600)
 }
+
+// The "Eraser is now Delistd" notice works the same way, with its own marker.
+func renameMarker(configPath string) string { return configPath + ".renamed-delistd" }
+
+// RenameNoticeSeen reports whether the rename notice was already shown or dismissed.
+func RenameNoticeSeen(configPath string) bool {
+	_, err := os.Stat(renameMarker(configPath))
+	return err == nil
+}
+
+// MarkRenameNoticeSeen records that the rename notice was shown. Fresh installs
+// call it when setup finishes: they never knew the old name.
+func MarkRenameNoticeSeen(configPath string) {
+	_ = os.WriteFile(renameMarker(configPath), nil, 0o600)
+}

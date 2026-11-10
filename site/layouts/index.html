@@ -1,13 +1,13 @@
 {{ define "main" }}
 <section class="hero">
   <h1>Take back your privacy</h1>
-  <p>Eraser sends data removal requests to 700+ data brokers on your behalf — the
+  <p>Delistd sends data removal requests to 700+ data brokers on your behalf — the
   companies like Spokeo, BeenVerified and Whitepages that publish your address,
   phone number and relatives. Open source, free, and it runs on your own machine:
   requests go out from <em>your</em> mailbox, so no company ever holds your data.
   Incogni and DeleteMe charge $100+/year to do the same thing.</p>
   <p class="cta">
-    <a class="btn" href="https://github.com/drumandbytes/eraser/releases">Download</a>
+    <a class="btn" href="https://github.com/drumandbytes/delistd/releases">Download</a>
     <a class="btn ghost" href="{{ "/brokers/" | relURL }}">Broker directory</a>
   </p>
 </section>
@@ -19,16 +19,16 @@
   GDPR Article 17 in the EU, UK and EEA, and the CCPA / CPRA in California. A removal
   request is just a short, correctly worded email, but there are hundreds of brokers
   and each one wants it sent to a different address or form, and again every few months.</p>
-  <p>Eraser keeps the broker list, writes the request in the right legal wording for
+  <p>Delistd keeps the broker list, writes the request in the right legal wording for
   where you live, sends it through your own SMTP or mail account, and tracks each reply
   over IMAP. Everything stays in a local SQLite file and config on your machine. There
   is no account, no server of ours in the loop and no telemetry; this website counts
   visits and nothing else (see the <a href="{{ "/privacy/" | relURL }}">privacy page</a>).</p>
   <h2>How it compares</h2>
   <p>Paid services such as Incogni and DeleteMe do the same job for $100+ a year and
-  hold your identity details on their servers. Eraser is MIT-licensed, free, and
+  hold your identity details on their servers. Delistd is MIT-licensed, free, and
   the broker list and request letters are in the open
-  <a href="https://github.com/drumandbytes/eraser">source repository</a>, so you can
+  <a href="https://github.com/drumandbytes/delistd">source repository</a>, so you can
   check exactly what gets sent and to whom. The trade-off: it runs on your computer,
   and you stay in charge of the mailbox it sends from.</p>
   <p>The <a href="{{ "/brokers/" | relURL }}">broker directory</a> has step-by-step
@@ -41,7 +41,7 @@
     <h2>How it works</h2>
     <ol>
       <li>Enter your details once (locally).</li>
-      <li>Eraser emails every broker a GDPR / CCPA removal request.</li>
+      <li>Delistd emails every broker a GDPR / CCPA removal request.</li>
       <li>It watches your inbox for replies and shows what still needs a click.</li>
       <li>Re-run every 60–90 days — brokers re-list you.</li>
     </ol>

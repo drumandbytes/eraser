@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 func TestGetAllRequestsOldestFirstWithPipeline(t *testing.T) {

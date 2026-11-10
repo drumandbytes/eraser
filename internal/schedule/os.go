@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // Interval is how often cycles run, in every mode. Six hours rather than
@@ -76,7 +76,7 @@ func NewJob(cfg *config.Config, configPath string) (Job, error) {
 		return Job{}, fmt.Errorf("fix your config before scheduling: %w", err)
 	}
 	if cfg.PassphraseProtected {
-		return Job{}, fmt.Errorf("a passphrase protects your mail password, and an OS job can't enter it; use `eraser auto` or `eraser serve` (they ask once at startup), or run `eraser passphrase clear`")
+		return Job{}, fmt.Errorf("a passphrase protects your mail password, and an OS job can't enter it; use `delistd auto` or `delistd serve` (they ask once at startup), or run `delistd passphrase clear`")
 	}
 	if cfg.IsManualSend() && len(cfg.ConfiguredInboxes()) == 0 {
 		return Job{}, fmt.Errorf("nothing to automate: send_mode is manual and no inbox is configured")
@@ -92,13 +92,13 @@ func NewJob(cfg *config.Config, configPath string) (Job, error) {
 	return Job{Exe: exe, ConfigPath: abs, LogPath: filepath.Join(filepath.Dir(abs), "auto.log")}, nil
 }
 
-// StableExecutable is the path the OS job should run. It prefers the eraser
+// StableExecutable is the path the OS job should run. It prefers the delistd
 // on PATH (e.g. Homebrew's symlink, which survives upgrades) when that's the
 // same binary as this one, and refuses a 'go run' temp build.
 func StableExecutable() (string, error) {
 	self, err := executable()
 	if err != nil {
-		return "", fmt.Errorf("failed to find the eraser binary: %w", err)
+		return "", fmt.Errorf("failed to find the delistd binary: %w", err)
 	}
 	selfReal, err := filepath.EvalSymlinks(self)
 	if err != nil {
@@ -109,12 +109,15 @@ func StableExecutable() (string, error) {
 		tmp = os.TempDir()
 	}
 	if strings.HasPrefix(selfReal, filepath.Clean(tmp)+string(filepath.Separator)) || strings.Contains(selfReal, "go-build") {
-		return "", fmt.Errorf("this is a temporary 'go run' build (%s) - build or install eraser first, then set up the schedule from that binary", selfReal)
+		return "", fmt.Errorf("this is a temporary 'go run' build (%s) - build or install delistd first, then set up the schedule from that binary", selfReal)
 	}
-	if onPath, err := exec.LookPath("eraser"); err == nil {
-		if abs, err := filepath.Abs(onPath); err == nil {
-			if real, err := filepath.EvalSymlinks(abs); err == nil && real == selfReal {
-				return abs, nil
+	// "eraser" is the deprecated alias binary; this process may have been started through it
+	for _, name := range []string{"delistd", "eraser"} {
+		if onPath, err := exec.LookPath(name); err == nil {
+			if abs, err := filepath.Abs(onPath); err == nil {
+				if real, err := filepath.EvalSymlinks(abs); err == nil && real == selfReal {
+					return abs, nil
+				}
 			}
 		}
 	}
@@ -124,7 +127,7 @@ func StableExecutable() (string, error) {
 // Supported reports whether Install can set up an OS job on this platform.
 func Supported() bool {
 	// a container has no launchd/systemd: use serve's in-app scheduler or
-	// `eraser auto` there instead
+	// `delistd auto` there instead
 	if config.InContainer() {
 		return false
 	}
@@ -281,7 +284,7 @@ func renderSystemd(j Job) (service, timer string) {
 		quoted = append(quoted, `"`+a+`"`)
 	}
 	service = fmt.Sprintf(`[Unit]
-Description=Eraser: send due removal requests and check the inbox
+Description=Delistd: send due removal requests and check the inbox
 
 [Service]
 Type=oneshot
@@ -289,7 +292,7 @@ ExecStart=%s
 `, strings.Join(quoted, " "))
 	// Persistent=true runs a slot missed while the machine was off.
 	timer = `[Unit]
-Description=Run Eraser every 6 hours
+Description=Run Delistd every 6 hours
 
 [Timer]
 OnCalendar=*-*-* 00/6:07:00

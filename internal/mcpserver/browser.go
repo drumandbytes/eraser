@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/browser"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/browser"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 type taskPage struct {
@@ -76,7 +76,7 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 		return nil, err
 	}
 	if stored.Status != "pending" {
-		return nil, fmt.Errorf("task is already completed or skipped in Eraser")
+		return nil, fmt.Errorf("task is already completed or skipped in Delistd")
 	}
 	attempts, err := s.store.GetAutomationAttempts(p.Profile.ID, subject(t))
 	if err != nil {
@@ -115,7 +115,7 @@ func (s *Service) openTask(ctx context.Context, in openInput) (map[string]any, e
 		_ = s.store.UpdateAutomationTask(p.Profile.ID, stored.ID, s.actor(), "page", "Page could not be opened. Review before retrying.", "", false)
 		// a redirect or timeout can happen after a confirmation GET already took effect:
 		// keep the page for inspection, never replay the URL
-		instructions := "The page was closed. Check the task in Eraser, then call open_task again."
+		instructions := "The page was closed. Check the task in Delistd, then call open_task again."
 		if t.Kind == "confirmation" {
 			instructions = "Inspect the retained Chrome window. Observe it after manual intervention; do not reopen or resubmit an uncertain request."
 		}
@@ -149,7 +149,7 @@ func (s *Service) livePage(in openInput) (*batchPlan, *taskPage, error) {
 		return nil, nil, err
 	}
 	if t == nil || t.Status != "pending" {
-		return nil, nil, fmt.Errorf("task was completed or skipped in Eraser")
+		return nil, nil, fmt.Errorf("task was completed or skipped in Delistd")
 	}
 	return p, tp, nil
 }
@@ -203,7 +203,7 @@ func (s *Service) act(ctx context.Context, in actionInput) (map[string]any, erro
 			var ok bool
 			value, ok = profileFields(p.Profile.Profile)[in.ProfileField]
 			if !ok || value == "" {
-				return nil, fmt.Errorf("profile field is missing; update it in Eraser")
+				return nil, fmt.Errorf("profile field is missing; update it in Delistd")
 			}
 		}
 	}
@@ -341,7 +341,7 @@ func (s *Service) retryApproval(profileID, scope string, in retryInput) (map[str
 	want := digest(struct{ Batch, Task, Broker, Key, Reason string }{in.BatchID, in.TaskID, in.BrokerID, in.ActionKey, in.Reason})
 	if in.ApprovalID != "" {
 		if err := s.store.ConsumeBatchApproval(in.ApprovalID, want); err != nil {
-			return nil, fmt.Errorf("retry is not approved: approve it in Eraser's web UI or run eraser mcp approve %s", in.ApprovalID)
+			return nil, fmt.Errorf("retry is not approved: approve it in Delistd's web UI or run delistd mcp approve %s", in.ApprovalID)
 		}
 		return nil, nil
 	}
@@ -351,7 +351,7 @@ func (s *Service) retryApproval(profileID, scope string, in retryInput) (map[str
 	if err != nil {
 		return nil, err
 	}
-	return map[string]any{"approval_required": true, "approval_id": id, "approve_with": "Approve in Eraser's web UI (Automation page) or run: eraser mcp approve " + id + ". Then call retry_action again with approval_id."}, nil
+	return map[string]any{"approval_required": true, "approval_id": id, "approve_with": "Approve in Delistd's web UI (Automation page) or run: delistd mcp approve " + id + ". Then call retry_action again with approval_id."}, nil
 }
 
 // blockerReason marks a page that needs a person, so it appears under review.

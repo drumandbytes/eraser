@@ -12,7 +12,7 @@ on:
       - "data/brokers.yaml"
       - "data/authorities.yaml"
       - "site/**"
-      - "cmd/eraser/cmd_guides.go"
+      - "cmd/delistd/cmd_guides.go"
       - "internal/template/templates/**"
       - "internal/broker/**"
       - ".github/workflows/deploy.yaml"
@@ -53,7 +53,7 @@ jobs:
 
       - name: Generate content
         run: |
-          go run ./cmd/eraser guides --format md --output site/content
+          go run ./cmd/delistd guides --format md --output site/content
           go run ./scripts/docs-versions
           mkdir -p site/data
           cp data/authorities.yaml site/data/authorities.yaml
@@ -73,12 +73,12 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy site/public --project-name=eraser --branch=main
+          command: pages deploy site/public --project-name=delistd --branch=main
 
   indexnow:
     needs: deploy
     uses: drumandbytes/reusable-actions/.github/workflows/indexnow.yml@v1
     with:
-      host: eraser.drumandbytes.dev
+      host: delistd.dev
       key: ${{ vars.INDEXNOW_KEY }}
       sitemap-artifact: sitemap

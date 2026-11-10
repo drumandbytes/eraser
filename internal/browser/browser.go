@@ -12,7 +12,7 @@ import (
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/chromedp"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // Browser wraps chromedp for headless Chrome automation
@@ -29,7 +29,7 @@ type Browser struct {
 // BrowserConfig holds browser automation settings
 type BrowserConfig struct {
 	ExecutablePath string // Optional Chrome/Chromium executable override.
-	RemoteURL      string // Attach to an already-running Chrome's DevTools endpoint instead of launching one; defaults to $ERASER_CHROME_URL.
+	RemoteURL      string // Attach to an already-running Chrome's DevTools endpoint instead of launching one; defaults to $DELISTD_CHROME_URL.
 	Headless       bool
 	Timeout        time.Duration
 	ScreenshotDir  string
@@ -79,7 +79,7 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 	// An explicit Chrome path (mcp --chrome-path) means launch it locally,
 	// whatever the environment says.
 	if cfg.RemoteURL == "" && cfg.ExecutablePath == "" {
-		cfg.RemoteURL = os.Getenv(config.ChromeURLEnv)
+		cfg.RemoteURL = config.Getenv(config.ChromeURLEnv)
 	}
 
 	var allocCtx context.Context

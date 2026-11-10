@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 // Your own entries survive update-brokers replacing the list, override a

@@ -2,7 +2,7 @@
 <div class="max-w-md mx-auto fade-in-up">
     <div class="card p-6 space-y-4">
         <div>
-            <h1 class="font-display text-xl font-semibold text-primary">Unlock Eraser</h1>
+            <h1 class="font-display text-xl font-semibold text-primary">Unlock Delistd</h1>
             <p class="text-sm text-secondary mt-1">Your mail passwords are protected by a passphrase. Enter it once to start sending and checking your inbox.</p>
         </div>
         <form method="POST" action="/unlock" class="space-y-4">
@@ -14,7 +14,7 @@
             {{if .Error}}<div class="alert alert-error">{{.Error}}</div>{{end}}
             <button type="submit" class="btn btn-primary">Unlock</button>
         </form>
-        <p class="text-xs text-muted">Forgot it? Re-enter your mail passwords with <code>eraser init</code>; there is no recovery.</p>
+        <p class="text-xs text-muted">Forgot it? Re-enter your mail passwords with <code>delistd init</code>; there is no recovery.</p>
     </div>
 </div>
 {{end}}

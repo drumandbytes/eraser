@@ -1,6 +1,6 @@
 # GDPR (EU / EEA) notes
 
-This fork of [eraser](https://github.com/digisamroc/eraser) is set up for an EU/EEA resident exercising GDPR rights (right to erasure, Article 17), not the original US/CCPA use case. It defaults to the `gdpr` template and this file covers the EU-specific details.
+This fork of [delistd](https://github.com/digisamroc/eraser) is set up for an EU/EEA resident exercising GDPR rights (right to erasure, Article 17), not the original US/CCPA use case. It defaults to the `gdpr` template and this file covers the EU-specific details.
 
 ## What changed
 
@@ -37,7 +37,7 @@ or request channel could be verified.
 
 ## Country-scoped brokers
 
-A handful of entries carry `countries:` (for example `schufa`: `[DE]`, `regis24`: `[DE, AT]`, `192-com`: `[GB]`, plus the Mexican, Colombian, Argentine, New Zealand and Kenyan credit bureaus). They only hold one market's data, and sending them requests from elsewhere produces no-match replies and wasted work on their side. Eraser skips them for profiles whose `country` is outside the list. Most US brokers are deliberately *not* scoped: they hold EU residents' data too. If you lived in a scoped country before, name the broker with `send --broker <id>`.
+A handful of entries carry `countries:` (for example `schufa`: `[DE]`, `regis24`: `[DE, AT]`, `192-com`: `[GB]`, plus the Mexican, Colombian, Argentine, New Zealand and Kenyan credit bureaus). They only hold one market's data, and sending them requests from elsewhere produces no-match replies and wasted work on their side. Delistd skips them for profiles whose `country` is outside the list. Most US brokers are deliberately *not* scoped: they hold EU residents' data too. If you lived in a scoped country before, name the broker with `send --broker <id>`.
 
 ## What's NOT in brokers.yaml
 
@@ -47,17 +47,17 @@ Separately, a category of EU Data Governance Act-registered "data intermediation
 
 ## Setup
 
-1. `go build -o eraser ./cmd/eraser`
-2. `./eraser init` — when it asks for a template, pick **gdpr** (not ccpa/generic), since GDPR Article 17 is the right legal basis to cite as an EU resident.
-3. `./eraser send --dry-run` to preview, then `./eraser send` for real.
+1. `go build -o delistd ./cmd/delistd`
+2. `./delistd init` — when it asks for a template, pick **gdpr** (not ccpa/generic), since GDPR Article 17 is the right legal basis to cite as an EU resident.
+3. `./delistd send --dry-run` to preview, then `./delistd send` for real.
 
 ## If a company ignores or refuses a GDPR request
 
-Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, you can lodge a complaint (GDPR Art. 77) with the supervisory authority of the EU/EEA country where you live, work, or where the infringement happened. The full list of authorities and their websites is in [data/authorities.yaml](data/authorities.yaml); `./eraser export` also names the one for your profile's `country` (stored as an ISO code, e.g. `LV`).
+Controllers have 1 month to respond (extendable to 3 for complex requests). If they blow past that or refuse without a valid legal basis, you can lodge a complaint (GDPR Art. 77) with the supervisory authority of the EU/EEA country where you live, work, or where the infringement happened. The full list of authorities and their websites is in [data/authorities.yaml](data/authorities.yaml); `./delistd export` also names the one for your profile's `country` (stored as an ISO code, e.g. `LV`).
 
 Set expectations: most EU DPAs are slow — noyb.eu shows some of its own complaints pending multiple years. In practice the GDPR request itself, and the liability it puts on the company, is usually what gets compliance, not a fast DPA turnaround. [noyb.eu](https://noyb.eu) has complaint templates and occasionally takes cases directly.
 
-Run `./eraser export` to generate the evidence to attach to a complaint: per broker, what was sent and when, the reconstructed request, every reply and its date, and an explicit list of controllers past the 1-month deadline with no substantive response. `--format html` opens in a browser and prints to PDF.
+Run `./delistd export` to generate the evidence to attach to a complaint: per broker, what was sent and when, the reconstructed request, every reply and its date, and an explicit list of controllers past the 1-month deadline with no substantive response. `--format html` opens in a browser and prints to PDF.
 
 ### Germany
 
@@ -69,18 +69,18 @@ Post-Brexit the UK is outside GDPR/the EDPB but enforces the UK GDPR, which mirr
 
 ## Sending the requests by hand
 
-A GDPR Article 17 request is exactly as valid sent from your own mail client as it is sent by Eraser. If you'd rather not configure an app password, set `options.send_mode: manual` (or choose "Skip" in the web setup): `eraser draft` / `eraser send --manual` render the emails, you send them, and `eraser mark-sent` records them so `export` and `pipeline` still work.
+A GDPR Article 17 request is exactly as valid sent from your own mail client as it is sent by Delistd. If you'd rather not configure an app password, set `options.send_mode: manual` (or choose "Skip" in the web setup): `delistd draft` / `delistd send --manual` render the emails, you send them, and `delistd mark-sent` records them so `export` and `pipeline` still work.
 
 ## Sending 770+ emails safely
 
-The README originally claimed eraser auto-chunks large sends across multiple days - that wasn't actually implemented in the code, just documented. It is now: `send` caps itself at `options.daily_send_limit` (450 by default, safely under Gmail's ~500/day; lower it if your provider caps lower) per rolling 24h window, and automatically skips any broker it already successfully emailed in the last 25 days. That means it's safe to just run:
+The README originally claimed delistd auto-chunks large sends across multiple days - that wasn't actually implemented in the code, just documented. It is now: `send` caps itself at `options.daily_send_limit` (450 by default, safely under Gmail's ~500/day; lower it if your provider caps lower) per rolling 24h window, and automatically skips any broker it already successfully emailed in the last 25 days. That means it's safe to just run:
 
 ```
-./eraser send
+./delistd send
 ```
 
-...repeatedly (same day or the next) until it reports nothing left to send - or let `eraser schedule install` run it for you every 6 hours (see the README) - it resumes where it left off without double-emailing anyone. Flags: `--ignore-daily-limit` sends everything in one run regardless of the cap (only if your provider can actually handle that volume), `--resend` forces re-sending even to brokers within the 25-day cooldown (useful for a deliberate full re-run).
+...repeatedly (same day or the next) until it reports nothing left to send - or let `delistd schedule install` run it for you every 6 hours (see the README) - it resumes where it left off without double-emailing anyone. Flags: `--ignore-daily-limit` sends everything in one run regardless of the cap (only if your provider can actually handle that volume), `--resend` forces re-sending even to brokers within the 25-day cooldown (useful for a deliberate full re-run).
 
 ## Recurring maintenance
 
-Data brokers re-scrape and re-list you continuously. Re-run `./eraser send` and revisit unresolved manual items (portal/DSR-based brokers, form-required cases) every 60-90 days.
+Data brokers re-scrape and re-list you continuously. Re-run `./delistd send` and revisit unresolved manual items (portal/DSR-based brokers, form-required cases) every 60-90 days.

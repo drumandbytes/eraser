@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 func reloadServer(t *testing.T) *Server {
@@ -106,7 +106,7 @@ func TestReloadMiddlewareRefreshesBeforeHandler(t *testing.T) {
 	noPath.refreshConfig() // no configPath: must be a no-op, not a panic
 }
 
-// First run: no config.yaml when serve starts, then `eraser init` creates one.
+// First run: no config.yaml when serve starts, then `delistd init` creates one.
 func TestRefreshConfigPicksUpFileCreatedAfterStart(t *testing.T) {
 	s := newTestServer(t, &config.Config{})
 	s.configPath = filepath.Join(t.TempDir(), "config.yaml")

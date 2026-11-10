@@ -1,4 +1,4 @@
-module github.com/drumandbytes/eraser
+module github.com/drumandbytes/delistd
 
 go 1.26.0
 

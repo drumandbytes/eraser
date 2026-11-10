@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-go run ./cmd/eraser guides --format md --output site/content
+go run ./cmd/delistd guides --format md --output site/content
 # Versioned docs need the release tags: git fetch --tags if a snapshot is missing.
 go run ./scripts/docs-versions
 mkdir -p site/data

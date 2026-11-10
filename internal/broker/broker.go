@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/data"
-	"github.com/drumandbytes/eraser/internal/country"
+	"github.com/drumandbytes/delistd/data"
+	"github.com/drumandbytes/delistd/internal/country"
 	"gopkg.in/yaml.v3"
 )
 
@@ -194,7 +194,7 @@ func LoadFromFile(path string) (*BrokerDatabase, error) {
 	return Parse(raw)
 }
 
-// UserBrokersPath is where `eraser update-brokers` writes a refreshed copy of
+// UserBrokersPath is where `delistd update-brokers` writes a refreshed copy of
 // the list; Load() prefers it over the embedded default when it exists.
 func UserBrokersPath() string {
 	home, err := os.UserHomeDir()

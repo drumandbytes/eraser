@@ -14,10 +14,10 @@ email works for almost all of them.
 ## The approach
 
 Send each one a GDPR erasure request (EU/EEA) or a CCPA deletion request
-(California). Eraser does this in bulk — that's the point of `eraser send` — or
-you can send them by hand with `eraser draft` / `eraser send --manual`.
+(California). Delistd does this in bulk — that's the point of `delistd send` — or
+you can send them by hand with `delistd draft` / `delistd send --manual`.
 
-For a broker where Eraser has no working email on file, check the company's
+For a broker where Delistd has no working email on file, check the company's
 website for a privacy or "your privacy choices" page; adtech firms in scope for
 US state laws increasingly have one.
 

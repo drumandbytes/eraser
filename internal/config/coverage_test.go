@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 func TestProfileHelpers(t *testing.T) {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/schedule"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/schedule"
 )
 
 func TestPrepareValidation(t *testing.T) {

@@ -1,5 +1,5 @@
 /* ============================================
-   ERASER DESIGN TOKENS
+   DELISTD DESIGN TOKENS
    The single source of truth for colour, elevation and type.
    Nothing else in the codebase should name a raw hex value.
    Both themes redefine the same custom-property names; the

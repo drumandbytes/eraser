@@ -15,15 +15,15 @@ body:
       label: Steps to reproduce
       description: The command(s) you ran, or what you clicked in the web UI
       placeholder: |
-        1. eraser send --dry-run
+        1. delistd send --dry-run
         2. ...
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: Eraser version
-      description: Output of `eraser --version`, or the release/commit you built from
+      label: Delistd version
+      description: Output of `delistd --version`, or the release/commit you built from
     validations:
       required: true
   - type: dropdown

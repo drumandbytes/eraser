@@ -7,7 +7,7 @@ import (
 
 	"github.com/emersion/go-imap"
 
-	"github.com/drumandbytes/eraser/internal/broker"
+	"github.com/drumandbytes/delistd/internal/broker"
 )
 
 func messageWith(raw string) (*imap.Message, *imap.BodySectionName) {

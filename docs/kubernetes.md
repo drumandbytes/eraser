@@ -1,12 +1,12 @@
-# Running Eraser on Kubernetes
+# Running Delistd on Kubernetes
 
-Eraser is a single-user tool with no login, so Kubernetes is only worth it if
-you already run a cluster and want it there. The shape is one pod: the Eraser
+Delistd is a single-user tool with no login, so Kubernetes is only worth it if
+you already run a cluster and want it there. The shape is one pod: the Delistd
 container, plus the headless Chromium container if you use `fill` or `mcp`,
 sharing the pod's network. Read [docker.md](docker.md) first: the volume,
 `machine-id`, passphrase and browser notes there apply unchanged.
 
-Every release publishes the image to `ghcr.io/drumandbytes/eraser` for
+Every release publishes the image to `ghcr.io/drumandbytes/delistd` for
 `linux/amd64` and `linux/arm64`, tagged with the exact release (`v2.2.0`), the minor
 line (`2.2`) and `latest`. Pin the full tag in the manifest below; `latest` moves on
 every release. The package is public, so the cluster needs no pull secret.
@@ -27,16 +27,16 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eraser
+  name: delistd
 spec:
   replicas: 1                    # never more: one SQLite file, one scheduler
   strategy:
     type: Recreate               # the old pod must release the volume first
   selector:
-    matchLabels: {app: eraser}
+    matchLabels: {app: delistd}
   template:
     metadata:
-      labels: {app: eraser}
+      labels: {app: delistd}
     spec:
       securityContext:
         runAsNonRoot: true
@@ -45,14 +45,14 @@ spec:
         fsGroup: 65532           # makes the volume writable by the image's user
         seccompProfile: {type: RuntimeDefault}
       containers:
-        - name: eraser
-          image: ghcr.io/drumandbytes/eraser:v2.2.0
+        - name: delistd
+          image: ghcr.io/drumandbytes/delistd:v2.2.0
           ports:
             - {name: http, containerPort: 8080}
           env:
             - {name: TZ, value: UTC}
             # Omit this and the chrome container below if you don't use fill/mcp.
-            - {name: ERASER_CHROME_URL, value: "http://localhost:9222"}
+            - {name: DELISTD_CHROME_URL, value: "http://localhost:9222"}
           volumeMounts:
             - {name: data, mountPath: /home/nonroot/.eraser}
           readinessProbe:
@@ -83,27 +83,27 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: eraser
+  name: delistd
 spec:
   type: ClusterIP                # never LoadBalancer or an Ingress: no login
-  selector: {app: eraser}
+  selector: {app: delistd}
   ports:
     - {name: http, port: 8080, targetPort: http}
 ```
 
 Open the UI with a port-forward, which sends `Host: localhost` and so passes
-Eraser's loopback Host check:
+Delistd's loopback Host check:
 
 ```bash
-kubectl port-forward deploy/eraser 8080:8080   # then http://localhost:8080
+kubectl port-forward deploy/delistd 8080:8080   # then http://localhost:8080
 ```
 
 Commands run by exec-ing the binary directly (the image has no shell):
 
 ```bash
-kubectl exec -it deploy/eraser -c eraser -- /usr/local/bin/eraser init
-kubectl exec deploy/eraser -c eraser -- /usr/local/bin/eraser status
-kubectl exec deploy/eraser -c eraser -- /usr/local/bin/eraser fill --pending
+kubectl exec -it deploy/delistd -c delistd -- /usr/local/bin/delistd init
+kubectl exec deploy/delistd -c delistd -- /usr/local/bin/delistd status
+kubectl exec deploy/delistd -c delistd -- /usr/local/bin/delistd fill --pending
 ```
 
 ## Notes
@@ -123,7 +123,7 @@ kubectl exec deploy/eraser -c eraser -- /usr/local/bin/eraser fill --pending
   NFS or SMB.
 - **Scheduling.** Turn on Settings → Automation → "Run while this app is open"
   in the web UI: with one replica the pod runs a cycle every 6 hours. A
-  `CronJob` running `eraser auto --once` would need the same volume, which a
+  `CronJob` running `delistd auto --once` would need the same volume, which a
   `ReadWriteOnce` claim can't share with the running pod (unless both land on
   one node), and it can't unlock a passphrase-protected config.
 - **Machine ID.** The image keeps `machine-id` in the volume, so rescheduling

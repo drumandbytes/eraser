@@ -16,7 +16,7 @@ import (
 
 	"github.com/emersion/go-imap/client"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // New mail during IDLE: the follow-up SELECT's unsolicited EXISTS must not

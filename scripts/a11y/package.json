@@ -1,5 +1,5 @@
 {
-  "name": "eraser-a11y",
+  "name": "delistd-a11y",
   "private": true,
   "type": "module",
   "description": "axe-core accessibility scan of the website and the web UI",

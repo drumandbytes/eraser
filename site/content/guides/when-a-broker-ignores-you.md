@@ -21,7 +21,7 @@ reasoned refusal.
 
 ## 2. Keep the evidence
 
-Run `eraser export`. It produces a single document — per broker: what was sent
+Run `delistd export`. It produces a single document — per broker: what was sent
 and when, a copy of the request, every reply and its date, the current pipeline
 stage, and an explicit list of the controllers that are **past the deadline with
 no substantive response**. `--format html` prints cleanly to PDF for attaching
@@ -35,7 +35,7 @@ A complaint is stronger if you can show:
 - the date the deadline passed;
 - for a refusal: their stated reason, so you can say why it doesn't hold.
 
-`eraser export` assembles all of this except the raw delivery receipt from your
+`delistd export` assembles all of this except the raw delivery receipt from your
 mail provider — keep that too.
 
 ## 3. Pick the right supervisory authority
@@ -43,7 +43,7 @@ mail provider — keep that too.
 Under **GDPR Article 77** you can lodge a complaint with the data protection
 authority of the EU/EEA country where you **live**, where you **work**, or where
 the **infringement happened** — your choice. The [authorities page](/authorities/)
-lists all of them; `eraser export` also names the one for your country.
+lists all of them; `delistd export` also names the one for your country.
 
 - **Cross-border brokers:** you still file with your *local* authority. For a
   company operating in several EU countries, that authority coordinates with the
@@ -63,7 +63,7 @@ Every authority takes complaints for free, most through an online form. Include:
 - the broker's name and (if known) address;
 - what you asked for and when, and that you relied on Article 17;
 - what they did or didn't do, with dates;
-- the `eraser export` PDF and your mail records as attachments;
+- the `delistd export` PDF and your mail records as attachments;
 - what you want: an order that they erase your data and confirm it.
 
 You do not need a lawyer, and you do not need to have suffered a specific harm.

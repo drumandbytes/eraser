@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/browser"
+	"github.com/drumandbytes/delistd/internal/browser"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 func demoTestChrome(t *testing.T) string {
 	t.Helper()
-	path := os.Getenv("ERASER_TEST_CHROME")
+	path := os.Getenv("DELISTD_TEST_CHROME")
 	if os.Getenv("GITHUB_ACTIONS") != "true" || runtime.GOOS != "linux" {
 		return path
 	}
@@ -73,7 +73,7 @@ func TestDemoBrowserWorkflowOverMCP(t *testing.T) {
 		}
 		if r.IsError {
 			msg, _ := json.Marshal(r)
-			if name == "open_task" && os.Getenv("ERASER_TEST_CHROME") == "" && os.Getenv("GITHUB_ACTIONS") != "true" && strings.Contains(string(msg), "start Chrome") {
+			if name == "open_task" && os.Getenv("DELISTD_TEST_CHROME") == "" && os.Getenv("GITHUB_ACTIONS") != "true" && strings.Contains(string(msg), "start Chrome") {
 				t.Skipf("Chrome unavailable: %s", msg)
 			}
 			t.Fatalf("%s: %s", name, msg)
@@ -84,7 +84,7 @@ func TestDemoBrowserWorkflowOverMCP(t *testing.T) {
 		}
 		if name == "open_task" && out["page"] == nil {
 			msg := fmt.Sprint(out["needs_user"])
-			if os.Getenv("ERASER_TEST_CHROME") == "" && os.Getenv("GITHUB_ACTIONS") != "true" && strings.Contains(msg, "start Chrome") {
+			if os.Getenv("DELISTD_TEST_CHROME") == "" && os.Getenv("GITHUB_ACTIONS") != "true" && strings.Contains(msg, "start Chrome") {
 				t.Skipf("Chrome unavailable: %s", msg)
 			}
 			t.Fatalf("open task needs intervention: %s", msg)

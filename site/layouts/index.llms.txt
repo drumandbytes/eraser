@@ -1,11 +1,11 @@
-# Eraser
+# Delistd
 
 > Open-source, local-first tool that sends GDPR and CCPA data removal requests to {{ len .Site.Data.brokers.brokers }} data brokers from your own machine. Free, no account, no telemetry. This site holds the broker directory, opt-out guides, docs and the list of EU/EEA data protection authorities.
 
 ## Start here
 
-- [Home]({{ "/" | absURL }}): what Eraser is and how it compares with paid removal services
-- [Broker directory]({{ "/brokers/" | absURL }}): every broker Eraser contacts, with region, category and opt-out route
+- [Home]({{ "/" | absURL }}): what Delistd is and how it compares with paid removal services
+- [Broker directory]({{ "/brokers/" | absURL }}): every broker Delistd contacts, with region, category and opt-out route
 - [Docs]({{ with index (where hugo.Data.docs_versions.versions "latest" true) 0 }}{{ printf "/docs/%s/" .slug | absURL }}{{ end }}): step-by-step setup for beginners, commands, configuration, broker replies, multi-profile, MCP, stability policy
 - [EU/EEA data protection authorities]({{ "/authorities/" | absURL }}): where to complain if a broker ignores you
 
@@ -19,5 +19,5 @@
 {{ end }}
 ## Optional
 
-- [Source code](https://github.com/drumandbytes/eraser): MIT licensed
+- [Source code](https://github.com/drumandbytes/delistd): MIT licensed
 - [Privacy](/privacy/): what this website collects

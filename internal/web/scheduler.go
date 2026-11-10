@@ -7,11 +7,11 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/schedule"
+	"github.com/drumandbytes/delistd/internal/schedule"
 )
 
 // The in-app scheduler is the fallback for when the OS job isn't installed:
-// while schedule.enabled is set, serve runs `eraser auto --once` every
+// while schedule.enabled is set, serve runs `delistd auto --once` every
 // schedule.Interval. Running the CLI cycle as a child process (rather than a
 // second implementation here) keeps one send/scan path, one lock and one
 // state file for every mode.
@@ -76,11 +76,11 @@ func (s *Server) startCycle() bool {
 		}()
 		exe, err := cycleExecutable()
 		if err != nil {
-			log.Printf("Automatic run: can't find the eraser binary: %v", err)
+			log.Printf("Automatic run: can't find the delistd binary: %v", err)
 			return
 		}
 		cmd := exec.Command(exe, "auto", "--once", "--config", s.configPath)
-		cmd.Env = append(os.Environ(), "ERASER_AUTO_MODE=serve")
+		cmd.Env = append(os.Environ(), "DELISTD_AUTO_MODE=serve")
 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 		log.Printf("Automatic run starting")
 		if err := cmd.Run(); err != nil {

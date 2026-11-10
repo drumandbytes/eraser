@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // Saving inbox settings must set server/port: the form stores straight into

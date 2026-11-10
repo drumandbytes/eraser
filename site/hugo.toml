@@ -1,6 +1,6 @@
-baseURL = "https://eraser.drumandbytes.dev/"
+baseURL = "https://delistd.dev/"
 # locale is derived from the default language; no explicit setting needed
-title = "Eraser"
+title = "Delistd"
 enableRobotsTXT = true
 disableKinds = ["taxonomy", "term", "RSS"]
 enableGitInfo = true
@@ -12,7 +12,7 @@ enableGitInfo = true
 
 [params]
   description = "Send data removal requests to data brokers. Open source, local-first, free."
-  repo = "https://github.com/drumandbytes/eraser"
+  repo = "https://github.com/drumandbytes/delistd"
 
 [markup.goldmark.renderer]
   unsafe = true
@@ -35,7 +35,7 @@ enableGitInfo = true
   weight = 30
 [[menu.main]]
   name = "GitHub"
-  url = "https://github.com/drumandbytes/eraser"
+  url = "https://github.com/drumandbytes/delistd"
   weight = 40
 
 [mediaTypes."text/x-redirects"]

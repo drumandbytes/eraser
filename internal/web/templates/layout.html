@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}} - Eraser</title>
+    <title>{{.Title}} - Delistd</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
     {{if .CSRFToken}}<meta name="csrf-token" content="{{.CSRFToken}}">{{end}}
 
@@ -17,7 +17,7 @@
 
     <style>
         /* ============================================
-           ERASER DESIGN SYSTEM - "Ops Console"
+           DELISTD DESIGN SYSTEM - "Ops Console"
            Dense, dark-first, monospace accents for data.
            Colour / elevation / type tokens: static/css/tokens.css
            Layout / spacing / sizing utilities: static/css/utilities.css
@@ -684,14 +684,14 @@
     <script>
         // Theme management
         const getTheme = () => {
-            const stored = localStorage.getItem('eraser-theme');
+            const stored = localStorage.getItem('delistd-theme');
             if (stored) return stored;
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         };
 
         const setTheme = (theme) => {
             document.documentElement.classList.toggle('light', theme === 'light');
-            localStorage.setItem('eraser-theme', theme);
+            localStorage.setItem('delistd-theme', theme);
 
             // Update toggle icon
             const toggle = document.getElementById('theme-toggle');
@@ -721,7 +721,7 @@
             <!-- Logo -->
             <a href="/" class="flex items-center gap-2 text-decoration-none">
                 <span class="brand-dot"></span>
-                <span class="font-display text-[15px] font-bold text-primary">eraser</span>
+                <span class="font-display text-[15px] font-bold text-primary">delistd</span>
             </a>
 
             <!-- Desktop Navigation -->
@@ -825,10 +825,10 @@
                     <svg class="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
-                    <span class="text-sm text-muted">Eraser - Open Source Privacy Protection</span>
+                    <span class="text-sm text-muted">Delistd - Open Source Privacy Protection</span>
                 </div>
                 <div class="flex items-center gap-4 text-sm text-muted">
-                    <a href="https://github.com/drumandbytes/eraser" target="_blank" class="hover:text-primary transition-colors">GitHub</a>
+                    <a href="https://github.com/drumandbytes/delistd" target="_blank" class="hover:text-primary transition-colors">GitHub</a>
                     <span>{{.Version}}</span>
                 </div>
             </div>
@@ -855,8 +855,8 @@
          survives leaving/returning to the tab - the job itself runs
          server-side regardless of what's polling it. Page-specific scripts
          (e.g. brokers.html's detailed progress card) should call
-         window.eraserJobPoll.start(jobId) to begin tracking a job they
-         just started, and listen for the "eraser:job-update" event on
+         window.delistdJobPoll.start(jobId) to begin tracking a job they
+         just started, and listen for the "delistd:job-update" event on
          window rather than polling independently, so there's only ever
          one poll loop per page. -->
     <script>
@@ -888,14 +888,14 @@
                         // aged out): stop and notify so no card hangs "in progress"
                         stop();
                         updateIndicator(null);
-                        window.dispatchEvent(new CustomEvent('eraser:job-update', {
+                        window.dispatchEvent(new CustomEvent('delistd:job-update', {
                             detail: { id: jobId, status: 'error', error_type: 'lost' }
                         }));
                         return;
                     }
                     const job = await resp.json();
                     updateIndicator(job);
-                    window.dispatchEvent(new CustomEvent('eraser:job-update', { detail: job }));
+                    window.dispatchEvent(new CustomEvent('delistd:job-update', { detail: job }));
                     if (job.status !== 'running') {
                         stop();
                     }
@@ -918,7 +918,7 @@
                 }
             }
 
-            window.eraserJobPoll = {
+            window.delistdJobPoll = {
                 start,
                 stop,
                 get jobId() { return jobId; },

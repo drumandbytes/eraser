@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/imaptest"
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/imaptest"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 func testBrokers() *broker.BrokerDatabase {
@@ -155,11 +155,11 @@ func TestClearReportsSaveFailures(t *testing.T) {
 
 	// The user's own entries can't be written: their folder is read-only.
 	home := t.TempDir()
-	eraserDir := filepath.Join(home, ".eraser")
-	if err := os.MkdirAll(eraserDir, 0o500); err != nil {
+	delistdDir := filepath.Join(home, ".eraser")
+	if err := os.MkdirAll(delistdDir, 0o500); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = os.Chmod(eraserDir, 0o700) })
+	t.Cleanup(func() { _ = os.Chmod(delistdDir, 0o700) })
 	testenv.SetHome(t, home)
 	if _, err := Clear("", dead); err == nil || !strings.Contains(err.Error(), "failed to save") {
 		t.Errorf("unwritable user entries: %v", err)

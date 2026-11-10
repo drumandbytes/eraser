@@ -2,6 +2,8 @@
 # Cut a release by pushing a tag: git tag v0.1.0 && git push origin v0.1.0
 version: 2
 
+project_name: delistd
+
 before:
   hooks:
     # Just prime the module cache. `go mod tidy` here would rewrite go.mod
@@ -9,9 +11,9 @@ before:
     - go mod download
 
 builds:
-  - id: eraser
-    main: ./cmd/eraser
-    binary: eraser
+  - id: delistd
+    main: ./cmd/delistd
+    binary: delistd
     env:
       - CGO_ENABLED=0
     flags:
@@ -21,8 +23,23 @@ builds:
     goos: [linux, darwin, windows]
     goarch: [amd64, arm64]
 
-archives:
+  # Deprecated alias: the same program under its old name, so existing scripts, OS schedules
+  # and muscle memory keep working. It prints a rename notice and goes away in the next
+  # major release. Not built for Windows ('binary' archives can't hold two executables).
   - id: eraser
+    main: ./cmd/delistd
+    binary: eraser
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: delistd
     formats: [tar.gz]
     format_overrides:
       - goos: windows
@@ -53,7 +70,7 @@ changelog:
 release:
   github:
     owner: drumandbytes
-    name: eraser
+    name: delistd
   draft: false
   prerelease: auto
   # release-please already created the release (with its own changelog) by
@@ -61,20 +78,22 @@ release:
   # overwriting its notes with the changelog config below.
   mode: keep-existing
 
-# macOS: brew install drumandbytes/homebrew-tap/eraser
+# macOS: brew install drumandbytes/homebrew-tap/delistd
 # The binary is unsigned and Homebrew keeps the Gatekeeper quarantine on cask
 # installs (brew trust doesn't clear it), so a postflight step removes it.
 # Integrity still comes from the cask's sha256 check.
 # ponytail: xattr hook; Developer ID signing + notarization if we get an
 # Apple developer account.
 homebrew_casks:
-  - name: eraser
+  - name: delistd
     repository:
       owner: drumandbytes
       name: homebrew-tap
       branch: main
     directory: Casks
-    homepage: "https://eraser.drumandbytes.dev/"
+    homepage: "https://delistd.dev/"
+    # both executables: `eraser` is the deprecated alias (see the build above)
+    binaries: [delistd, eraser]
     description: "Send data removal requests to data brokers"
     license: "MIT"
     commit_author:
@@ -86,10 +105,14 @@ homebrew_casks:
     custom_block: |
       postflight_steps do
         on_macos do
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "delistd"], chdir: "."
           run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "eraser"], chdir: "."
         end
       end
     caveats: |
-      Config lives at ~/.eraser/config.yaml. Start with:
-        eraser serve      # web UI at http://localhost:8080
-      `eraser fill` / `eraser confirm` also need Chrome installed.
+      Eraser is now Delistd. The `eraser` command still works for now, but will be removed
+      in a future major release; use `delistd`.
+
+      Config lives at ~/.eraser/config.yaml (unchanged). Start with:
+        delistd serve      # web UI at http://localhost:8080
+      `delistd fill` / `delistd confirm` also need Chrome installed.

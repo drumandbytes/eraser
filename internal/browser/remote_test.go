@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // An unreachable endpoint: nothing here needs a real Chrome.

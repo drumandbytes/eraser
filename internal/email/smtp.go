@@ -10,7 +10,7 @@ import (
 	"net/smtp"
 	"strings"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 type SMTPSender struct {

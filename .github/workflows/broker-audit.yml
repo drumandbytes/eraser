@@ -29,13 +29,13 @@ jobs:
           go-version: "1.26"
 
       - name: Validate structure
-        run: go run ./cmd/eraser validate-brokers
+        run: go run ./cmd/delistd validate-brokers
 
       - name: Audit liveness and clear dead email domains
-        run: go run ./cmd/eraser audit-brokers --timeout 20 --fix | tee audit-summary.txt
+        run: go run ./cmd/delistd audit-brokers --timeout 20 --fix | tee audit-summary.txt
 
       - name: Re-validate after fix
-        run: go run ./cmd/eraser validate-brokers data/brokers.yaml
+        run: go run ./cmd/delistd validate-brokers data/brokers.yaml
 
       - name: Open prune PR if anything changed
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1

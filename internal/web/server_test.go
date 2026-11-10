@@ -9,10 +9,10 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/schedule"
-	emaTemplate "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/schedule"
+	emaTemplate "github.com/drumandbytes/delistd/internal/template"
 )
 
 // newTestServer builds a minimal *Server suitable for unit tests that don't
@@ -208,7 +208,7 @@ func TestGetBrokersWithStatusShowExcludedIncludesAndMarksThem(t *testing.T) {
 	}
 }
 
-// drumandbytes/eraser#1: on first /setup there's no config, and a missing
+// drumandbytes/delistd#1: on first /setup there's no config, and a missing
 // Profiles key made layout.html's len fail.
 func TestRenderWithCSRFHandlesNilConfig(t *testing.T) {
 	s := newTestServer(t, nil)

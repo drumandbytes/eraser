@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	emaTemplate "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	emaTemplate "github.com/drumandbytes/delistd/internal/template"
 )
 
 // unwritableConfigPath is a path nothing can be saved to on any OS: a

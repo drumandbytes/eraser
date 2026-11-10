@@ -1,4 +1,4 @@
-/* Eraser docs site. Calm, evidentiary. Palette mirrors the app's theme
+/* Delistd docs site. Calm, evidentiary. Palette mirrors the app's theme
    tokens (internal/web/static/css/tokens.css). Follows the OS light/dark
    setting - every colour goes through a token so only :root is redefined. */
 :root {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 func TestAutomationApprovalPageAndApprove(t *testing.T) {

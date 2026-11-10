@@ -21,7 +21,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const module = "github.com/drumandbytes/eraser/"
+const module = "github.com/drumandbytes/delistd/"
 
 type block struct {
 	file       string

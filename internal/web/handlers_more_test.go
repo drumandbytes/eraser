@@ -11,12 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/schedule"
-	"github.com/drumandbytes/eraser/internal/smtptest"
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/schedule"
+	"github.com/drumandbytes/delistd/internal/smtptest"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 // sessionRequest builds a request carrying a wizard session set up by fill.
@@ -276,7 +276,7 @@ func TestExportEndpoint(t *testing.T) {
 
 	rec := do(t, s, http.MethodGet, "/export?format=json&since=2020-01-01", false)
 	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "application/json" ||
-		!strings.Contains(rec.Header().Get("Content-Disposition"), "eraser-evidence-default-") ||
+		!strings.Contains(rec.Header().Get("Content-Disposition"), "delistd-evidence-default-") ||
 		!strings.Contains(rec.Body.String(), `"broker_id": "spokeo"`) {
 		t.Fatalf("json export: %d %q %s", rec.Code, rec.Header().Get("Content-Disposition"), rec.Body.String())
 	}

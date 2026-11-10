@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
-// whatsNew is the one-time "What's new in Eraser 2.0" card on the dashboard.
+// whatsNew is the one-time "What's new in Delistd 2.0" card on the dashboard.
 // It also carries the config-upgrade note when a 1.x config was migrated, so
 // upgraders see one notice, not two.
 type whatsNew struct {

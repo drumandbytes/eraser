@@ -25,7 +25,7 @@
 <body>
 <a href="#main" class="skip-link">Skip to main content</a>
 <header class="topbar">
-  <a class="brand" href="{{ "/" | relURL }}">eraser</a>
+  <a class="brand" href="{{ "/" | relURL }}">delistd</a>
   <nav aria-label="Main">
     {{ range .Site.Menus.main }}{{ $url := .URL }}{{ if eq .Name "Docs" }}{{ range hugo.Data.docs_versions.versions }}{{ if .latest }}{{ $url = printf "/docs/%s/" .slug }}{{ end }}{{ end }}{{ end }}<a href="{{ $url | relLangURL }}"{{ if $.IsMenuCurrent "main" . }} class="active"{{ end }}>{{ .Name }}</a>{{ end }}
   </nav>
@@ -35,11 +35,11 @@
 </main>
 <footer class="foot">
   Part of <a href="https://drumandbytes.com/projects/">Drumandbytes</a> ·
-  <a href="https://github.com/drumandbytes/eraser">Source</a> ·
+  <a href="https://github.com/drumandbytes/delistd">Source</a> ·
   MIT licensed ·
   Not legal advice — you're responsible for what you send ·
   <a href="/privacy/">Privacy</a> ·
-  <a href="https://github.com/drumandbytes/eraser/issues/new">Something wrong or missing?</a>
+  <a href="https://github.com/drumandbytes/delistd/issues/new">Something wrong or missing?</a>
 </footer>
 </body>
 </html>

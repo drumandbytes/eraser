@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/testenv"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/testenv"
 )
 
 // fakeOS points the seams at a temp HOME and a recording command stub, so
@@ -38,7 +38,7 @@ func fakeOS(t *testing.T, platform string, fail ...string) *[]string {
 	return &calls
 }
 
-var testJob = Job{Exe: "/opt/eraser", ConfigPath: "/home/j/.eraser/config.yaml", LogPath: "/home/j/.eraser/auto.log"}
+var testJob = Job{Exe: "/opt/delistd", ConfigPath: "/home/j/.eraser/config.yaml", LogPath: "/home/j/.eraser/auto.log"}
 
 func TestInstallAndRemoveLaunchd(t *testing.T) {
 	calls := fakeOS(t, "darwin")
@@ -50,7 +50,7 @@ func TestInstallAndRemoveLaunchd(t *testing.T) {
 	}
 	path, _ := launchdPath()
 	plist, err := os.ReadFile(path)
-	if err != nil || !strings.Contains(string(plist), "<string>/opt/eraser</string>") {
+	if err != nil || !strings.Contains(string(plist), "<string>/opt/delistd</string>") {
 		t.Fatalf("plist = %s, %v", plist, err)
 	}
 	if !Installed() {
@@ -244,7 +244,7 @@ func TestStableExecutable(t *testing.T) {
 		t.Error("executable error swallowed")
 	}
 
-	stubExecutable(t, filepath.Join(os.TempDir(), "go-build123", "b001", "exe", "eraser"), nil)
+	stubExecutable(t, filepath.Join(os.TempDir(), "go-build123", "b001", "exe", "delistd"), nil)
 	if _, err := StableExecutable(); err == nil || !strings.Contains(err.Error(), "go run") {
 		t.Errorf("temp build: %v", err)
 	}
@@ -257,11 +257,11 @@ func TestStableExecutable(t *testing.T) {
 	// A real install: a binary outside TMPDIR, also reachable via PATH
 	// through a symlink, resolves to the PATH entry.
 	binDir, dir := outsideTMPDIR(t), t.TempDir()
-	bin := filepath.Join(binDir, "eraser-real")
+	bin := filepath.Join(binDir, "delistd-real")
 	if err := os.WriteFile(bin, []byte("#!/bin/sh\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	link := filepath.Join(dir, "eraser")
+	link := filepath.Join(dir, "delistd")
 	if err := os.Symlink(bin, link); err != nil {
 		t.Fatal(err)
 	}
@@ -270,7 +270,7 @@ func TestStableExecutable(t *testing.T) {
 
 	t.Setenv("PATH", dir)
 	if got, err := StableExecutable(); err != nil || got != link {
-		t.Errorf("with eraser on PATH = %q, %v; want the PATH symlink %q", got, err, link)
+		t.Errorf("with delistd on PATH = %q, %v; want the PATH symlink %q", got, err, link)
 	}
 	t.Setenv("PATH", "")
 	if got, err := StableExecutable(); err != nil || got != real {
@@ -323,7 +323,7 @@ func TestNewJob(t *testing.T) {
 		t.Error("executable error swallowed")
 	}
 
-	bin := filepath.Join(outsideTMPDIR(t), "eraser")
+	bin := filepath.Join(outsideTMPDIR(t), "delistd")
 	if err := os.WriteFile(bin, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}

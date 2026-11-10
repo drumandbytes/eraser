@@ -17,7 +17,7 @@ type NoDataClassifier func(BrokerResponse) (bool, float64, bool)
 // serializes two app processes upgrading the same database. A failed migration
 // is retryable.
 func (s *Store) MigrateNoData(classify NoDataClassifier) error {
-	// Read the marker without a write lock so routine opens (e.g. `eraser status`)
+	// Read the marker without a write lock so routine opens (e.g. `delistd status`)
 	// don't contend with the writer once the migration has run.
 	var tables int
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'data_migrations'`).Scan(&tables); err != nil {

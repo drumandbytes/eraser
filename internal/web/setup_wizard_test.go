@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 // wizardClient drives the setup wizard through the real router (CSRF,

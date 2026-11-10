@@ -1,6 +1,6 @@
 ---
 title: "Documentation"
-description: "Eraser documentation for every release: the stable releases and the nightly build from main."
+description: "Delistd documentation for every release: the stable releases and the nightly build from main."
 robots: "noindex, follow"
 sitemap:
   disable: true

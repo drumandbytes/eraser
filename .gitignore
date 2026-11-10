@@ -1,5 +1,5 @@
 # Binaries
-/eraser
+/delistd
 *.exe
 *.dll
 *.so
@@ -69,8 +69,8 @@ browser-data/
 pending_job.json
 manual_review_*.xlsx
 _to_delete/
-eraser-evidence-*.html
-eraser-evidence-*.json
+delistd-evidence-*.html
+delistd-evidence-*.json
 
 # import-registries working output
 /scripts/import-registries/candidates.yaml

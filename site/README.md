@@ -1,6 +1,6 @@
 # site/
 
-The docs site — [eraser.drumandbytes.dev](https://eraser.drumandbytes.dev/?ref=eraser-site-readme),
+The docs site — [delistd.dev](https://delistd.dev/?ref=delistd-site-readme),
 built with [Hugo](https://gohugo.io) and deployed to Cloudflare Pages by
 `.github/workflows/deploy.yaml` on every push to `main` that touches the broker
 data, `site/`, or the guide generator.
@@ -11,7 +11,7 @@ data, `site/`, or the guide generator.
 ./site/build.sh            # or: ./site/build.sh serve
 ```
 
-That runs `eraser guides` to generate `content/brokers/*.md` +
+That runs `delistd guides` to generate `content/brokers/*.md` +
 `static/brokers.json`, copies `data/authorities.yaml` in, and runs `hugo --minify`
 into `site/public/`. All generated files are gitignored.
 

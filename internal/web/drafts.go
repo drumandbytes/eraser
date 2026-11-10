@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	emaTemplate "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	emaTemplate "github.com/drumandbytes/delistd/internal/template"
 )
 
-// handleDraftsZip is `eraser draft -o dir` as a download: one .eml per broker
+// handleDraftsZip is `delistd draft -o dir` as a download: one .eml per broker
 // with an email address that is in scope for the active profile, to send by
 // hand and then record with Mark sent.
 func (s *Server) handleDraftsZip(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +26,7 @@ func (s *Server) handleDraftsZip(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/zip")
-	w.Header().Set("Content-Disposition", `attachment; filename="eraser-drafts.zip"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="delistd-drafts.zip"`)
 	zw := zip.NewWriter(w)
 	defer func() { _ = zw.Close() }()
 

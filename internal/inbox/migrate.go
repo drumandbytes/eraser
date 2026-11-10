@@ -1,6 +1,6 @@
 package inbox
 
-import "github.com/drumandbytes/eraser/internal/history"
+import "github.com/drumandbytes/delistd/internal/history"
 
 // MigrateNoDataResponses uses only locally stored messages, never IMAP.
 func MigrateNoDataResponses(store *history.Store) error {

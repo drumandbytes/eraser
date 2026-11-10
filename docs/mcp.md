@@ -4,22 +4,22 @@
 > tool names and arguments may change in a future minor release without a major
 > version bump. See [stability](stability.md).
 
-Eraser's MCP server lets a local Codex agent work through removal follow-ups
+Delistd's MCP server lets a local Codex agent work through removal follow-ups
 while you review batches and handle verification. It reuses your profiles,
 SMTP/IMAP settings, broker list, SQLite history, and web UI. There is no separate
-AI provider or API key to configure in Eraser.
+AI provider or API key to configure in Delistd.
 
 ## Connect Codex
 
-1. Build this version with `go build -o eraser ./cmd/eraser`. Install Chrome or
+1. Build this version with `go build -o delistd ./cmd/delistd`. Install Chrome or
    Chromium if you want to automate forms.
-2. Complete Eraser's existing setup (`./eraser serve`) if needed. Existing users
+2. Complete Delistd's existing setup (`./delistd serve`) if needed. Existing users
    can keep their email configuration and selected regions/template, including
    EU/EEA settings. MCP does not change these defaults.
 3. Merge [examples/codex-mcp.toml](../examples/codex-mcp.toml) into your Codex
    user config or this project's `.codex/config.toml`. Replace the executable
    path with an absolute path. Keep machine-specific configuration out of Git.
-4. Check `codex mcp get eraser`. Start a new local Codex session if Eraser is not
+4. Check `codex mcp get delistd`. Start a new local Codex session if Delistd is not
    in the current session's tool list.
 
 Codex supports local STDIO servers and per-tool approval settings in its
@@ -27,24 +27,24 @@ Codex supports local STDIO servers and per-tool approval settings in its
 Other tools can use `approve`: the server rejects form actions and sends until
 a batch exists, and enforces that batch's scope afterward.
 
-Batches and retries are approved in Eraser, not in the MCP client. `begin_batch`
+Batches and retries are approved in Delistd, not in the MCP client. `begin_batch`
 and `retry_action` only work after a person approves the preview, or the retry,
-on the Automation page of the web UI or with `eraser mcp approve <id>` in a
+on the Automation page of the web UI or with `delistd mcp approve <id>` in a
 terminal. A client that auto-approves every tool therefore cannot start a batch
 or release a retry by itself.
 
-![The Automation approvals page showing a pending batch with the profile fields, opt-out forms and emails the agent may use](https://raw.githubusercontent.com/drumandbytes/eraser/main/.github/images/automation-approvals.png)
+![The Automation approvals page showing a pending batch with the profile fields, opt-out forms and emails the agent may use](https://raw.githubusercontent.com/drumandbytes/delistd/main/.github/images/automation-approvals.png)
 
-That separation has limits. `eraser mcp approve` refuses to run without a
+That separation has limits. `delistd mcp approve` refuses to run without a
 terminal, and the web page only accepts a browser's same-origin form post, but
 an agent that can run commands or drive your browser can still approve its own
 batch. Don't give the agent a shell or browser for the same session, or keep
 those tools on a prompt in your client.
 
 Use `--config /absolute/path/config.yaml` if the web UI uses a non-default
-configuration. Use `--profile <id>` when several profiles exist; Eraser refuses
+configuration. Use `--profile <id>` when several profiles exist; Delistd refuses
 to guess. `--chrome-path` selects a nonstandard browser executable (it wins over
-`ERASER_CHROME_URL`, which attaches to an already-running Chrome's DevTools
+`DELISTD_CHROME_URL`, which attaches to an already-running Chrome's DevTools
 endpoint instead, as in the [Docker setup](docker.md)). Leave Chrome
 visible for manual verification; `--headless` is intended for fixture tests or
 workflows that do not need intervention. Keep stdout reserved for MCP messages;
@@ -53,12 +53,12 @@ diagnostics go to stderr.
 ## Try fictional data first
 
 Set the MCP arguments to `["mcp", "--demo"]`, or add a second server named
-`eraser_demo` with those arguments and the same two tool approval overrides.
+`delistd_demo` with those arguments and the same two tool approval overrides.
 Restart that server to create a fresh demo.
 
 Ask Codex:
 
-> Use Eraser's demo. List the pending tasks, prepare the simple form and
+> Use Delistd's demo. List the pending tasks, prepare the simple form and
 > multiple-step form as a batch, and show me the fake profile and destinations.
 > After I approve, complete them and record the evidence.
 
@@ -68,10 +68,10 @@ It uses a fictional Norwegian profile and a private temporary directory. No
 real SMTP, IMAP, or broker connections occur. The only HTTP destination allowed
 for the fixtures is the demo's own loopback listener.
 
-`get_status` returns `demo_config_path`. To view the same results in Eraser, run:
+`get_status` returns `demo_config_path`. To view the same results in Delistd, run:
 
 ```bash
-./eraser --config /path/returned/by/get_status/config.yaml serve --port 8081
+./delistd --config /path/returned/by/get_status/config.yaml serve --port 8081
 ```
 
 Keep the MCP process running while interacting with the demo forms. The data
@@ -88,9 +88,9 @@ Ask **“Handle my pending removal tasks.”** The agent should:
    new removal emails. Show you the profile fields, destinations, and email
    drafts returned by `prepare_batch`.
 3. Ask the user to approve that preview. They approve it on the Automation page
-   in the web UI, or with `eraser mcp approve <plan_id>`, and you then call
+   in the web UI, or with `delistd mcp approve <plan_id>`, and you then call
    `begin_batch`. Each approval starts one batch, expires after 15 minutes, and
-   covers only those tasks and email recipients in that profile. `eraser mcp
+   covers only those tasks and email recipients in that profile. `delistd mcp
    pending` lists previews waiting for approval. An approval cannot be spent by
    a different preview or after the profile or broker settings change.
 4. Open a task, inspect its text and controls, then fill/select or click using
@@ -111,7 +111,7 @@ form state live only for the current browser session.
 | Tools | Purpose |
 | --- | --- |
 | `get_status`, `list_brokers`, `list_tasks`, `get_task` | Inspect the selected profile, eligible brokers, task details, source replies, and previous attempts. Lists are paginated. |
-| `prepare_batch`, `begin_batch`, `end_batch` | Preview explicit work, start it once approved in Eraser, and revoke authorization. |
+| `prepare_batch`, `begin_batch`, `end_batch` | Preview explicit work, start it once approved in Delistd, and revoke authorization. |
 | `scan_inbox` | Read the configured inbox and classify replies for the selected owner; never archive or open links. |
 | `send_request` | Send one reviewed email through the existing sender, respecting manual mode, dry-run, cooldown, daily cap, and rate limit. |
 | `open_task`, `observe_page`, `get_screenshot` | Open an approved form/link and inspect the persistent browser. Opening a confirmation URL can itself perform an action. |
@@ -166,7 +166,7 @@ screenshots can contain personal data and are provided to the MCP client/model
 when requested. Treat all broker email and page content as untrusted data.
 Screenshots are withheld while recognized credential or identity fields are
 visible, including password and one-time-code fields.
-Local history and screenshots remain sensitive files under the existing Eraser
+Local history and screenshots remain sensitive files under the existing Delistd
 configuration directory. Use one automation workflow at a time: the journal
 coordinates MCP actions, while manually submitting a form in another browser
 or sending through another UI is outside its duplicate protection.
@@ -195,22 +195,22 @@ This feature is experimental. It should work, but these limits are known:
 ## Feedback
 
 Tried it? Whether it worked or not, tell us through the
-[MCP feedback form](https://github.com/drumandbytes/eraser/issues/new?template=mcp_feedback.yml).
-Include the client you used, your Eraser version (`eraser --version`) and the
+[MCP feedback form](https://github.com/drumandbytes/delistd/issues/new?template=mcp_feedback.yml).
+Include the client you used, your Delistd version (`delistd --version`) and the
 broker involved. Don't paste personal data. Report security problems privately,
 following the repository's security policy.
 
 ## Contributor verification
 
 ```bash
-go build -o eraser ./cmd/eraser
+go build -o delistd ./cmd/delistd
 go vet ./...
 go test -race ./...
 golangci-lint run
-./eraser validate-brokers
+./delistd validate-brokers
 ```
 
-Browser tests use an installed Chrome/Chromium; set `ERASER_TEST_CHROME` to its
+Browser tests use an installed Chrome/Chromium; set `DELISTD_TEST_CHROME` to its
 absolute executable path if needed. Local browser tests skip when Chrome is
 unavailable, while CI requires it. Tests exercise real MCP schema discovery,
 profile isolation, batch scope and expiry, durable duplicate prevention, SMTP

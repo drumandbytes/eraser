@@ -43,7 +43,7 @@ jobs:
           private-key: ${{ secrets.AUTOMATION_APP_PRIVATE_KEY }}
           permission-contents: write
           owner: drumandbytes
-          repositories: eraser,homebrew-tap
+          repositories: delistd,homebrew-tap
 
       - uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
@@ -90,7 +90,7 @@ jobs:
           SUFFIX: ${{ matrix.suffix }}
         run: ./scripts/release-smoke.sh "$TAG" "$SUFFIX"
 
-  # Distroless image on ghcr.io/drumandbytes/eraser, built from the tagged
+  # Distroless image on ghcr.io/drumandbytes/delistd, built from the tagged
   # commit. Runs beside the GoReleaser job; a failure here leaves the binaries
   # and the GitHub release as they are.
   docker:
@@ -121,12 +121,17 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          image=ghcr.io/drumandbytes/eraser
+          # ghcr.io/drumandbytes/eraser is the pre-rename image name: same image under both
+          # names until the next major release, so existing compose files keep pulling updates.
           version=${TAG#v}
-          tags="$image:$TAG"
-          if [[ "$version" =~ ^([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
-            tags+=$'\n'"$image:${BASH_REMATCH[1]}"$'\n'"$image:latest"
-          fi
+          tags=""
+          for image in ghcr.io/drumandbytes/delistd ghcr.io/drumandbytes/eraser; do
+            tags+="$image:$TAG"$'\n'
+            if [[ "$version" =~ ^([0-9]+\.[0-9]+)\.[0-9]+$ ]]; then
+              tags+="$image:${BASH_REMATCH[1]}"$'\n'"$image:latest"$'\n'
+            fi
+          done
+          tags=${tags%$'\n'}
           {
             echo "version=$version"
             echo "tags<<EOF"
@@ -138,7 +143,7 @@ jobs:
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
-          target: eraser
+          target: delistd
           platforms: linux/amd64,linux/arm64
           build-args: VERSION=${{ steps.tags.outputs.version }}
           tags: ${{ steps.tags.outputs.tags }}
@@ -169,7 +174,7 @@ jobs:
           TAG: ${{ inputs.tag || github.ref_name }}
           PLATFORM: ${{ matrix.platform }}
         run: |
-          image="ghcr.io/drumandbytes/eraser:$TAG"
+          image="ghcr.io/drumandbytes/delistd:$TAG"
           docker pull --platform "$PLATFORM" "$image"
           out=$(docker run --rm --platform "$PLATFORM" "$image" --version)
           echo "$out"

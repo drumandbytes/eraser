@@ -3,8 +3,8 @@ package template
 import (
 	"testing"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 func TestRenderSubjectsAndUnknownTemplate(t *testing.T) {

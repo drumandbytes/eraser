@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/config"
+	"github.com/drumandbytes/delistd/internal/config"
 )
 
 func TestSessionStoreLifecycle(t *testing.T) {

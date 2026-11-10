@@ -20,12 +20,12 @@ import (
 	"time"
 
 	csrf "filippo.io/csrf/gorilla"
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/country"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/schedule"
-	emaTemplate "github.com/drumandbytes/eraser/internal/template"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/country"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/schedule"
+	emaTemplate "github.com/drumandbytes/delistd/internal/template"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -357,7 +357,7 @@ func (s *Server) Start() error {
 		go OpenBrowser(fmt.Sprintf("http://localhost:%d", s.port))
 	}
 
-	fmt.Printf("Starting Eraser web UI at http://localhost:%d\n", s.port)
+	fmt.Printf("Starting Delistd web UI at http://localhost:%d\n", s.port)
 	fmt.Println("Press Ctrl+C to stop")
 
 	if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
@@ -415,6 +415,7 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Get("/unlock", s.handleUnlock)
 	r.Post("/upgrade-notice/dismiss", s.handleDismissUpgradeNotice)
 	r.Post("/whats-new/dismiss", s.handleDismissWhatsNew)
+	r.Post("/renamed/dismiss", s.handleDismissRenamed)
 	r.Post("/unlock", s.handleUnlock)
 	r.Get("/settings", s.handleSettings)
 	r.Post("/settings/passphrase", s.handleSettingsPassphrase)

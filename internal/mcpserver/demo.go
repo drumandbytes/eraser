@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
 )
 
 type demoState struct{ origin string }
@@ -19,7 +19,7 @@ type demoState struct{ origin string }
 // NewDemo builds an isolated config and fake broker site. The loopback exception
 // is tied to this listener, never a tool argument.
 func NewDemo(headless bool, chromePath string) (*Service, func(), error) {
-	dir, err := os.MkdirTemp("", "eraser-mcp-demo-")
+	dir, err := os.MkdirTemp("", "delistd-mcp-demo-")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -74,7 +74,7 @@ func NewDemo(headless bool, chromePath string) (*Service, func(), error) {
 			return nil, nil, err
 		}
 	}
-	fmt.Fprintf(os.Stderr, "Isolated demo data: %s\nReview with: eraser --config %s serve\n", dir, configPath)
+	fmt.Fprintf(os.Stderr, "Isolated demo data: %s\nReview with: delistd --config %s serve\n", dir, configPath)
 	return s, cleanup, nil
 }
 
@@ -82,7 +82,7 @@ func demoHandler() http.Handler {
 	mux := http.NewServeMux()
 	write := func(w http.ResponseWriter, body string) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		_, _ = fmt.Fprint(w, `<!doctype html><html><head><title>Eraser local demo</title></head><body><h1>Fictional data broker</h1><p>This is a local test. No request reaches a real broker.</p>`+body+`</body></html>`)
+		_, _ = fmt.Fprint(w, `<!doctype html><html><head><title>Delistd local demo</title></head><body><h1>Fictional data broker</h1><p>This is a local test. No request reaches a real broker.</p>`+body+`</body></html>`)
 	}
 	mux.HandleFunc("/form", func(w http.ResponseWriter, r *http.Request) {
 		write(w, `<h2>Remove my information</h2><form method="post" action="/received"><label>First name <input name="first_name" required></label><label>Email <input type="email" name="email" required></label><label>Country <select name="country"><option>Norway</option><option>Sweden</option></select></label><label><input type="checkbox" name="consent" required>I request deletion of my personal data</label><button type="submit">Submit request</button></form>`)

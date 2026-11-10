@@ -1,55 +1,57 @@
-# Eraser
+# Delistd
 
-[![CI](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml/badge.svg)](https://github.com/drumandbytes/eraser/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/drumandbytes/eraser/graph/badge.svg)](https://codecov.io/gh/drumandbytes/eraser)
-[![Go Reference](https://pkg.go.dev/badge/github.com/drumandbytes/eraser.svg)](https://pkg.go.dev/github.com/drumandbytes/eraser)
-[![Release](https://img.shields.io/github/v/release/drumandbytes/eraser)](https://github.com/drumandbytes/eraser/releases)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/drumandbytes/eraser)](go.mod)
-[![Docker image](https://img.shields.io/badge/ghcr.io-drumandbytes%2Feraser-2496ED?logo=docker&logoColor=white)](https://github.com/drumandbytes/eraser/pkgs/container/eraser)
+[![CI](https://github.com/drumandbytes/delistd/actions/workflows/ci.yml/badge.svg)](https://github.com/drumandbytes/delistd/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/drumandbytes/delistd/graph/badge.svg)](https://codecov.io/gh/drumandbytes/delistd)
+[![Go Reference](https://pkg.go.dev/badge/github.com/drumandbytes/delistd.svg)](https://pkg.go.dev/github.com/drumandbytes/delistd)
+[![Release](https://img.shields.io/github/v/release/drumandbytes/delistd)](https://github.com/drumandbytes/delistd/releases)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/drumandbytes/delistd)](go.mod)
+[![Docker image](https://img.shields.io/badge/ghcr.io-drumandbytes%2Fdelistd-2496ED?logo=docker&logoColor=white)](https://github.com/drumandbytes/delistd/pkgs/container/delistd)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
-**Take back your privacy.** Eraser sends data removal requests to 700+ data brokers on your behalf — for free.
+**Take back your privacy.** Delistd sends data removal requests to 700+ data brokers on your behalf — for free.
 
-![Eraser dashboard](.github/images/dashboard.png)
+![Delistd dashboard](.github/images/dashboard.png)
 
-You know those sites like Spokeo, BeenVerified, and Whitepages that have your home address, phone number, and family members' names? They're called data brokers, and there are hundreds of them. Services like Incogni and DeleteMe charge $100+/year to send opt-out requests to these companies. Eraser does the same thing, but it's open source and completely free.
+You know those sites like Spokeo, BeenVerified, and Whitepages that have your home address, phone number, and family members' names? They're called data brokers, and there are hundreds of them. Services like Incogni and DeleteMe charge $100+/year to send opt-out requests to these companies. Delistd does the same thing, but it's open source and completely free.
 
-📖 **[eraser.drumandbytes.dev](https://eraser.drumandbytes.dev/?ref=eraser-readme)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
-🔗 [More Drumandbytes projects](https://drumandbytes.com/projects/?ref=eraser-readme)
+📖 **[delistd.dev](https://delistd.dev/?ref=delistd-readme)** — broker directory, opt-out guides, and the list of EU/EEA data protection authorities.
+🔗 [More Drumandbytes projects](https://drumandbytes.com/projects/?ref=delistd-readme)
 
-**New here and not technical? Start with the [step-by-step setup guide](docs/getting-started.md).** It covers downloading Eraser, creating a Gmail app password, and the setup wizard, with a fix for every common error.
+**New here and not technical? Start with the [step-by-step setup guide](docs/getting-started.md).** It covers downloading Delistd, creating a Gmail app password, and the setup wizard, with a fix for every common error.
+
+> **Eraser is now Delistd.** Same project, new name (the old one was too generic to find). Nothing breaks: the `eraser` command, the `ERASER_*` environment variables, the `ghcr.io/drumandbytes/eraser` image and your `~/.eraser` data all keep working for now, with a notice. `brew upgrade` moves you to the `delistd` cask. The old names go away in the next major release; see [docs/stability.md](docs/stability.md#the-eraser--delistd-rename).
 
 > **Upgrading from 1.x?** 2.0 stores your profile's country as an ISO code, encrypts your mail passwords (with an optional passphrase), skips country-specific brokers that don't apply to you, and removes a few old settings. Your config is upgraded automatically on first run and the original is kept as `config.yaml.1x.bak`. See the [upgrade guide](docs/upgrading-to-2.0.md).
 
 ### What to Expect
 
-**The good:** Eraser automatically sends removal request emails to 700+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
+**The good:** Delistd automatically sends removal request emails to 700+ data brokers. Many brokers process these requests automatically—you send the email, they remove your data, done.
 
-**The reality:** Some brokers require additional steps. They might send you a confirmation link to click, ask you to fill out a form on their website, or request identity verification. Eraser tracks these responses and shows you exactly what needs manual attention.
+**The reality:** Some brokers require additional steps. They might send you a confirmation link to click, ask you to fill out a form on their website, or request identity verification. Delistd tracks these responses and shows you exactly what needs manual attention.
 
-**The bottom line:** You're not paying $100+/year, and you're taking real action to protect your privacy. Even with some manual steps, Eraser handles the heavy lifting and gives you a fighting chance against the data broker industry.
+**The bottom line:** You're not paying $100+/year, and you're taking real action to protect your privacy. Even with some manual steps, Delistd handles the heavy lifting and gives you a fighting chance against the data broker industry.
 
 ---
 
 ## The Easy Way (Web Interface)
 
-If you're not comfortable with command-line tools, Eraser has a visual interface that runs in your web browser.
+If you're not comfortable with command-line tools, Delistd has a visual interface that runs in your web browser.
 
 ### What You'll Need
 
-1. **Eraser itself**: install with Homebrew, or download the file for your OS from [Releases](https://github.com/drumandbytes/eraser/releases). No Go needed, unless you want to build from source.
+1. **Delistd itself**: install with Homebrew, or download the file for your OS from [Releases](https://github.com/drumandbytes/delistd/releases). No Go needed, unless you want to build from source.
 2. An **email account** to send from: Gmail, Proton Mail (via Bridge), Fastmail, mailbox.org, Posteo, iCloud, Amazon SES, or any provider with SMTP access (setup instructions below)
 
 ### Getting Started
 
-**Step 1: Get Eraser**
+**Step 1: Get Delistd**
 
 **Homebrew (macOS, and Linux where cask support is available):**
 
 ```bash
 brew tap drumandbytes/tap
-brew install --cask drumandbytes/tap/eraser
+brew install --cask drumandbytes/tap/delistd
 ```
 
 Homebrew 6+ asks you to trust a third-party tap once — if it does, run
@@ -59,47 +61,47 @@ Gatekeeper quarantine from the (unsigned) binary after install, so there's no
 tarball below.
 
 **Prebuilt binary:** grab your OS's file from the
-[Releases page](https://github.com/drumandbytes/eraser/releases) — the broker
+[Releases page](https://github.com/drumandbytes/delistd/releases) — the broker
 list is baked in, nothing to install:
 
 - **Windows** — `..._windows_amd64.exe` (run it directly) or the `.zip` (also has
   the README and `config.example.yaml`).
-- **macOS / Linux** — `..._<os>_<arch>.tar.gz`; `tar xzf` it and run `./eraser`.
+- **macOS / Linux** — `..._<os>_<arch>.tar.gz`; `tar xzf` it and run `./delistd`.
 
 - **macOS:** the binary is unsigned, so Gatekeeper will block it on first run.
   Either right-click it → *Open* → *Open*, or run
-  `xattr -dr com.apple.quarantine ./eraser` once.
-- **Windows:** the archive contains `eraser.exe`.
-- `eraser fill` and `eraser confirm` (browser automation for opt-out forms) need
+  `xattr -dr com.apple.quarantine ./delistd` once.
+- **Windows:** the archive contains `delistd.exe`.
+- `delistd fill` and `delistd confirm` (browser automation for opt-out forms) need
   Chrome or Chromium installed; nothing else does.
 
 **Build from source** (needs [Go](https://go.dev/dl/)):
 
 ```bash
-git clone https://github.com/drumandbytes/eraser.git
-cd eraser
-go build -o eraser ./cmd/eraser
+git clone https://github.com/drumandbytes/delistd.git
+cd delistd
+go build -o delistd ./cmd/delistd
 ```
 
 Or install straight from the module path (the broker list is baked in):
 
 ```bash
-go install github.com/drumandbytes/eraser/cmd/eraser@latest
+go install github.com/drumandbytes/delistd/cmd/delistd@latest
 ```
 
-On Windows, build it as `eraser.exe` (`go build -o eraser.exe ./cmd/eraser`) —
+On Windows, build it as `delistd.exe` (`go build -o delistd.exe ./cmd/delistd`) —
 Windows won't run a downloaded file with no extension.
 
 **Docker** (distroless image; add `--profile browser` for headless Chromium and `fill`):
 
 ```bash
-git clone https://github.com/drumandbytes/eraser.git
-cd eraser
+git clone https://github.com/drumandbytes/delistd.git
+cd delistd
 docker compose up -d   # then open http://localhost:8080
 ```
 
 Keep the port published to `127.0.0.1` as `compose.yaml` does: the web UI has
-no login. Releases also publish the image as `ghcr.io/drumandbytes/eraser`
+no login. Releases also publish the image as `ghcr.io/drumandbytes/delistd`
 (`linux/amd64`, `linux/arm64`; tags `v2.2.0`, `2.2` and `latest`), so you can pull
 it instead of building. Data, backups, CLI commands, scheduling and the pull
 setup are covered in [docs/docker.md](docs/docker.md).
@@ -107,10 +109,10 @@ setup are covered in [docs/docker.md](docs/docker.md).
 **Step 2: Start the Web Interface**
 
 ```bash
-./eraser serve
+./delistd serve
 ```
 
-On Windows, run `.\eraser.exe serve` instead.
+On Windows, run `.\delistd.exe serve` instead.
 
 Open your browser and go to `http://localhost:8080`
 
@@ -130,11 +132,11 @@ From the dashboard, you can:
 - Fetch the latest broker list (Settings → Broker List)
 - Add a broker that's missing from the list (Brokers → + Add broker) - kept on your machine and never removed by a list update
 
-That's it. The whole process takes about 10 minutes to set up, and then Eraser handles the rest.
+That's it. The whole process takes about 10 minutes to set up, and then Delistd handles the rest.
 
 ### Setting Up Your Email Account
 
-Eraser sends removal requests from your own email account over SMTP, and can read replies over IMAP. Pick your provider in the setup wizard (or `eraser init`) and it fills in the servers. You only enter your address and an **app password**, a separate password your provider generates for apps like Eraser. Never use your main account password.
+Delistd sends removal requests from your own email account over SMTP, and can read replies over IMAP. Pick your provider in the setup wizard (or `delistd init`) and it fills in the servers. You only enter your address and an **app password**, a separate password your provider generates for apps like Delistd. Never use your main account password.
 
 | Provider | What you need | Notes |
 |---|---|---|
@@ -147,38 +149,38 @@ Eraser sends removal requests from your own email account over SMTP, and can rea
 | Amazon SES | SES SMTP credentials; the From address/domain verified in SES | Send-only: set up reply monitoring on a separate mailbox. Change the region in the SMTP host if yours isn't `eu-west-1` |
 | Anything else | Choose "Other" and enter the SMTP (and optionally IMAP) server | |
 
-**TLS:** ports 465 (SMTP) and 993 (IMAP) use TLS from the start. Any other port must support STARTTLS. Eraser never sends your password without encryption.
+**TLS:** ports 465 (SMTP) and 993 (IMAP) use TLS from the start. Any other port must support STARTTLS. Delistd never sends your password without encryption.
 
-**Outlook.com / Hotmail** isn't a preset: Microsoft turned off app-password (basic) authentication for consumer accounts, and Eraser doesn't support OAuth sign-in yet. Microsoft 365 work accounts whose admin enabled SMTP AUTH can try "Other" with `smtp.office365.com:587`.
+**Outlook.com / Hotmail** isn't a preset: Microsoft turned off app-password (basic) authentication for consumer accounts, and Delistd doesn't support OAuth sign-in yet. Microsoft 365 work accounts whose admin enabled SMTP AUTH can try "Other" with `smtp.office365.com:587`.
 
-Your provider isn't listed or doesn't work? [Open a mail provider issue](https://github.com/drumandbytes/eraser/issues/new?template=mail_provider.yml), or add it yourself (see [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-mail-provider)).
+Your provider isn't listed or doesn't work? [Open a mail provider issue](https://github.com/drumandbytes/delistd/issues/new?template=mail_provider.yml), or add it yourself (see [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-mail-provider)).
 
-**Daily sending limits:** Eraser caps itself at 450 emails per rolling 24 hours by default (`options.daily_send_limit`), just under Gmail's ~500/day. Other providers have different (sometimes lower) caps, so check yours and lower the limit if needed. Eraser resumes where it left off on the next run, so it's safe to just re-run `eraser send` until it reports nothing left to send.
+**Daily sending limits:** Delistd caps itself at 450 emails per rolling 24 hours by default (`options.daily_send_limit`), just under Gmail's ~500/day. Other providers have different (sometimes lower) caps, so check yours and lower the limit if needed. Delistd resumes where it left off on the next run, so it's safe to just re-run `delistd send` until it reports nothing left to send.
 
-**Automating it:** `eraser schedule install` has your OS run Eraser every 6 hours. Each run sends to whichever brokers are due (each broker is re-sent 25 days after its last request, within the daily cap) and checks your inbox for replies. Everything stays on your machine; `eraser schedule status` shows the last run, `eraser schedule remove` undoes it. The web UI's **Settings → Automation** card does all of this with buttons, including a "run while this app is open" option for systems without launchd/systemd; on the CLI, `eraser auto` loops in the foreground instead.
+**Automating it:** `delistd schedule install` has your OS run Delistd every 6 hours. Each run sends to whichever brokers are due (each broker is re-sent 25 days after its last request, within the daily cap) and checks your inbox for replies. Everything stays on your machine; `delistd schedule status` shows the last run, `delistd schedule remove` undoes it. The web UI's **Settings → Automation** card does all of this with buttons, including a "run while this app is open" option for systems without launchd/systemd; on the CLI, `delistd auto` loops in the foreground instead.
 
 ### Prefer not to give any tool your email password?
 
-Choose **"Skip — I'll send the emails myself"** in the setup wizard (or `options.send_mode: manual` in the config, or pick option 2 in `eraser init`). Then Eraser never sends anything and needs no credentials:
+Choose **"Skip — I'll send the emails myself"** in the setup wizard (or `options.send_mode: manual` in the config, or pick option 2 in `delistd init`). Then Delistd never sends anything and needs no credentials:
 
 - The **Brokers** page shows an **Email** link per broker (the ready-to-send removal request, with an "Open in mail app" button) and a **Mark sent** button.
-- On the CLI: `eraser draft <broker-id>` prints one email, `eraser draft -o ./out` writes one `.eml` per broker (open them in your mail client), and `eraser send --manual` walks the whole list one at a time.
-- After you send one, `eraser mark-sent <broker-id>` (or the web button) records it so `status`, `pipeline` and `export` still account for it.
+- On the CLI: `delistd draft <broker-id>` prints one email, `delistd draft -o ./out` writes one `.eml` per broker (open them in your mail client), and `delistd send --manual` walks the whole list one at a time.
+- After you send one, `delistd mark-sent <broker-id>` (or the web button) records it so `status`, `pipeline` and `export` still account for it.
 
 ---
 
 ## Let a local AI agent handle follow-ups (experimental)
 
-`eraser mcp` connects Eraser to Codex over local STDIO. Ask **“Handle my pending
-removal tasks”**, review the proposed batch, and approve it in Eraser, on the
-web UI's **Automation** page or with `eraser mcp approve`. The agent can
+`delistd mcp` connects Delistd to Codex over local STDIO. Ask **“Handle my pending
+removal tasks”**, review the proposed batch, and approve it in Delistd, on the
+web UI's **Automation** page or with `delistd mcp approve`. The agent can
 open confirmation links, fill forms, inspect receipts, and save notes and
 screenshots in the existing **Tasks** page. Email sending uses your existing
-settings, templates, limits, and history. Codex supplies the AI; Eraser needs no
+settings, templates, limits, and history. Codex supplies the AI; Delistd needs no
 separate AI API key. This feature is experimental: it should work, but its
 commands and tools may change in a future minor release.
 
-MCP tools exposed by `eraser mcp`: `get_status`, `list_brokers`, `list_tasks`,
+MCP tools exposed by `delistd mcp`: `get_status`, `list_brokers`, `list_tasks`,
 `get_task`, `prepare_batch`, `begin_batch`, `end_batch`, `scan_inbox`,
 `send_request`, `open_task`, `observe_page`, `get_screenshot`, `browser_action`,
 `record_result`, `retry_action`. See [docs/mcp.md](docs/mcp.md#tools) for what each does.
@@ -187,72 +189,72 @@ Chrome/Chromium is required for forms. CAPTCHA, login, identity checks, uncertai
 submissions, and unexpected destinations need your intervention. A completed form
 means the request was accepted, not that the broker has erased your data.
 
-Tried it? Tell us how it went with the **[MCP feedback form](https://github.com/drumandbytes/eraser/issues/new?template=mcp_feedback.yml)**.
+Tried it? Tell us how it went with the **[MCP feedback form](https://github.com/drumandbytes/delistd/issues/new?template=mcp_feedback.yml)**.
 
 See **[MCP setup and the fake-data demo](docs/mcp.md)** for the Codex configuration,
 how batches are approved, and supported workflows.
 
 ## For Developers: CLI Usage
 
-If you prefer the command line, Eraser has a full CLI.
+If you prefer the command line, Delistd has a full CLI.
 
 ### Installation
 
 ```bash
-git clone https://github.com/drumandbytes/eraser.git
-cd eraser
-go build -o eraser ./cmd/eraser
+git clone https://github.com/drumandbytes/delistd.git
+cd delistd
+go build -o delistd ./cmd/delistd
 ```
 
-On Windows, build it as `eraser.exe` instead (`go build -o eraser.exe ./cmd/eraser`) and run commands as `.\eraser.exe <command>` - see the note above.
+On Windows, build it as `delistd.exe` instead (`go build -o delistd.exe ./cmd/delistd`) and run commands as `.\delistd.exe <command>` - see the note above.
 
 ### Quick Start
 
 ```bash
 # Interactive setup
-./eraser init
+./delistd init
 
 # Preview what would be sent (no emails go out)
-./eraser send --dry-run
+./delistd send --dry-run
 
 # Send removal requests to all brokers
-./eraser send
+./delistd send
 
 # Check your history
-./eraser status
+./delistd status
 ```
 
 ### Commands
 
 | Command | What it does |
 |---------|--------------|
-| `eraser init` | Interactive config setup |
-| `eraser send` | Send removal requests (auto-capped at `daily_send_limit`/day, resumable) |
-| `eraser send --dry-run` | Preview without sending |
-| `eraser send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
-| `eraser send --resend` | Force re-send even to brokers within the cooldown window |
-| `eraser list-brokers` | Show the 700+ brokers, minus those that only handle other countries than your profile's (`--all-countries` shows them all) |
-| `eraser status` | View history and stats |
-| `eraser status --limit 50` | Show more history |
-| `eraser add-broker` | Add a custom broker interactively |
-| `eraser mark-bounced <broker-id>...` | Correct the record for brokers whose email actually bounced |
-| `eraser cleanup-bounces` | Find and clear bounced broker email addresses (keeps the broker entry) |
-| `eraser audit-brokers` | Check broker websites/email domains for signs of life |
-| `eraser validate-brokers` | Structural check of a broker list (ids, names, regions, emails, URLs) |
-| `eraser update-brokers` | Fetch the latest broker list (the list ships inside the binary; this refreshes it) |
-| `eraser monitor` | Monitor your inbox (IMAP) for broker responses; `--reclassify` re-runs the classifier over every saved reply |
-| `eraser draft` / `eraser mark-sent` | Write the removal emails as `.eml` files to send by hand, then record them as sent |
-| `eraser passphrase set` / `clear` | Add or remove a passphrase on your stored mail passwords ([details](#security-notes)) |
-| `eraser schedule install` | Run sends + inbox checks automatically every 6 hours (launchd on macOS, systemd on Linux) |
-| `eraser auto` | Same cycle in the foreground, looping every 6 hours (Windows, containers) |
-| `eraser pipeline` | Show pipeline status — which brokers need manual follow-up |
-| `eraser export` | Write an evidence report (HTML/JSON) of every request and reply — for a DPA/noyb complaint |
-| `eraser confirm` | Click confirmation links found in broker emails |
-| `eraser fill` | Fill opt-out forms via browser automation |
-| `eraser profile add` / `list` / `edit` / `remove` | Manage extra profiles, e.g. a household member ([details](docs/multi-profile.md)) |
-| `eraser mcp` | Connect a local AI agent over MCP (experimental); `eraser mcp approve <id>` approves its batch, `eraser mcp pending` lists waiting ones |
-| `eraser serve` | Start web interface |
-| `eraser serve -p 3000` | Web interface on custom port |
+| `delistd init` | Interactive config setup |
+| `delistd send` | Send removal requests (auto-capped at `daily_send_limit`/day, resumable) |
+| `delistd send --dry-run` | Preview without sending |
+| `delistd send --ignore-daily-limit` | Send everything in one run, ignoring the daily cap |
+| `delistd send --resend` | Force re-send even to brokers within the cooldown window |
+| `delistd list-brokers` | Show the 700+ brokers, minus those that only handle other countries than your profile's (`--all-countries` shows them all) |
+| `delistd status` | View history and stats |
+| `delistd status --limit 50` | Show more history |
+| `delistd add-broker` | Add a custom broker interactively |
+| `delistd mark-bounced <broker-id>...` | Correct the record for brokers whose email actually bounced |
+| `delistd cleanup-bounces` | Find and clear bounced broker email addresses (keeps the broker entry) |
+| `delistd audit-brokers` | Check broker websites/email domains for signs of life |
+| `delistd validate-brokers` | Structural check of a broker list (ids, names, regions, emails, URLs) |
+| `delistd update-brokers` | Fetch the latest broker list (the list ships inside the binary; this refreshes it) |
+| `delistd monitor` | Monitor your inbox (IMAP) for broker responses; `--reclassify` re-runs the classifier over every saved reply |
+| `delistd draft` / `delistd mark-sent` | Write the removal emails as `.eml` files to send by hand, then record them as sent |
+| `delistd passphrase set` / `clear` | Add or remove a passphrase on your stored mail passwords ([details](#security-notes)) |
+| `delistd schedule install` | Run sends + inbox checks automatically every 6 hours (launchd on macOS, systemd on Linux) |
+| `delistd auto` | Same cycle in the foreground, looping every 6 hours (Windows, containers) |
+| `delistd pipeline` | Show pipeline status — which brokers need manual follow-up |
+| `delistd export` | Write an evidence report (HTML/JSON) of every request and reply — for a DPA/noyb complaint |
+| `delistd confirm` | Click confirmation links found in broker emails |
+| `delistd fill` | Fill opt-out forms via browser automation |
+| `delistd profile add` / `list` / `edit` / `remove` | Manage extra profiles, e.g. a household member ([details](docs/multi-profile.md)) |
+| `delistd mcp` | Connect a local AI agent over MCP (experimental); `delistd mcp approve <id>` approves its batch, `delistd mcp pending` lists waiting ones |
+| `delistd serve` | Start web interface |
+| `delistd serve -p 3000` | Web interface on custom port |
 
 Everything in the web interface has a command-line twin and the other way round, apart from a few maintainer commands and `confirm`; the full list is in [docs/ui-cli-parity.md](docs/ui-cli-parity.md).
 
@@ -310,7 +312,7 @@ options:
   # excluded_categories:
   #   - requires-id
 
-# Optional: monitor your inbox for broker replies (used by `eraser monitor`)
+# Optional: monitor your inbox for broker replies (used by `delistd monitor`)
 # inbox:
 #   enabled: true
 #   provider: fastmail  # gmail, proton, fastmail, mailbox-org, posteo, icloud - or drop it and set server + port
@@ -320,7 +322,7 @@ options:
 
 ### Email Templates
 
-Eraser includes three templates:
+Delistd includes three templates:
 
 - **GDPR** — Invokes Article 17 "Right to Erasure" under EU law
 - **CCPA** — Invokes California Consumer Privacy Act rights
@@ -330,7 +332,7 @@ The generic template is a good default if you're not sure. EU residents should p
 
 ### Adding Brokers
 
-The broker database is at `data/brokers.yaml` and is compiled into the binary, so a downloaded `eraser` is self-contained. `eraser update-brokers` pulls a fresh copy from this repo into `~/.eraser/brokers.yaml` (a small conditional download — the app itself isn't touched). To add one by hand:
+The broker database is at `data/brokers.yaml` and is compiled into the binary, so a downloaded `delistd` is self-contained. `delistd update-brokers` pulls a fresh copy from this repo into `~/.eraser/brokers.yaml` (a small conditional download — the app itself isn't touched). To add one by hand:
 
 ```yaml
 - id: example-broker
@@ -343,12 +345,12 @@ The broker database is at `data/brokers.yaml` and is compiled into the binary, s
   category: people-search  # people-search, marketing, background-check, financial-b2b, data-intermediary, device-id-only, or requires-id
 ```
 
-`countries` is for brokers that only hold one market's data (a German credit bureau, a Mexican one) and ask not to be sent requests from elsewhere. Eraser skips them for profiles whose `country` is outside the list; an empty or unrecognised country never hides anything. Name a broker with `send --broker <id>` to send regardless, e.g. when you have a past address in that country.
+`countries` is for brokers that only hold one market's data (a German credit bureau, a Mexican one) and ask not to be sent requests from elsewhere. Delistd skips them for profiles whose `country` is outside the list; an empty or unrecognised country never hides anything. Name a broker with `send --broker <id>` to send regardless, e.g. when you have a past address in that country.
 
 Or use the interactive command:
 
 ```bash
-./eraser add-broker
+./delistd add-broker
 ```
 
 ### Choosing a broker list
@@ -361,10 +363,10 @@ across the US, EU, Latin America, New Zealand, and Kenya — use the
 smaller verified list:
 
 ```bash
-./eraser send --list verified          # one run
-./eraser send --broker spokeo,pipl     # explicit broker IDs
-./eraser send --region eu --category financial-b2b
-./eraser send --exclude broker-id --status never
+./delistd send --list verified          # one run
+./delistd send --broker spokeo,pipl     # explicit broker IDs
+./delistd send --region eu --category financial-b2b
+./delistd send --exclude broker-id --status never
 ```
 
 `--broker`, `--region`, `--category`, and `--exclude` can be repeated or comma-separated. `--status eligible` is the safe default; use `never`, `failed`, or `all` to select by send history. The web Brokers page exposes the same filters before bulk sending.
@@ -380,7 +382,7 @@ options:
 current, working contact we found by hand — most of the US ones are also
 cross-checked against California's data-broker registry. It doesn't mean
 any of them have been sent a request and confirmed to actually act on it;
-no list can promise that in advance. `eraser status`/`pipeline` is how you
+no list can promise that in advance. `delistd status`/`pipeline` is how you
 find out what a broker actually does once you've emailed it.
 
 The weekly CI audit keeps the full list from rotting — it clears dead email
@@ -391,7 +393,7 @@ domains automatically and opens a PR for review.
 ## Security Notes
 
 - **Your config file contains personal data.** Don't commit it to git. The file is created with restricted permissions (readable only by you).
-- **Mail passwords are never stored in plain text.** `smtp.password` and `inbox.password` are saved in `config.yaml` as `enc:v1:...` (AES-256-GCM, key derived from this machine's ID and your user). A copied config, backup or synced dotfile can't be decrypted on another machine, so after moving to a new machine re-enter the passwords with `eraser init` or in Settings. Someone logged in as you on the same machine can still use Eraser, and therefore the password, unless you add a passphrase: `eraser passphrase set` makes the passwords undecryptable without it. **Heads-up:** with a passphrase, runs with nobody at the keyboard can't unlock them. `eraser schedule install` (the OS scheduler) is refused, while `eraser auto` and `eraser serve` ask once at startup. There is no recovery; if you forget it, re-enter the passwords with `eraser init`.
+- **Mail passwords are never stored in plain text.** `smtp.password` and `inbox.password` are saved in `config.yaml` as `enc:v1:...` (AES-256-GCM, key derived from this machine's ID and your user). A copied config, backup or synced dotfile can't be decrypted on another machine, so after moving to a new machine re-enter the passwords with `delistd init` or in Settings. Someone logged in as you on the same machine can still use Delistd, and therefore the password, unless you add a passphrase: `delistd passphrase set` makes the passwords undecryptable without it. **Heads-up:** with a passphrase, runs with nobody at the keyboard can't unlock them. `delistd schedule install` (the OS scheduler) is refused, while `delistd auto` and `delistd serve` ask once at startup. There is no recovery; if you forget it, re-enter the passwords with `delistd init`.
 - **Use app passwords, not your real password.** Most providers require one for SMTP/IMAP access; where they don't, it's still a good idea.
 - **Consider using a dedicated email.** This keeps your removal request activity separate from your main inbox.
 
@@ -403,13 +405,13 @@ Yes, with caveats:
 
 - **Most brokers comply.** They're legally required to under GDPR (EU) and CCPA (California). Even brokers not covered by these laws often honor requests to avoid liability.
 - **Some require manual steps.** A meaningful share of brokers will respond asking you to:
-  - Click a confirmation link (Eraser detects these and shows them to you)
-  - Fill out an opt-out form on their website (Eraser tracks these as "pending tasks")
+  - Click a confirmation link (Delistd detects these and shows them to you)
+  - Fill out an opt-out form on their website (Delistd tracks these as "pending tasks")
   - Verify your identity via email reply
 - **It's not instant.** Brokers have up to 30-45 days to process requests (varies by law). Some are faster.
-- **You'll need to repeat this.** Data brokers buy and sell data continuously. Running Eraser every 60-90 days keeps you off their lists.
+- **You'll need to repeat this.** Data brokers buy and sell data continuously. Running Delistd every 60-90 days keeps you off their lists.
 
-**The Pipeline view** (`eraser pipeline` or the web UI) shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 700+ emails and tracking responses for you.
+**The Pipeline view** (`delistd pipeline` or the web UI) shows you exactly which brokers need manual attention. It's not fully automated, but it's free—and it does the tedious work of sending 700+ emails and tracking responses for you.
 
 In the web Pipeline, select a status card to see matching requests or actions.
 The **Responses** tab filters by response type and searches broker names, subjects,
@@ -425,7 +427,7 @@ upgrade.
 
 | Service | Price | Brokers | Open Source |
 |---------|-------|---------|--------------|
-| **Eraser** | Free | 700+ | Yes |
+| **Delistd** | Free | 700+ | Yes |
 | Incogni | $77/year | 180+ | No |
 | DeleteMe | $129/year | 750+ | No |
 | Privacy Duck | $500+/year | 500+ | No |
@@ -449,8 +451,8 @@ Contributions are welcome — adding brokers, fixing bugs, improving templates o
 ## Project Structure
 
 ```
-eraser/
-├── cmd/eraser/                # CLI entry point - main.go has root wiring, one cmd_*.go
+delistd/
+├── cmd/delistd/                # CLI entry point - main.go has root wiring, one cmd_*.go
 │                               # file per command (cmd_send.go, cmd_fill.go, etc.)
 ├── internal/
 │   ├── broker/                # Broker loading and filtering
@@ -465,7 +467,7 @@ eraser/
 │                                 # hold the actual page/API handlers by resource
 ├── data/brokers.yaml           # 700+ broker database
 ├── config.example.yaml         # Example configuration
-├── Dockerfile, compose.yaml    # Distroless eraser image + Chromium container (docs/docker.md)
+├── Dockerfile, compose.yaml    # Distroless delistd image + Chromium container (docs/docker.md)
 └── EU-NOTES.md                 # GDPR/EU-specific setup and customization notes
 ```
 
@@ -483,7 +485,7 @@ MIT — do whatever you want with it.
 
 This tool sends legitimate data removal requests based on privacy laws. It's not legal advice. Not all brokers are required to comply with all requests, and response times vary. But it works, and it's free.
 
-**Your responsibility.** Eraser acts on your instructions and sends requests from your own email account. You are responsible for the accuracy of the personal data you enter, for complying with your email provider's terms and sending limits, and for anything you choose to submit to a data protection authority or other body. The templates and the `export` report are starting points, not a substitute for advice on your specific situation.
+**Your responsibility.** Delistd acts on your instructions and sends requests from your own email account. You are responsible for the accuracy of the personal data you enter, for complying with your email provider's terms and sending limits, and for anything you choose to submit to a data protection authority or other body. The templates and the `export` report are starting points, not a substitute for advice on your specific situation.
 
 ## How it was made
 

@@ -1,6 +1,6 @@
 // Package reclassify re-runs the reply classifier over every saved broker
 // response, first filling in message bodies that were stored without one.
-// `eraser monitor --reclassify` and the web UI's Reclassify button share it.
+// `delistd monitor --reclassify` and the web UI's Reclassify button share it.
 package reclassify
 
 import (
@@ -9,10 +9,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/broker"
-	"github.com/drumandbytes/eraser/internal/config"
-	"github.com/drumandbytes/eraser/internal/history"
-	"github.com/drumandbytes/eraser/internal/inbox"
+	"github.com/drumandbytes/delistd/internal/broker"
+	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/history"
+	"github.com/drumandbytes/delistd/internal/inbox"
 )
 
 // Summary is the outcome of a run, counted by each reply's final type.

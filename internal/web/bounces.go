@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/drumandbytes/eraser/internal/bounces"
+	"github.com/drumandbytes/delistd/internal/bounces"
 )
 
-// handleAPIBounces is `eraser cleanup-bounces` (dry run): scan the inbox for
+// handleAPIBounces is `delistd cleanup-bounces` (dry run): scan the inbox for
 // undeliverable mail and list the broker addresses that look dead.
 func (s *Server) handleAPIBounces(w http.ResponseWriter, r *http.Request) {
 	rep, ok := s.scanBounces(w, r)
@@ -44,13 +44,13 @@ func (s *Server) handleAPIBounces(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if skipped > 0 {
-		fmt.Fprintf(&b, `<p class="mt-2 text-xs text-muted">%d other bounce(s) were ignored: no address could be read, the address isn't in the broker list, or Eraser never emailed it.</p>`, skipped)
+		fmt.Fprintf(&b, `<p class="mt-2 text-xs text-muted">%d other bounce(s) were ignored: no address could be read, the address isn't in the broker list, or Delistd never emailed it.</p>`, skipped)
 	}
 	b.WriteString(`</div>`)
 	_, _ = fmt.Fprint(w, b.String())
 }
 
-// handleAPIBouncesClear is `eraser cleanup-bounces --remove`. It re-scans
+// handleAPIBouncesClear is `delistd cleanup-bounces --remove`. It re-scans
 // rather than trusting a posted list, then clears every dead address.
 func (s *Server) handleAPIBouncesClear(w http.ResponseWriter, r *http.Request) {
 	rep, ok := s.scanBounces(w, r)

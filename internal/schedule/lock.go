@@ -1,4 +1,4 @@
-// Package schedule runs Eraser's send + inbox cycle unattended: the OS
+// Package schedule runs Delistd's send + inbox cycle unattended: the OS
 // scheduler (launchd, systemd) when installed, otherwise an in-process loop.
 // All modes share one lock so two cycles never overlap.
 package schedule

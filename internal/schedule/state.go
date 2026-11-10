@@ -10,7 +10,7 @@ import (
 )
 
 // State is the outcome of the last cycle, written by every mode so
-// `eraser schedule status` and the web UI can show it.
+// `delistd schedule status` and the web UI can show it.
 type State struct {
 	LastRun time.Time `json:"last_run"`
 	Mode    string    `json:"mode"` // "os", "loop", "once", "serve"

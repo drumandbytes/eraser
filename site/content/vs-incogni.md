@@ -13,7 +13,7 @@ Incogni and DeleteMe are services that remove your data for you. Delistd is a to
 |---|---|---|---|
 | Price | $95.88/year (Standard) or $179.88/year (Unlimited) when billed annually; $15.98 or $29.98 a month when billed monthly | $129/year for one person on a one-year plan ($209 for two years) | Free, MIT licence |
 | Who sends the requests | Incogni, on your behalf | DeleteMe, with human privacy advisors for custom removals | You, from your own email account on your own machine |
-| Where your details are kept | With the service | With the service | On your machine only |
+| Where your details are kept | With the service, under its privacy policy | With the service, under its privacy policy | On your machine only |
 | Coverage | 420+ data broker sites; custom removals on the Unlimited plans only | Automated opt-outs plus manual custom removals; coverage figures vary by source | 700+ brokers in a published list you can read and add to, with a focus on the US and the EU/EEA |
 | Progress reporting | Recurring removals on every plan; the Unlimited plans add an exposure scanner and a privacy score | Quarterly privacy reports | A local dashboard of each broker's reply, and an evidence report you can export |
 | Replies, ID checks and confirmation links | Handled by the service | Handled by the service and its advisors | Flagged to you as tasks that need action |
@@ -28,7 +28,7 @@ Incogni and DeleteMe are services that remove your data for you. Delistd is a to
 
 ## What it costs you
 
-- **Your details live with the service.** To find and remove your records, a removal service needs your name, address, email address and similar identifiers, so it holds them. That is inherent to how those services work, not a criticism of them.
+- **Your details live with the service, and you have to trust it.** To find and remove your records, a removal service needs your name, address, email address and similar identifiers, so it holds them. What happens to that data afterwards is governed by the service's privacy policy and its own security practices. You can read the policy, but you can't inspect how the data is stored, who can access it or how long it is kept, and no policy is a guarantee. That is inherent to how those services work, not a criticism of any one of them, and it is the main reason some people prefer to keep the data themselves.
 - **A subscription.** Roughly $96 to $180 a year per person for Incogni when billed annually and $129 for DeleteMe, and the removals only continue while you keep paying.
 
 ## What Delistd gives you
@@ -51,7 +51,7 @@ Being honest about the trade-off:
 ## Which should you choose?
 
 - **Choose a paid service** if you want it handled for you, you'd rather not manage email replies and verification steps, or you want a support team behind it.
-- **Choose Delistd** if you'd rather your personal details stay on your own machine, you're comfortable with a small amount of setup, or you're in the EU/EEA and want requests sent under your own name with an evidence trail.
+- **Choose Delistd** if you'd rather your personal details stay on your own machine instead of being held by a third party, you're comfortable with a small amount of setup, or you're in the EU/EEA and want requests sent under your own name with an evidence trail.
 - **You can also combine them.** Nothing stops you running Delistd for brokers the paid services don't cover.
 
 [Get started](https://github.com/drumandbytes/delistd#quick-start) · [Broker directory](/brokers/)

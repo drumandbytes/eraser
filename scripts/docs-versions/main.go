@@ -145,7 +145,7 @@ func selectVersions(tags []string) []Version {
 }
 
 var (
-	docLink    = regexp.MustCompile(`\]\(([A-Za-z0-9_-]+)\.md(#[^)]*)?\)`)
+	docLink    = regexp.MustCompile(`\]\(([A-Za-z0-9_.-]+)\.md(#[^)]*)?\)`) // dots allowed: upgrading-to-2.0.md
 	parentLink = regexp.MustCompile(`\]\(\.\./([A-Za-z0-9_./-]+)(#[^)]*)?\)`)
 )
 

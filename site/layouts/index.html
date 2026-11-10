@@ -9,6 +9,7 @@
   <p class="cta">
     <a class="btn" href="https://github.com/drumandbytes/delistd/releases">Download</a>
     <a class="btn ghost" href="{{ "/brokers/" | relURL }}">Broker directory</a>
+    {{ with index (where hugo.Data.docs_versions.versions "latest" true) 0 }}<a class="btn ghost" href="{{ printf "/docs/%s/getting-started/" .slug | relURL }}">Setup guide</a>{{ end }}
   </p>
 </section>
 

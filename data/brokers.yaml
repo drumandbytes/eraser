@@ -5120,6 +5120,53 @@ brokers:
       notes: Replied that 192.com's records are UK-only and asked for more context, since the request came from a non-UK address (2026-08-21) - consistent with this being a UK-focused broker (see EU-NOTES.md); no further action taken.
       countries:
         - GB
+    - id: ukphonebook
+      name: UK Phonebook
+      email: dpo@simunix.com
+      website: https://www.ukphonebook.com
+      opt_out_url: https://www.ukphonebook.com/remove-me
+      region: eu
+      category: people-search
+      parent: Simunix Limited
+      notes: 'Added 2026-11-12 from https://www.ukphonebook.com/privacy (DPO address, Cloudflare-obfuscated on the page) and https://www.ukphonebook.com/remove-me. Sources per the privacy notice: directory enquiries, the open electoral register, Companies House, Sagacity, Creditsafe; the homepage describes searches "for a UK resident". The site says emailed third-party requests are referred to its form and that automated tools are blocked from the form; under UK GDPR a request made by email (or any other channel) is still valid, so the email is kept and the form is listed for anyone who prefers it.'
+      countries:
+        - GB
+    - id: caci
+      name: CACI
+      email: compliance@caci.co.uk
+      website: https://www.caci.co.uk
+      opt_out_url: https://www.caci.co.uk/data-privacy/privacy-policy/
+      region: eu
+      category: marketing
+      parent: CACI Limited
+      notes: 'Added 2026-11-12 from https://www.caci.co.uk/data-privacy/privacy-policy/ (updated 2026-10-01): the compliance team handles opt-outs and rights requests; the DPO is dpo@caci.co.uk. Holds name, address, date of birth and household data sourced from the open electoral register and marketing data providers (Acorn/Ocean products).'
+    - id: gbg
+      name: GBG (GB Group)
+      email: privacy.rights@gbg.com
+      website: https://www.gbgplc.com
+      opt_out_url: https://www.gbgplc.com/en/contact/general-enquiry/individual-data-enquiry/
+      region: eu
+      category: financial-b2b
+      parent: GB Group plc
+      notes: 'Added 2026-11-12 from the Products and Services Privacy Policy, https://www.gbgplc.com/en/legal-and-regulatory/products-services-privacy-policy/ - identity-verification data built from the full and open electoral registers, BT directory data, insolvency and court records. The policy asks for its webform; the email is its stated privacy-rights address.'
+    - id: experian-uk
+      name: Experian UK
+      email: uk.dpo@experian.com
+      website: https://www.experian.co.uk
+      opt_out_url: https://www.experianmarketingservices.digital/OptOut/OptOut
+      region: eu
+      category: financial-b2b
+      parent: Experian Limited
+      notes: 'Added 2026-11-12 from https://www.experian.co.uk/consumer/privacy.html and the joint credit reference agency notice https://www.experian.co.uk/legal/crain/ (section 13). Distinct UK controller from experian-marketing (Experian Marketing Solutions, LLC). Per the CRAIN it supplies the open electoral register for marketing; marketing objections go to the opt_out_url. Credit-file data has statutory retention, so expect erasure to cover marketing data only.'
+    - id: transunion-uk
+      name: TransUnion UK
+      email: ukdpo@transunion.com
+      website: https://www.transunion.co.uk
+      opt_out_url: https://www.transunion.co.uk/legal/privacy-centre/your-data-rights
+      region: eu
+      category: financial-b2b
+      parent: TransUnion International UK Limited
+      notes: 'Added 2026-11-12 from the joint credit reference agency notice https://www.experian.co.uk/legal/crain/ (section 13 lists ukdpo@transunion.com as TransUnion''s UK DPO); transunion.co.uk itself refused automated fetches, so re-check there. Formerly Callcredit. Distinct UK controller from transunion-marketing. Credit-file data has statutory retention, so expect erasure to cover marketing data only.'
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de

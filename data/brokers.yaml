@@ -5132,6 +5132,14 @@ brokers:
       notes: 'Added 2026-11-12 from https://www.ukphonebook.com/privacy (DPO address, Cloudflare-obfuscated on the page) and https://www.ukphonebook.com/remove-me. Sources per the privacy notice: directory enquiries, the open electoral register, Companies House, Sagacity, Creditsafe; the homepage describes searches "for a UK resident". The site says emailed third-party requests are referred to its form and that automated tools are blocked from the form; under UK GDPR a request made by email (or any other channel) is still valid, so the email is kept and the form is listed for anyone who prefers it.'
       countries:
         - GB
+    - id: locatefamily
+      name: LocateFamily
+      email: info@locatefamily.com
+      website: https://www.locatefamily.com
+      opt_out_url: https://www.locatefamily.com/removal.html
+      region: global
+      category: people-search
+      notes: 'Added 2026-11-12 from https://www.locatefamily.com/privacy_policy.html and https://www.locatefamily.com/contact.html: worldwide people-search site (names, addresses, phone numbers "from public sources"); removals are meant to go through the removal page, with "info at LocateFamily.com" given for anyone who cannot use it. No legal entity is named on the site.'
     - id: caci
       name: CACI
       email: compliance@caci.co.uk
@@ -5161,13 +5169,22 @@ brokers:
       notes: 'Added 2026-11-12 from https://www.experian.co.uk/consumer/privacy.html and the joint credit reference agency notice https://www.experian.co.uk/legal/crain/ (section 13). Distinct UK controller from experian-marketing (Experian Marketing Solutions, LLC). Per the CRAIN it supplies the open electoral register for marketing; marketing objections go to the opt_out_url. Credit-file data has statutory retention, so expect erasure to cover marketing data only.'
     - id: transunion-uk
       name: TransUnion UK
-      email: ukdpo@transunion.com
+      email: ukconsumer@transunion.com
       website: https://www.transunion.co.uk
       opt_out_url: https://www.transunion.co.uk/legal/privacy-centre/your-data-rights
       region: eu
       category: financial-b2b
       parent: TransUnion International UK Limited
-      notes: 'Added 2026-11-12 from the joint credit reference agency notice https://www.experian.co.uk/legal/crain/ (section 13 lists ukdpo@transunion.com as TransUnion''s UK DPO); transunion.co.uk itself refused automated fetches, so re-check there. Formerly Callcredit. Distinct UK controller from transunion-marketing. Credit-file data has statutory retention, so expect erasure to cover marketing data only.'
+      notes: 'Added 2026-11-12 from the Marketing Services Privacy Notice, https://www.transunion.co.uk/legal/privacy-centre/pc-marketing-services - TransUnion International UK Limited (03961870) and TransUnion International Europe Limited (02733070) supply open electoral register names and addresses to clients for postal marketing; objections to direct marketing go to ukconsumer@transunion.com, the DPO is ukdpo@transunion.com (also listed in the joint CRAIN, https://www.experian.co.uk/legal/crain/). Formerly Callcredit. Distinct UK controller from transunion-marketing. Credit-file data has statutory retention, so expect erasure to cover marketing data only.'
+    - id: acxiom-uk
+      name: Acxiom UK
+      email: ukconsumerservices@acxiom.com
+      website: https://www.acxiom.co.uk
+      opt_out_url: https://www.acxiom.co.uk/privacy/
+      region: eu
+      category: marketing
+      parent: Acxiom Limited
+      notes: 'Added 2026-11-12 from the UK Privacy Policy, https://www.acxiom.co.uk/privacy/ (effective 2025-02-14): Acxiom Limited (1182318) holds address, lifestyle and demographic data from partner lifestyle surveys and public sources including the open electoral register; consumer requests go to ukconsumerservices@acxiom.com. Distinct UK controller from acxiom (askprivacy@acxiom.com).'
     - id: creditreform-de
       name: Creditreform
       email: Datenschutz@verband.creditreform.de

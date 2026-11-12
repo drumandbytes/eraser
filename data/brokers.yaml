@@ -5114,10 +5114,11 @@ brokers:
       name: 192.com
       email: feedback@192.com
       website: https://www.192.com
-      opt_out_url: https://www.192.com/misc/privacy-policy/
+      opt_out_url: https://www.192.com/misc/privacy-policy/#rights
       region: eu
-      category: financial-b2b
-      notes: Replied that 192.com's records are UK-only and asked for more context, since the request came from a non-UK address (2026-08-21) - consistent with this being a UK-focused broker (see EU-NOTES.md); no further action taken.
+      category: people-search
+      parent: 192.com Ltd
+      notes: 'Replied that 192.com''s records are UK-only and asked for more context, since the request came from a non-UK address (2026-08-21) - consistent with this being a UK-focused broker (see EU-NOTES.md). Re-checked 2026-11-12 against https://www.192.com/misc/privacy-policy/ (updated November 2026): a UK people-search directory built from BT directory enquiries data, the open electoral register since 2003 and the full 2002 register; removal requests are accepted by form, email (feedback@192.com) or post, are added to a suppression file so the record does not return on refresh, and requests from people at risk are handled as a priority.'
       countries:
         - GB
     - id: ukphonebook

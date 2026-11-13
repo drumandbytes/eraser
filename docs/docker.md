@@ -54,12 +54,16 @@ network, the loopback-only port, the `eraser-data` volume, and for the browser
 Inside the container the server listens on `0.0.0.0` (`serve --listen 0.0.0.0`,
 the image's default command) because Docker can't forward to a container's
 loopback. It prints a warning saying so. Requests whose `Host` header isn't
-`localhost`/`127.0.0.1`/`::1` are refused by default, as on the desktop, as a
-guard against DNS rebinding (not authentication). To access the UI from another
-machine on your LAN (or in homelab setups like Unraid or behind a reverse proxy),
-set `DELISTD_ALLOWED_HOSTS` to a comma-separated list of hostnames/IPs (e.g.
-`192.168.1.100,unraid.local`), `lan` / `private` to allow private network IPs,
-or `*` to allow all hosts. You can also reach the UI via an SSH tunnel
+`localhost`/`127.0.0.1`/`::1` are refused unless they match `DELISTD_ALLOWED_HOSTS`,
+a guard against DNS rebinding (not authentication). The image's default is
+`lan,local`: a private IP (`192.168.1.5`) or a local name (`tower`, `tower.local`,
+anything under `.lan`, `.home.arpa` or `.internal`) works, so Unraid and other LAN
+setups work out of the box, while a public hostname is still refused (that is what
+a rebinding attack needs). Set `DELISTD_ALLOWED_HOSTS` yourself to change it: a
+comma-separated list of `lan` / `private` (private IPs), `local` (local names), IPs,
+CIDRs (`10.0.0.0/8`), hostnames (`delistd.example.com`, needed behind a reverse proxy)
+and `*.domain` wildcards, or `*` to accept every Host. An empty value, or one that
+matches nothing (say `none`), leaves only loopback. You can also reach the UI via an SSH tunnel
 (`ssh -L 8080:localhost:8080 server`).
 
 Other containers on the same Docker network can reach the container directly

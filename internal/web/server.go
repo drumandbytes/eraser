@@ -538,6 +538,8 @@ func (s *Server) hostAllowed(host string) bool {
 // Patterns in allowedHosts may be:
 //   - "*" (allow any Host)
 //   - "lan" or "private" (allow any private RFC 1918/4193/link-local/Tailscale IP)
+//   - "local" (allow names only a local network can resolve: a single label like
+//     "tower", or one under .local, .lan, .home.arpa or .internal)
 //   - an IP address (e.g. "192.168.1.100")
 //   - a CIDR network (e.g. "10.0.0.0/8", "192.168.0.0/16")
 //   - a hostname (e.g. "unraid.local")
@@ -571,6 +573,12 @@ func isHostAllowed(host string, allowedHosts []string) bool {
 			}
 			continue
 		}
+		if p == "local" {
+			if isLocalName(h) {
+				return true
+			}
+			continue
+		}
 		if ph, _, err := net.SplitHostPort(p); err == nil {
 			p = ph
 		}
@@ -591,6 +599,24 @@ func isHostAllowed(host string, allowedHosts []string) bool {
 		}
 	}
 
+	return false
+}
+
+// isLocalName reports whether h is a name only a local network can resolve: a
+// single label ("tower") or one under a local-only suffix. DNS rebinding needs a
+// public hostname the attacker controls, so none of these can be one.
+func isLocalName(h string) bool {
+	if h == "" || net.ParseIP(h) != nil {
+		return false
+	}
+	if !strings.Contains(h, ".") {
+		return true
+	}
+	for _, suffix := range []string{".local", ".lan", ".home.arpa", ".internal"} {
+		if strings.HasSuffix(h, suffix) {
+			return true
+		}
+	}
 	return false
 }
 

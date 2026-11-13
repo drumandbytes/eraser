@@ -54,12 +54,26 @@ jobs:
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/setup && break; sleep 1; done
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
           [ "$code" = 302 ] || { echo "GET / = $code, want 302 to /setup"; exit 1; }
+          # the image default (lan,local): a private IP or a local name is fine, a public hostname is not
+          for h in 192.168.1.20:8080 tower:8080 tower.local:8080; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $h" http://localhost:8080/)
+            [ "$code" = 302 ] || { echo "Host $h = $code, want 302 to /setup"; exit 1; }
+          done
+          for h in evil.example.com 8.8.8.8:8080; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $h" http://localhost:8080/)
+            [ "$code" = 403 ] || { echo "Host $h = $code, want 403"; exit 1; }
+          done
+          # an empty setting is strict: only loopback
+          docker stop delistd-ci && docker rm delistd-ci
+          docker run -d --name delistd-ci --read-only --cap-drop ALL -e DELISTD_ALLOWED_HOSTS=none -p 127.0.0.1:8080:8080 -v delistd-ci:/home/nonroot/.eraser delistd:ci
+          for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/setup && break; sleep 1; done
           code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: 192.168.1.20:8080' http://localhost:8080/)
-          [ "$code" = 403 ] || { echo "non-loopback Host = $code, want 403"; exit 1; }
+          [ "$code" = 403 ] || { echo "strict Host = $code, want 403"; exit 1; }
+          # * accepts anything
           docker stop delistd-ci && docker rm delistd-ci
           docker run -d --name delistd-ci --read-only --cap-drop ALL -e DELISTD_ALLOWED_HOSTS="*" -p 127.0.0.1:8080:8080 -v delistd-ci:/home/nonroot/.eraser delistd:ci
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://localhost:8080/setup && break; sleep 1; done
-          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: 192.168.1.20:8080' http://localhost:8080/)
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: evil.example.com' http://localhost:8080/)
           [ "$code" = 302 ] || { echo "allowed Host = $code, want 302 to /setup"; exit 1; }
 
       - name: Delistd drives the Chromium image

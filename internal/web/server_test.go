@@ -305,6 +305,34 @@ func TestServerHostAllowed(t *testing.T) {
 		}
 	}
 
+	// 'local': single-label and local-only names, never public hostnames or IPs
+	sLocal := &Server{ListenHost: "0.0.0.0", AllowedHosts: []string{"local"}}
+	for host, want := range map[string]bool{
+		"tower:9890":            true,
+		"unraid.local:9890":     true,
+		"nas.lan":               true,
+		"box.home.arpa:8080":    true,
+		"svc.internal:8080":     true,
+		"localhost:8080":        true, // loopback is always allowed
+		"attacker.example:8080": false,
+		"evil.example.com.":     false, // a trailing dot doesn't make it local
+		"local.attacker.com":    false, // only a suffix counts
+		"8.8.8.8:8080":          false, // no IP matches 'local' (that's 'lan')
+		"192.168.1.5:8080":      false,
+		"":                      false,
+	} {
+		if got := sLocal.hostAllowed(host); got != want {
+			t.Errorf("local hostAllowed(%q) = %v, want %v", host, got, want)
+		}
+	}
+	// the container default: private IPs plus local names, nothing public
+	sDefault := &Server{ListenHost: "0.0.0.0", AllowedHosts: ParseAllowedHosts("lan,local")}
+	for host, want := range map[string]bool{"192.168.178.220:9890": true, "tower:9890": true, "tower.local": true, "evil.example.com": false, "8.8.8.8": false} {
+		if got := sDefault.hostAllowed(host); got != want {
+			t.Errorf("lan,local hostAllowed(%q) = %v, want %v", host, got, want)
+		}
+	}
+
 	// AllowedHosts with wildcard '*' allows any host
 	sWildcard := &Server{ListenHost: "127.0.0.1", AllowedHosts: []string{"*"}}
 	if !sWildcard.hostAllowed("attacker.example:8080") || !sWildcard.hostAllowed("unraid.local:9890") {

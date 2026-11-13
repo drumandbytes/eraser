@@ -21,6 +21,7 @@ import (
 func serveCmd() *cobra.Command {
 	var port int
 	var listen string
+	var allowedHosts string
 
 	cmd := &cobra.Command{
 		Use:   "serve",
@@ -35,17 +36,22 @@ This opens a visual dashboard where you can:
 
 The server runs locally on your machine - no data is sent to external servers.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runServe(port, listen)
+			return runServeWithHosts(port, listen, allowedHosts)
 		},
 	}
 
 	cmd.Flags().IntVarP(&port, "port", "p", 8080, "Port to listen on")
 	cmd.Flags().StringVar(&listen, "listen", "127.0.0.1", "Interface to bind. Leave it on loopback; 0.0.0.0 is for a container whose port is published to the host's 127.0.0.1 only (the web UI has no login)")
+	cmd.Flags().StringVar(&allowedHosts, "allowed-hosts", "", "Comma-separated list of allowed Host header values (e.g. '192.168.1.100,unraid.local' or '*' to allow all). Defaults to DELISTD_ALLOWED_HOSTS")
 
 	return cmd
 }
 
 func runServe(port int, listen string) error {
+	return runServeWithHosts(port, listen, "")
+}
+
+func runServeWithHosts(port int, listen string, allowedHostsRaw string) error {
 	web.Version = version
 	configPath := resolveConfigPath()
 	var cfg *config.Config
@@ -91,6 +97,10 @@ func runServe(port int, listen string) error {
 	}
 	server.BrokerOverride = brokerFile
 	server.ListenHost = listen
+	if allowedHostsRaw == "" {
+		allowedHostsRaw = config.Getenv(config.AllowedHostsEnv)
+	}
+	server.AllowedHosts = web.ParseAllowedHosts(allowedHostsRaw)
 	warnNonLoopback(os.Stdout, listen)
 
 	sigChan := make(chan os.Signal, 1)

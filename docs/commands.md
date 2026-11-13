@@ -34,7 +34,7 @@ go test ./...
 ./delistd confirm                       # click confirmation links from broker emails
 ./delistd fill                          # browser-automate opt-out forms (DELISTD_CHROME_URL=http://host:9222 attaches to an existing Chrome instead of launching one; docs/docker.md)
 ./delistd                              # same as serve (what double-clicking the binary runs)
-./delistd serve [-p 3000] [--listen 0.0.0.0]  # web UI; --listen is for a container only (docs/docker.md)
+./delistd serve [-p 3000] [--listen 0.0.0.0] [--allowed-hosts "*"]  # web UI; --listen and --allowed-hosts are for containers/LAN (docs/docker.md)
 ./delistd mcp [--demo] [--headless] [--chrome-path /path/to/chrome]  # local MCP over stdio (experimental)
 ./delistd mcp approve <id>              # approve a batch or retry the agent prepared (needs a terminal)
 ./delistd mcp pending                   # list batches and retries waiting for approval

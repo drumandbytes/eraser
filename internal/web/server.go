@@ -101,7 +101,10 @@ type Server struct {
 	BrokerOverride string
 	// ListenHost is serve's --listen flag: the interface to bind. Empty means
 	// 127.0.0.1. Only a container should set anything else (see listenAddr).
-	ListenHost      string
+	ListenHost string
+	// AllowedHosts is serve's --allowed-hosts flag (or DELISTD_ALLOWED_HOSTS):
+	// hostnames/IPs permitted in Host headers. Wildcard "*" allows any.
+	AllowedHosts    []string
 	brokerUpdateURL string // broker.DefaultUpdateURL; tests point it at a local server
 	historyStore    *history.Store
 	tmplEngine      *emaTemplate.Engine
@@ -391,12 +394,12 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Use(s.reloadConfigOnChange)
 	r.Use(s.requireUnlock)
 	r.Use(middleware.Compress(5))
-	r.Use(requireLoopbackHost)
+	r.Use(s.requireAllowedHost)
 	r.Use(securityHeaders)
 
 	// filippo.io/csrf checks Sec-Fetch-Site, not tokens (and isn't the
 	// unmaintained gorilla/csrf, CVE-2025-47909). A DNS-rebound hostname still
-	// reads as same-origin, so requireLoopbackHost checks Host too.
+	// reads as same-origin, so requireAllowedHost checks Host too.
 	r.Use(csrf.Protect(s.csrfKey))
 
 	// Static files
@@ -481,6 +484,18 @@ func (s *Server) setupRouter() *chi.Mux {
 	return r
 }
 
+// requireAllowedHost rejects Host headers that are not loopback, private IPs (when listening non-loopback),
+// or explicitly allowed (DNS rebinding guard).
+func (s *Server) requireAllowedHost(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.hostAllowed(r.Host) {
+			http.Error(w, "Forbidden: this server only accepts requests addressed to localhost or configured allowed hosts", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // requireLoopbackHost rejects non-loopback Host headers (DNS rebinding).
 func requireLoopbackHost(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -509,22 +524,108 @@ func IsLoopbackListen(host string) bool {
 	return ip != nil && ip.IsLoopback()
 }
 
-// hostAllowed reports whether a Host header names loopback. We bind
-// 127.0.0.1 by default, so anything else can only be DNS rebinding. With
-// serve --listen 0.0.0.0 in a container, Docker forwards the host's
-// localhost:PORT and the browser still sends Host: localhost, so the check
-// stays as it is; it isn't authentication, only a rebinding guard.
+// hostAllowed reports whether a Host header names loopback.
 func hostAllowed(host string) bool {
+	return isHostAllowed(host, nil)
+}
+
+// hostAllowed reports whether host is permitted by this server.
+func (s *Server) hostAllowed(host string) bool {
+	return isHostAllowed(host, s.AllowedHosts)
+}
+
+// isHostAllowed checks whether host is loopback or matches allowedHosts.
+// Patterns in allowedHosts may be:
+//   - "*" (allow any Host)
+//   - "lan" or "private" (allow any private RFC 1918/4193/link-local/Tailscale IP)
+//   - an IP address (e.g. "192.168.1.100")
+//   - a CIDR network (e.g. "10.0.0.0/8", "192.168.0.0/16")
+//   - a hostname (e.g. "unraid.local")
+//   - a wildcard domain (e.g. "*.local", "*.lan")
+func isHostAllowed(host string, allowedHosts []string) bool {
 	h := host
 	if hh, _, err := net.SplitHostPort(host); err == nil {
 		h = hh
 	}
-	switch strings.ToLower(h) {
+	h = strings.ToLower(strings.Trim(strings.TrimSpace(h), "[]"))
+
+	switch h {
 	case "127.0.0.1", "::1", "localhost":
 		return true
-	default:
+	}
+	if ip := net.ParseIP(h); ip != nil && ip.IsLoopback() {
+		return true
+	}
+
+	for _, pattern := range allowedHosts {
+		p := strings.ToLower(strings.TrimSpace(pattern))
+		if p == "" {
+			continue
+		}
+		if p == "*" {
+			return true
+		}
+		if p == "lan" || p == "private" {
+			if ip := net.ParseIP(h); ip != nil && isPrivateOrLocalIP(ip) {
+				return true
+			}
+			continue
+		}
+		if ph, _, err := net.SplitHostPort(p); err == nil {
+			p = ph
+		}
+		p = strings.Trim(p, "[]")
+		if p == h {
+			return true
+		}
+		if strings.HasPrefix(p, "*.") {
+			suffix := strings.TrimPrefix(p, "*")
+			if strings.HasSuffix(h, suffix) {
+				return true
+			}
+		}
+		if _, cidr, err := net.ParseCIDR(pattern); err == nil {
+			if ip := net.ParseIP(h); ip != nil && cidr.Contains(ip) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// isPrivateOrLocalIP reports whether an IP is loopback, RFC 1918 private,
+// link-local, RFC 4193 IPv6 ULA, or RFC 6598 CGNAT / Tailscale (100.64.0.0/10).
+func isPrivateOrLocalIP(ip net.IP) bool {
+	if ip == nil {
 		return false
 	}
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() {
+		return true
+	}
+	// Check IPv4 Carrier-Grade NAT (RFC 6598: 100.64.0.0/10), used by Tailscale and CGNAT
+	if ip4 := ip.To4(); ip4 != nil {
+		if ip4[0] == 100 && (ip4[1]&0xc0) == 64 {
+			return true
+		}
+	}
+	return false
+}
+
+// ParseAllowedHosts splits a comma-separated list of host patterns, trimming whitespace.
+func ParseAllowedHosts(raw string) []string {
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	var hosts []string
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			hosts = append(hosts, p)
+		}
+	}
+	return hosts
 }
 
 // securityHeaders adds security headers to all responses

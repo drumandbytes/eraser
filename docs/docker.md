@@ -54,10 +54,13 @@ network, the loopback-only port, the `eraser-data` volume, and for the browser
 Inside the container the server listens on `0.0.0.0` (`serve --listen 0.0.0.0`,
 the image's default command) because Docker can't forward to a container's
 loopback. It prints a warning saying so. Requests whose `Host` header isn't
-`localhost`/`127.0.0.1`/`::1` are still refused, as on the desktop, but that's a
-guard against DNS rebinding, not authentication. To reach the UI from another
-machine, use an SSH tunnel (`ssh -L 8080:localhost:8080 server`) rather than
-publishing the port.
+`localhost`/`127.0.0.1`/`::1` are refused by default, as on the desktop, as a
+guard against DNS rebinding (not authentication). To access the UI from another
+machine on your LAN (or in homelab setups like Unraid or behind a reverse proxy),
+set `DELISTD_ALLOWED_HOSTS` to a comma-separated list of hostnames/IPs (e.g.
+`192.168.1.100,unraid.local`), `lan` / `private` to allow private network IPs,
+or `*` to allow all hosts. You can also reach the UI via an SSH tunnel
+(`ssh -L 8080:localhost:8080 server`).
 
 Other containers on the same Docker network can reach the container directly
 and send any `Host` header they like, so treat them as trusted. `compose.yaml`

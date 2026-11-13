@@ -126,6 +126,10 @@ func requireChrome(t *testing.T) *Browser {
 	cfg := DefaultConfig()
 	cfg.Headless = true
 	cfg.Timeout = 15 * time.Second
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		// a shared runner, and on windows-11-arm Chrome is slow enough to miss 15s per operation
+		cfg.Timeout = 60 * time.Second
+	}
 
 	b, err := New(cfg, testProfile(), nil)
 	if err != nil {

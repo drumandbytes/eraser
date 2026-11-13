@@ -71,6 +71,12 @@ type FormResult struct {
 // Chrome without its sandbox on CI runners that can't provide one.
 var extraAllocatorOptions []chromedp.ExecAllocatorOption
 
+// chromeStartTimeout is how long a locally launched Chrome gets to open its DevTools
+// socket. chromedp's default is 20s, which a loaded machine (a shared CI runner, a laptop
+// just out of sleep) can miss with "websocket url timeout reached". A Chrome that really
+// can't start still fails, only later.
+const chromeStartTimeout = 60 * time.Second
+
 // New creates a new Browser instance. allowedDomains restricts the hosts
 // NavigateAndFill is willing to navigate to and autofill with profile PII
 // (see matchesAllowedDomain); pass nil/empty to skip that check entirely
@@ -96,11 +102,12 @@ func New(cfg BrowserConfig, profile *config.Profile, allowedDomains []string) (*
 			chromedp.DisableGPU,
 			chromedp.UserAgent(cfg.UserAgent),
 			chromedp.WindowSize(cfg.WindowWidth, cfg.WindowHeight),
+			chromedp.WSURLReadTimeout(chromeStartTimeout),
 		}
 		if cfg.Headless {
 			opts = append(opts, chromedp.Headless)
 		}
-		opts = append(opts, extraAllocatorOptions...)
+		opts = append(opts, extraAllocatorOptions...) // after the defaults above, so tests can override them
 		if cfg.ExecutablePath != "" {
 			opts = append(opts, chromedp.ExecPath(cfg.ExecutablePath))
 		}

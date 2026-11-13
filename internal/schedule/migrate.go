@@ -137,7 +137,7 @@ func migrationTarget(oldExe string) string {
 
 func announceMigration(w io.Writer, oldExe, newExe string) {
 	if w != nil {
-		fmt.Fprintf(w, "✓ Your OS schedule now runs %s instead of the deprecated %s.\n", newExe, oldExe)
+		_, _ = fmt.Fprintf(w, "✓ Your OS schedule now runs %s instead of the deprecated %s.\n", newExe, oldExe)
 	}
 }
 

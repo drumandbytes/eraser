@@ -3,6 +3,8 @@ package main
 import (
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -99,4 +101,30 @@ func TestMigrateScheduleSaysNothingWithNothingInstalled(t *testing.T) {
 		t.Errorf("unexpected output with nothing to migrate: %q", out)
 	}
 	_ = e
+}
+
+// A schedule it can't read is worth a warning that names the fix, not silence.
+func TestMigrateScheduleWarnsWhenItCannotRead(t *testing.T) {
+	e := newCLIEnv(t, manualConfig)
+	switch runtime.GOOS {
+	case "darwin":
+		if err := os.MkdirAll(filepath.Join(e.home, "Library", "LaunchAgents", "com.drumandbytes.eraser.auto.plist"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	case "linux":
+		dir := filepath.Join(e.home, ".config", "systemd", "user")
+		if err := os.MkdirAll(filepath.Join(dir, "eraser-auto.service"), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "eraser-auto.timer"), []byte("[Timer]\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	default:
+		t.Skip("no OS scheduler on " + runtime.GOOS)
+	}
+	c, _, _ := newRootCmd().Find([]string{"status"})
+	out := captureStderr(t, func() { migrateSchedule(c) })
+	if !strings.Contains(out, "could not move your OS schedule") || !strings.Contains(out, "schedule install") {
+		t.Errorf("warning = %q", out)
+	}
 }

@@ -66,6 +66,13 @@ func notInOSJob(t *testing.T) {
 	t.Setenv("INVOCATION_ID", "")
 }
 
+func skipOnWindows(t *testing.T, why string) {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip(why)
+	}
+}
+
 func readPlist(t *testing.T) string {
 	t.Helper()
 	path, _ := launchdPath()
@@ -194,6 +201,7 @@ func TestMigrateLaunchdLeavesWhatItCannotImprove(t *testing.T) {
 
 // With no delistd beside the old binary, a real delistd can still take over.
 func TestMigrateLaunchdUsesThisBinaryWhenItIsDelistd(t *testing.T) {
+	skipOnWindows(t, "launchd and its path handling aren't on windows")
 	fakeOS(t, "darwin")
 	notInOSJob(t)
 	elsewhere := outsideTMPDIR(t)
@@ -234,6 +242,7 @@ func TestMigrateIsIdempotent(t *testing.T) {
 
 // A path with XML-significant characters must stay well-formed and round-trip.
 func TestMigrateLaunchdEscapesThePath(t *testing.T) {
+	skipOnWindows(t, "windows doesn't allow < or > in a file name")
 	fakeOS(t, "darwin")
 	notInOSJob(t)
 	bin := filepath.Join(t.TempDir(), "R&D <tools>")
@@ -409,5 +418,50 @@ func TestMigrateReportsAnUnreadableSchedule(t *testing.T) {
 func TestXMLUnescapeKeepsWhatItCannotParse(t *testing.T) {
 	if got := xmlUnescape("a &bogus; b"); got != "a &bogus; b" {
 		t.Errorf("got %q", got)
+	}
+}
+
+func TestMigrateReportsASystemdServiceItCannotRead(t *testing.T) {
+	fakeOS(t, "linux")
+	notInOSJob(t)
+	dir, _ := systemdDir()
+	if err := writeFile(filepath.Join(dir, systemdUnit+".timer"), "[Timer]\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, systemdUnit+".service"), 0o755); err != nil { // a directory, not a file
+		t.Fatal(err)
+	}
+	if err := Migrate(nil); err == nil {
+		t.Error("an unreadable service file should be reported")
+	}
+}
+
+// If the rewrite can't be written, say so and leave the old schedule as it was.
+func TestMigrateReportsAScheduleItCannotWrite(t *testing.T) {
+	skipOnWindows(t, "directory permissions work differently on windows")
+	if os.Geteuid() == 0 {
+		t.Skip("root can write anywhere")
+	}
+	for _, platform := range []string{"darwin", "linux"} {
+		fakeOS(t, platform)
+		notInOSJob(t)
+		bin := t.TempDir()
+		binaries(t, bin, "eraser", "delistd")
+		installFakeSchedule(t, platform, filepath.Join(bin, "eraser"))
+		runningAs(t, filepath.Join(bin, "eraser"))
+		var dir string
+		if platform == "darwin" {
+			p, _ := launchdPath()
+			dir = filepath.Dir(p)
+		} else {
+			dir, _ = systemdDir()
+		}
+		if err := os.Chmod(dir, 0o500); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+		if err := Migrate(nil); err == nil || !strings.Contains(err.Error(), "failed to write") {
+			t.Errorf("%s: err=%v", platform, err)
+		}
 	}
 }

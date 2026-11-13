@@ -165,6 +165,35 @@ func TestMigrateLaunchdInsideTheJobDefersTheReload(t *testing.T) {
 	}
 }
 
+func TestMigrateSystemdLeavesWhatItCannotImprove(t *testing.T) {
+	for name, setup := range map[string]func(bin string){
+		"no delistd beside eraser, running as eraser": func(bin string) {
+			binaries(t, bin, "eraser")
+			installFakeSchedule(t, "linux", filepath.Join(bin, "eraser"))
+			runningAs(t, filepath.Join(bin, "eraser"))
+		},
+		"already delistd": func(bin string) {
+			binaries(t, bin, "delistd")
+			installFakeSchedule(t, "linux", filepath.Join(bin, "delistd"))
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			calls := fakeOS(t, "linux")
+			notInOSJob(t)
+			bin := t.TempDir()
+			setup(bin)
+			before := readService(t)
+			var out strings.Builder
+			if err := Migrate(&out); err != nil {
+				t.Fatal(err)
+			}
+			if readService(t) != before || out.Len() != 0 || len(*calls) != 0 {
+				t.Errorf("should be untouched: out=%q calls=%v", out.String(), *calls)
+			}
+		})
+	}
+}
+
 func TestMigrateLaunchdLeavesWhatItCannotImprove(t *testing.T) {
 	notInOSJob(t)
 	for name, setup := range map[string]func(bin string){
@@ -361,6 +390,17 @@ func TestWriteFileAtomic(t *testing.T) {
 	}
 	if err := writeFileAtomic(filepath.Join(dir, "missing", "x"), "y"); err == nil {
 		t.Error("a missing directory should fail")
+	}
+	// a rename that can't happen (the target is a non-empty directory) fails and leaves no temp file
+	blocked := filepath.Join(dir, "blocked")
+	if err := os.MkdirAll(filepath.Join(blocked, "inner"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeFileAtomic(blocked, "z"); err == nil || !strings.Contains(err.Error(), "failed to write") {
+		t.Errorf("rename onto a directory: %v", err)
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 2 { // x.plist and blocked/
+		t.Errorf("temp file left behind: %v", entries)
 	}
 }
 

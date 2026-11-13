@@ -28,23 +28,20 @@ var systemdExeRe = regexp.MustCompile(`(?m)^ExecStart="((?:[^"\\]|\\.)*)"`)
 // non-nil) in one line. It is safe to run on every start and from inside the
 // scheduled run itself.
 func Migrate(w io.Writer) error {
-	if !Installed() {
-		return nil
+	unit, err := unitFile() // the plist, or the systemd timer
+	if err != nil {
+		return nil // no OS scheduler here, or no home directory: nothing can be installed
 	}
-	switch goos {
-	case "darwin":
-		return migrateLaunchd(w)
-	case "linux":
-		return migrateSystemd(w)
+	if _, err := os.Stat(unit); err != nil {
+		return nil // not installed
 	}
-	return nil
+	if goos == "darwin" {
+		return migrateLaunchd(w, unit)
+	}
+	return migrateSystemd(w, filepath.Join(filepath.Dir(unit), systemdUnit+".service")) // unitFile only succeeds on darwin and linux
 }
 
-func migrateLaunchd(w io.Writer) error {
-	path, err := launchdPath()
-	if err != nil {
-		return err
-	}
+func migrateLaunchd(w io.Writer, path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -69,12 +66,7 @@ func migrateLaunchd(w io.Writer) error {
 	return nil
 }
 
-func migrateSystemd(w io.Writer) error {
-	dir, err := systemdDir()
-	if err != nil {
-		return err
-	}
-	path := filepath.Join(dir, systemdUnit+".service")
+func migrateSystemd(w io.Writer, path string) error {
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil

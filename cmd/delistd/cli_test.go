@@ -189,3 +189,14 @@ func TestBareDelistdStartsWebUI(t *testing.T) {
 		t.Errorf("bare delistd served on %d, want 8080", port)
 	}
 }
+
+func TestServeCmdFlags(t *testing.T) {
+	cmd := serveCmd()
+	f := cmd.Flags().Lookup("allowed-hosts")
+	if f == nil {
+		t.Fatal("missing --allowed-hosts flag on serve")
+	}
+	if f.DefValue != "" {
+		t.Errorf("default value = %q, want empty", f.DefValue)
+	}
+}

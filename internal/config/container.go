@@ -11,5 +11,9 @@ const ContainerEnv = "DELISTD_CONTAINER"
 // too, e.g. to drive a Chrome you started with --remote-debugging-port.
 const ChromeURLEnv = "DELISTD_CHROME_URL"
 
+// AllowedHostsEnv is a comma-separated list of Host header values permitted
+// by the web UI (e.g. "192.168.1.100,unraid.local" or "*" to allow any).
+const AllowedHostsEnv = "DELISTD_ALLOWED_HOSTS"
+
 // InContainer reports whether ContainerEnv is "1".
 func InContainer() bool { return Getenv(ContainerEnv) == "1" }

@@ -271,6 +271,118 @@ func TestRequireLoopbackHostBlocksNonLoopback(t *testing.T) {
 	}
 }
 
+func TestServerHostAllowed(t *testing.T) {
+	s := &Server{ListenHost: "127.0.0.1"}
+
+	// Default loopback listener: loopback allowed, private IPs and others rejected
+	if !s.hostAllowed("localhost:8080") || !s.hostAllowed("127.0.0.1:8080") {
+		t.Errorf("expected loopback to be allowed on loopback listener")
+	}
+	if s.hostAllowed("192.168.178.220:9890") {
+		t.Errorf("expected private IP to be rejected on loopback listener without AllowedHosts")
+	}
+
+	// AllowedHosts with 'lan' or 'private': private/local IPs allowed, external rejected
+	sLAN := &Server{ListenHost: "0.0.0.0", AllowedHosts: []string{"lan"}}
+	casesLAN := []struct {
+		host string
+		want bool
+	}{
+		{"localhost:8080", true},
+		{"127.0.0.1:8080", true},
+		{"192.168.178.220:9890", true},
+		{"10.0.1.5:8080", true},
+		{"172.16.2.3:8080", true},
+		{"100.80.1.2:8080", true}, // Tailscale / CGNAT
+		{"[fe80::1]:8080", true},  // IPv6 link-local
+		{"[fc00::1]:8080", true},  // IPv6 ULA
+		{"attacker.example:8080", false},
+		{"8.8.8.8:8080", false},
+	}
+	for _, tc := range casesLAN {
+		if got := sLAN.hostAllowed(tc.host); got != tc.want {
+			t.Errorf("sLAN.hostAllowed(%q) = %v, want %v", tc.host, got, tc.want)
+		}
+	}
+
+	// AllowedHosts with wildcard '*' allows any host
+	sWildcard := &Server{ListenHost: "127.0.0.1", AllowedHosts: []string{"*"}}
+	if !sWildcard.hostAllowed("attacker.example:8080") || !sWildcard.hostAllowed("unraid.local:9890") {
+		t.Errorf("expected wildcard AllowedHosts to permit all hosts")
+	}
+
+	// AllowedHosts with specific names and patterns
+	sConfigured := &Server{
+		ListenHost:   "127.0.0.1",
+		AllowedHosts: []string{"unraid.local", "*.lan", "10.0.0.0/8"},
+	}
+	if !sConfigured.hostAllowed("unraid.local:9890") {
+		t.Errorf("expected unraid.local to be allowed")
+	}
+	if !sConfigured.hostAllowed("mybox.lan:8080") {
+		t.Errorf("expected *.lan wildcard domain to be allowed")
+	}
+	if !sConfigured.hostAllowed("10.5.6.7:8080") {
+		t.Errorf("expected 10.0.0.0/8 CIDR to be allowed")
+	}
+	if sConfigured.hostAllowed("other.local:8080") {
+		t.Errorf("expected other.local to be rejected")
+	}
+	if sConfigured.hostAllowed("attacker.example:8080") {
+		t.Errorf("expected attacker.example to be rejected")
+	}
+}
+
+func TestRequireAllowedHostMiddleware(t *testing.T) {
+	s := &Server{ListenHost: "0.0.0.0", AllowedHosts: []string{"unraid.local", "192.168.178.220"}}
+	handler := s.requireAllowedHost(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	// Allowed explicit IP
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "192.168.178.220:9890"
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("allowed IP Host: got %d, want 200", rec.Code)
+	}
+
+	// Allowed explicit hostname
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "unraid.local:9890"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Errorf("allowed hostname Host: got %d, want 200", rec.Code)
+	}
+
+	// Rejected external host
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "attacker.example"
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("unauthorized Host: got %d, want 403", rec.Code)
+	}
+}
+
+func TestParseAllowedHosts(t *testing.T) {
+	if got := ParseAllowedHosts(""); got != nil {
+		t.Errorf("expected nil for empty string, got %v", got)
+	}
+	got := ParseAllowedHosts(" 192.168.1.1, unraid.local , *.lan ")
+	want := []string{"192.168.1.1", "unraid.local", "*.lan"}
+	if len(got) != len(want) {
+		t.Fatalf("ParseAllowedHosts: got %v, want %v", got, want)
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			t.Errorf("ParseAllowedHosts[%d]: got %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
 func TestCountryHiddenCountsOutOfScopeBrokers(t *testing.T) {
 	cfg := testConfig("default")
 	cfg.Profiles[0].Country = "France"

@@ -47,8 +47,7 @@ COPY --from=build --chown=65532:65532 /rootfs/home /home
 # first and falls back to them, so a user's own DELISTD_* setting overrides these defaults.
 ENV HOME=/home/nonroot \
     ERASER_CONTAINER=1 \
-    ERASER_MACHINE_ID_FILE=/home/nonroot/.eraser/machine-id \
-    DELISTD_ALLOWED_HOSTS="*"
+    ERASER_MACHINE_ID_FILE=/home/nonroot/.eraser/machine-id
 WORKDIR /home/nonroot/.eraser
 VOLUME ["/home/nonroot/.eraser"]
 EXPOSE 8080

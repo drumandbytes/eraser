@@ -42,7 +42,7 @@ The project was renamed from Eraser to Delistd in 2.3. It's a minor release beca
 | `eraser.drumandbytes.dev` | `delistd.dev` | Redirects, path preserved |
 | `go install github.com/drumandbytes/eraser/cmd/eraser@latest` | `go install github.com/drumandbytes/delistd/cmd/delistd@main` | `@latest` never worked for 2.x under either path (Go ignores v2+ tags without a `/v2` module suffix); under the old path it quietly installed v1.8.0. Use `@main`, Homebrew, Docker or a release download. There is no redirect for Go module paths |
 
-Unchanged on purpose, because renaming them would orphan existing data: the `~/.eraser` data directory (`config.yaml`, `history.db`), the `eraser-data` Docker volume, the launchd label `com.drumandbytes.eraser.auto` and systemd unit `eraser-auto`, and the encryption key derivation for stored passwords. An OS schedule installed before the rename keeps running through the `eraser` alias; re-run `delistd schedule install` to point it at the new name.
+Unchanged on purpose, because renaming them would orphan existing data: the `~/.eraser` data directory (`config.yaml`, `history.db`), the `eraser-data` Docker volume, the launchd label `com.drumandbytes.eraser.auto` and systemd unit `eraser-auto`, and the encryption key derivation for stored passwords. An OS schedule installed before the rename ran the `eraser` alias. From 2.4, any `delistd` command or the scheduled run itself rewrites it to run `delistd` (see `schedule` in [commands.md](commands.md)); on 2.3 and earlier, re-run `delistd schedule install`.
 
 The next major release (3.0) removes the `eraser` command, the `ERASER_*` fallbacks and the old image name.
 

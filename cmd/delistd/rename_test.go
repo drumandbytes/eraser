@@ -76,3 +76,27 @@ func TestRenameAnnouncementThroughTheOldNameRepeats(t *testing.T) {
 		}
 	}
 }
+
+func TestQuietCommands(t *testing.T) {
+	root := newRootCmd()
+	for _, name := range []string{"serve", "init", "mcp", "list-brokers"} {
+		c, _, err := root.Find([]string{name})
+		if err != nil || !quietCommand(c) {
+			t.Errorf("%s should be quiet (err=%v)", name, err)
+		}
+	}
+	c, _, _ := root.Find([]string{"auto"})
+	if quietCommand(c) {
+		t.Error("auto runs the scheduled cycle, so it must be allowed to migrate the schedule")
+	}
+}
+
+func TestMigrateScheduleSaysNothingWithNothingInstalled(t *testing.T) {
+	e := newCLIEnv(t, manualConfig) // a temp HOME with no OS schedule in it
+	c, _, _ := newRootCmd().Find([]string{"status"})
+	out := captureStderr(t, func() { migrateSchedule(c) })
+	if out != "" {
+		t.Errorf("unexpected output with nothing to migrate: %q", out)
+	}
+	_ = e
+}

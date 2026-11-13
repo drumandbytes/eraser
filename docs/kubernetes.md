@@ -53,6 +53,9 @@ spec:
             - {name: TZ, value: UTC}
             # Omit this and the chrome container below if you don't use fill/mcp.
             - {name: DELISTD_CHROME_URL, value: "http://localhost:9222"}
+            # The Host check accepts localhost, private IPs and local names by default. Only behind a
+            # proxy that authenticates, add its hostname:
+            # - {name: DELISTD_ALLOWED_HOSTS, value: "lan,local,delistd.example.com"}
           volumeMounts:
             - {name: data, mountPath: /home/nonroot/.eraser}
           readinessProbe:
@@ -97,6 +100,12 @@ Delistd's loopback Host check:
 ```bash
 kubectl port-forward deploy/delistd 8080:8080   # then http://localhost:8080
 ```
+
+From 2.4 the Host check also accepts private IPs and local names, so another pod
+reaching the Service as `delistd` or `delistd.default.svc.cluster.local` passes
+it too. A public hostname (an Ingress) is refused unless you list it in
+`DELISTD_ALLOWED_HOSTS` ([docker.md](docker.md#security-keep-the-port-on-127001)); do
+that only behind a proxy that authenticates, since the UI has no login.
 
 Commands run by exec-ing the binary directly (the image has no shell):
 

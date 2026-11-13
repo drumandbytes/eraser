@@ -32,6 +32,8 @@ services:
     environment:
       TZ: UTC # set your own, e.g. Europe/Berlin, so times in the UI match your clock
       DELISTD_CHROME_URL: http://chrome:9222
+      # Reached from another machine through a reverse proxy? Add its hostname (docs/docker.md):
+      # DELISTD_ALLOWED_HOSTS: "lan,local,delistd.example.com"
     <<: *hardened
     restart: unless-stopped
 

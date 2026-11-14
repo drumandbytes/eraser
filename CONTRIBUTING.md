@@ -59,7 +59,7 @@ Delistd talks plain SMTP (sending) and IMAP (reply monitoring) to any provider. 
 - If you can't test the preset with a real account, put "unverified" in its `Name` and ask for reports in its `Note` (the Proton preset did until a user confirmed it). Remove the label once someone confirms it works.
 - Keep `custom` last. The CLI menu is numbered in slice order, so if you insert before an existing entry, update `cmd/delistd/mail_prompt_test.go`.
 - Add a row to the provider table in the README ("Setting Up Your Email Account").
-- Providers that only allow OAuth sign-in can't be a preset in `Providers`: the setup forms ask for a password. Outlook.com has its own `OutlookOAuth` entry, used by `delistd oauth login` (see [docs/outlook.md](docs/outlook.md)).
+- Providers that only allow OAuth sign-in can't be a plain preset in `Providers` (the CLI wizard and `init` ask for a password). Outlook.com has its own `OutlookOAuth` entry: the web forms add it to the dropdown (`providersForForm`) and `delistd oauth login` uses it (see [docs/outlook.md](docs/outlook.md)).
 
 Before opening the PR, send a real test email with your own account from the web setup wizard's "Test Your Setup" step, and mention in the PR that you did.
 

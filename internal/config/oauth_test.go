@@ -68,9 +68,9 @@ func TestReplaceSecret(t *testing.T) {
 	}
 }
 
-func TestOutlookOAuthPresetIsNotInTheFormList(t *testing.T) {
+func TestOutlookOAuthPresetIsNotInProviders(t *testing.T) {
 	if _, ok := ProviderByID("outlook"); ok {
-		t.Fatal("the OAuth preset must not appear in Providers: setup forms would ask for a password")
+		t.Fatal("the OAuth preset must not appear in Providers: the CLI wizard would ask for a password")
 	}
 	if !OutlookOAuth.OAuth || OutlookOAuth.SMTPPort != 587 || OutlookOAuth.IMAPPort != 993 {
 		t.Fatalf("%+v", OutlookOAuth)

@@ -209,3 +209,91 @@ func TestSASLAndSMTPAuth(t *testing.T) {
 		t.Fatal("no reply when done")
 	}
 }
+
+func TestTransportAndDecodeFailures(t *testing.T) {
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("<html>not json")) }))
+	t.Cleanup(bad.Close)
+	c := NewClient(Endpoints{DeviceCode: bad.URL, Token: bad.URL, Scopes: []string{"s"}}, "cid")
+	c.sleep = func(context.Context, time.Duration) error { return nil }
+	ctx := context.Background()
+	if _, err := c.StartDeviceCode(ctx); err == nil || !strings.Contains(err.Error(), "unexpected response") {
+		t.Fatalf("start: %v", err)
+	}
+	if _, err := c.Refresh(ctx, "r"); err == nil || !strings.Contains(err.Error(), "unexpected response") {
+		t.Fatalf("refresh: %v", err)
+	}
+	if _, err := c.PollDeviceCode(ctx, DeviceCode{DeviceCode: "d", Interval: 1}); err == nil {
+		t.Fatal("poll: expected error")
+	}
+
+	dead := NewClient(Endpoints{DeviceCode: "http://127.0.0.1:1", Token: "http://127.0.0.1:1"}, "cid")
+	dead.sleep = c.sleep
+	if _, err := dead.StartDeviceCode(ctx); err == nil {
+		t.Fatal("start: expected connection error")
+	}
+	if _, err := dead.Refresh(ctx, "r"); err == nil {
+		t.Fatal("refresh: expected connection error")
+	}
+	if _, err := c.post(ctx, "http://bad url\x7f", nil, nil); err == nil {
+		t.Fatal("expected request error")
+	}
+}
+
+func TestPollStopsWhenCancelled(t *testing.T) {
+	c := NewClient(MicrosoftConsumers, "cid")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := c.PollDeviceCode(ctx, DeviceCode{DeviceCode: "d", Interval: 1}); err == nil {
+		t.Fatal("expected cancel")
+	}
+}
+
+func TestStartDefaultsTheInterval(t *testing.T) {
+	c, _ := fake(t, nil)
+	dc, err := c.StartDeviceCode(context.Background())
+	if err != nil || dc.Interval != 1 {
+		t.Fatalf("%+v %v", dc, err)
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/d", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"device_code": "x", "user_code": "U", "verification_uri": "v", "expires_in": 60})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	c2 := NewClient(Endpoints{DeviceCode: srv.URL + "/d"}, "cid")
+	if dc, err := c2.StartDeviceCode(context.Background()); err != nil || dc.Interval != 5 {
+		t.Fatalf("%+v %v", dc, err)
+	}
+}
+
+func TestFirstLine(t *testing.T) {
+	if got := firstLine("code", ""); got != "code" {
+		t.Fatal(got)
+	}
+	if got := firstLine("code", "first\r\nsecond"); got != "code: first" {
+		t.Fatal(got)
+	}
+}
+
+func TestAccessForWithoutHookAndOnFailure(t *testing.T) {
+	_, srv := fake(t, func(*http.Request) (int, any) { return 400, map[string]string{"error": "invalid_grant"} })
+	old := MicrosoftConsumers
+	MicrosoftConsumers = Endpoints{Token: srv.URL + "/token", Scopes: old.Scopes}
+	defer func() { MicrosoftConsumers = old; RotateHook = nil }()
+	RotateHook = nil
+	if _, err := AccessFor(context.Background(), "cid-fail", "dead"); !errors.Is(err, ErrReauth) {
+		t.Fatalf("%v", err)
+	}
+	_, ok := sources["cid-fail\x00dead"]
+	if !ok {
+		t.Fatal("source not cached")
+	}
+	// a rotation with no hook is kept in memory only
+	_, srv2 := fake(t, func(*http.Request) (int, any) {
+		return 200, map[string]any{"access_token": "a", "refresh_token": "n2", "expires_in": 3600}
+	})
+	MicrosoftConsumers = Endpoints{Token: srv2.URL + "/token", Scopes: old.Scopes}
+	if got, err := AccessFor(context.Background(), "cid-nohook", "r"); err != nil || got != "a" {
+		t.Fatalf("%q %v", got, err)
+	}
+}

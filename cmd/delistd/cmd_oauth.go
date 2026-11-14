@@ -84,13 +84,13 @@ func runOAuthLogin(ctx context.Context, out io.Writer, path, clientID, email str
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "To sign in, open %s and enter the code %s.\nWaiting for you to finish (Ctrl+C to cancel)...\n", dc.VerificationURI, dc.UserCode)
+	_, _ = fmt.Fprintf(out, "To sign in, open %s and enter the code %s.\nWaiting for you to finish (Ctrl+C to cancel)...\n", dc.VerificationURI, dc.UserCode)
 	tok, err := c.PollDeviceCode(ctx, dc)
 	if err != nil {
 		return err
 	}
 	if tok.Refresh == "" {
-		return fmt.Errorf("Microsoft returned no refresh token, so unattended runs would stop after an hour; check that the app allows the offline_access permission")
+		return fmt.Errorf("microsoft returned no refresh token, so unattended runs would stop after an hour; check that the app allows the offline_access permission")
 	}
 
 	p := config.OutlookOAuth
@@ -105,7 +105,7 @@ func runOAuthLogin(ctx context.Context, out io.Writer, path, clientID, email str
 	if err := config.Save(path, cfg); err != nil {
 		return err
 	}
-	fmt.Fprintf(out, "Signed in as %s. Sending and the inbox now use this sign-in.\n", email)
+	_, _ = fmt.Fprintf(out, "Signed in as %s. Sending and the inbox now use this sign-in.\n", email)
 	return nil
 }
 

@@ -1,0 +1,12 @@
+{{/* Sign-in progress for Outlook.com. Data: web.oauthView. While pending it
+     polls itself; once done it carries the id the form posts. */}}
+<div id="oauth_status" {{if .Pending}}hx-get="/oauth/status?id={{.ID}}" hx-trigger="every 3s" hx-swap="outerHTML"{{end}}>
+    {{if .Error}}
+    <p class="text-sm text-error" role="alert">{{.Error}}</p>
+    {{else if .Done}}
+    <input type="hidden" name="oauth_id" value="{{.ID}}">
+    <p class="text-sm text-success" role="status">Signed in. Save to keep it.</p>
+    {{else if .Pending}}
+    <p class="text-sm">Open <a href="{{.URL}}" target="_blank" rel="noopener" class="text-accent hover:underline">{{.URL}}</a> and enter the code <strong class="font-mono">{{.Code}}</strong>. Waiting for you to finish...</p>
+    {{end}}
+</div>

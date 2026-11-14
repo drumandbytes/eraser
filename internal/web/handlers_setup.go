@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/drumandbytes/delistd/internal/config"
@@ -96,8 +95,8 @@ func (s *Server) handleSetupEmail(w http.ResponseWriter, r *http.Request) {
 		}
 
 		form := readMailForm(r)
-		if form.Password == "" && form.Username != "" && strings.EqualFold(form.Username, prev.SMTP.Username) {
-			form.Password = prev.SMTP.Password
+		if form.Username != "" {
+			form.keepStored(prev.SMTP.Username, prev.SMTP.Password, prev.SMTP.Auth, prev.SMTP.ClientID)
 		}
 		if errors := form.validate("smtp", true); len(errors) > 0 {
 			data := map[string]interface{}{

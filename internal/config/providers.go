@@ -46,8 +46,8 @@ var Providers = []Provider{
 }
 
 // OutlookOAuth is the Outlook.com / Hotmail / Live preset. It is not in
-// Providers because the setup forms ask for a password; `delistd oauth login`
-// fills the account from it instead.
+// Providers because the CLI wizard asks for a password. The web forms add it
+// to their dropdown, and `delistd oauth login` fills the account from it.
 var OutlookOAuth = Provider{ID: "outlook", Name: "Outlook.com / Hotmail / Live (OAuth)", SMTPHost: "smtp-mail.outlook.com", SMTPPort: 587, IMAPHost: "outlook.office365.com", IMAPPort: 993, OAuth: true,
 	Note: "Microsoft no longer accepts passwords here; sign in with `delistd oauth login`. Not for Microsoft 365 work accounts."}
 

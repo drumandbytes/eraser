@@ -139,3 +139,52 @@ func TestOAuthCmdRegistered(t *testing.T) {
 		t.Fatalf("%v %v", c, err)
 	}
 }
+
+func TestOAuthLoginFailurePaths(t *testing.T) {
+	path := writeBaseConfig(t)
+	// Microsoft refuses to start the sign-in
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized_client"})
+	}))
+	t.Cleanup(srv.Close)
+	old := oauth.MicrosoftConsumers
+	oauth.MicrosoftConsumers = oauth.Endpoints{DeviceCode: srv.URL, Token: srv.URL, Scopes: old.Scopes}
+	t.Cleanup(func() { oauth.MicrosoftConsumers = old })
+	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "c", ""); err == nil || !strings.Contains(err.Error(), "unauthorized_client") {
+		t.Fatalf("start refused: %v", err)
+	}
+
+	// the user never finishes: the poll is cancelled
+	fakeMicrosoft(t, "")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := runOAuthLogin(ctx, &bytes.Buffer{}, path, "c", ""); err == nil {
+		t.Fatal("expected cancel")
+	}
+
+	// no address anywhere
+	cfg, _ := config.Load(path)
+	cfg.Email.From = ""
+	if err := config.Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "c", ""); err == nil || !strings.Contains(err.Error(), "--email") {
+		t.Fatalf("no address: %v", err)
+	}
+}
+
+func TestOAuthLoginCommandRuns(t *testing.T) {
+	fakeMicrosoft(t, "R")
+	path := writeBaseConfig(t)
+	root := newRootCmd()
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"--config", path, "oauth", "login", "--client-id", "cid", "--email", "jane@outlook.com"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "Signed in as jane@outlook.com") {
+		t.Fatalf("output: %q", out.String())
+	}
+}

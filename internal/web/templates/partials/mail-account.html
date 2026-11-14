@@ -9,7 +9,7 @@
             <option value="{{.ID}}" {{if eq .ID $.Provider}}selected{{end}}
                 data-smtp-host="{{.SMTPHost}}" data-smtp-port="{{if .SMTPPort}}{{.SMTPPort}}{{end}}"
                 data-imap-host="{{.IMAPHost}}" data-imap-port="{{if .IMAPPort}}{{.IMAPPort}}{{end}}"
-                data-note="{{.Note}}" data-help="{{.HelpURL}}">{{.Name}}</option>
+                data-note="{{.Note}}" data-help="{{.HelpURL}}" data-oauth="{{if .OAuth}}1{{end}}">{{.Name}}</option>
             {{end}}
         </select>
         <p class="mt-1 text-xs text-muted">
@@ -26,7 +26,32 @@
         {{if .Errors.mail_address}}<p class="mt-1 text-sm text-error">{{.Errors.mail_address}}</p>{{end}}
     </div>
 
-    <div>
+    <div id="oauth_block" class="space-y-3" {{if not .OAuth}}hidden{{end}}>
+        <div class="text-sm space-y-2 rounded border p-3">
+            <p class="font-medium">Outlook.com, Hotmail and Live need a one-time Microsoft sign-in</p>
+            <p class="text-muted">Microsoft no longer accepts passwords here. Register a free app once (about 5 minutes), then sign in with a code. For personal accounts only, not Microsoft 365 work accounts.</p>
+            <ol class="list-decimal list-inside space-y-1">
+                <li>Open <a href="https://entra.microsoft.com" target="_blank" rel="noopener" class="text-accent hover:underline">entra.microsoft.com</a> &rarr; <em>App registrations</em> &rarr; <em>New registration</em>, signed in with your Microsoft account (accept the free directory if asked).</li>
+                <li>Name it anything. Supported account types: <strong>Personal Microsoft accounts only</strong>. Leave the redirect URI empty. Register.</li>
+                <li><em>Authentication</em> &rarr; <em>Advanced settings</em> &rarr; <strong>Allow public client flows: Yes</strong> &rarr; Save.</li>
+                <li>If signing in later says the app lacks permission, add <code>IMAP.AccessAsUser.All</code>, <code>SMTP.Send</code> and <code>offline_access</code> under <em>API permissions</em>.</li>
+                <li>Copy the <strong>Application (client) ID</strong> from <em>Overview</em> into the box below.</li>
+            </ol>
+            <p class="text-xs text-muted">Full guide: <a href="https://github.com/drumandbytes/delistd/blob/main/docs/outlook.md" target="_blank" rel="noopener" class="text-accent hover:underline">docs/outlook.md</a>. New and not yet confirmed by users; tell us how it goes in <a href="https://github.com/drumandbytes/delistd/issues/293" target="_blank" rel="noopener" class="text-accent hover:underline">#293</a>.</p>
+        </div>
+        <div>
+            <label for="oauth_client_id" class="label">Application (client) ID</label>
+            <input type="text" name="oauth_client_id" id="oauth_client_id" value="{{.ClientID}}" class="input font-mono" autocomplete="off" placeholder="00000000-0000-0000-0000-000000000000">
+        </div>
+        <div>
+            <button type="button" class="btn btn-secondary" hx-post="/oauth/start" hx-include="#oauth_client_id" hx-target="#oauth_status" hx-swap="outerHTML">Sign in with Microsoft</button>
+            {{if .SignedIn}}<span class="ml-2 text-sm text-success">Signed in already. Sign in again only to replace it.</span>{{end}}
+        </div>
+        <div id="oauth_status"></div>
+        {{if .Errors.oauth}}<p class="text-sm text-error">{{.Errors.oauth}}</p>{{end}}
+    </div>
+
+    <div id="password_block" {{if .OAuth}}hidden{{end}}>
         <label for="mail_password" class="label">App password</label>
         <input type="password" name="mail_password" id="mail_password"
             class="input {{if .Errors.mail_password}}border-error{{end}}"
@@ -83,6 +108,9 @@
         set('smtp_host', o.smtpHost); set('smtp_port', o.smtpPort);
         set('imap_host', o.imapHost); set('imap_port', o.imapPort);
         document.getElementById('mail_provider_note').textContent = o.note;
+        const oauth = o.oauth === '1';
+        document.getElementById('oauth_block').hidden = !oauth;
+        document.getElementById('password_block').hidden = oauth;
         const help = document.getElementById('mail_provider_help');
         help.href = o.help; help.hidden = !o.help;
         if (sel.value === 'custom' || sel.value === 'ses') document.getElementById('mail_server').open = true;

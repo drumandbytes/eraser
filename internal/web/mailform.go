@@ -144,6 +144,7 @@ type mailFormView struct {
 	OAuth               bool   // Outlook.com selected: show the sign-in panel, not a password
 	ClientID            string // saved OAuth app id
 	SignedIn            bool   // an OAuth sign-in is already stored for this account
+	SharedApp           bool   // Delistd's own Microsoft app is available: the guide is only for bringing your own
 }
 
 func newMailFormView(mode string, f mailForm, errors map[string]string) mailFormView {
@@ -177,7 +178,7 @@ func newMailFormView(mode string, f mailForm, errors map[string]string) mailForm
 		Mode: mode, Provider: f.Provider, Address: f.Address, Username: username,
 		SMTPHost: f.SMTPHost, SMTPPort: f.SMTPPort, IMAPHost: f.IMAPHost, IMAPPort: f.IMAPPort,
 		Errors: errors, Providers: providersForForm(),
-		OAuth: f.OAuth, ClientID: f.ClientID, SignedIn: f.OAuth && (f.Password != "" || f.hasToken),
+		OAuth: f.OAuth, ClientID: f.ClientID, SignedIn: f.OAuth && (f.Password != "" || f.hasToken), SharedApp: config.DefaultOAuthClientID != "",
 	}
 }
 
@@ -212,7 +213,7 @@ func (f mailForm) validate(mode string, requirePassword bool) map[string]string 
 		errors["mail_address"] = "Please enter a valid email address"
 	}
 	if f.OAuth {
-		if f.ClientID == "" {
+		if config.OAuthClientID(f.ClientID) == "" {
 			errors["oauth"] = "Paste your Microsoft app's client ID, then sign in"
 		} else if requirePassword && f.Password == "" {
 			errors["oauth"] = "Sign in with Microsoft first"

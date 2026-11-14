@@ -84,7 +84,7 @@ func (m *Monitor) Connect(ctx context.Context) error {
 		return err
 	}
 	if m.config.Auth == config.AuthOAuth2 {
-		token, err := oauth.AccessFor(ctx, m.config.ClientID, password)
+		token, err := oauth.AccessFor(ctx, config.OAuthClientID(m.config.ClientID), password)
 		if err != nil {
 			_ = c.Logout()
 			return err

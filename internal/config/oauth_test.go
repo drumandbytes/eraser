@@ -83,3 +83,29 @@ func TestReplaceSecretSkipsEmptyPasswords(t *testing.T) {
 		t.Fatal("matched an empty password")
 	}
 }
+
+func withDefaultClientID(t *testing.T, id string) {
+	t.Helper()
+	old := DefaultOAuthClientID
+	DefaultOAuthClientID = id
+	t.Cleanup(func() { DefaultOAuthClientID = old })
+}
+
+func TestSharedClientIDIsTheFallback(t *testing.T) {
+	if OAuthClientID("") != "" || OAuthClientID("mine") != "mine" {
+		t.Fatal("with no default, an empty id stays empty")
+	}
+	withDefaultClientID(t, "shared")
+	if OAuthClientID("") != "shared" || OAuthClientID("mine") != "mine" {
+		t.Fatalf("got %q / %q", OAuthClientID(""), OAuthClientID("mine"))
+	}
+	e := oauthSMTP()
+	e.SMTP.ClientID = ""
+	if err := validateEmailConfig(e); err != nil {
+		t.Fatalf("smtp without client_id rejected despite a default: %v", err)
+	}
+	in := InboxConfig{Enabled: true, Server: "s", Port: 993, Email: "a@b", Auth: AuthOAuth2, Password: "r"}
+	if err := validateInboxConfig(in); err != nil {
+		t.Fatalf("inbox without client_id rejected despite a default: %v", err)
+	}
+}

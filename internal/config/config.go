@@ -219,7 +219,7 @@ type InboxConfig struct {
 	Email         string `yaml:"email"`               // Email address to monitor
 	Password      string `yaml:"password"`            // App password (not main password); with auth: oauth2, the refresh token
 	Auth          string `yaml:"auth,omitempty"`      // "oauth2" signs in with OAuth (see AuthOAuth2); empty = password
-	ClientID      string `yaml:"client_id,omitempty"` // OAuth app (client) id
+	ClientID      string `yaml:"client_id,omitempty"` // OAuth app (client) id; empty = the shared default (DefaultOAuthClientID)
 	Folder        string `yaml:"folder"`              // Folder to monitor (default: "INBOX")
 	AutoArchive   bool   `yaml:"auto_archive"`        // Automatically move processed emails to archive folder
 	ArchiveFolder string `yaml:"archive_folder"`      // Folder to archive emails to (default: "Eraser")
@@ -595,7 +595,7 @@ func validateEmailConfig(e EmailConfig) error {
 		return fmt.Errorf("email.smtp: unknown auth %q (use oauth2 or leave empty)", e.SMTP.Auth)
 	}
 	if e.SMTP.Auth == AuthOAuth2 {
-		if e.SMTP.ClientID == "" {
+		if OAuthClientID(e.SMTP.ClientID) == "" {
 			return fmt.Errorf("email.smtp: client_id is required with auth: oauth2")
 		}
 		if e.SMTP.Password == "" {
@@ -635,7 +635,7 @@ func validateInboxConfig(inbox InboxConfig) error {
 	if inbox.Auth != "" && inbox.Auth != AuthOAuth2 {
 		return fmt.Errorf("inbox: unknown auth %q (use oauth2 or leave empty)", inbox.Auth)
 	}
-	if inbox.Auth == AuthOAuth2 && inbox.ClientID == "" {
+	if inbox.Auth == AuthOAuth2 && OAuthClientID(inbox.ClientID) == "" {
 		return fmt.Errorf("inbox: client_id is required with auth: oauth2")
 	}
 	if inbox.Server == "" {

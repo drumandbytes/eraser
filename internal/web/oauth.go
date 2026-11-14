@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/drumandbytes/delistd/internal/config"
 	"github.com/drumandbytes/delistd/internal/oauth"
 )
 
@@ -86,12 +87,12 @@ type oauthView struct {
 
 func (s *Server) handleOAuthStart(w http.ResponseWriter, r *http.Request) {
 	limitFormBody(w, r)
-	clientID := strings.TrimSpace(r.FormValue("oauth_client_id"))
-	if clientID == "" {
+	clientID := strings.TrimSpace(r.FormValue("oauth_client_id")) // "" = the shared default
+	if config.OAuthClientID(clientID) == "" {
 		s.renderPartial(w, "partials/oauth-status.html", oauthView{Error: "Paste your app's Application (client) ID first (step 5 above)."})
 		return
 	}
-	c := oauth.NewClient(oauth.MicrosoftConsumers, clientID)
+	c := oauth.NewClient(oauth.MicrosoftConsumers, config.OAuthClientID(clientID))
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 	dc, err := c.StartDeviceCode(ctx)

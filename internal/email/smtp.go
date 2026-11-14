@@ -59,7 +59,7 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 			return Result{Success: false, Error: err}
 		}
 		if s.config.Auth == config.AuthOAuth2 {
-			token, err := oauth.AccessFor(ctx, s.config.ClientID, password)
+			token, err := oauth.AccessFor(ctx, config.OAuthClientID(s.config.ClientID), password)
 			if err != nil {
 				return Result{Success: false, Error: err}
 			}

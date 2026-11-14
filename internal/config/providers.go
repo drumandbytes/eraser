@@ -24,6 +24,23 @@ type Provider struct {
 // the account's password field, so it is encrypted and masked like one.
 const AuthOAuth2 = "oauth2"
 
+// DefaultOAuthClientID is the Application (client) ID of the Delistd app that
+// Drumandbytes registers with Microsoft, used when an account sets no client_id
+// of its own. A client id is public by design (it is sent in every sign-in
+// request, and the device-code flow has no secret), so it is plain source, not
+// something to hide. Empty until the app is registered: accounts then need
+// their own (docs/outlook.md).
+var DefaultOAuthClientID = ""
+
+// OAuthClientID is the client id to sign in with: the account's own, else the
+// shared default.
+func OAuthClientID(configured string) string {
+	if configured != "" {
+		return configured
+	}
+	return DefaultOAuthClientID
+}
+
 // Providers is the preset list shown in setup, in display order. Adding a
 // provider = one entry here (see CONTRIBUTING.md). TLS mode needs no field:
 // it follows from the port, see ImplicitTLS.

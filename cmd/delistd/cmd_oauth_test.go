@@ -227,3 +227,19 @@ func TestOAuthLoginPollFailsAndSaveFails(t *testing.T) {
 		t.Skip("directory is writable here (running as root?)")
 	}
 }
+
+func TestOAuthLoginUsesTheSharedApp(t *testing.T) {
+	old := config.DefaultOAuthClientID
+	config.DefaultOAuthClientID = "shared-app"
+	t.Cleanup(func() { config.DefaultOAuthClientID = old })
+	fakeMicrosoft(t, "R")
+	t.Setenv(clientIDEnv, "")
+	path := writeBaseConfig(t)
+	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	cfg, _ := config.Load(path)
+	if cfg.Email.SMTP.ClientID != "" || cfg.Email.SMTP.Auth != config.AuthOAuth2 {
+		t.Fatalf("%+v", cfg.Email.SMTP)
+	}
+}

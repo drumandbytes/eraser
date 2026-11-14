@@ -274,3 +274,67 @@ func TestMailFormViewFillsOutlookServers(t *testing.T) {
 		t.Fatalf("%+v", v)
 	}
 }
+
+func TestSharedAppNeedsNoClientID(t *testing.T) {
+	old := config.DefaultOAuthClientID
+	config.DefaultOAuthClientID = "shared-app"
+	t.Cleanup(func() { config.DefaultOAuthClientID = old })
+
+	var seen string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/devicecode", func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		seen = r.Form.Get("client_id")
+		_ = json.NewEncoder(w).Encode(map[string]any{"device_code": "dc", "user_code": "SHRD", "verification_uri": "https://example.test/device", "expires_in": 900, "interval": 1})
+	})
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "at", "refresh_token": "R-SHARED", "expires_in": 3600})
+	})
+	srv := httptest.NewServer(mux)
+	o := oauth.MicrosoftConsumers
+	oauth.MicrosoftConsumers = oauth.Endpoints{DeviceCode: srv.URL + "/devicecode", Token: srv.URL + "/token", Scopes: o.Scopes}
+	t.Cleanup(func() { srv.Close(); oauth.MicrosoftConsumers = o })
+
+	c, s := newWizardClient(t)
+	c.get("/setup/profile")
+	c.post("/setup/profile", url.Values{"first_name": {"Ada"}, "last_name": {"Lovelace"}, "email": {"ada@outlook.com"}, "country": {"United Kingdom"}})
+	page := c.get("/setup/email")
+	if !strings.Contains(page, "Use my own Microsoft app instead (advanced)") {
+		t.Fatal("with a shared app the guide should sit under an advanced option")
+	}
+	id := pollRe.FindStringSubmatch(c.postHTMX("/oauth/start", url.Values{}))[1]
+	var done string
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(200 * time.Millisecond) {
+		if done = c.get("/oauth/status?id=" + id); strings.Contains(done, `name="oauth_id"`) {
+			break
+		}
+	}
+	if seen != "shared-app" || !strings.Contains(done, `name="oauth_id"`) {
+		t.Fatalf("client id sent = %q; status: %s", seen, done)
+	}
+	resp := c.post("/setup/email", url.Values{"mail_provider": {"outlook"}, "mail_address": {"ada@outlook.com"}, "oauth_id": {id}})
+	if resp.StatusCode != http.StatusFound {
+		t.Fatalf("post: %d %s", resp.StatusCode, readBody(t, resp))
+	}
+	c.get("/setup/test")
+	readBody(t, mustGet(t, c, "/setup/complete"))
+	saved, err := config.Load(s.configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := saved.Email.SMTP; got.ClientID != "" || got.Password != "R-SHARED" || got.Auth != config.AuthOAuth2 {
+		t.Fatalf("saved = %+v (client_id must stay empty so a later default change applies)", got)
+	}
+	if err := saved.Validate(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func mustGet(t *testing.T, c *wizardClient, path string) *http.Response {
+	t.Helper()
+	resp, err := c.http.Get(c.srv.URL + path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return resp
+}

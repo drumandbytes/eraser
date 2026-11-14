@@ -47,7 +47,7 @@ so Delistd signs in the way Microsoft requires: it shows a short code, you
 enter it at microsoft.com/devicelogin, and Delistd stores the resulting
 sign-in (encrypted, like a password) as both your sending and your inbox account.
 
-You need your own free app registration for the client id; see docs/outlook.md.
+It uses Delistd's shared Microsoft app unless you pass --client-id with your own; see docs/outlook.md.
 Run 'delistd init' first so a config exists.`,
 		Args:         cobra.NoArgs,
 		SilenceUsage: true,
@@ -71,7 +71,7 @@ func runOAuthLogin(ctx context.Context, out io.Writer, path, clientID, email str
 	if clientID == "" {
 		clientID = firstNonEmpty(cfg.Email.SMTP.ClientID, cfg.Inbox.ClientID, os.Getenv(clientIDEnv))
 	}
-	if clientID == "" {
+	if config.OAuthClientID(clientID) == "" {
 		return fmt.Errorf("a client id is required: pass --client-id (see docs/outlook.md for how to register the app)")
 	}
 	email = strings.TrimSpace(firstNonEmpty(email, cfg.Email.From))
@@ -79,7 +79,7 @@ func runOAuthLogin(ctx context.Context, out io.Writer, path, clientID, email str
 		return fmt.Errorf("no address to sign in: pass --email")
 	}
 
-	c := oauth.NewClient(oauth.MicrosoftConsumers, clientID)
+	c := oauth.NewClient(oauth.MicrosoftConsumers, config.OAuthClientID(clientID))
 	dc, err := c.StartDeviceCode(ctx)
 	if err != nil {
 		return err

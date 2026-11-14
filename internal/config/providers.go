@@ -32,11 +32,19 @@ const AuthOAuth2 = "oauth2"
 // their own (docs/outlook.md).
 var DefaultOAuthClientID = ""
 
-// OAuthClientID is the client id to sign in with: the account's own, else the
-// shared default.
+// OAuthClientIDEnv overrides the shared default for every account that sets no
+// client_id, so a user can swap the app without waiting for a release (see
+// docs/oauth-app.md).
+const OAuthClientIDEnv = "DELISTD_OAUTH_CLIENT_ID"
+
+// OAuthClientID is the client id to sign in with: the account's own, else
+// DELISTD_OAUTH_CLIENT_ID, else the shared default.
 func OAuthClientID(configured string) string {
 	if configured != "" {
 		return configured
+	}
+	if v := strings.TrimSpace(Getenv(OAuthClientIDEnv)); v != "" {
+		return v
 	}
 	return DefaultOAuthClientID
 }

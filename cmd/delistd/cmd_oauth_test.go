@@ -79,7 +79,7 @@ func TestOAuthLoginStoresTheSignInForSendingAndInbox(t *testing.T) {
 
 func TestOAuthLoginErrors(t *testing.T) {
 	path := writeBaseConfig(t)
-	t.Setenv(clientIDEnv, "")
+	t.Setenv(config.OAuthClientIDEnv, "")
 	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "", ""); err == nil || !strings.Contains(err.Error(), "client id") {
 		t.Fatalf("no client id: %v", err)
 	}
@@ -94,13 +94,13 @@ func TestOAuthLoginErrors(t *testing.T) {
 
 func TestOAuthLoginUsesEnvClientIDAndFlagEmail(t *testing.T) {
 	fakeMicrosoft(t, "R")
-	t.Setenv(clientIDEnv, "env-client")
+	t.Setenv(config.OAuthClientIDEnv, "env-client")
 	path := writeBaseConfig(t)
 	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "", "other@hotmail.com"); err != nil {
 		t.Fatal(err)
 	}
 	cfg, _ := config.Load(path)
-	if cfg.Email.SMTP.ClientID != "env-client" || cfg.Email.From != "other@hotmail.com" || cfg.Inbox.Email != "other@hotmail.com" {
+	if cfg.Email.SMTP.ClientID != "" || cfg.Email.From != "other@hotmail.com" || cfg.Inbox.Email != "other@hotmail.com" {
 		t.Fatalf("%+v %+v", cfg.Email, cfg.Inbox)
 	}
 }
@@ -233,7 +233,7 @@ func TestOAuthLoginUsesTheSharedApp(t *testing.T) {
 	config.DefaultOAuthClientID = "shared-app"
 	t.Cleanup(func() { config.DefaultOAuthClientID = old })
 	fakeMicrosoft(t, "R")
-	t.Setenv(clientIDEnv, "")
+	t.Setenv(config.OAuthClientIDEnv, "")
 	path := writeBaseConfig(t)
 	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "", ""); err != nil {
 		t.Fatal(err)

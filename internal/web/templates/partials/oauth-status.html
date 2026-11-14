@@ -8,5 +8,6 @@
     <p class="text-sm text-success" role="status">Signed in. Save to keep it.</p>
     {{else if .Pending}}
     <p class="text-sm">Open <a href="{{.URL}}" target="_blank" rel="noopener" class="text-accent hover:underline">{{.URL}}</a> and enter the code <strong class="font-mono">{{.Code}}</strong>. Waiting for you to finish...</p>
+    <p class="text-xs text-muted">Only enter a code you started here yourself. A code someone else sends you would give them access to your mailbox.</p>
     {{end}}
 </div>

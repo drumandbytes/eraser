@@ -297,3 +297,42 @@ func TestAccessForWithoutHookAndOnFailure(t *testing.T) {
 		t.Fatalf("%q %v", got, err)
 	}
 }
+
+func TestScopesStayMinimal(t *testing.T) {
+	want := []string{
+		"https://outlook.office.com/IMAP.AccessAsUser.All",
+		"https://outlook.office.com/SMTP.Send",
+		"offline_access",
+	}
+	if strings.Join(MicrosoftConsumers.Scopes, " ") != strings.Join(want, " ") {
+		t.Fatalf("scopes changed to %v: asking for more access widens what a stolen sign-in can do, update docs/oauth-app.md and the registration with it", MicrosoftConsumers.Scopes)
+	}
+}
+
+func TestVerificationLinkMustBeMicrosoft(t *testing.T) {
+	ep := Endpoints{TrustedHosts: MicrosoftConsumers.TrustedHosts}
+	for uri, ok := range map[string]bool{
+		"https://microsoft.com/devicelogin":     true,
+		"https://www.microsoft.com/link":        true,
+		"https://login.microsoftonline.com/x":   true,
+		"http://microsoft.com/devicelogin":      false,
+		"https://evilmicrosoft.com/devicelogin": false,
+		"https://microsoft.com.evil.example/x":  false,
+		"https://example.test/device":           false,
+		"not a url":                             false,
+	} {
+		if got := ep.trusts(uri); got != ok {
+			t.Errorf("%s: trusts = %v, want %v", uri, got, ok)
+		}
+	}
+	if !(Endpoints{}).trusts("https://anything.test") {
+		t.Error("no allow-list must mean no check (tests)")
+	}
+	// end to end: a response pointing elsewhere is refused
+	c, srv := fake(t, nil)
+	c.Endpoints.TrustedHosts = []string{"microsoft.com"}
+	_ = srv
+	if _, err := c.StartDeviceCode(context.Background()); err == nil || !strings.Contains(err.Error(), "not on an expected Microsoft domain") {
+		t.Fatalf("got %v", err)
+	}
+}

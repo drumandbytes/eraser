@@ -24,6 +24,10 @@ type Endpoints struct {
 	DeviceCode string
 	Token      string
 	Scopes     []string
+	// TrustedHosts, when set, limits where the sign-in link may point: the
+	// provider's verification_uri must be https on one of these domains (or a
+	// subdomain), so a tampered response can't send the user to another site.
+	TrustedHosts []string
 }
 
 // MicrosoftConsumers is Outlook.com / Hotmail / Live. IMAP and SMTP share one
@@ -36,6 +40,24 @@ var MicrosoftConsumers = Endpoints{
 		"https://outlook.office.com/SMTP.Send",
 		"offline_access",
 	},
+	TrustedHosts: []string{"microsoft.com", "microsoftonline.com", "live.com"},
+}
+
+func (e Endpoints) trusts(uri string) bool {
+	if len(e.TrustedHosts) == 0 {
+		return true
+	}
+	u, err := url.Parse(uri)
+	if err != nil || u.Scheme != "https" {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	for _, t := range e.TrustedHosts {
+		if host == t || strings.HasSuffix(host, "."+t) {
+			return true
+		}
+	}
+	return false
 }
 
 // ErrReauth means the refresh token is no longer valid and the user has to
@@ -132,6 +154,9 @@ func (c *Client) StartDeviceCode(ctx context.Context) (DeviceCode, error) {
 	}
 	if dc.Error != "" || dc.DeviceCode.DeviceCode == "" {
 		return DeviceCode{}, fmt.Errorf("could not start sign-in: %s", firstLine(dc.Error, dc.Description))
+	}
+	if !c.Endpoints.trusts(dc.VerificationURI) {
+		return DeviceCode{}, fmt.Errorf("the sign-in link %q is not on an expected Microsoft domain; not continuing", dc.VerificationURI)
 	}
 	if dc.Interval <= 0 {
 		dc.Interval = 5

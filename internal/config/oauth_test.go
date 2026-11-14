@@ -109,3 +109,17 @@ func TestSharedClientIDIsTheFallback(t *testing.T) {
 		t.Fatalf("inbox without client_id rejected despite a default: %v", err)
 	}
 }
+
+func TestClientIDPrecedence(t *testing.T) {
+	withDefaultClientID(t, "built-in")
+	if OAuthClientID("") != "built-in" {
+		t.Fatal("default")
+	}
+	t.Setenv(OAuthClientIDEnv, " from-env ")
+	if OAuthClientID("") != "from-env" {
+		t.Fatalf("env should beat the built-in default: %q", OAuthClientID(""))
+	}
+	if OAuthClientID("account") != "account" {
+		t.Fatal("an account's own client_id beats the environment")
+	}
+}

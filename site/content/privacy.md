@@ -18,6 +18,10 @@ which brokers they've written to, because we never receive any of it.
 That isn't a promise about our intentions — it's a property of how the thing is
 built, and you can check it in the source.
 
+### Signing in to Outlook.com
+
+Microsoft only accepts OAuth for Outlook.com, Hotmail and Live accounts. If you use that sign-in, you approve Delistd at Microsoft's own page and your computer talks to Microsoft directly. The sign-in (a refresh token) is stored on your computer, encrypted like a password, and used only to send your requests and read replies. Drumandbytes registered the "Delistd" app with Microsoft but receives no tokens, no mail and no list of who signed in. Microsoft, as the provider of your account, processes the sign-in under its own privacy terms. Revoke Delistd at any time in your Microsoft account's app permissions.
+
 ## This website
 
 The site is static pages served by Cloudflare Pages. Cloudflare sits in front

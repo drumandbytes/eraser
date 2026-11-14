@@ -14,9 +14,6 @@ import (
 	"github.com/drumandbytes/delistd/internal/oauth"
 )
 
-// ClientIDEnv names the OAuth app id used when --client-id and the config have none.
-const clientIDEnv = "DELISTD_OAUTH_CLIENT_ID"
-
 func init() {
 	// A rotated refresh token is written back to the config file, so a
 	// long-running process keeps working past the old token's expiry.
@@ -69,7 +66,7 @@ func runOAuthLogin(ctx context.Context, out io.Writer, path, clientID, email str
 		return fmt.Errorf("failed to load config (run `delistd init` first): %w", err)
 	}
 	if clientID == "" {
-		clientID = firstNonEmpty(cfg.Email.SMTP.ClientID, cfg.Inbox.ClientID, os.Getenv(clientIDEnv))
+		clientID = firstNonEmpty(cfg.Email.SMTP.ClientID, cfg.Inbox.ClientID)
 	}
 	if config.OAuthClientID(clientID) == "" {
 		return fmt.Errorf("a client id is required: pass --client-id (see docs/outlook.md for how to register the app)")
@@ -84,7 +81,7 @@ func runOAuthLogin(ctx context.Context, out io.Writer, path, clientID, email str
 	if err != nil {
 		return err
 	}
-	_, _ = fmt.Fprintf(out, "To sign in, open %s and enter the code %s.\nWaiting for you to finish (Ctrl+C to cancel)...\n", dc.VerificationURI, dc.UserCode)
+	_, _ = fmt.Fprintf(out, "To sign in, open %s and enter the code %s.\nOnly enter a code you started here yourself: a code someone else sends you would give them access to your mailbox.\nWaiting for you to finish (Ctrl+C to cancel)...\n", dc.VerificationURI, dc.UserCode)
 	tok, err := c.PollDeviceCode(ctx, dc)
 	if err != nil {
 		return err

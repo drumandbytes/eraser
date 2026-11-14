@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.4.0](https://github.com/drumandbytes/delistd/compare/v2.3.4...v2.4.0) (2026-11-14)
+
+
+### Features
+
+* **schedule:** move an installed OS schedule from the eraser alias to delistd ([#290](https://github.com/drumandbytes/delistd/issues/290)) ([1ba8001](https://github.com/drumandbytes/delistd/commit/1ba8001d204299cb811ca65427e01cd599e107f9))
+* **site:** add a comparison page with Incogni and DeleteMe at /compare/ ([#279](https://github.com/drumandbytes/delistd/issues/279)) ([3bcb1f4](https://github.com/drumandbytes/delistd/commit/3bcb1f46e2c32715e78ea82f280b7787d099c37f))
+
+
+### Bug Fixes
+
+* **browser:** give Chrome more time to start and the CI Chrome tests more time per step ([#292](https://github.com/drumandbytes/delistd/issues/292)) ([be24292](https://github.com/drumandbytes/delistd/commit/be242920fd5238bde910ab0b696b72cecdb0a31c))
+* **docker:** set DELISTD_ALLOWED_HOSTS=* default and test both off/on in CI ([#288](https://github.com/drumandbytes/delistd/issues/288)) ([06a61e2](https://github.com/drumandbytes/delistd/commit/06a61e23ec6253cc49fdc576714a200b595ae6ae))
+* **docker:** the image accepts private IPs and local names by default ([#291](https://github.com/drumandbytes/delistd/issues/291)) ([38c46ad](https://github.com/drumandbytes/delistd/commit/38c46ad3650584ba7d5694cc49dcce61d23fa476))
+* **web:** support non-loopback Host headers via DELISTD_ALLOWED_HOSTS and --allowed-hosts ([#287](https://github.com/drumandbytes/delistd/issues/287)) ([e0af878](https://github.com/drumandbytes/delistd/commit/e0af87898cca76f2e9dbb2235cc67be4c78e34ce))
+
 ## [2.3.4](https://github.com/drumandbytes/delistd/compare/v2.3.3...v2.3.4) (2026-11-10)
 
 

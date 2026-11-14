@@ -209,16 +209,16 @@ func TestSetupWizardRerunKeepsExistingConfig(t *testing.T) {
 	// identity fields: the profile step prefills them, so they survive a re-run
 	existing.Profiles[0].NameVariants = []string{"Ada L."}
 	existing.Profiles[0].PreviousAddresses = []string{"1 Old Rd"}
-	existing.Profiles[0].DateOfBirth = "1815-12-10"
+	existing.Profiles[0].DateOfBirth = "1915-12-10"
 	existing.Email = config.EmailConfig{From: "default@example.com", SMTP: config.SMTPConfig{Host: "smtp.gmail.com", Port: 465, Username: "default@example.com", Password: "old-pw"}}
 	s.config.Store(existing)
 
-	if body := c.get("/setup/profile"); !strings.Contains(body, `value="default@example.com"`) || !strings.Contains(body, "Ada L.") || !strings.Contains(body, `value="1815-12-10"`) {
+	if body := c.get("/setup/profile"); !strings.Contains(body, `value="default@example.com"`) || !strings.Contains(body, "Ada L.") || !strings.Contains(body, `value="1915-12-10"`) {
 		t.Fatal("profile step not prefilled from the saved primary profile")
 	}
 	// what the prefilled form posts back
 	c.post("/setup/profile", url.Values{"first_name": {"Ada"}, "last_name": {"Lovelace"}, "email": {"default@example.com"},
-		"name_variants": {"Ada L."}, "previous_addresses": {"1 Old Rd"}, "date_of_birth": {"1815-12-10"}})
+		"name_variants": {"Ada L."}, "previous_addresses": {"1 Old Rd"}, "date_of_birth": {"1915-12-10"}})
 	c.get("/setup/email")
 	resp := c.post("/setup/email", url.Values{
 		"mail_provider": {"fastmail"},
@@ -238,7 +238,7 @@ func TestSetupWizardRerunKeepsExistingConfig(t *testing.T) {
 	if len(saved.Profiles) != 2 || saved.PrimaryProfile().FirstName != "Ada" {
 		t.Errorf("profiles = %+v, want default updated and spouse kept", saved.Profiles)
 	}
-	if p := saved.PrimaryProfile(); len(p.NameVariants) != 1 || len(p.PreviousAddresses) != 1 || p.DateOfBirth != "1815-12-10" {
+	if p := saved.PrimaryProfile(); len(p.NameVariants) != 1 || len(p.PreviousAddresses) != 1 || p.DateOfBirth != "1915-12-10" {
 		t.Errorf("identity fields lost on re-run: %+v", p.Profile)
 	}
 	if saved.Inbox.Server != "imap.example.org" || saved.Options.DailySendLimit != 120 {

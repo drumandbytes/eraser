@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/schedule"
 )
 
 // invokedAsEraser reports whether the binary was started through the
@@ -25,11 +26,7 @@ func announceRename(cmd *cobra.Command) {
 		fmt.Fprintln(os.Stderr, "Eraser is now Delistd: run `delistd` instead. The `eraser` command still works, but it will be removed in a future major release. Your config and history are unchanged. https://delistd.dev/")
 		return
 	}
-	if !cmd.HasParent() { // bare launch starts the web UI, which shows its own notice
-		return
-	}
-	switch cmd.Name() {
-	case "serve", "init", "help", "completion", "version", "guides", "validate-brokers", "list-brokers", "mcp":
+	if !cmd.HasParent() || quietCommand(cmd) { // bare launch starts the web UI, which shows its own notice
 		return
 	}
 	path := resolveConfigPath()
@@ -37,5 +34,29 @@ func announceRename(cmd *cobra.Command) {
 		return
 	}
 	config.MarkRenameNoticeSeen(path)
-	fmt.Fprintln(os.Stderr, "Eraser is now Delistd. The `eraser` command still works for now; use `delistd` from here on. Your config (~/.eraser) and history are unchanged. If you installed an OS schedule, re-run `delistd schedule install`. Details: https://delistd.dev/")
+	fmt.Fprintln(os.Stderr, "Eraser is now Delistd. The `eraser` command still works for now; use `delistd` from here on. Your config (~/.eraser) and history are unchanged. Details: https://delistd.dev/")
+}
+
+// quietCommand is a command that shouldn't print notices or touch the
+// schedule: the web UI shows its own, and the rest never need either.
+func quietCommand(cmd *cobra.Command) bool {
+	switch cmd.Name() {
+	case "serve", "init", "help", "completion", "version", "guides", "validate-brokers", "list-brokers", "mcp":
+		return true
+	}
+	return false
+}
+
+// migrateSchedule points an OS schedule installed before the rename at delistd
+// instead of the deprecated `eraser` alias (see schedule.Migrate). It runs on
+// every command, including the scheduled run itself, and is a no-op unless there
+// is something to change; it only speaks when it changes the schedule or when
+// that fails.
+func migrateSchedule(cmd *cobra.Command) {
+	if quietCommand(cmd) {
+		return
+	}
+	if err := schedule.Migrate(os.Stderr); err != nil {
+		fmt.Fprintln(os.Stderr, "warning: could not move your OS schedule to delistd:", err, "- re-run `delistd schedule install` to fix it")
+	}
 }

@@ -90,6 +90,7 @@ send through any SMTP provider (Gmail, Proton Mail Bridge, Fastmail, ...).`,
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		announceRename(cmd)
 		announceTwoPointZero(cmd)
+		migrateSchedule(cmd)
 	}
 
 	rootCmd.AddCommand(initCmd())

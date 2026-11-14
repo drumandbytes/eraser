@@ -238,12 +238,15 @@ func Remove() error {
 	return fmt.Errorf("no OS scheduler support on %s", goos)
 }
 
+// xmlEscape is how a plist stores a string value.
+func xmlEscape(s string) string {
+	var b bytes.Buffer
+	_ = xml.EscapeText(&b, []byte(s))
+	return b.String()
+}
+
 func renderPlist(j Job) string {
-	esc := func(s string) string {
-		var b bytes.Buffer
-		_ = xml.EscapeText(&b, []byte(s))
-		return b.String()
-	}
+	esc := xmlEscape
 	var args strings.Builder
 	for _, a := range j.args() {
 		fmt.Fprintf(&args, "\t\t<string>%s</string>\n", esc(a))
@@ -275,13 +278,16 @@ func renderPlist(j Job) string {
 `, launchdLabel, args.String(), times.String(), esc(j.LogPath), esc(j.LogPath))
 }
 
+// systemdEscape is the content of a double-quoted systemd word: \ and " are
+// escaped, and % (a specifier) is doubled.
+func systemdEscape(a string) string {
+	return strings.NewReplacer(`\`, `\\`, `"`, `\"`, `%`, `%%`).Replace(a)
+}
+
 func renderSystemd(j Job) (service, timer string) {
 	quoted := make([]string, 0, len(j.args()))
 	for _, a := range j.args() {
-		// systemd's quoting: double quotes, with \ and " escaped; % is a
-		// specifier and must be doubled.
-		a = strings.NewReplacer(`\`, `\\`, `"`, `\"`, `%`, `%%`).Replace(a)
-		quoted = append(quoted, `"`+a+`"`)
+		quoted = append(quoted, `"`+systemdEscape(a)+`"`)
 	}
 	service = fmt.Sprintf(`[Unit]
 Description=Delistd: send due removal requests and check the inbox

@@ -83,7 +83,8 @@ jobs:
           image=$(sed -n 's/^ *image: \(chromedp\/headless-shell:.*\)$/\1/p' compose.yaml)
           docker run -d --name delistd-chrome-ci --read-only --tmpfs /tmp --cap-drop ALL --shm-size=1g --network host "$image"
           for _ in $(seq 1 30); do curl -fs -o /dev/null http://127.0.0.1:9222/json/version && break; sleep 1; done
-          DELISTD_CHROME_URL=http://127.0.0.1:9222 go test ./internal/browser ./internal/mcpserver
+          # -p 1: the MCP demo test launches its own Chrome, which times out when it competes with the browser tests
+          DELISTD_CHROME_URL=http://127.0.0.1:9222 go test -p 1 ./internal/browser ./internal/mcpserver
 
       - name: Logs
         if: always()

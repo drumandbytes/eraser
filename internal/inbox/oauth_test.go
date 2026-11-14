@@ -17,18 +17,54 @@ import (
 	"github.com/drumandbytes/delistd/internal/oauth"
 )
 
-func TestConnectWithOAuth2(t *testing.T) {
+func fakeToken(t *testing.T, status int, body map[string]any) {
+	t.Helper()
 	tok := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "ACCESS", "expires_in": 3600})
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(body)
 	}))
-	t.Cleanup(tok.Close)
 	old := oauth.MicrosoftConsumers
 	oauth.MicrosoftConsumers = oauth.Endpoints{Token: tok.URL, Scopes: old.Scopes}
-	t.Cleanup(func() { oauth.MicrosoftConsumers = old })
+	t.Cleanup(func() { tok.Close(); oauth.MicrosoftConsumers = old })
+}
 
+func TestConnectWithOAuth2(t *testing.T) {
+	fakeToken(t, 200, map[string]any{"access_token": "ACCESS", "expires_in": 3600})
+	m, got := oauthMonitor(t, "cid-imap", "refresh-1", true)
+	if err := m.Connect(context.Background()); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	f := strings.Fields(<-got)
+	raw, _ := base64.StdEncoding.DecodeString(f[1])
+	if f[0] != "XOAUTH2" || string(raw) != "user=jane@outlook.com\x01auth=Bearer ACCESS\x01\x01" {
+		t.Fatalf("AUTHENTICATE = %v %q", f, raw)
+	}
+}
+
+func TestConnectWithOAuth2ServerRefusesTheToken(t *testing.T) {
+	fakeToken(t, 200, map[string]any{"access_token": "ACCESS", "expires_in": 3600})
+	m, _ := oauthMonitor(t, "cid-refused", "refresh-2", false)
+	if err := m.Connect(context.Background()); err == nil || !strings.Contains(err.Error(), "login with OAuth") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestConnectWithOAuth2SignInRevoked(t *testing.T) {
+	fakeToken(t, 400, map[string]any{"error": "invalid_grant"})
+	m, _ := oauthMonitor(t, "cid-revoked", "refresh-3", true)
+	if err := m.Connect(context.Background()); err == nil || !strings.Contains(err.Error(), "oauth login") {
+		t.Fatalf("got %v", err)
+	}
+}
+
+// oauthMonitor is a Monitor against a scripted TLS-upgrading IMAP server that
+// advertises XOAUTH2 and answers AUTHENTICATE with OK (accept) or NO. got
+// receives "XOAUTH2 <initial response>".
+func oauthMonitor(t *testing.T, clientID, refresh string, accept bool) (*Monitor, <-chan string) {
+	t.Helper()
 	ts := httptest.NewTLSServer(http.NotFoundHandler())
 	t.Cleanup(ts.Close)
-	got := make(chan string, 1)
+	got := make(chan string, 2)
 	addr := fakeIMAPServer(t, func(conn net.Conn, br *bufio.Reader) error {
 		inTLS := false
 		if err := writeLines(conn, "* OK [CAPABILITY IMAP4rev1 STARTTLS] ready"); err != nil {
@@ -71,7 +107,11 @@ func TestConnectWithOAuth2(t *testing.T) {
 					ir = strings.TrimSpace(line)
 				}
 				got <- f[1] + " " + ir
-				return writeLines(conn, tag+" OK authenticated")
+				if accept {
+					return writeLines(conn, tag+" OK authenticated")
+				}
+				// stay up: the client's Logout after the failure needs an answer
+				err = writeLines(conn, tag+" NO AUTHENTICATE failed")
 			default:
 				err = writeLines(conn, tag+" BAD unexpected "+cmd)
 			}
@@ -83,13 +123,5 @@ func TestConnectWithOAuth2(t *testing.T) {
 	host, portStr, _ := net.SplitHostPort(addr)
 	port, _ := strconv.Atoi(portStr)
 
-	m := NewMonitor(config.InboxConfig{Server: host, Port: port, Email: "jane@outlook.com", Password: "refresh-1", Auth: config.AuthOAuth2, ClientID: "cid-imap"}, nil)
-	if err := m.Connect(context.Background()); err != nil {
-		t.Fatalf("Connect: %v", err)
-	}
-	f := strings.Fields(<-got)
-	raw, _ := base64.StdEncoding.DecodeString(f[1])
-	if f[0] != "XOAUTH2" || string(raw) != "user=jane@outlook.com\x01auth=Bearer ACCESS\x01\x01" {
-		t.Fatalf("AUTHENTICATE = %v %q", f, raw)
-	}
+	return NewMonitor(config.InboxConfig{Server: host, Port: port, Email: "jane@outlook.com", Password: refresh, Auth: config.AuthOAuth2, ClientID: clientID}, nil), got
 }

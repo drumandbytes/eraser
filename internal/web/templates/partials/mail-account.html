@@ -31,7 +31,7 @@
             <p class="font-medium">Outlook.com, Hotmail and Live need a one-time Microsoft sign-in</p>
             <p class="text-muted">Microsoft no longer accepts passwords here. Register a free app once (about 5 minutes), then sign in with a code. For personal accounts only, not Microsoft 365 work accounts.</p>
             <ol class="list-decimal list-inside space-y-1">
-                <li>Open <a href="https://entra.microsoft.com" target="_blank" rel="noopener" class="text-accent hover:underline">entra.microsoft.com</a> &rarr; <em>App registrations</em> &rarr; <em>New registration</em>, signed in with your Microsoft account (accept the free directory if asked).</li>
+                <li>Open <a href="https://entra.microsoft.com" target="_blank" rel="noopener" class="text-accent hover:underline">entra.microsoft.com</a> &rarr; <em>App registrations</em> &rarr; <em>New registration</em>, signed in with your Microsoft account. Microsoft refuses this for some personal accounts (a free Azure account or Microsoft 365 Developer Program tenant gets around it); the full guide explains.</li>
                 <li>Name it anything. Supported account types: <strong>Personal Microsoft accounts only</strong>. Leave the redirect URI empty. Register.</li>
                 <li><em>Authentication</em> &rarr; <em>Advanced settings</em> &rarr; <strong>Allow public client flows: Yes</strong> &rarr; Save.</li>
                 <li>If signing in later says the app lacks permission, add <code>IMAP.AccessAsUser.All</code>, <code>SMTP.Send</code> and <code>offline_access</code> under <em>API permissions</em>.</li>

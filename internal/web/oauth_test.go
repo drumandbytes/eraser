@@ -235,3 +235,42 @@ func TestSignInStoreExpiresOldEntries(t *testing.T) {
 		t.Fatal("token for unknown id")
 	}
 }
+
+func TestOAuthSignInWithoutRefreshToken(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/devicecode", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"device_code": "dc", "user_code": "NORT", "verification_uri": "https://example.test/device", "expires_in": 900, "interval": 1})
+	})
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "at", "expires_in": 3600})
+	})
+	srv := httptest.NewServer(mux)
+	old := oauth.MicrosoftConsumers
+	oauth.MicrosoftConsumers = oauth.Endpoints{DeviceCode: srv.URL + "/devicecode", Token: srv.URL + "/token", Scopes: old.Scopes}
+	t.Cleanup(func() { srv.Close(); oauth.MicrosoftConsumers = old })
+
+	c, _ := newWizardClient(t)
+	c.get("/setup/profile")
+	id := pollRe.FindStringSubmatch(c.postHTMX("/oauth/start", url.Values{"oauth_client_id": {"cid"}}))[1]
+	var got string
+	for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(200 * time.Millisecond) {
+		if got = c.get("/oauth/status?id=" + id); strings.Contains(got, "no refresh token") {
+			break
+		}
+	}
+	if !strings.Contains(got, "offline_access") || strings.Contains(got, `name="oauth_id"`) {
+		t.Fatalf("got %s", got)
+	}
+}
+
+func TestMailFormViewFillsOutlookServers(t *testing.T) {
+	v := newMailFormView("both", mailForm{Provider: "outlook"}, nil)
+	if v.SMTPHost != "smtp-mail.outlook.com" || v.SMTPPort != 587 || v.IMAPHost != "outlook.office365.com" || v.IMAPPort != 993 || !v.OAuth {
+		t.Fatalf("%+v", v)
+	}
+	// hosts already on the form are kept
+	v = newMailFormView("both", mailForm{Provider: "outlook", SMTPHost: "x", IMAPHost: "y"}, nil)
+	if v.SMTPHost != "x" || v.IMAPHost != "y" {
+		t.Fatalf("%+v", v)
+	}
+}

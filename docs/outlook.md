@@ -10,11 +10,13 @@ It is for **personal** accounts (outlook.com, hotmail.com, live.com). Microsoft 
 
 Microsoft only allows sign-in through a registered app, and Delistd ships none, so you register your own. It has no secret and costs nothing.
 
-1. Open [entra.microsoft.com](https://entra.microsoft.com) → **App registrations** → **New registration**, signed in with your Microsoft account. If it asks you to create a directory first, accept the free default.
+1. Open [entra.microsoft.com](https://entra.microsoft.com) → **App registrations** → **New registration**, signed in with your Microsoft account.
 2. Name: anything (e.g. `Delistd`). Supported account types: **Personal Microsoft accounts only**. Leave the redirect URI empty. **Register**.
 3. **Authentication** → **Advanced settings** → **Allow public client flows** → **Yes** → **Save**.
 4. **API permissions**: if the sign-in in step 3 below complains that the app lacks permission, add the delegated permissions `IMAP.AccessAsUser.All` and `SMTP.Send` (under *Office 365 Exchange Online*) and `offline_access`.
 5. From **Overview**, copy the **Application (client) ID**.
+
+**This step can fail for a personal account.** Microsoft gives a personal account no directory of its own, and some accounts are refused at the Entra sign-in itself (one tester got `AADSTS90123: access_denied`). If that happens, the ways in are a free Azure account (Microsoft may ask for a phone number and a payment method to verify it) or a free [Microsoft 365 Developer Program](https://developer.microsoft.com/microsoft-365/dev-program) tenant, registering the app there with the account type set to personal accounts. If neither is acceptable, use a separate Gmail or other app-password mailbox instead. We are looking at removing this step.
 
 ## 2. Sign in
 

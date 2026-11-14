@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -186,5 +188,42 @@ func TestOAuthLoginCommandRuns(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "Signed in as jane@outlook.com") {
 		t.Fatalf("output: %q", out.String())
+	}
+}
+
+func TestOAuthLoginPollFailsAndSaveFails(t *testing.T) {
+	path := writeBaseConfig(t)
+	// the user declines at Microsoft
+	mux := http.NewServeMux()
+	mux.HandleFunc("/devicecode", func(w http.ResponseWriter, _ *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"device_code": "dc", "user_code": "ABCD", "verification_uri": "https://example.test/device", "expires_in": 900, "interval": 1})
+	})
+	mux.HandleFunc("/token", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(400)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "authorization_declined"})
+	})
+	srv := httptest.NewServer(mux)
+	old := oauth.MicrosoftConsumers
+	oauth.MicrosoftConsumers = oauth.Endpoints{DeviceCode: srv.URL + "/devicecode", Token: srv.URL + "/token", Scopes: old.Scopes}
+	t.Cleanup(func() { srv.Close(); oauth.MicrosoftConsumers = old })
+	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "c", ""); err == nil || !strings.Contains(err.Error(), "declined") {
+		t.Fatalf("declined: %v", err)
+	}
+
+	// signed in, but the config can't be written
+	if runtime.GOOS == "windows" {
+		t.Skip("directory permissions differ on Windows")
+	}
+	fakeMicrosoft(t, "R")
+	dir := filepath.Dir(path)
+	if err := os.Chmod(path, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o700); _ = os.Chmod(path, 0o600) })
+	if err := runOAuthLogin(context.Background(), &bytes.Buffer{}, path, "c", ""); err == nil {
+		t.Skip("directory is writable here (running as root?)")
 	}
 }

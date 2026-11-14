@@ -76,3 +76,10 @@ func TestOutlookOAuthPresetIsNotInProviders(t *testing.T) {
 		t.Fatalf("%+v", OutlookOAuth)
 	}
 }
+
+func TestReplaceSecretSkipsEmptyPasswords(t *testing.T) {
+	c := &Config{}
+	if c.ReplaceSecret("anything", "x") {
+		t.Fatal("matched an empty password")
+	}
+}

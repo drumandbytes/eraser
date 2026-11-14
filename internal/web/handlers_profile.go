@@ -87,9 +87,9 @@ func buildProfileFromForm(r *http.Request) (config.Profile, map[string]string) {
 			errors["country"] = "Choose a country from the list"
 		}
 	}
-	if profile.DateOfBirth != "" {
-		if _, err := time.Parse("2006-01-02", profile.DateOfBirth); err != nil {
-			errors["date_of_birth"] = "Use the format YYYY-MM-DD"
+	for field, msg := range config.ValidateProfileFields(profile, time.Now()) {
+		if _, taken := errors[field]; !taken {
+			errors[field] = msg
 		}
 	}
 	for _, e := range profile.AdditionalEmails {

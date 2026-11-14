@@ -74,7 +74,7 @@
             </div>
             <div>
                 <label for="zip_code" class="label">ZIP</label>
-                <input type="text" name="zip_code" id="zip_code" autocomplete="postal-code"
+                <input type="text" name="zip_code" id="zip_code" autocomplete="postal-code" maxlength="10" pattern="[A-Za-z0-9][A-Za-z0-9 \-]{1,8}[A-Za-z0-9]" title="Letters, digits, spaces or hyphens (3 to 10 characters)"
                     value="{{.Profile.ZipCode}}"
                     class="input"
                     placeholder="10001">
@@ -93,7 +93,7 @@
             </div>
             <div>
                 <label for="phone" class="label">Phone</label>
-                <input type="tel" name="phone" id="phone" autocomplete="tel"
+                <input type="tel" name="phone" id="phone" autocomplete="tel" maxlength="30" pattern="[0-9+()\-. /]{6,30}" title="6 to 15 digits; spaces, + ( ) - . are fine"
                     value="{{.Profile.Phone}}"
                     class="input"
                     placeholder="+1 (555) 123-4567">
@@ -102,7 +102,7 @@
 
         <div>
             <label for="date_of_birth" class="label">Date of Birth</label>
-            <input type="date" name="date_of_birth" id="date_of_birth" autocomplete="bday"
+            <input type="date" name="date_of_birth" id="date_of_birth" autocomplete="bday" min="1900-01-01"
                 value="{{.Profile.DateOfBirth}}"
                 class="input {{if .Errors.date_of_birth}}border-error{{end}}">
             {{if .Errors.date_of_birth}}<p class="mt-1 text-sm text-error">{{.Errors.date_of_birth}}</p>{{end}}
@@ -157,3 +157,17 @@
 </div>
 {{end}}
 {{end}}
+<script>
+(() => {
+    const dob = document.getElementById('date_of_birth');
+    if (!dob) return;
+    dob.max = new Date().toISOString().slice(0, 10);
+    // A date that doesn't exist (31.11.2000) reads as "" to the form, so it
+    // would be dropped silently: flag it instead.
+    const check = () => {
+        dob.setCustomValidity(dob.validity.badInput ? "That date doesn't exist (check the day against the month)" : '');
+    };
+    dob.addEventListener('input', check);
+    dob.addEventListener('change', check);
+})();
+</script>

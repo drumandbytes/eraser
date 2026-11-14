@@ -143,9 +143,7 @@ func buildMailOverrideFromForm(r *http.Request, existing *config.MailConfig) (*c
 			saved := mailFormFromConfig(*existing.Email, existing.Inbox)
 			form.SMTPHost, form.SMTPPort, form.IMAPHost, form.IMAPPort = saved.SMTPHost, saved.SMTPPort, saved.IMAPHost, saved.IMAPPort
 		}
-		if form.Password == "" && strings.EqualFold(form.Username, existing.Email.SMTP.Username) {
-			form.Password = existing.Email.SMTP.Password
-		}
+		form.keepStored(existing.Email.SMTP.Username, existing.Email.SMTP.Password, existing.Email.SMTP.Auth, existing.Email.SMTP.ClientID)
 	}
 	errors := form.validate("both", true)
 	view := newMailFormView("both", form, errors)

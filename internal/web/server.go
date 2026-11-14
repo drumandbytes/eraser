@@ -445,6 +445,9 @@ func (s *Server) setupRouter() *chi.Mux {
 	r.Post("/forms/{brokerID}/complete", s.handleFormComplete)
 	r.Post("/forms/{brokerID}/skip", s.handleFormSkip)
 
+	r.Post("/oauth/start", s.handleOAuthStart)
+	r.Get("/oauth/status", s.handleOAuthStatus)
+
 	r.Route("/setup", func(r chi.Router) {
 		r.Get("/", s.handleSetupWelcome)
 		r.Get("/profile", s.handleSetupProfile)

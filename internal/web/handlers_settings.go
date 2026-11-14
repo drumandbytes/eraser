@@ -146,9 +146,7 @@ func (s *Server) handleSettingsInbox(w http.ResponseWriter, r *http.Request) {
 		cfg = &config.Config{}
 	}
 	form := readMailForm(r)
-	if form.Password == "" && strings.EqualFold(form.Username, cfg.Inbox.Email) {
-		form.Password = cfg.Inbox.Password
-	}
+	form.keepStored(cfg.Inbox.Email, cfg.Inbox.Password, cfg.Inbox.Auth, cfg.Inbox.ClientID)
 	errors := form.validate("imap", true)
 	if len(errors) > 0 {
 		s.renderSettings(w, r, map[string]interface{}{

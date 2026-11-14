@@ -16,7 +16,37 @@ type Provider struct {
 	IMAPHost string // "" = send-only (no mailbox, e.g. SES)
 	IMAPPort int
 	HelpURL  string // where to create the app/bridge password
+	OAuth    bool   // signs in with OAuth2 (device code) instead of a password
 	Note     string
+}
+
+// AuthOAuth2 is the Auth value for OAuth sign-in; the refresh token is kept in
+// the account's password field, so it is encrypted and masked like one.
+const AuthOAuth2 = "oauth2"
+
+// DefaultOAuthClientID is the Application (client) ID of the Delistd app that
+// Drumandbytes registers with Microsoft, used when an account sets no client_id
+// of its own. A client id is public by design (it is sent in every sign-in
+// request, and the device-code flow has no secret), so it is plain source, not
+// something to hide. Empty until the app is registered: accounts then need
+// their own (docs/outlook.md).
+var DefaultOAuthClientID = ""
+
+// OAuthClientIDEnv overrides the shared default for every account that sets no
+// client_id, so a user can swap the app without waiting for a release (see
+// docs/oauth-app.md).
+const OAuthClientIDEnv = "DELISTD_OAUTH_CLIENT_ID"
+
+// OAuthClientID is the client id to sign in with: the account's own, else
+// DELISTD_OAUTH_CLIENT_ID, else the shared default.
+func OAuthClientID(configured string) string {
+	if configured != "" {
+		return configured
+	}
+	if v := strings.TrimSpace(Getenv(OAuthClientIDEnv)); v != "" {
+		return v
+	}
+	return DefaultOAuthClientID
 }
 
 // Providers is the preset list shown in setup, in display order. Adding a
@@ -39,6 +69,12 @@ var Providers = []Provider{
 		HelpURL: "https://docs.aws.amazon.com/ses/latest/dg/smtp-credentials.html", Note: "Use SES SMTP credentials (username is not your address) and change the region in the host if needed. The From address must be verified in SES. SES has no inbox: monitor replies through a separate account."},
 	{ID: "custom", Name: "Other (custom SMTP/IMAP)", Note: "Any provider with SMTP and IMAP access. Port 465/993 use TLS directly; other ports use STARTTLS."},
 }
+
+// OutlookOAuth is the Outlook.com / Hotmail / Live preset. It is not in
+// Providers because the CLI wizard asks for a password. The web forms add it
+// to their dropdown, and `delistd oauth login` fills the account from it.
+var OutlookOAuth = Provider{ID: "outlook", Name: "Outlook.com / Hotmail / Live (OAuth)", SMTPHost: "smtp-mail.outlook.com", SMTPPort: 587, IMAPHost: "outlook.office365.com", IMAPPort: 993, OAuth: true,
+	Note: "Microsoft no longer accepts passwords here; sign in with `delistd oauth login`. Not for Microsoft 365 work accounts."}
 
 func providerIDsWithIMAP() []string {
 	var ids []string

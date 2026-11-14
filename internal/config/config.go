@@ -213,14 +213,16 @@ func SlugifyProfileID(firstName, lastName string, existing []NamedProfile) strin
 // InboxConfig holds IMAP settings for monitoring broker responses
 type InboxConfig struct {
 	Enabled       bool   `yaml:"enabled"`
-	Provider      string `yaml:"provider,omitempty"` // preset id (see Providers) that fills Server/Port; optional when they're set
-	Server        string `yaml:"server"`             // e.g., "imap.fastmail.com"
-	Port          int    `yaml:"port"`               // 993 = implicit TLS, anything else = STARTTLS
-	Email         string `yaml:"email"`              // Email address to monitor
-	Password      string `yaml:"password"`           // App password (not main password)
-	Folder        string `yaml:"folder"`             // Folder to monitor (default: "INBOX")
-	AutoArchive   bool   `yaml:"auto_archive"`       // Automatically move processed emails to archive folder
-	ArchiveFolder string `yaml:"archive_folder"`     // Folder to archive emails to (default: "Eraser")
+	Provider      string `yaml:"provider,omitempty"`  // preset id (see Providers) that fills Server/Port; optional when they're set
+	Server        string `yaml:"server"`              // e.g., "imap.fastmail.com"
+	Port          int    `yaml:"port"`                // 993 = implicit TLS, anything else = STARTTLS
+	Email         string `yaml:"email"`               // Email address to monitor
+	Password      string `yaml:"password"`            // App password (not main password); with auth: oauth2, the refresh token
+	Auth          string `yaml:"auth,omitempty"`      // "oauth2" signs in with OAuth (see AuthOAuth2); empty = password
+	ClientID      string `yaml:"client_id,omitempty"` // OAuth app (client) id; empty = the shared default (DefaultOAuthClientID)
+	Folder        string `yaml:"folder"`              // Folder to monitor (default: "INBOX")
+	AutoArchive   bool   `yaml:"auto_archive"`        // Automatically move processed emails to archive folder
+	ArchiveFolder string `yaml:"archive_folder"`      // Folder to archive emails to (default: "Eraser")
 }
 
 // Pipeline holds settings for the automation pipeline
@@ -292,7 +294,11 @@ type SMTPConfig struct {
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
 	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	Password string `yaml:"password"` // with auth: oauth2, the refresh token
+	// Auth is "oauth2" for providers that refuse passwords (Outlook.com); the
+	// refresh token then lives in Password and ClientID names the OAuth app.
+	Auth     string `yaml:"auth,omitempty"`
+	ClientID string `yaml:"client_id,omitempty"`
 	// UseTLS defaults to true; the mode follows the port (465 implicit TLS,
 	// anything else STARTTLS). false is only for an unauthenticated local
 	// relay. Read it via TLS().
@@ -585,6 +591,17 @@ func validateEmailConfig(e EmailConfig) error {
 	if e.SMTP.Port == 0 {
 		return fmt.Errorf("email.smtp: port is required")
 	}
+	if e.SMTP.Auth != "" && e.SMTP.Auth != AuthOAuth2 {
+		return fmt.Errorf("email.smtp: unknown auth %q (use oauth2 or leave empty)", e.SMTP.Auth)
+	}
+	if e.SMTP.Auth == AuthOAuth2 {
+		if OAuthClientID(e.SMTP.ClientID) == "" {
+			return fmt.Errorf("email.smtp: client_id is required with auth: oauth2")
+		}
+		if e.SMTP.Password == "" {
+			return fmt.Errorf("email.smtp: not signed in yet: run `delistd oauth login`")
+		}
+	}
 	if !e.SMTP.TLS() && e.SMTP.Username != "" {
 		return fmt.Errorf("email.smtp: use_tls: false can't be combined with a username (passwords are never sent unencrypted)")
 	}
@@ -610,7 +627,16 @@ func validateInboxConfig(inbox InboxConfig) error {
 		return fmt.Errorf("inbox: email address is required")
 	}
 	if inbox.Password == "" {
+		if inbox.Auth == AuthOAuth2 {
+			return fmt.Errorf("inbox: not signed in yet: run `delistd oauth login`")
+		}
 		return fmt.Errorf("inbox: password (app password) is required")
+	}
+	if inbox.Auth != "" && inbox.Auth != AuthOAuth2 {
+		return fmt.Errorf("inbox: unknown auth %q (use oauth2 or leave empty)", inbox.Auth)
+	}
+	if inbox.Auth == AuthOAuth2 && OAuthClientID(inbox.ClientID) == "" {
+		return fmt.Errorf("inbox: client_id is required with auth: oauth2")
 	}
 	if inbox.Server == "" {
 		if inbox.Provider != "" {

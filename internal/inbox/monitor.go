@@ -10,6 +10,7 @@ import (
 
 	"github.com/drumandbytes/delistd/internal/broker"
 	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/oauth"
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/emersion/go-message/mail"
@@ -82,7 +83,17 @@ func (m *Monitor) Connect(ctx context.Context) error {
 		_ = c.Logout()
 		return err
 	}
-	if err := c.Login(m.config.Email, password); err != nil {
+	if m.config.Auth == config.AuthOAuth2 {
+		token, err := oauth.AccessFor(ctx, config.OAuthClientID(m.config.ClientID), password)
+		if err != nil {
+			_ = c.Logout()
+			return err
+		}
+		if err := c.Authenticate(oauth.SASL{User: m.config.Email, Token: token}); err != nil {
+			_ = c.Logout()
+			return fmt.Errorf("failed to login with OAuth: %w", err)
+		}
+	} else if err := c.Login(m.config.Email, password); err != nil {
 		_ = c.Logout()
 		return fmt.Errorf("failed to login: %w", err)
 	}

@@ -15,6 +15,8 @@ This file is intentionally slim. Read the doc(s) relevant to what you're touchin
 - [docs/multi-profile.md](docs/multi-profile.md) - the `--profile`/`profiles:` feature: config model, history scoping, shared-inbox attribution, web UI switcher
 - [docs/docker.md](docs/docker.md) - the Docker image (distroless `Dockerfile`, published to `ghcr.io/drumandbytes/delistd` on each release, `compose.yaml` with the stock `chromedp/headless-shell` Chromium sidecar): `serve --listen`, `DELISTD_CONTAINER`, `DELISTD_CHROME_URL` (remote Chrome), the volume-held `DELISTD_MACHINE_ID_FILE` that keeps encrypted passwords readable across container recreation
 - [docs/kubernetes.md](docs/kubernetes.md) - a single-pod Kubernetes manifest for the ghcr image (PVC, `fsGroup`, Chromium as a second container) and what to avoid (exposing the UI, NFS for `history.db`, more than one replica)
+- [docs/outlook.md](docs/outlook.md) - Outlook.com/Hotmail/Live sign-in with OAuth (`delistd oauth login`, `internal/oauth`): registering the Microsoft app, what is stored where, known gaps
+- [docs/oauth-app.md](docs/oauth-app.md) - the shared Microsoft app for Outlook sign-in: what its public client ID allows, registration settings, monitoring, and the rotation/abuse runbook
 - [docs/mcp.md](docs/mcp.md) - the experimental `delistd mcp` agent server: batch approval, shared-platform host scope, and what it may and may not do
 - [docs/code-patterns.md](docs/code-patterns.md) - conventions to follow, plus known quirks/gotchas worth reading before touching related code
 - [docs/auditing.md](docs/auditing.md) - how to re-run the dead-code/security sweep, and what's already been removed

@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/drumandbytes/delistd/internal/config"
+	"github.com/drumandbytes/delistd/internal/oauth"
 )
 
 type SMTPSender struct {
@@ -57,7 +58,15 @@ func (s *SMTPSender) Send(ctx context.Context, msg Message) Result {
 		if err != nil {
 			return Result{Success: false, Error: err}
 		}
-		auth = smtp.PlainAuth("", s.config.Username, password, s.config.Host)
+		if s.config.Auth == config.AuthOAuth2 {
+			token, err := oauth.AccessFor(ctx, s.config.ClientID, password)
+			if err != nil {
+				return Result{Success: false, Error: err}
+			}
+			auth = oauth.SMTPAuth(s.config.Username, token)
+		} else {
+			auth = smtp.PlainAuth("", s.config.Username, password, s.config.Host)
+		}
 	} else if s.config.Username != "" {
 		return Result{Success: false, Error: fmt.Errorf("SMTP auth requires TLS")}
 	}

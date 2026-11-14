@@ -307,3 +307,20 @@ func (c *Config) CheckPassphrase(pass string) error {
 // Clone copies the parts of the config that hold passwords, for callers that
 // change them without touching the live config others are reading.
 func (c *Config) Clone() *Config { return c.cloneForSecrets() }
+
+// ReplaceSecret swaps every stored password equal to old for new, and reports
+// whether any matched. The OAuth refresh token lives in the password field,
+// and the provider rotates it.
+func (c *Config) ReplaceSecret(old, new string) bool {
+	found := false
+	c.eachSecret(func(p *string) {
+		if *p == "" {
+			return
+		}
+		if plain, err := Reveal(*p); err == nil && plain == old {
+			*p = new
+			found = true
+		}
+	})
+	return found
+}

@@ -16,8 +16,13 @@ type Provider struct {
 	IMAPHost string // "" = send-only (no mailbox, e.g. SES)
 	IMAPPort int
 	HelpURL  string // where to create the app/bridge password
+	OAuth    bool   // signs in with OAuth2 (device code) instead of a password
 	Note     string
 }
+
+// AuthOAuth2 is the Auth value for OAuth sign-in; the refresh token is kept in
+// the account's password field, so it is encrypted and masked like one.
+const AuthOAuth2 = "oauth2"
 
 // Providers is the preset list shown in setup, in display order. Adding a
 // provider = one entry here (see CONTRIBUTING.md). TLS mode needs no field:
@@ -39,6 +44,12 @@ var Providers = []Provider{
 		HelpURL: "https://docs.aws.amazon.com/ses/latest/dg/smtp-credentials.html", Note: "Use SES SMTP credentials (username is not your address) and change the region in the host if needed. The From address must be verified in SES. SES has no inbox: monitor replies through a separate account."},
 	{ID: "custom", Name: "Other (custom SMTP/IMAP)", Note: "Any provider with SMTP and IMAP access. Port 465/993 use TLS directly; other ports use STARTTLS."},
 }
+
+// OutlookOAuth is the Outlook.com / Hotmail / Live preset. It is not in
+// Providers because the setup forms ask for a password; `delistd oauth login`
+// fills the account from it instead.
+var OutlookOAuth = Provider{ID: "outlook", Name: "Outlook.com / Hotmail / Live (OAuth)", SMTPHost: "smtp-mail.outlook.com", SMTPPort: 587, IMAPHost: "outlook.office365.com", IMAPPort: 993, OAuth: true,
+	Note: "Microsoft no longer accepts passwords here; sign in with `delistd oauth login`. Not for Microsoft 365 work accounts."}
 
 func providerIDsWithIMAP() []string {
 	var ids []string

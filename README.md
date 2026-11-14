@@ -110,6 +110,24 @@ no login. Releases also publish the image as `ghcr.io/drumandbytes/delistd`
 it instead of building. Data, backups, CLI commands, scheduling and the pull
 setup are covered in [docs/docker.md](docs/docker.md).
 
+**Opening the web UI from another machine** (a NAS, Unraid or home server): the web UI
+only answers requests whose address it recognises, as a guard against DNS rebinding.
+From 2.4 the image accepts `localhost`, private IPs and local names, so
+`http://192.168.1.5:8080` and `http://tower:8080` work once the port is published on
+your LAN. Do that only on a network you trust, because the UI has no login. If you
+get `Forbidden: this server only accepts requests addressed to localhost`, the address
+you typed isn't allowed; list it in `DELISTD_ALLOWED_HOSTS`:
+
+```yaml
+    environment:
+      # private IPs and local names, plus your own hostname behind a reverse proxy
+      DELISTD_ALLOWED_HOSTS: "lan,local,delistd.example.com"
+```
+
+`*` accepts any address (use it only behind something that already controls access),
+and an empty value allows `localhost` only. Older images (before 2.4) refuse everything
+but `localhost`; an SSH tunnel (`ssh -L 8080:localhost:8080 server`) works with any version.
+
 **Step 2: Start the Web Interface**
 
 ```bash
